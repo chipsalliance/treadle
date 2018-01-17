@@ -19,10 +19,10 @@ import treadle.executable.ExpressionViewRenderer
 class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager) {
   var expectationsMet = 0
 
-  treadle.random.setSeed(optionsManager.interpreterOptions.randomSeed)
+  treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
 
   val engine: ExecutionEngine                = ExecutionEngine(input, optionsManager)
-  val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
+  val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
   engine.setVerbose(interpreterOptions.setVerbose)
 

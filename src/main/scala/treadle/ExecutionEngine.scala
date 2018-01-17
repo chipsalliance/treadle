@@ -16,7 +16,7 @@ class ExecutionEngine(
     val scheduler: Scheduler,
     val expressionViews: Map[Symbol, ExpressionView]
 ) {
-  private val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
+  private val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
   var vcdOption: Option[VCD] = None
   var vcdFileName: String = ""
@@ -370,7 +370,7 @@ object ExecutionEngine {
     * @return                the constructed engine
     */
   def apply(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): ExecutionEngine = {
-    val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
+    val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
     val ast = firrtl.Parser.parse(input.split("\n").toIterator)
     val verbose: Boolean = interpreterOptions.setVerbose

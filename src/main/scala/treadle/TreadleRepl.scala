@@ -27,7 +27,7 @@ abstract class Command(val name: String) {
 
 class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConfig) {
   val replConfig: ReplConfig = optionsManager.replConfig
-  val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
+  val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
   treadle.random.setSeed(interpreterOptions.randomSeed)
 
@@ -44,9 +44,9 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
   history.load(historyFile)
   console.setHistory(history)
 
-  var currentInterpreterOpt: Option[ExecutionEngine] = None
+  var currentEngineOpt: Option[ExecutionEngine] = None
 
-  def interpreter: ExecutionEngine = currentInterpreterOpt.get
+  def interpreter: ExecutionEngine = currentEngineOpt.get
   var args = Array.empty[String]
   var done = false
 
@@ -61,8 +61,8 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
   var replVcdController: Option[ReplVcdController] = None
 
   def loadSource(input: String): Unit = {
-    currentInterpreterOpt = Some(ExecutionEngine(input, optionsManager))
-    currentInterpreterOpt.foreach { _ =>
+    currentEngineOpt = Some(ExecutionEngine(input, optionsManager))
+    currentEngineOpt.foreach { _ =>
       interpreter.setVerbose(interpreterOptions.setVerbose)
     }
     buildCompletions()
@@ -90,7 +90,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
   }
 
   def loadVcdScript(fileName: String): Unit = {
-    val dutName = currentInterpreterOpt match {
+    val dutName = currentEngineOpt match {
       case Some(interpreter) => interpreter.ast.main
       case None => ""
     }
@@ -314,7 +314,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
               interpreter.disableVCD()
             case Some(fileName) =>
               interpreter.makeVCDLogger(
-                fileName, showUnderscored = optionsManager.interpreterOptions.vcdShowUnderscored)
+                fileName, showUnderscored = optionsManager.treadleOptions.vcdShowUnderscored)
             case _ =>
               interpreter.disableVCD()
           }
@@ -324,7 +324,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         private def peekableThings = interpreter.validNames.toSeq
         def usage: (String, String) = ("type regex", "show the current type of things matching the regex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -372,7 +372,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
       new Command("poke") {
         def usage: (String, String) = ("poke inputPortName value", "set an input port to the given integer value")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -407,7 +407,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         }
         def usage: (String, String) = ("rpoke regex value", "poke value into ports that match regex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -453,7 +453,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
       new Command("peek") {
         def usage: (String, String) = ("peek componentName", "show the current value of the named circuit component")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -486,7 +486,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         private def peekableThings = interpreter.validNames.toSeq
         def usage: (String, String) = ("rpeek regex", "show the current value of things matching the regex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -604,7 +604,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         def usage: (String, String) = ("reset [numberOfSteps]",
           "assert reset (if present) for numberOfSteps (default 1)")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -702,7 +702,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
       new Command("show") {
         def usage: (String, String) = ("show [state|input|lofirrtl]", "show useful things")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -727,7 +727,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
       new Command("display") {
         def usage: (String, String) = ("how signal[, signal, ...]", "show computation of symbols")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -741,7 +741,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         def run(args: Array[String]): Unit = {
           getOneArg("", Some("state")) match {
             case Some(symbolList) =>
-              if(currentInterpreterOpt.isDefined) {
+              if(currentEngineOpt.isDefined) {
                 console.println(interpreter.renderComputation(symbolList))
               }
             case _ =>
@@ -758,7 +758,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
 //      new Command("timing") {
 //        def usage: (String, String) = ("timing [clear|bin]", "show the current timing state")
 //        override def completer: Option[ArgumentCompleter] = {
-//          if(currentInterpreterOpt.isEmpty) {
+//          if(currentEngineOpt.isEmpty) {
 //            None
 //          }
 //          else {
@@ -817,7 +817,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         def usage: (String, String) = ("verbose [true|false|toggle]",
           "set evaluator verbose mode (default toggle) during dependency evaluation")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -841,7 +841,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         def usage: (String, String) = ("snapshot",
           "save state of engine")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -866,7 +866,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         def usage: (String, String) = ("restore",
           "save state of engine")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentInterpreterOpt.isEmpty) {
+          if(currentEngineOpt.isEmpty) {
             None
           }
           else {
@@ -889,7 +889,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
 //        def usage: (String, String) = ("allow-cycles [true|false|toggle]",
 //          "set evaluator allow combinational loops (could cause correctness problems")
 //        override def completer: Option[ArgumentCompleter] = {
-//          if(currentInterpreterOpt.isEmpty) {
+//          if(currentEngineOpt.isEmpty) {
 //            None
 //          }
 //          else {

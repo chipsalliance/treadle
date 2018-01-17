@@ -36,7 +36,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
 //    printf(clock, and(and(UInt<1>("h1"), _T_6), UInt<1>("h1")), "m.io.data %d io.data %d\n", m.data, io_data) @[AccumBlackBoxSpec.scala 96:9:@23.6]
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(blackBoxFactories = Seq(new AccumBlackBoxFactory))
+      treadleOptions = treadleOptions.copy(blackBoxFactories = Seq(new AccumBlackBoxFactory))
     }
     val tester = new TreadleTester(input, manager)
 

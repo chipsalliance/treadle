@@ -12,7 +12,7 @@ class ExpressionCompiler(
     val symbolTable: SymbolTable,
     val dataStore: DataStore,
     scheduler: Scheduler,
-    interpreterOptions: InterpreterOptions,
+    interpreterOptions: TreadleOptions,
     blackBoxFactories: Seq[BlackBoxFactory]
 )
   extends logger.LazyLogging {

@@ -19,7 +19,7 @@ import org.scalatest.{FreeSpec, Matchers}
 //      """.stripMargin
 //
 //    val options = new InterpreterOptionsManager {
-//      interpreterOptions = interpreterOptions.copy(validIfIsRandom = false)
+//      treadleOptions = treadleOptions.copy(validIfIsRandom = false)
 //    }
 //    val tester = new TreadleTester(input, options)
 //    tester.poke("in1", 42)
@@ -37,7 +37,7 @@ import org.scalatest.{FreeSpec, Matchers}
 //      """.stripMargin
 //
 //    val options = new InterpreterOptionsManager {
-//      interpreterOptions = interpreterOptions.copy(
+//      treadleOptions = treadleOptions.copy(
 //        validIfIsRandom = true,
 //        randomSeed = 0L
 //      )

@@ -58,7 +58,7 @@ class GCDTester extends FlatSpec with Matchers {
         .stripMargin
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(showFirrtlAtLoad = true)
+      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = true)
     }
 
     val values =
@@ -152,7 +152,7 @@ class GCDTester extends FlatSpec with Matchers {
         .stripMargin
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(showFirrtlAtLoad = true)
+      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = true)
     }
 
     val values =

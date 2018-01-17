@@ -38,7 +38,7 @@
 //  }
 //
 //  val vcdTesterOptions = optionsManager.goldenVcdOptions
-//  val interpreterOptions = optionsManager.interpreterOptions
+//  val treadleOptions = optionsManager.treadleOptions
 //
 //  val tester = new InterpretiveTester(getInput(vcdTesterOptions.firrtlSourceName), optionsManager)
 //  val engine = tester.engine

@@ -22,31 +22,31 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      interpreterOptions = InterpreterOptions(setVerbose = true)
+      treadleOptions = TreadleOptions(setVerbose = true)
     }
-    val interpreter = ExecutionEngine(input, optionsManager)
+    val engine = ExecutionEngine(input, optionsManager)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
+    engine.setValue("reset1", 1)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (4)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (4)
 
-    interpreter.getValue("reg1") should be (4)
+    engine.getValue("reg1") should be (4)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (5)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (5)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
+    engine.setValue("reset1", 1)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (4)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (4)
   }
 
   it should "be able to initialize registers from other places" in {
@@ -66,55 +66,55 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = ExecutionEngine(input)
+    val engine = ExecutionEngine(input)
 
     // engine.setVerbose(true)
-    interpreter.setValue("reset1", 1)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (0)
+    engine.setValue("reset1", 1)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (0)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 1)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (1)
-    interpreter.getValue("reg2") should be (0)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 1)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (1)
+    engine.getValue("reg2") should be (0)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.setValue("reset2", 1)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (0)
-    interpreter.getValue("reg2") should be (1)
+    engine.setValue("reset1", 1)
+    engine.setValue("reset2", 1)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (0)
+    engine.getValue("reg2") should be (1)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (1)
-    interpreter.getValue("reg2") should be (4)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (1)
+    engine.getValue("reg2") should be (4)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (2)
-    interpreter.getValue("reg2") should be (7)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (2)
+    engine.getValue("reg2") should be (7)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (0)
-    interpreter.getValue("reg2") should be (10)
+    engine.setValue("reset1", 1)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (0)
+    engine.getValue("reg2") should be (10)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (1)
-    interpreter.getValue("reg2") should be (13)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (1)
+    engine.getValue("reg2") should be (13)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 1)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (2)
-    interpreter.getValue("reg2") should be (1)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 1)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (2)
+    engine.getValue("reg2") should be (1)
 
   }
 
@@ -135,39 +135,39 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      interpreterOptions = InterpreterOptions(setVerbose = true)
+      treadleOptions = TreadleOptions(setVerbose = true)
     }
-    val interpreter = ExecutionEngine(input, optionsManager)
+    val engine = ExecutionEngine(input, optionsManager)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
+    engine.setValue("reset1", 1)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (4)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (4)
 
-    interpreter.getValue("reg1") should be (4)
+    engine.getValue("reg1") should be (4)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (5)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (5)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.getValue("reg1") should be (5)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
+    engine.setValue("reset1", 1)
+    engine.getValue("reg1") should be (5)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.getValue("reg1") should be (3)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (4)
+    engine.setValue("reset1", 0)
+    engine.getValue("reg1") should be (3)
+    engine.cycle()
+    engine.getValue("reg1") should be (4)
   }
 
   behavior of "poking registers"
