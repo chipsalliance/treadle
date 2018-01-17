@@ -5,7 +5,7 @@ package treadle
 import org.scalatest.{Matchers, FreeSpec}
 
 class OutputAsSourceSpec extends FreeSpec with Matchers {
-  "it must be possible for the interpreter to handle module outputs as rhs dependencies" in {
+  "it must be possible for the engine to handle module outputs as rhs dependencies" in {
     val input =
       """
         |circuit UseOutput :
@@ -20,7 +20,7 @@ class OutputAsSourceSpec extends FreeSpec with Matchers {
         |    out2 <= T_1
       """.stripMargin
 
-    val tester = new InterpretiveTester(input)
+    val tester = new TreadleTester(input)
     tester.setVerbose(true)
 
     tester.poke("in1", 1)

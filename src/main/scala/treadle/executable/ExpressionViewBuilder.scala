@@ -26,7 +26,7 @@ class ExpressionViewBuilder(
   def getWidth(tpe: firrtl.ir.Type): Int = {
     tpe match {
       case GroundType(IntWidth(width)) => width.toInt
-      case _ => throw new InterpreterException(s"Unresolved width found in firrtl.ir.Type $tpe")
+      case _ => throw new TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
     }
   }
 
@@ -34,7 +34,7 @@ class ExpressionViewBuilder(
     expression.tpe match {
       case GroundType(IntWidth(width)) => width.toInt
       case _ =>
-        throw new InterpreterException(
+        throw new TreadleException(
           s"Unresolved width found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -45,7 +45,7 @@ class ExpressionViewBuilder(
       case  _: SIntType    => true
       case  ClockType      => false
       case _ =>
-        throw new InterpreterException(
+        throw new TreadleException(
           s"Unsupported type found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -185,7 +185,7 @@ class ExpressionViewBuilder(
           case SIntLiteral(value, IntWidth(width)) =>
             expression"$value.S"
           case _ =>
-            throw new InterpreterException(s"bad expression $expression")
+            throw new TreadleException(s"bad expression $expression")
         }
         result
       }
@@ -267,7 +267,7 @@ class ExpressionViewBuilder(
         case EmptyStmt =>
         case conditionally: Conditionally =>
           // logger.debug(s"got a conditionally $conditionally")
-          throw new InterpreterException(s"conditionally unsupported in interpreter $conditionally")
+          throw new TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
           println(s"TODO: Unhandled statement $statement")
       }
@@ -288,9 +288,9 @@ class ExpressionViewBuilder(
     val module = FindModule(circuit.main, circuit) match {
       case regularModule: firrtl.ir.Module => regularModule
       case externalModule: firrtl.ir.ExtModule =>
-        throw InterpreterException(s"Top level module must be a regular module $externalModule")
+        throw TreadleException(s"Top level module must be a regular module $externalModule")
       case x =>
-        throw InterpreterException(s"Top level module is not the right kind of module $x")
+        throw TreadleException(s"Top level module is not the right kind of module $x")
     }
 
     processModule("", module, circuit)

@@ -36,7 +36,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager
-    val simulator = FirrtlTerp(simpleFirrtl, optionsManager)
+    val simulator = ExecutionEngine(simpleFirrtl, optionsManager)
 
     val symbolTable = simulator.symbolTable
     val scheduler   = simulator.scheduler
@@ -80,8 +80,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager
-    val tester = new InterpretiveTester(simpleFirrtl)
-    val simulator = tester.interpreter
+    val tester = new TreadleTester(simpleFirrtl)
+    val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
     val scheduler   = simulator.scheduler
@@ -129,8 +129,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager
-    val tester = new InterpretiveTester(simpleFirrtl)
-    val simulator = tester.interpreter
+    val tester = new TreadleTester(simpleFirrtl)
+    val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
     val scheduler   = simulator.scheduler
@@ -185,8 +185,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val tester = new InterpretiveTester(simpleFirrtl)
-    val simulator = tester.interpreter
+    val tester = new TreadleTester(simpleFirrtl)
+    val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
     val scheduler   = simulator.scheduler
@@ -250,8 +250,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val tester = new InterpretiveTester(simpleFirrtl)
-    val simulator = tester.interpreter
+    val tester = new TreadleTester(simpleFirrtl)
+    val simulator = tester.engine
 
   }
 

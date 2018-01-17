@@ -2,7 +2,7 @@
 
 package treadle.chronometry
 
-import treadle.InterpretiveTester
+import treadle.TreadleTester
 import org.scalatest.{FreeSpec, Matchers}
 
 
@@ -40,7 +40,7 @@ class GatedClockSpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "GatedClockSpec should pass a basic test" in {
-    val tester = new InterpretiveTester(input)
+    val tester = new TreadleTester(input)
 
 //    tester.poke("reset", 0)
 //    tester.poke("io_enable", 1)

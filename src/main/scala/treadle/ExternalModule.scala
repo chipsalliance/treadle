@@ -50,7 +50,7 @@ abstract class BlackBoxImplementation {
   def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String = ""): BigInt
 
   /**
-    * Called whenever the cycle command of the interpreter is called.
+    * Called whenever the cycle command of the engine is called.
     */
   def cycle(): Unit
 
@@ -64,7 +64,7 @@ abstract class BlackBoxImplementation {
 }
 
 /**
-  * For each instantiation of an ExtModule the interpreter needs a separate instance of
+  * For each instantiation of an ExtModule the engine needs a separate instance of
   * a BlackBoxImplementation. This factory provides it.
   * @example {{{
   *   class ExampleBBFactory extends BlackBoxFactory {
@@ -89,7 +89,7 @@ abstract class BlackBoxFactory {
   def createInstance(instanceName: String, blackBoxName: String): Option[BlackBoxImplementation]
 
   /**
-    * the factory remembers the implementations it created so the interpreter uses this method to call the
+    * the factory remembers the implementations it created so the engine uses this method to call the
     * cycle methods of each one
     */
   def cycle(): Unit = {

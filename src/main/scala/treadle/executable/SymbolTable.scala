@@ -5,7 +5,7 @@ package treadle.executable
 import firrtl._
 import firrtl.graph.DiGraph
 import firrtl.ir._
-import treadle.{BlackBoxFactory, BlackBoxImplementation, FindModule, InterpreterException}
+import treadle.{BlackBoxFactory, BlackBoxImplementation, FindModule, TreadleException}
 import logger.LazyLogging
 
 import scala.collection.immutable.Set
@@ -21,7 +21,7 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
   def addAssigner(symbol: Symbol, assigner: Assigner): Unit = {
     if(toAssigner.contains(symbol)) {
-      throw new InterpreterException(s"Assigner already exists for $symbol")
+      throw new TreadleException(s"Assigner already exists for $symbol")
     }
     toAssigner(symbol) = assigner
   }
@@ -29,7 +29,7 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
   private val toBlackBoxImplementation: mutable.HashMap[Symbol, BlackBoxImplementation] = new mutable.HashMap()
   def addBlackBoxImplementation(symbol: Symbol, blackBoxImplementation: BlackBoxImplementation): Unit = {
     if(toBlackBoxImplementation.contains(symbol)) {
-      throw new InterpreterException(s"Assigner already exists for $symbol")
+      throw new TreadleException(s"Assigner already exists for $symbol")
     }
     toBlackBoxImplementation(symbol) = blackBoxImplementation
   }
@@ -249,7 +249,7 @@ object SymbolTable extends LazyLogging {
           logger.debug(f"IsInvalid found for ${invalid.expr}%20s")
 
         case conditionally: Conditionally =>
-          throw new InterpreterException(s"conditionally unsupported in interpreter $conditionally")
+          throw new TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
           println(s"TODO: Unhandled statement $s")
       }
@@ -323,9 +323,9 @@ object SymbolTable extends LazyLogging {
     val module = FindModule(circuit.main, circuit) match {
       case regularModule: firrtl.ir.Module => regularModule
       case externalModule: firrtl.ir.ExtModule =>
-        throw InterpreterException(s"Top level module must be a regular module $externalModule")
+        throw TreadleException(s"Top level module must be a regular module $externalModule")
       case x =>
-        throw InterpreterException(s"Top level module is not the right kind of module $x")
+        throw TreadleException(s"Top level module is not the right kind of module $x")
     }
 
     logger.trace(s"Build SymbolTable pass 1 -- gather starting")

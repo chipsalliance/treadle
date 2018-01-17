@@ -11,7 +11,7 @@
 //    val stream = getClass.getResourceAsStream("/FullAdder.ir")
 //    val input = io.Source.fromInputStream(stream).mkString
 //
-//    val f = FirrtlTerp(input)
+//    val f = ExecutionEngine(input)
 //
 //    f.evaluator.setVerbose(true)
 //    f.cycle()

@@ -8,7 +8,7 @@ import treadle.executable._
 import treadle.vcd.VCD
 
 //scalastyle:off magic.number
-class FirrtlTerp(
+class ExecutionEngine(
     val ast: Circuit,
     val optionsManager: HasInterpreterSuite,
     val symbolTable: SymbolTable,
@@ -59,7 +59,7 @@ class FirrtlTerp(
   }
 
   /**
-    * Once a stop has occured, the interpreter will not allow pokes until
+    * Once a stop has occured, the engine will not allow pokes until
     * the stop has been cleared
     */
   def clearStop(): Unit = {dataStore(StopOp.StopOpSymbol) = 0}
@@ -132,7 +132,7 @@ class FirrtlTerp(
     }
     else {
       if(offset - 1 > symbol.slots) {
-        throw InterpreterException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
+        throw TreadleException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
       }
       symbol.normalize(dataStore.getValueAtIndex(symbol.dataSize, index = symbol.index + offset))
     }
@@ -156,7 +156,7 @@ class FirrtlTerp(
                 offset:        Int = 0
               ): BigInt = {
     if(! symbolTable.contains(name)) {
-      throw InterpreterException(s"setValue: Cannot find $name in symbol table")
+      throw TreadleException(s"setValue: Cannot find $name in symbol table")
     }
     val symbol = symbolTable(name)
 
@@ -177,7 +177,7 @@ class FirrtlTerp(
     }
     else {
       if(offset - 1 > symbol.slots) {
-        throw InterpreterException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
+        throw TreadleException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
       }
       if(verbose) {
         println(s"${symbol.name}($offset) <= $value")
@@ -287,7 +287,7 @@ class FirrtlTerp(
       dataStore.AssignInt(clock, GetIntConstant(0).apply).run()
     }
 
-    if(showState) println(s"FirrtlTerp: next state computed ${"="*80}\n$dataInColumns")
+    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$dataInColumns")
   }
 
   def doCycles(n: Int): Unit = {
@@ -361,7 +361,7 @@ class FirrtlTerp(
   }
 }
 
-object FirrtlTerp {
+object ExecutionEngine {
   //scalastyle:off method.length
   /**
     * Construct a Firrtl Execution engine
@@ -369,7 +369,7 @@ object FirrtlTerp {
     * @param optionsManager  options that control configuration and behavior
     * @return                the constructed engine
     */
-  def apply(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): FirrtlTerp = {
+  def apply(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): ExecutionEngine = {
     val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
 
     val ast = firrtl.Parser.parse(input.split("\n").toIterator)
@@ -424,6 +424,6 @@ object FirrtlTerp {
       println(s"\n${scheduler.render}")
     }
 
-    new FirrtlTerp(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
+    new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
   }
 }

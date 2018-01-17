@@ -52,7 +52,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
 
-    new InterpretiveTester(input, optionsManager) {
+    new TreadleTester(input, optionsManager) {
       // setVerbose()
       step(1)
 
@@ -192,7 +192,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
       step(1)
       expect("io_is_alive", 0)
 
-//      interpreter.circuitState.vcdLoggerOption.get.write(optionsManager.targetDirName + "/" + "life.vcd")
+//      engine.circuitState.vcdLoggerOption.get.write(optionsManager.targetDirName + "/" + "life.vcd")
       report()
     }
   }

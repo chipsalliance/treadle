@@ -24,7 +24,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new InterpreterOptionsManager {
       interpreterOptions = InterpreterOptions(setVerbose = true)
     }
-    val interpreter = FirrtlTerp(input, optionsManager)
+    val interpreter = ExecutionEngine(input, optionsManager)
 
     interpreter.setValue("reset1", 1)
     interpreter.cycle()
@@ -66,9 +66,9 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val interpreter = ExecutionEngine(input)
 
-    // interpreter.setVerbose(true)
+    // engine.setVerbose(true)
     interpreter.setValue("reset1", 1)
     interpreter.setValue("reset2", 0)
     interpreter.doCycles(1)
@@ -137,7 +137,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new InterpreterOptionsManager {
       interpreterOptions = InterpreterOptions(setVerbose = true)
     }
-    val interpreter = FirrtlTerp(input, optionsManager)
+    val interpreter = ExecutionEngine(input, optionsManager)
 
     interpreter.setValue("reset1", 1)
     interpreter.cycle()
@@ -194,7 +194,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = new InterpretiveTester(input)
+    val tester = new TreadleTester(input)
 
     tester.poke("in", 7)
     tester.step()

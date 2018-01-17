@@ -14,31 +14,31 @@ import treadle.executable.ExpressionViewRenderer
   * so that io.a.b must be referenced as io_a_b
   *
   * @param input              a firrtl program contained in a string
-  * @param optionsManager     collection of options for the interpreter
+  * @param optionsManager     collection of options for the engine
   */
-class InterpretiveTester(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager) {
+class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager) {
   var expectationsMet = 0
 
   treadle.random.setSeed(optionsManager.interpreterOptions.randomSeed)
 
-  val interpreter: FirrtlTerp                = FirrtlTerp(input, optionsManager)
+  val engine: ExecutionEngine                = ExecutionEngine(input, optionsManager)
   val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
 
-  interpreter.setVerbose(interpreterOptions.setVerbose)
+  engine.setVerbose(interpreterOptions.setVerbose)
 
   setVerbose(interpreterOptions.setVerbose)
 
   if(interpreterOptions.writeVCD) {
-    optionsManager.setTopNameIfNotSet(interpreter.ast.main)
+    optionsManager.setTopNameIfNotSet(engine.ast.main)
     optionsManager.makeTargetDir()
-    interpreter.makeVCDLogger(
+    engine.makeVCDLogger(
       interpreterOptions.vcdOutputFileName(optionsManager),
       interpreterOptions.vcdShowUnderscored
     )
   }
 
   def setVerbose(value: Boolean = true): Unit = {
-    interpreter.setVerbose(value)
+    engine.setVerbose(value)
   }
 
   val startTime: Long = System.nanoTime()
@@ -81,15 +81,15 @@ class InterpretiveTester(input: String, optionsManager: HasInterpreterSuite = ne
     * @param value a value to put on that port
     */
   def poke(name: String, value: BigInt): Unit = {
-    if(interpreter.checkStopped(s"poke($name, $value)")) return
+    if(engine.checkStopped(s"poke($name, $value)")) return
 
     try {
-      val isRegister = interpreter.symbolTable.isRegister(name)
-//      interpreter.circuitState.vcdLowerClock()
-      interpreter.setValue(name, value, registerPoke = isRegister)
+      val isRegister = engine.symbolTable.isRegister(name)
+//      engine.circuitState.vcdLowerClock()
+      engine.setValue(name, value, registerPoke = isRegister)
     }
     catch {
-      case ie: InterpreterException =>
+      case ie: TreadleException =>
         fail(ie, Some(s"Error: poke($name, $value)"))
     }
   }
@@ -100,9 +100,9 @@ class InterpretiveTester(input: String, optionsManager: HasInterpreterSuite = ne
     * @return A BigInt value currently set at name
     */
   def peek(name: String): BigInt = {
-    if(interpreter.checkStopped(s"peek($name)")) return 0
+    if(engine.checkStopped(s"peek($name)")) return 0
 
-    interpreter.getValue(name)
+    engine.getValue(name)
   }
 
   /**
@@ -112,13 +112,13 @@ class InterpretiveTester(input: String, optionsManager: HasInterpreterSuite = ne
     * @param expectedValue the BigInt value required
     */
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
-    interpreter.scheduler.executeInputSensitivities()
-    val value = interpreter.getValue(name)
+    engine.scheduler.executeInputSensitivities()
+    val value = engine.getValue(name)
     if(value != expectedValue) {
       val renderer = new ExpressionViewRenderer(
-        interpreter.dataStore, interpreter.symbolTable, interpreter.expressionViews)
-      val calculation = renderer.render(interpreter.symbolTable(name))
-      fail(new InterpreterException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+        engine.dataStore, engine.symbolTable, engine.expressionViews)
+      val calculation = renderer.render(engine.symbolTable(name))
+      fail(new TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
     }
     expectationsMet += 1
   }
@@ -132,11 +132,11 @@ class InterpretiveTester(input: String, optionsManager: HasInterpreterSuite = ne
     * @param n cycles to perform
     */
   def step(n: Int = 1): Unit = {
-    if(interpreter.checkStopped(s"step($n)")) return
+    if(engine.checkStopped(s"step($n)")) return
 
     for(_ <- 0 until n) {
       cycleCount += 1
-      interpreter.cycle()
+      engine.cycle()
     }
   }
 
@@ -148,22 +148,22 @@ class InterpretiveTester(input: String, optionsManager: HasInterpreterSuite = ne
     * @param value a value to put on that port
     */
   def pokeMemory(name: String, index: Int, value: BigInt): Unit = {
-    if (interpreter.checkStopped(s"pokeMemory($name, $value)")) return
+    if (engine.checkStopped(s"pokeMemory($name, $value)")) return
 
-    interpreter.symbolTable.get(name) match {
+    engine.symbolTable.get(name) match {
       case Some(memory) =>
-        interpreter.setValue(name, value = value, offset = index)
+        engine.setValue(name, value = value, offset = index)
       case _ =>
-        throw InterpreterException(s"Error: memory $name.forceWrite($index, $value). memory not found")
+        throw TreadleException(s"Error: memory $name.forceWrite($index, $value). memory not found")
     }
   }
 
   def peekMemory(name: String, index: Int): BigInt = {
-    interpreter.symbolTable.get(name) match {
+    engine.symbolTable.get(name) match {
       case Some(memory) =>
-        interpreter.getValue(name, offset = index)
+        engine.getValue(name, offset = index)
       case _ =>
-        throw InterpreterException(s"Error: get memory $name.forceWrite($index). memory not found")
+        throw TreadleException(s"Error: get memory $name.forceWrite($index). memory not found")
     }
   }
 
@@ -172,13 +172,13 @@ class InterpretiveTester(input: String, optionsManager: HasInterpreterSuite = ne
     val endTime = System.nanoTime()
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
     /*
-        This should not every show the Failed message because currently the interpreter
-        throws an InterpreterException on Stop (but maybe that will be made optional at some point)
+        This should not every show the Failed message because currently the engine
+        throws an TreadleException on Stop (but maybe that will be made optional at some point)
         Best to leave this here for now, someone might catch the exception manually and still want to
         see this report which should include the Failed in that case
       */
     def status: String = {
-      interpreter.lastStopResult match {
+      engine.lastStopResult match {
         case Some(stopResult) =>
           s"Failed: Stop result $stopResult:"
         case _ =>
@@ -189,16 +189,16 @@ class InterpretiveTester(input: String, optionsManager: HasInterpreterSuite = ne
           }
       }
     }
-    s"test ${interpreter.ast.main} " +
+    s"test ${engine.ast.main} " +
       s"$status $expectationsMet tests passed " +
-//      s"in ${interpreter.circuitState.stateCounter} cycles " +
+//      s"in ${engine.circuitState.stateCounter} cycles " +
       f"in $cycleCount cycles in $elapsedSeconds%.6f seconds"
   }
   /**
     * A simplistic report of the number of expects that passed and
     */
   def report(): Unit = {
-    interpreter.writeVCD()
+    engine.writeVCD()
     println(reportString)
   }
 

@@ -2,7 +2,7 @@
 
 package treadle.vcd
 
-import treadle.{InterpreterOptionsManager, InterpretiveTester}
+import treadle.{InterpreterOptionsManager, TreadleTester}
 import firrtl.CommonOptions
 import firrtl.util.BackendCompilationUtilities
 import java.io.File
@@ -103,7 +103,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       interpreterOptions = interpreterOptions.copy(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
-    val interpreter = new InterpretiveTester(input, manager)
+    val interpreter = new TreadleTester(input, manager)
     interpreter.poke("a", -1)
     interpreter.peek("a") should be (BigInt(-1))
     interpreter.poke("b", -7)
@@ -134,7 +134,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
 
-    val interpreter = new InterpretiveTester(input, manager)
+    val interpreter = new TreadleTester(input, manager)
     interpreter.step()
     interpreter.poke("io_a", 3)
     interpreter.poke("io_b", 5)
@@ -144,20 +144,20 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     interpreter.step()
     interpreter.peek("io_c") should be (BigInt(8))
 
-    //    interpreter.poke("io_a", -1)
-//    interpreter.poke("io_b", -7)
-//    interpreter.peek("io_a") should be (BigInt(-1))
-//    interpreter.peek("io_b") should be (BigInt(-7))
+    //    engine.poke("io_a", -1)
+//    engine.poke("io_b", -7)
+//    engine.peek("io_a") should be (BigInt(-1))
+//    engine.peek("io_b") should be (BigInt(-7))
 //
-//    interpreter.step()
-//    interpreter.peek("io_c") should be (BigInt(-8))
+//    engine.step()
+//    engine.peek("io_c") should be (BigInt(-8))
 
     interpreter.report()
   }
 
   behavior of "example from edysusanto"
 
-  //TODO: Fix problem where VCD only saved if verbose mode set before interpreter instantiated
+  //TODO: Fix problem where VCD only saved if verbose mode set before engine instantiated
   it should "align register updates with clock cycles" ignore {
     val input =
       """
@@ -185,7 +185,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       commonOptions = CommonOptions(targetDirName = "test_run_dir/vcd_register_delay")
     }
     {
-      val interpreter = new InterpretiveTester(input, manager)
+      val interpreter = new TreadleTester(input, manager)
       interpreter.setVerbose()
       interpreter.poke("reset", 0)
 

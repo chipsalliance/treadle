@@ -76,7 +76,7 @@ class CarryOrChain6 extends FreeSpec with Matchers {
       bin.toList.map( "01".indexOf(_)).map( BigInt(_)).reverse.toArray
     }
 
-    val tester = new InterpretiveTester(input)
+    val tester = new TreadleTester(input)
 
     val lst = List( (v("000001"),v("111111")))
     for ( (a,co) <- lst) {

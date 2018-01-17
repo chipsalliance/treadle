@@ -1,1 +1,1 @@
-sbt -mem 4000 "run-main treadle.FirrtlRepl $*"
+sbt -mem 4000 "run-main treadle.TreadleRepl $*"

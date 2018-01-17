@@ -16,7 +16,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val interpreter = ExecutionEngine(input)
 
     for (cycle_number <- 0 to 10) {
       interpreter.doCycles(2)
@@ -34,7 +34,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val interpreter = ExecutionEngine(input)
 
     intercept[StopException] {
       interpreter.doCycles(2)
@@ -53,7 +53,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val interpreter = ExecutionEngine(input)
 
     intercept[StopException] {
       interpreter.doCycles(2)
@@ -75,7 +75,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val interpreter = ExecutionEngine(input)
 
     interpreter.doCycles(2)
 
@@ -91,7 +91,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val interpreter = ExecutionEngine(input)
 
     interpreter.doCycles(2)
 
@@ -110,7 +110,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
         """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val interpreter = ExecutionEngine(input)
 
     interpreter.doCycles(2)
 

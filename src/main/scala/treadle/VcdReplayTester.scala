@@ -41,9 +41,9 @@
 //  val interpreterOptions = optionsManager.interpreterOptions
 //
 //  val tester = new InterpretiveTester(getInput(vcdTesterOptions.firrtlSourceName), optionsManager)
-//  val interpreter = tester.interpreter
+//  val engine = tester.engine
 //
-//  val dutName = interpreter.ast.main
+//  val dutName = engine.ast.main
 //
 //  val vcd: VCD = VCD.read(vcdTesterOptions.vcdSourceName, dutName)
 //  val timeStamps = vcd.valuesAtTime.keys.toList.sorted.toArray
@@ -56,23 +56,23 @@
 //  private var testFailures = 0L
 //  private var clockCycles = 0L
 //
-//  val vcdCircuitState = interpreter.circuitState.clone
+//  val vcdCircuitState = engine.circuitState.clone
 //  val inputs = {
 //    vcd.scopeRoot.wires
 //      .filter { wire =>
-//        interpreter.circuitState.isInput(wire.name)
+//        engine.circuitState.isInput(wire.name)
 //      }
 //      .map(_.name).toSet
 //  }
 //
 //  def setValue(wire: Wire, newValue: BigInt): Unit = {
 //    val fullName = wire.fullName
-//    if (interpreter.circuitState.nameToConcreteValue.contains(fullName)) {
+//    if (engine.circuitState.nameToConcreteValue.contains(fullName)) {
 //      val isPoisoned = newValue < BigInt(0)
 //      val bigIntValue = if(isPoisoned) BigInt(1) else newValue
-//      val newConcreteValue = interpreter.makeConcreteValue(fullName, bigIntValue, poisoned = isPoisoned)
-//      val isRegister = interpreter.circuitState.registers.contains(fullName)
-//      interpreter.setValue(fullName, newConcreteValue, registerPoke = isRegister)
+//      val newConcreteValue = engine.makeConcreteValue(fullName, bigIntValue, poisoned = isPoisoned)
+//      val isRegister = engine.circuitState.registers.contains(fullName)
+//      engine.setValue(fullName, newConcreteValue, registerPoke = isRegister)
 //      println(s"$fullName <= ${newConcreteValue.showValue}")
 //      inputValuesSet += 1
 //    }
@@ -83,11 +83,11 @@
 //
 //    valuesTested += 1
 //
-//    if (interpreter.circuitState.nameToConcreteValue.contains(fullName)) {
-//      val circuitValue = interpreter.getValue(fullName)
+//    if (engine.circuitState.nameToConcreteValue.contains(fullName)) {
+//      val circuitValue = engine.getValue(fullName)
 //      val isPoisoned = newValue < BigInt(0)
 //      val bigIntValue = if(isPoisoned) BigInt(1) else newValue
-//      val vcdValue = interpreter.makeConcreteValue(fullName, bigIntValue, poisoned = isPoisoned)
+//      val vcdValue = engine.makeConcreteValue(fullName, bigIntValue, poisoned = isPoisoned)
 //
 //      val result = (circuitValue.poisoned, vcdValue.poisoned) match {
 //        case (true, true) =>
@@ -122,7 +122,7 @@
 //    vcd.valuesAtTime(timeStamps(timeIndex)).foreach { change =>
 //      vcd.wiresFor(change).foreach { wire =>
 //        val fullName = change.wire.fullName
-//        if (inputs.contains(fullName) && interpreter.circuitState.isInput(fullName)) {
+//        if (inputs.contains(fullName) && engine.circuitState.isInput(fullName)) {
 //          setValue(wire, change.value)
 //        }
 //      }
@@ -134,14 +134,14 @@
 //      if (vcdTesterOptions.testAliasedWires) {
 //        vcd.wiresFor(change).foreach { wire =>
 //          val fullName = change.wire.fullName
-//          if (!(inputs.contains(fullName) && interpreter.circuitState.isInput(fullName))) {
+//          if (!(inputs.contains(fullName) && engine.circuitState.isInput(fullName))) {
 //            checkValue(wire, change.value)
 //          }
 //        }
 //      }
 //      else {
 //        val fullName = change.wire.fullName
-//        if (!(inputs.contains(fullName) && interpreter.circuitState.isInput(fullName))) {
+//        if (!(inputs.contains(fullName) && engine.circuitState.isInput(fullName))) {
 //          checkValue(change.wire, change.value)
 //        }
 //      }
@@ -153,7 +153,7 @@
 //      vcd.wiresFor(change).exists { wire =>
 //        val fullName = change.wire.fullName
 //        if(fullName == "clock" && change.value > BigInt(0)) {
-//          interpreter.cycle()
+//          engine.cycle()
 //          clockCycles += 1
 //        }
 //        true
@@ -177,7 +177,7 @@
 //      checkClock(timeIndex)
 //      setInputs(timeIndex)
 //      testWires(timeIndex)
-//      if(runVerbose) println(interpreter.circuitState.prettyString())
+//      if(runVerbose) println(engine.circuitState.prettyString())
 //    }
 //    val endTime = System.currentTimeMillis()
 //

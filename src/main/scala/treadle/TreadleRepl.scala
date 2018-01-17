@@ -25,7 +25,7 @@ abstract class Command(val name: String) {
   }
 }
 
-class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfig) {
+class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConfig) {
   val replConfig: ReplConfig = optionsManager.replConfig
   val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
 
@@ -44,9 +44,9 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
   history.load(historyFile)
   console.setHistory(history)
 
-  var currentInterpreterOpt: Option[FirrtlTerp] = None
+  var currentInterpreterOpt: Option[ExecutionEngine] = None
 
-  def interpreter: FirrtlTerp = currentInterpreterOpt.get
+  def interpreter: ExecutionEngine = currentInterpreterOpt.get
   var args = Array.empty[String]
   var done = false
 
@@ -61,7 +61,7 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
   var replVcdController: Option[ReplVcdController] = None
 
   def loadSource(input: String): Unit = {
-    currentInterpreterOpt = Some(FirrtlTerp(input, optionsManager))
+    currentInterpreterOpt = Some(ExecutionEngine(input, optionsManager))
     currentInterpreterOpt.foreach { _ =>
       interpreter.setVerbose(interpreterOptions.setVerbose)
     }
@@ -545,12 +545,12 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
                 console.println(s"Error randomize: setting ${symbol.name}, error ${e.getMessage}")
             }
           }
-//          for((component, value) <- interpreter.getRegisterNames) {
+//          for((component, value) <- engine.getRegisterNames) {
 //            try {
 //              val newValue = TypeInstanceFactory.makeRandomSimilar(value, poisoned = false)
-//              interpreter.circuitState.registers(component) = newValue
+//              engine.circuitState.registers(component) = newValue
 //              val newNextValue = TypeInstanceFactory.makeRandomSimilar(value, poisoned = false)
-//              interpreter.circuitState.nextRegisters(component) = newNextValue
+//              engine.circuitState.nextRegisters(component) = newNextValue
 //              console.println(s"setting $component to $newValue")
 //            }
 //            catch {
@@ -558,7 +558,7 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
 //                console.println(s"Error randomize: setting $component to $value error ${e.getMessage}")
 //            }
 //          }
-//          for(memory <- interpreter.circuitState.memories.values) {
+//          for(memory <- engine.circuitState.memories.values) {
 //            for(memoryIndex <- 0 until memory.dataStore.length) {
 //              memory.dataStore.update(
 //                memoryIndex,
@@ -573,18 +573,18 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
 //          "poison everything)")
 //        def run(args: Array[String]): Unit = {
 //          for{
-//            (component, value) <- interpreter.circuitState.inputPorts ++
-//              interpreter.circuitState.outputPorts ++
-//              interpreter.circuitState.ephemera
+//            (component, value) <- engine.circuitState.inputPorts ++
+//              engine.circuitState.outputPorts ++
+//              engine.circuitState.ephemera
 //          } {
-//            interpreter.setValue(component, TypeInstanceFactory.makeRandomSimilar(value, poisoned = true))
+//            engine.setValue(component, TypeInstanceFactory.makeRandomSimilar(value, poisoned = true))
 //          }
-//          for((component, value) <- interpreter.circuitState.registers) {
+//          for((component, value) <- engine.circuitState.registers) {
 //            try {
 //              val newValue = TypeInstanceFactory.makeRandomSimilar(value, poisoned = true)
-//              interpreter.circuitState.registers(component) = newValue
+//              engine.circuitState.registers(component) = newValue
 //              val newNextValue = TypeInstanceFactory.makeRandomSimilar(value, poisoned = true)
-//              interpreter.circuitState.nextRegisters(component) = newNextValue
+//              engine.circuitState.nextRegisters(component) = newNextValue
 //              console.println(s"setting $component to $newValue")
 //            }
 //            catch {
@@ -592,12 +592,12 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
 //                console.println(s"Error poison: setting $component to $value error ${e.getMessage}")
 //            }
 //          }
-//          for(memory <- interpreter.circuitState.memories.values) {
+//          for(memory <- engine.circuitState.memories.values) {
 //            for(memoryIndex <- 0 until memory.dataStore.length) {
 //              memory.dataStore.update(memoryIndex, TypeInstanceFactory(memory.dataType))
 //            }
 //          }
-//          console.println(interpreter.circuitState.prettyString())
+//          console.println(engine.circuitState.prettyString())
 //        }
 //      },
       new Command("reset") {
@@ -626,7 +626,7 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
                   interpreter.evaluateCircuit()
                 }
                 interpreter.setValue("reset", 0)
-                // console.println(interpreter.circuitState.prettyString())
+                // console.println(engine.circuitState.prettyString())
               }
               catch {
                 case e: Exception =>
@@ -652,7 +652,7 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
                   }
                 }
                 if(! scriptRunning) {
-                  // console.println(interpreter.circuitState.prettyString())
+                  // console.println(engine.circuitState.prettyString())
                   console.println(s"step $numberOfSteps in ${interpreter.timer.prettyLastTime("steps")}")
                 }
               }
@@ -771,13 +771,13 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
 //        // scalastyle:off cyclomatic.complexity
 //        def run(args: Array[String]): Unit = {
 //          getOneArg("", Some("")) match {
-//            case Some("clear") => interpreter.timer.clear()
+//            case Some("clear") => engine.timer.clear()
 //            case Some("bin") =>
-//              val names = interpreter.dependencyGraph.validNames -- interpreter.dependencyGraph.inputPorts
+//              val names = engine.dependencyGraph.validNames -- engine.dependencyGraph.inputPorts
 //
 //              val countPerName = new scala.collection.mutable.HashMap[Long, Long]
 //              names.foreach { name =>
-//                interpreter.timer.timingLog.get(name).foreach { t =>
+//                engine.timer.timingLog.get(name).foreach { t =>
 //                  if(! countPerName.contains(t.events)) {
 //                    countPerName(t.events) = 1
 //                  }
@@ -790,10 +790,10 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
 //                console.println(f"$count ${countPerName(count)}")
 //              }
 //            case _ =>
-//              val names = interpreter.dependencyGraph.validNames -- interpreter.dependencyGraph.inputPorts
+//              val names = engine.dependencyGraph.validNames -- engine.dependencyGraph.inputPorts
 //
 //              val sortedNames = names.toSeq.sortWith { case (a, b) =>
-//                (interpreter.timer.timingLog.get(a), interpreter.timer.timingLog.get(b)) match {
+//                (engine.timer.timingLog.get(a), engine.timer.timingLog.get(b)) match {
 //                  case (Some(t1), Some(t2)) =>
 //                    if(t1.events == t2.events) {
 //                      a < b
@@ -807,9 +807,9 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
 //                }
 //              }
 //              for (name <- sortedNames) {
-//                console.println(f"$name%-20s ${interpreter.timer.prettyEntryForTag(name)}")
+//                console.println(f"$name%-20s ${engine.timer.prettyEntryForTag(name)}")
 //              }
-//              console.println(f"${"Total"}%-20s ${interpreter.timer.prettyEntry(interpreter.timer.totalEvent)}")
+//              console.println(f"${"Total"}%-20s ${engine.timer.prettyEntry(engine.timer.totalEvent)}")
 //          }
 //        }
 //      },
@@ -902,12 +902,12 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
 //        def run(args: Array[String]): Unit = {
 //          getOneArg("allow-cycles must be followed by true false or toggle", Some("toggle")) match {
 //            case Some("toggle") =>
-//              interpreter.evaluator.allowCombinationalLoops = ! interpreter.evaluator.allowCombinationalLoops
-//            case Some("true")   => interpreter.evaluator.allowCombinationalLoops = true
-//            case Some("false")  => interpreter.evaluator.allowCombinationalLoops = false
+//              engine.evaluator.allowCombinationalLoops = ! engine.evaluator.allowCombinationalLoops
+//            case Some("true")   => engine.evaluator.allowCombinationalLoops = true
+//            case Some("false")  => engine.evaluator.allowCombinationalLoops = false
 //            case _ =>
 //          }
-//          console.println(s"evaluator allow combinational loops is now ${interpreter.evaluator.evaluateAll}")
+//          console.println(s"evaluator allow combinational loops is now ${engine.evaluator.evaluateAll}")
 //        }
 //      },
       new Command("help") {
@@ -923,7 +923,7 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
         }
       },
       new Command("quit") {
-        def usage: (String, String) = ("quit", "exit the interpreter")
+        def usage: (String, String) = ("quit", "exit the engine")
         def run(args: Array[String]): Unit = {
           if(! history.isEmpty) {
             history.removeLast()
@@ -1030,7 +1030,7 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
         }
       }
       catch {
-        case ie: InterpreterException =>
+        case ie: TreadleException =>
           console.println(s"Interpreter Exception occurred: ${ie.getMessage}")
           ie.printStackTrace()
         case e: NullPointerException =>
@@ -1060,9 +1060,9 @@ class FirrtlRepl(val optionsManager: InterpreterOptionsManager with HasReplConfi
   }
 }
 
-object FirrtlRepl {
+object TreadleRepl {
   def execute(optionsManager: InterpreterOptionsManager with HasReplConfig): Unit = {
-    val repl = new FirrtlRepl(optionsManager)
+    val repl = new TreadleRepl(optionsManager)
     repl.run()
   }
 
@@ -1071,7 +1071,7 @@ object FirrtlRepl {
 
     if(optionsManager.parse(args)) {
       Logger.makeScope(optionsManager) {
-        val repl = new FirrtlRepl(optionsManager)
+        val repl = new TreadleRepl(optionsManager)
         repl.run()
       }
     }

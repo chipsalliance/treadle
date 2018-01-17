@@ -6,7 +6,7 @@ import java.io.File
 
 import scala.tools.jline.console.ConsoleReader
 
-case class ScriptFactory(parent: FirrtlRepl) {
+case class ScriptFactory(parent: TreadleRepl) {
   val console: ConsoleReader = parent.console
   var lastFileOption: Option[String] = None
 

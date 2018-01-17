@@ -8,7 +8,7 @@ import treadle.vcd.{Change, VCD, Wire}
 import scala.tools.jline.console.ConsoleReader
 import scala.util.matching.Regex
 
-class ReplVcdController(val repl: FirrtlRepl, val interpreter: FirrtlTerp, val vcd: VCD) {
+class ReplVcdController(val repl: TreadleRepl, val interpreter: ExecutionEngine, val vcd: VCD) {
   val console: ConsoleReader = repl.console
 
   // The following three elements track state of running the vcd file

@@ -36,7 +36,7 @@ trait HasInterpreterOptions {
 
   var interpreterOptions = InterpreterOptions()
 
-  parser.note("firrtl-interpreter-options")
+  parser.note("firrtl-engine-options")
 
   parser.opt[Unit]("fint-write-vcd")
     .abbr("fiwv")
@@ -57,7 +57,7 @@ trait HasInterpreterOptions {
     .foreach {_ =>
       interpreterOptions = interpreterOptions.copy(setVerbose = true)
     }
-    .text("makes interpreter very verbose")
+    .text("makes engine very verbose")
 
   parser.opt[Unit]("fint-ordered-exec")
     .abbr("fioe")
@@ -114,12 +114,12 @@ trait HasInterpreterOptions {
 
 object Driver {
 
-  def execute(firrtlInput: String, optionsManager: InterpreterOptionsManager): Option[InterpretiveTester] = {
-    val tester = new InterpretiveTester(firrtlInput, optionsManager)
+  def execute(firrtlInput: String, optionsManager: InterpreterOptionsManager): Option[TreadleTester] = {
+    val tester = new TreadleTester(firrtlInput, optionsManager)
     Some(tester)
   }
 
-  def execute(args: Array[String], firrtlInput: String): Option[InterpretiveTester] = {
+  def execute(args: Array[String], firrtlInput: String): Option[TreadleTester] = {
     val optionsManager = new InterpreterOptionsManager
 
     if (optionsManager.parser.parse(args)) {
@@ -130,7 +130,7 @@ object Driver {
   }
 }
 
-class InterpreterOptionsManager extends ExecutionOptionsManager("interpreter") with HasInterpreterSuite
+class InterpreterOptionsManager extends ExecutionOptionsManager("engine") with HasInterpreterSuite
 
 trait HasInterpreterSuite extends ExecutionOptionsManager with HasFirrtlOptions with HasInterpreterOptions {
   self : ExecutionOptionsManager =>

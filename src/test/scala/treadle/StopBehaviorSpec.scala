@@ -45,12 +45,12 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
       |
     """.stripMargin
 
-  "Stop should abort interpreter immediately" in {
-    val tester = new InterpretiveTester(input)
+  "Stop should abort engine immediately" in {
+    val tester = new TreadleTester(input)
 
     tester.poke("reset", 0)
     tester.poke("io_wrData", (0 << 24) + (255 << 16))
-    println(s"reset value is ${tester.interpreter.getValue("reset")}")
+    println(s"reset value is ${tester.engine.getValue("reset")}")
 
     intercept[StopException] {
       tester.step()

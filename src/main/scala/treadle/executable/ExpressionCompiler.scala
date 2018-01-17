@@ -20,7 +20,7 @@ class ExpressionCompiler(
   def getWidth(tpe: firrtl.ir.Type): Int = {
     tpe match {
       case GroundType(IntWidth(width)) => width.toInt
-      case _ => throw new InterpreterException(s"Unresolved width found in firrtl.ir.Type $tpe")
+      case _ => throw new TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
     }
   }
 
@@ -28,7 +28,7 @@ class ExpressionCompiler(
     expression.tpe match {
       case GroundType(IntWidth(width)) => width.toInt
       case _ =>
-        throw new InterpreterException(
+        throw new TreadleException(
           s"Unresolved width found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -39,7 +39,7 @@ class ExpressionCompiler(
       case  _: SIntType    => true
       case  ClockType      => false
       case _ =>
-        throw new InterpreterException(
+        throw new TreadleException(
           s"Unsupported type found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -91,7 +91,7 @@ class ExpressionCompiler(
           case _: BigExpressionResult  => "Big"
         }
 
-        throw InterpreterException(
+        throw TreadleException(
           s"Error:assignment size mismatch ($size)${symbol.name} <= ($expressionSize)$expressionResult")
     }
     symbolTable.addAssigner(symbol, assigner)
@@ -144,7 +144,7 @@ class ExpressionCompiler(
           case _: BigExpressionResult => "Big"
         }
 
-        throw InterpreterException(
+        throw TreadleException(
           s"Error:assignment size mismatch ($size)${memorySymbol.name} <= ($expressionSize)$expressionResult")
     }
     symbolTable.addAssigner(portSymbol, assigner)
@@ -190,7 +190,7 @@ class ExpressionCompiler(
               CatInts(e1.apply, arg1Width, e2.apply, arg2Width)
 
             case _ =>
-              throw InterpreterException(s"Error:BinaryOp:$opCode)(${args.head}, ${args.tail.head})")
+              throw TreadleException(s"Error:BinaryOp:$opCode)(${args.head}, ${args.tail.head})")
           }
         }
 
@@ -220,7 +220,7 @@ class ExpressionCompiler(
               CatLongs(e1.apply, arg1Width, e2.apply, arg2Width)
 
             case _ =>
-              throw InterpreterException(s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head})")
+              throw TreadleException(s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head})")
           }
         }
 
@@ -250,7 +250,7 @@ class ExpressionCompiler(
               CatBigs(e1.apply, arg1Width, e2.apply, arg2Width)
 
             case _ =>
-              throw InterpreterException(s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head})")
+              throw TreadleException(s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head})")
           }
         }
 
@@ -285,7 +285,7 @@ class ExpressionCompiler(
             handleBigResult(e1, e2)
 
           case _ =>
-            throw InterpreterException(
+            throw TreadleException(
               s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head}) ($arg1, $arg2)")
         }
       }
@@ -448,7 +448,7 @@ class ExpressionCompiler(
                 MuxBigs(c.apply, t.apply, f.apply)
             }
           case c =>
-            throw InterpreterException(s"Mux condition is not 1 bit $condition parsed as $c")
+            throw TreadleException(s"Mux condition is not 1 bit $condition parsed as $c")
         }
       }
 
@@ -494,10 +494,10 @@ class ExpressionCompiler(
                     case t: BigExpressionResult =>
                       MuxBigs(c.apply, t.apply, UndefinedBigs(getWidth(tpe)).apply)
                     case _ =>
-                      throw InterpreterException(s"Mux condition is not 1 bit $condition parsed as $c")
+                      throw TreadleException(s"Mux condition is not 1 bit $condition parsed as $c")
                   }
                 case c =>
-                  throw InterpreterException(s"Mux condition is not 1 bit $condition parsed as $c")
+                  throw TreadleException(s"Mux condition is not 1 bit $condition parsed as $c")
               }
             }
             else {
@@ -565,7 +565,7 @@ class ExpressionCompiler(
               case BigSize  => GetBigConstant(value.toInt)
             }
           case _ =>
-            throw new InterpreterException(s"bad expression $expression")
+            throw new TreadleException(s"bad expression $expression")
         }
         result
       }
@@ -682,7 +682,7 @@ class ExpressionCompiler(
                 case rv: BigExpressionResult  => triggeredAssign(resetTrigger, registerOut, rv)
               }
             case _ =>
-              throw InterpreterException(s"bad register $statement")
+              throw TreadleException(s"bad register $statement")
           }
 
         case defMemory: DefMemory =>
@@ -708,7 +708,7 @@ class ExpressionCompiler(
         case EmptyStmt =>
         case conditionally: Conditionally =>
           // logger.debug(s"got a conditionally $conditionally")
-          throw new InterpreterException(s"conditionally unsupported in interpreter $conditionally")
+          throw new TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
           println(s"TODO: Unhandled statement $statement")
       }
@@ -729,9 +729,9 @@ class ExpressionCompiler(
     val module = FindModule(circuit.main, circuit) match {
       case regularModule: firrtl.ir.Module => regularModule
       case externalModule: firrtl.ir.ExtModule =>
-        throw InterpreterException(s"Top level module must be a regular module $externalModule")
+        throw TreadleException(s"Top level module must be a regular module $externalModule")
       case x =>
-        throw InterpreterException(s"Top level module is not the right kind of module $x")
+        throw TreadleException(s"Top level module is not the right kind of module $x")
     }
 
     processModule("", module, circuit)

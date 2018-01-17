@@ -16,7 +16,7 @@ class FailSpec extends FlatSpec with Matchers {
         |    output c : Fixed
         |    c <= mul(a, b)""".stripMargin
 
-    val tester = new InterpretiveTester(input)
+    val tester = new TreadleTester(input)
 
     tester.fail(3)
     tester.report()

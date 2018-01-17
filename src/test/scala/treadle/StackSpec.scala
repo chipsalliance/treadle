@@ -80,7 +80,7 @@ class StackSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = new InterpretiveTester(input)
+    val tester = new TreadleTester(input)
     tester.poke("reset", 1)
     tester.step()
 
