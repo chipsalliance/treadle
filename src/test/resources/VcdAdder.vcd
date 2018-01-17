@@ -1,0 +1,51 @@
+$date
+2016-12-13T06:54+0000
+$end
+$version
+0.2
+$end
+$comment
+
+$end
+$timescale 1ps  $end
+$scope module VcdAdder $end
+ $var wire 10 ! io_c $end
+ $var wire 8 # io_b $end
+ $var wire 1 % clock $end
+ $var wire 8 ' io_a $end
+  $scope module do_add $end
+   $var wire 8 " a $end
+   $var wire 9 $ c $end
+   $var wire 9 & accum $end
+   $var wire 8 ( b $end
+  $upscope $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+0%
+bxxxxxxxxx &
+bxxxxxxxx (
+bxxxxxxxxxx !
+bxxxxxxxx "
+bxxxxxxxxx $
+bxxxxxxxx #
+bxxxxxxxx '
+$end
+#1
+1%
+bxxxxxxxxx &
+#2
+b00000101 (
+b00000011 "
+b00000101 #
+bxxxxxxxxxx !
+bxxxxxxxxx $
+b00000011 '
+0%
+#3
+b000001000 &
+1%
+#4
+b000001000 $
+b0000001000 !
+0%

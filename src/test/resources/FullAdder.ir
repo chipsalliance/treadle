@@ -1,0 +1,16 @@
+circuit FullAdder :
+  module FullAdder :
+    input clk : Clock
+    input reset : UInt<1>
+    output io : {flip a : UInt<1>, flip b : UInt<1>, flip cin : UInt<1>, sum : UInt<1>, cout : UInt<1>}
+
+    io is invalid
+    node a_xor_b = xor(io.a, io.b) @[FullAdder.scala 16:22]
+    node T_5 = xor(a_xor_b, io.cin) @[FullAdder.scala 17:21]
+    io.sum <= T_5 @[FullAdder.scala 17:10]
+    node a_and_b = and(io.a, io.b) @[FullAdder.scala 19:22]
+    node b_and_cin = and(io.b, io.cin) @[FullAdder.scala 20:24]
+    node a_and_cin = and(io.a, io.cin) @[FullAdder.scala 21:24]
+    node T_6 = or(a_and_b, b_and_cin) @[FullAdder.scala 22:22]
+    node T_7 = or(T_6, a_and_cin) @[FullAdder.scala 22:34]
+    io.cout <= T_7 @[FullAdder.scala 22:11]

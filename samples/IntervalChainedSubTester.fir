@@ -1,0 +1,62 @@
+;buildInfoPackage: chisel3, version: 3.1-SNAPSHOT, scalaVersion: 2.11.7, sbtVersion: 0.13.12, builtAtString: 2017-07-28 20:29:43.516, builtAtMillis: 1501273783516
+circuit IntervalChainedSubTester : 
+  module IntervalChainedSubTester : 
+    input clock : Clock
+    input reset : UInt<1>
+    output io : {}
+    
+    clock is invalid
+    reset is invalid
+    io is invalid
+    wire intervalResult : Interval.0 @[IntervalSpec.scala 134:28]
+    intervalResult is invalid @[IntervalSpec.scala 134:28]
+    wire uintResult : UInt @[IntervalSpec.scala 135:24]
+    uintResult is invalid @[IntervalSpec.scala 135:24]
+    node _T_6 = sub(asInterval(asSInt(UInt<6>("h011")), 17, 17), asInterval(asSInt(UInt<3>("h02")), 2, 2)) @[IntervalSpec.scala 137:26]
+    node _T_8 = sub(_T_6, asInterval(asSInt(UInt<3>("h02")), 2, 2)) @[IntervalSpec.scala 137:32]
+    node _T_10 = sub(_T_8, asInterval(asSInt(UInt<3>("h02")), 2, 2)) @[IntervalSpec.scala 137:38]
+    node _T_12 = sub(_T_10, asInterval(asSInt(UInt<3>("h02")), 2, 2)) @[IntervalSpec.scala 137:44]
+    node _T_14 = sub(_T_12, asInterval(asSInt(UInt<3>("h02")), 2, 2)) @[IntervalSpec.scala 137:50]
+    node _T_16 = sub(_T_14, asInterval(asSInt(UInt<3>("h02")), 2, 2)) @[IntervalSpec.scala 137:56]
+    intervalResult <= _T_16 @[IntervalSpec.scala 137:18]
+    node _T_19 = sub(UInt<5>("h011"), UInt<2>("h02")) @[IntervalSpec.scala 138:22]
+    node _T_20 = asUInt(_T_19) @[IntervalSpec.scala 138:22]
+    node _T_22 = sub(_T_20, UInt<2>("h02")) @[IntervalSpec.scala 138:29]
+    node _T_23 = asUInt(_T_22) @[IntervalSpec.scala 138:29]
+    node _T_25 = sub(_T_23, UInt<2>("h02")) @[IntervalSpec.scala 138:36]
+    node _T_26 = asUInt(_T_25) @[IntervalSpec.scala 138:36]
+    node _T_28 = sub(_T_26, UInt<2>("h02")) @[IntervalSpec.scala 138:43]
+    node _T_29 = asUInt(_T_28) @[IntervalSpec.scala 138:43]
+    node _T_31 = sub(_T_29, UInt<2>("h02")) @[IntervalSpec.scala 138:50]
+    node _T_32 = asUInt(_T_31) @[IntervalSpec.scala 138:50]
+    node _T_34 = sub(_T_32, UInt<2>("h02")) @[IntervalSpec.scala 138:57]
+    node _T_35 = asUInt(_T_34) @[IntervalSpec.scala 138:57]
+    uintResult <= _T_35 @[IntervalSpec.scala 138:14]
+    node _T_36 = asUInt(intervalResult) @[IntervalSpec.scala 140:50]
+    node _T_38 = eq(reset, UInt<1>("h00")) @[IntervalSpec.scala 140:9]
+    when _T_38 : @[IntervalSpec.scala 140:9]
+      printf(clock, UInt<1>(1), "Interval result: %d\n", _T_36) @[IntervalSpec.scala 140:9]
+      skip @[IntervalSpec.scala 140:9]
+    node _T_40 = eq(reset, UInt<1>("h00")) @[IntervalSpec.scala 141:9]
+    when _T_40 : @[IntervalSpec.scala 141:9]
+      printf(clock, UInt<1>(1), "UInt result: %d\n", uintResult) @[IntervalSpec.scala 141:9]
+      skip @[IntervalSpec.scala 141:9]
+    node _T_42 = eq(intervalResult, asInterval(asSInt(UInt<4>("h05")), 5, 5)) @[IntervalSpec.scala 142:25]
+    node _T_43 = or(_T_42, reset) @[IntervalSpec.scala 142:9]
+    node _T_45 = eq(_T_43, UInt<1>("h00")) @[IntervalSpec.scala 142:9]
+    when _T_45 : @[IntervalSpec.scala 142:9]
+      printf(clock, UInt<1>(1), "Assertion failed\n    at IntervalSpec.scala:142 assert(intervalResult === 5.I)\n") @[IntervalSpec.scala 142:9]
+      stop(clock, UInt<1>(1), 1) @[IntervalSpec.scala 142:9]
+      skip @[IntervalSpec.scala 142:9]
+    node _T_47 = eq(uintResult, UInt<3>("h05")) @[IntervalSpec.scala 143:21]
+    node _T_48 = or(_T_47, reset) @[IntervalSpec.scala 143:9]
+    node _T_50 = eq(_T_48, UInt<1>("h00")) @[IntervalSpec.scala 143:9]
+    when _T_50 : @[IntervalSpec.scala 143:9]
+      printf(clock, UInt<1>(1), "Assertion failed\n    at IntervalSpec.scala:143 assert(uintResult === 5.U)\n") @[IntervalSpec.scala 143:9]
+      stop(clock, UInt<1>(1), 1) @[IntervalSpec.scala 143:9]
+      skip @[IntervalSpec.scala 143:9]
+    node _T_52 = eq(reset, UInt<1>("h00")) @[IntervalSpec.scala 144:7]
+    when _T_52 : @[IntervalSpec.scala 144:7]
+      stop(clock, UInt<1>(1), 0) @[IntervalSpec.scala 144:7]
+      skip @[IntervalSpec.scala 144:7]
+    
