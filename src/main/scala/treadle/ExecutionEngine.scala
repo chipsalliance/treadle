@@ -269,25 +269,29 @@ class ExecutionEngine(
   def cycle(showState: Boolean = false): Unit = {
     if(checkStopped("cycle")) return
 
-    if(inputsChanged) {
-      if(verbose) {
-        println(s"Executing assigns that depend on inputs")
-      }
-      inputsChanged = false
-      scheduler.executeInputSensitivities()
-    }
+//    if(inputsChanged) {
+//      if(verbose) {
+//        println(s"Executing assigns that depend on inputs")
+//      }
+//      inputsChanged = false
+//      scheduler.executeInputSensitivities()
+//    }
 
     clockOption.foreach { clock =>
       vcdOption.foreach(_.raiseClock())
       dataStore.AssignInt(clock, GetIntConstant(1).apply).run()
     }
     evaluateCircuit()
+    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
+
     clockOption.foreach { clock =>
       vcdOption.foreach(_.lowerClock())
       dataStore.AssignInt(clock, GetIntConstant(0).apply).run()
+      inputsChanged = true
     }
+//    evaluateCircuit()
 
-    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$dataInColumns")
+    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
   }
 
   def doCycles(n: Int): Unit = {

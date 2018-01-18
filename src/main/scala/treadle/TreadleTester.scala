@@ -143,9 +143,11 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   def step(n: Int = 1): Unit = {
     if(engine.checkStopped(s"step($n)")) return
 
+//    println(engine.getPrettyString)
+
     for(_ <- 0 until n) {
       cycleCount += 1
-      engine.cycle()
+      engine.cycle(true)
     }
   }
 

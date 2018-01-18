@@ -25,6 +25,9 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
     }
     toAssigner(symbol) = assigner
   }
+  def hasAssigner(symbol: Symbol): Boolean = {
+    toAssigner.contains(symbol)
+  }
 
   private val toBlackBoxImplementation: mutable.HashMap[Symbol, BlackBoxImplementation] = new mutable.HashMap()
   def addBlackBoxImplementation(symbol: Symbol, blackBoxImplementation: BlackBoxImplementation): Unit = {
@@ -49,6 +52,8 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
   val registerNames:    mutable.HashSet[String] = new mutable.HashSet[String]
   val inputPortsNames:  mutable.HashSet[String] = new mutable.HashSet[String]
   val outputPortsNames: mutable.HashSet[String] = new mutable.HashSet[String]
+
+  val triggerFor: mutable.HashMap[Symbol, Symbol] = new mutable.HashMap[Symbol, Symbol]
 
   def isRegister(name: String): Boolean = registerNames.contains(name)
   def isTopLevelInput(name: String): Boolean = inputPortsNames.contains(name)
@@ -142,6 +147,8 @@ object SymbolTable extends LazyLogging {
     val inputPorts    = new mutable.HashSet[String]
     val outputPorts   = new mutable.HashSet[String]
 
+    val triggerFor    = new mutable.HashMap[Symbol, Symbol]
+
     val blackBoxImplementations = new mutable.HashMap[Symbol, BlackBoxImplementation]()
 
     // scalastyle:off
@@ -228,6 +235,21 @@ object SymbolTable extends LazyLogging {
           registerNames += registerOut.name
           nameToSymbol(registerIn.name) = registerIn
           nameToSymbol(registerOut.name) = registerOut
+
+          expressionToReferences(clockExpression).headOption.foreach { clockSymbol =>
+            val registerClockPreviousName = clockSymbol.name + "/prev"
+            val registerClockPrevious = nameToSymbol.get(registerClockPreviousName) match {
+              case Some(s) =>
+                s
+              case _ =>
+                val s = Symbol(registerClockPreviousName, firrtl.ir.ClockType, WireKind, info = info)
+                nameToSymbol(registerClockPreviousName) = s
+                s
+            }
+            addDependency(registerClockPrevious, Set(clockSymbol, registerOut))
+
+            triggerFor(registerOut) = clockSymbol
+          }
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
@@ -342,6 +364,7 @@ object SymbolTable extends LazyLogging {
     symbolTable.parentsOf        = sensitivityGraphBuilder.getParentsOfDiGraph
     symbolTable.childrenOf       = sensitivityGraphBuilder.getChildrenOfDiGraph
     symbolTable.toBlackBoxImplementation ++= blackBoxImplementations
+    symbolTable.triggerFor               ++= triggerFor
 
     val sorted: Seq[Symbol] = try {
       symbolTable.childrenOf.linearize

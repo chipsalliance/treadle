@@ -131,6 +131,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       if(verboseAssign) {
         val showValue = symbol.normalize(value)
         println(s"${symbol.name} <= $showValue")
+
       }
       currentIntArray(index) = value
       vcdUpdate(symbol, value)

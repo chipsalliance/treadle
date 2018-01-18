@@ -253,7 +253,10 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = new TreadleTester(input)
+    val manager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = true, setVerbose = true)
+    }
+    val tester = new TreadleTester(input, manager)
 
     tester.poke("io_in", 77)
     tester.poke("io_en", 0)
@@ -264,6 +267,7 @@ class RegisterSpec extends FlatSpec with Matchers {
 
     tester.poke("reset", 0)
     tester.step()
+    tester.expect("reg1", 77)
     tester.peek("reg1") should be (77)
     tester.peek("reg2") should be (3)
   }
