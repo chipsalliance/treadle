@@ -26,8 +26,6 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   val engine: ExecutionEngine                = ExecutionEngine(input, optionsManager)
   val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
-  engine.setVerbose(interpreterOptions.setVerbose)
-
   setVerbose(interpreterOptions.setVerbose)
 
   if(interpreterOptions.writeVCD) {

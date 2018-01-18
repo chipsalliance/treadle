@@ -8,7 +8,7 @@ import org.scalatest.{FreeSpec, Matchers}
 
 // scalastyle:off magic.number
 class GatedClockSpec extends FreeSpec with Matchers {
-  val input =
+  private val input =
     """
       |circuit HasGatedCounter : @[:@2.0]
       |  module GatedCounter : @[:@3.2]
@@ -41,8 +41,9 @@ class GatedClockSpec extends FreeSpec with Matchers {
 
   "GatedClockSpec should pass a basic test" in {
     val tester = new TreadleTester(input)
+    tester.setVerbose()
 
-//    tester.poke("reset", 0)
+    //    tester.poke("reset", 0)
 //    tester.poke("io_enable", 1)
 //    for(_ <- 0 until 3) {
 //      println(s">>>>>>>>>>>>>counter = ${tester.peek("io_count")}")
@@ -53,6 +54,7 @@ class GatedClockSpec extends FreeSpec with Matchers {
     for(_ <- 0 until 10) {
       println(s"counter = ${tester.peek("io_count")}")
       tester.step()
+      tester.expect("io_count", 0)
     }
 
     tester.poke("io_enable", 1)

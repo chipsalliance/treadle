@@ -36,9 +36,9 @@ class ExecutionEngine(
     * @param isVerbose  The desired verbose setting
     */
   def setVerbose(isVerbose: Boolean = true): Unit = {
+    verbose = isVerbose
     setLeanMode()
     scheduler.setVerboseAssign(isVerbose)
-    verbose = isVerbose
   }
 
   val timer = new Timer
