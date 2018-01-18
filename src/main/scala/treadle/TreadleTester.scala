@@ -147,7 +147,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
     for(_ <- 0 until n) {
       cycleCount += 1
-      engine.cycle(true)
+      engine.cycle(engine.verbose)
     }
   }
 
