@@ -67,6 +67,7 @@ class ExpressionViewRenderer(
                       ev2.args.head match {
                         case sss: Symbol =>
                           symbolsSeen += sss
+                        case _ =>
                       }
                     case _ =>
                   }

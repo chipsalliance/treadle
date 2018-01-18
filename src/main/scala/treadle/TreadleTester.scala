@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 package treadle
 
+import java.io.PrintWriter
+
 import treadle.executable.ExpressionViewRenderer
 
 /**
@@ -43,6 +45,14 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
   val startTime: Long = System.nanoTime()
 
+  def makeSnapshot(): Unit = {
+    val snapshotName = optionsManager.getBuildFileName(".datastore.snapshot.json")
+    val writer = new PrintWriter(snapshotName)
+    writer.write(engine.dataStore.serialize)
+    writer.close()
+    println(s"Writing snapshot file $snapshotName")
+  }
+
   /** Indicate a failure has occurred.  */
   private var failureTime = -1L
   private var failCode: Option[Int] = None
@@ -50,6 +60,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     if (failCode.isEmpty) {
       failureTime = System.nanoTime()
       failCode = Some(code)
+      makeSnapshot()
     }
   }
 
