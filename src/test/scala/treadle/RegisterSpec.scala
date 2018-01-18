@@ -212,4 +212,59 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.peek("reg2") should be (42)
     tester.peek("reg1") should be (8)
   }
+
+  behavior of "multi-clock registers"
+
+  it should "get the timing right" in {
+    val input =
+      """
+        |circuit RegisterDependencies : @[:@2.0]
+        |  module RegisterDependencies : @[:@3.2]
+        |    input clock : Clock @[:@4.4]
+        |    input reset : UInt<1> @[:@5.4]
+        |    input io_in : UInt<16> @[:@6.4]
+        |    input io_en : UInt<1> @[:@6.4]
+        |    output io_o1 : UInt<16> @[:@6.4]
+        |    output io_o2 : UInt<16> @[:@6.4]
+        |
+        |    reg reg1 : UInt<16>, clock with :
+        |      reset => (UInt<1>("h0"), reg1)
+        |    reg clockToggle : UInt<1>, clock with :
+        |      reset => (UInt<1>("h0"), clockToggle)
+        |    reg reg2 : UInt<2>, clock with :
+        |      reset => (UInt<1>("h0"), reg2)
+        |
+        |    node _T_8 = add(reg1, UInt<1>("h1")) @[RegisterDependencies.scala 17:16:@9.4]
+        |    node _T_9 = tail(_T_8, 1) @[RegisterDependencies.scala 17:16:@10.4]
+        |
+        |    node _T_13 = eq(clockToggle, UInt<1>("h0")) @[RegisterDependencies.scala 20:18:@13.4]
+        |    node _T_14 = and(io_en, clockToggle) @[RegisterDependencies.scala 22:23:@15.4]
+        |    node clock2 = asClock(_T_14) @[RegisterDependencies.scala 22:39:@16.4]
+        |
+        |    node _T_18 = add(reg2, UInt<1>("h1")) @[RegisterDependencies.scala 26:18:@18.4]
+        |    node _T_19 = tail(_T_18, 1) @[RegisterDependencies.scala 26:18:@19.4]
+        |
+        |    io_o1 <= reg1
+        |    io_o2 <= reg2
+        |
+        |    reg1 <= mux(reset, io_in, _T_9)
+        |    clockToggle <= mux(reset, UInt<1>("h1"), _T_13)
+        |    reg2 <= mux(reset, UInt<2>("h3"), _T_19)
+        |
+      """.stripMargin
+
+    val tester = new TreadleTester(input)
+
+    tester.poke("io_in", 77)
+    tester.poke("io_en", 0)
+    tester.poke("reset", 1)
+    tester.step()
+    tester.peek("reg1/in") should be (77)
+    tester.peek("reg2/in") should be (3)
+
+    tester.poke("reset", 0)
+    tester.step()
+    tester.peek("reg1") should be (77)
+    tester.peek("reg2") should be (3)
+  }
 }
