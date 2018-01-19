@@ -31,7 +31,7 @@ case class BlackBoxOutput(name: String,
 
 /**
   * This is the template for writing scala functions that implement the behaviour of a
-  * black box i.e. [[firrtl.ir.ExtModule]].  Implementing classes should add internal
+  * black box.  Implementing classes should add internal
   * variables to hold any state information.
   */
 abstract class BlackBoxImplementation {
@@ -73,7 +73,7 @@ abstract class BlackBoxImplementation {
   *         case "bb1" => Some(add(new BB1Impl))
   *         case "bb2" => Some(add(new BB2Impl))
   *         case "bb3" => Some(add(new BB3Impl))
-  *         case _ => throw Exception(s"ExampleBBBFactory does not know how to create $instanceName}")
+  *         case _ => throw Exception(s"ExampleBBBFactory does not know how to create " + instanceName)
   *       }
   *     }
   *   }
