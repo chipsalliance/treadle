@@ -107,7 +107,7 @@ object VCD extends LazyLogging {
     * Read and parse the specified vcd file, producing a VCD data structure
  *
     * @param vcdFile name of file to parse
-    *                @param varPrefix only retain vars that contain prefix, remove prefix while recording
+    * @param varPrefix only retain vars that contain prefix, remove prefix while recording
     * @return a populated VCD class
     */
   def read(
