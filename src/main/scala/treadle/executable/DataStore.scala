@@ -117,6 +117,28 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
   }
 
+  case class TriggerChecker(
+      symbol             : Symbol,
+      prevSymbol         : Symbol,
+      underlyingAssigner : Assigner
+  ) extends Assigner {
+
+    def checkTransition(): Unit = {
+      val originalValue = currentIntArray(symbol.index)
+      underlyingAssigner.run()
+      val finalValue = currentIntArray(symbol.index)
+      val transitionValue = if(finalValue > 0 && originalValue == 0) { 1 } else { 0 }
+      currentIntArray(prevSymbol.index) = transitionValue
+      if(verboseAssign) {
+        val showValue = symbol.normalize(transitionValue)
+        println(s"${prevSymbol.name} <= $showValue")
+      }
+    }
+    override def run: FuncUnit = {
+      checkTransition _
+    }
+  }
+
   case class GetInt(index: Int) extends IntExpressionResult {
     def apply(): Int = currentIntArray(index)
   }
@@ -131,7 +153,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       if(verboseAssign) {
         val showValue = symbol.normalize(value)
         println(s"${symbol.name} <= $showValue")
-
       }
       currentIntArray(index) = value
       vcdUpdate(symbol, value)

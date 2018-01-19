@@ -231,7 +231,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |      reset => (UInt<1>("h0"), reg1)
         |    reg clockToggle : UInt<1>, clock with :
         |      reset => (UInt<1>("h0"), clockToggle)
-        |    reg reg2 : UInt<2>, clock with :
+        |    reg reg2 : UInt<16>, clock with :
         |      reset => (UInt<1>("h0"), reg2)
         |
         |    node _T_8 = add(reg1, UInt<1>("h1")) @[RegisterDependencies.scala 17:16:@9.4]
@@ -249,12 +249,15 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
         |    reg1 <= mux(reset, io_in, _T_9)
         |    clockToggle <= mux(reset, UInt<1>("h1"), _T_13)
-        |    reg2 <= mux(reset, UInt<2>("h3"), _T_19)
+        |    reg2 <= mux(reset, UInt<7>("h33"), _T_19)
         |
       """.stripMargin
 
     val manager = new InterpreterOptionsManager {
-      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = true, setVerbose = true)
+      treadleOptions = treadleOptions.copy(
+        showFirrtlAtLoad = true,
+        setVerbose = true,
+        rollbackBuffers = 15)
     }
     val tester = new TreadleTester(input, manager)
 
@@ -263,12 +266,24 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.poke("reset", 1)
     tester.step()
     tester.peek("reg1/in") should be (77)
-    tester.peek("reg2/in") should be (3)
+    tester.peek("reg2/in") should be (51)
 
     tester.poke("reset", 0)
     tester.step()
     tester.expect("reg1", 77)
     tester.peek("reg1") should be (77)
-    tester.peek("reg2") should be (3)
+    tester.peek("reg2") should be (51)
+
+    tester.step()
+    tester.expect("reg1", 78)
+    tester.peek("reg1") should be (78)
+    tester.peek("reg2") should be (52)
+
+    tester.poke("io_en", 1)
+    tester.step()
+    tester.expect("reg1", 79)
+    tester.peek("reg1") should be (79)
+    tester.peek("reg2") should be (53)
+
   }
 }

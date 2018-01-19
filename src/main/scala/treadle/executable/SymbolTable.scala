@@ -239,12 +239,12 @@ object SymbolTable extends LazyLogging {
           expressionToReferences(clockExpression).headOption.foreach { clockSymbol =>
             val registerClockPreviousName = clockSymbol.name + "/prev"
             val registerClockPrevious = nameToSymbol.get(registerClockPreviousName) match {
-              case Some(s) =>
-                s
+              case Some(symbol) =>
+                symbol
               case _ =>
-                val s = Symbol(registerClockPreviousName, firrtl.ir.ClockType, WireKind, info = info)
-                nameToSymbol(registerClockPreviousName) = s
-                s
+                val symbol = Symbol(registerClockPreviousName, firrtl.ir.ClockType, WireKind, info = info)
+                nameToSymbol(registerClockPreviousName) = symbol
+                symbol
             }
             addDependency(registerClockPrevious, Set(clockSymbol, registerOut))
 

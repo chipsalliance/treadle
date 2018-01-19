@@ -15,6 +15,10 @@ class UTC(scaleName: String = "picoseconds") {
     eventQueue.enqueue(Event(clock.period + clock.offset, clock))
   }
 
+  def advance(increment: Long): Unit = {
+    time += increment
+  }
+
   def nextEvent(nowEvents: List[Event] = List.empty): List[Event] = {
     if(nowEvents.isEmpty) {
       val event = eventQueue.dequeue()

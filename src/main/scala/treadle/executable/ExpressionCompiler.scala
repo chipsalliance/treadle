@@ -7,6 +7,8 @@ import firrtl._
 import firrtl.ir._
 import treadle._
 
+import scala.collection.mutable
+
 //noinspection ScalaUnusedSymbol
 class ExpressionCompiler(
     val symbolTable: SymbolTable,
@@ -16,6 +18,8 @@ class ExpressionCompiler(
     blackBoxFactories: Seq[BlackBoxFactory]
 )
   extends logger.LazyLogging {
+
+  private val triggersFound = new mutable.HashSet[Symbol]
 
   def getWidth(tpe: firrtl.ir.Type): Int = {
     tpe match {
@@ -94,7 +98,16 @@ class ExpressionCompiler(
         throw TreadleException(
           s"Error:assignment size mismatch ($size)${symbol.name} <= ($expressionSize)$expressionResult")
     }
-    symbolTable.addAssigner(symbol, assigner)
+    val adjustedAssigner = {
+      if(triggersFound.contains(symbol)) {
+        val prevSymbol = symbolTable(symbol.name + "/prev")
+        dataStore.TriggerChecker(symbol, prevSymbol, assigner)
+      }
+      else {
+        assigner
+      }
+    }
+    symbolTable.addAssigner(symbol, adjustedAssigner)
   }
 
   def triggeredAssign(
@@ -578,20 +591,11 @@ class ExpressionCompiler(
 
         case con: Connect =>
           // if it's a register we use the name of its input side
-//          def renameIfRegister(name: String): String = {
-//            if (symbolTable.isRegister(name)) {
-//              s"$name${ExpressionCompiler.RegisterInputSuffix}"
-//            }
-//            else {
-//              name
-//            }
-//          }
-//          val lhsName = renameIfRegister(expand(con.loc.serialize))
-//          makeAssigner(symbolTable(lhsName), processExpression(con.expr))
 
           val expandedName = expand(con.loc.serialize)
           if(!symbolTable.isRegister(expandedName)) {
-            makeAssigner(symbolTable(expandedName), processExpression(con.expr))
+            val assignedSymbol = symbolTable(expandedName)
+            makeAssigner(assignedSymbol, processExpression(con.expr))
           }
           else {
             val registerOut = symbolTable(expandedName)
@@ -605,19 +609,19 @@ class ExpressionCompiler(
             val wrappedExpression: ExpressionResult = processedExpression match {
               case mi : MuxInts =>
                   MuxInts(
-                    IsPosEdge(triggerSymbol, triggerSymbolPrevious, dataStore).apply,
+                    dataStore.GetInt(triggerSymbolPrevious.index).apply,
                     dataStore.GetInt(registerIn.index).apply,
                     dataStore.GetInt(registerOut.index).apply
                   )
               case MuxLongs(cond, tval, fval) =>
                 MuxLongs(
-                  IsPosEdge(triggerSymbol, triggerSymbolPrevious, dataStore).apply,
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
                   dataStore.GetInt(registerIn.index).apply,
                   dataStore.GetInt(registerOut.index).apply
                 )
               case MuxBigs(cond, tval, fval) =>
                 MuxBigs(
-                  IsPosEdge(triggerSymbol, triggerSymbolPrevious, dataStore).apply,
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
                   dataStore.GetInt(registerIn.index).apply,
                   dataStore.GetInt(registerOut.index).apply
                 )
@@ -676,58 +680,24 @@ class ExpressionCompiler(
 
         case DefRegister(info, name, tpe, clockExpression, resetExpression, initValueExpression) =>
 
-          //TODO (chick) There should only be once assignment per memorySymbol so we have to  mux the reset and clock here
-
           logger.debug(s"declaration:DefRegister:$name")
 
           val expandedName = expand(name)
 
           val clockResult = processExpression(clockExpression)
-          val resetResult = processExpression(resetExpression)
-          val resetValue  = processExpression(initValueExpression)
+          symbolTable.getSymbolFromGetter(clockResult, dataStore) match {
+            case Some(clockSymbol) =>
+              val clockPrevious = symbolTable(clockSymbol.name + "/prev")
 
-          val clockTrigger = symbolTable.getSymbolFromGetter(clockResult, dataStore)
-          val clockPrevious = symbolTable(clockTrigger.get.name + "/prev")
-          val resetTrigger = symbolTable.getSymbolFromGetter(resetResult, dataStore)
+              val registerIn  = symbolTable(s"$expandedName${ExpressionCompiler.RegisterInputSuffix}")
+              val registerOut = symbolTable(expandedName)
 
-          val registerIn  = symbolTable(s"$expandedName${ExpressionCompiler.RegisterInputSuffix}")
-          val registerOut = symbolTable(expandedName)
-
-          val addResetTrigger = resetResult match {
-            case GetIntConstant(n) => n != 0
-            case _                 => true
+              if(! triggersFound.contains(clockSymbol)) {
+                triggersFound += clockSymbol
+              }
+            case _ =>
+              logger.warn(s"Found register with no clock specified")
           }
-
-          if(! symbolTable.hasAssigner(clockPrevious)) {
-            makeAssigner(clockPrevious, dataStore.GetInt(clockTrigger.get.index))
-          }
-//
-//          registerIn.dataSize match {
-//            case IntSize =>
-//              triggeredAssign(clockTrigger, registerOut, dataStore.GetInt(registerIn.index))
-//              if(addResetTrigger) resetValue match {
-//                case rv: IntExpressionResult  =>
-//                  triggeredAssign(resetTrigger, registerOut, rv)
-//                case rv: LongExpressionResult => triggeredAssign(resetTrigger, registerOut, LongToInt(rv.apply))
-//                case rv: BigExpressionResult  => triggeredAssign(resetTrigger, registerOut, ToInt(rv.apply))
-//              }
-//            case LongSize =>
-//              triggeredAssign(clockTrigger, registerOut, dataStore.GetLong(registerIn.index))
-//              if(addResetTrigger) resetValue match {
-//                case rv: IntExpressionResult  => triggeredAssign(resetTrigger, registerOut, ToLong(rv.apply))
-//                case rv: LongExpressionResult => triggeredAssign(resetTrigger, registerOut, rv)
-//                case rv: BigExpressionResult  => triggeredAssign(resetTrigger, registerOut, BigToLong(rv.apply))
-//              }
-//            case BigSize =>
-//              triggeredAssign(clockTrigger, registerOut, dataStore.GetBig(registerIn.index))
-//              if(addResetTrigger) resetValue match {
-//                case rv: IntExpressionResult  => triggeredAssign(resetTrigger, registerOut, ToBig(rv.apply))
-//                case rv: LongExpressionResult => triggeredAssign(resetTrigger, registerOut, LongToBig(rv.apply))
-//                case rv: BigExpressionResult  => triggeredAssign(resetTrigger, registerOut, rv)
-//              }
-//            case _ =>
-//              throw TreadleException(s"bad register $statement")
-//          }
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)

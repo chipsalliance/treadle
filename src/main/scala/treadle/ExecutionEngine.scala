@@ -4,6 +4,7 @@ package treadle
 
 import firrtl.PortKind
 import firrtl.ir.Circuit
+import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.vcd.VCD
 
@@ -17,6 +18,10 @@ class ExecutionEngine(
     val expressionViews: Map[Symbol, ExpressionView]
 ) {
   private val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
+
+  val wallTime = new UTC()
+  val cycleTimeIncrement = 1000
+  var cycleNumber: Long = 0
 
   var vcdOption: Option[VCD] = None
   var vcdFileName: String = ""
@@ -43,11 +48,13 @@ class ExecutionEngine(
 
   val timer = new Timer
 
-  val clockOption: Option[Symbol] = {
-    symbolTable.get("clock") match {
-      case Some(clock) => Some(clock)
-      case _           => symbolTable.get("clk")
-    }
+  val clockToggler: ClockToggle = symbolTable.get("clock") match {
+    case Some(clock) => new ClockToggler(clock)
+    case _           =>
+      symbolTable.get("clk") match {
+        case Some(clock) => new ClockToggler(clock)
+        case _ => new NullToggler
+      }
   }
 
   if(verbose) {
@@ -56,6 +63,7 @@ class ExecutionEngine(
   scheduler.executeAssigners(scheduler.orphanedAssigns)
   if(verbose) {
     println(s"Finished executing static assignments")
+    println(getPrettyString)
   }
 
   /**
@@ -269,26 +277,18 @@ class ExecutionEngine(
   def cycle(showState: Boolean = false): Unit = {
     if(checkStopped("cycle")) return
 
-//    if(inputsChanged) {
-//      if(verbose) {
-//        println(s"Executing assigns that depend on inputs")
-//      }
-//      inputsChanged = false
-//      scheduler.executeInputSensitivities()
-//    }
+    cycleNumber += 1L
 
-    clockOption.foreach { clock =>
-      vcdOption.foreach(_.raiseClock())
-      dataStore.AssignInt(clock, GetIntConstant(1).apply).run()
-    }
+    clockToggler.raiseClock()
+    vcdOption.foreach(_.raiseClock())
+    inputsChanged = true
+
     evaluateCircuit()
+    wallTime.advance(cycleTimeIncrement)
     if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
 
-    clockOption.foreach { clock =>
-      vcdOption.foreach(_.lowerClock())
-      dataStore.AssignInt(clock, GetIntConstant(0).apply).run()
-      inputsChanged = true
-    }
+    clockToggler.lowerClock()
+    vcdOption.foreach(_.lowerClock())
 //    evaluateCircuit()
 
     if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
@@ -337,6 +337,7 @@ class ExecutionEngine(
   }
 
   def header: String = {
+    s"CycleNumber: $cycleNumber  wallTime: ${wallTime.currentTime}\n" +
     "Buf " +
       symbolTable.keys.toArray.sorted.map { name =>
         val s = name.takeRight(9)
@@ -346,16 +347,24 @@ class ExecutionEngine(
 
   def dataInColumns: String = {
     val keys = symbolTable.keys.toArray.sorted
-    ("-" * 100) + f"\n${dataStore.previousBufferIndex}%2s  " +
-      keys.map { name =>
-        val symbol = symbolTable(name)
-        val value = symbol.normalize(dataStore.earlierValue(symbolTable(name), 1))
-        f"$value%10.10s" }.mkString("") + f"\n${dataStore.currentBufferIndex}%2s  " +
-      keys.map { name =>
-        val symbol = symbolTable(name)
-        val value = symbol.normalize(dataStore(symbolTable(name)))
-        f"$value%10.10s" }.mkString("") + "\n" +
-      ("-" * 100)
+
+    ("-" * header.length) + "\n" +
+      (if(dataStore.numberOfBuffers > 1) {
+      f"${dataStore.previousBufferIndex}%2s  " +
+        keys.map { name =>
+          val symbol = symbolTable(name)
+          val value = symbol.normalize(dataStore.earlierValue(symbolTable(name), 1))
+          f"$value%10.10s" }.mkString("") + f"\n"
+      }
+      else {
+        ""
+      }) +
+      f"${dataStore.currentBufferIndex}%2s  " +
+        keys.map { name =>
+          val symbol = symbolTable(name)
+          val value = symbol.normalize(dataStore(symbolTable(name)))
+          f"$value%10.10s" }.mkString("") + "\n" +
+        ("-" * header.length)
   }
 
   def getInfoString: String = "Info"  //TODO (chick) flesh this out
@@ -363,6 +372,40 @@ class ExecutionEngine(
     header + "\n" +
     dataInColumns
   }
+
+  trait ClockToggle {
+    def raiseClock(): Unit = {}
+    def lowerClock(): Unit = {}
+  }
+
+  class NullToggler extends ClockToggle
+
+  class ClockToggler(symbol: Symbol) extends ClockToggle {
+    val prevSymbol = symbolTable(symbol.name + "/prev")
+
+    val upToggler = dataStore.TriggerChecker(
+      symbol, prevSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
+    )
+    upToggler.verboseAssign = verbose
+    upToggler.underlyingAssigner.verboseAssign = verbose
+    val downToggler = dataStore.TriggerChecker(
+      symbol, prevSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
+    )
+    downToggler.verboseAssign = verbose
+    downToggler.underlyingAssigner.verboseAssign = verbose
+
+    override def raiseClock(): Unit = {
+      if(verbose) println(s"starting raising clock")
+      upToggler.run()
+      if(verbose) println(s"finished raising clock")
+    }
+    override def lowerClock(): Unit = {
+      if(verbose) println(s"starting lowering clock")
+      downToggler.run()
+      if(verbose) println(s"finished lowering clock")
+    }
+  }
+
 }
 
 object ExecutionEngine {
