@@ -385,15 +385,15 @@ class ExecutionEngine(
   class NullToggler extends ClockToggle
 
   class ClockToggler(symbol: Symbol) extends ClockToggle {
-    val prevSymbol = symbolTable(symbol.name + "/prev")
+    val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
 
     val upToggler = dataStore.TriggerChecker(
-      symbol, prevSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
+      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
     )
     upToggler.verboseAssign = verbose
     upToggler.underlyingAssigner.verboseAssign = verbose
     val downToggler = dataStore.TriggerChecker(
-      symbol, prevSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
+      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
     )
     downToggler.verboseAssign = verbose
     downToggler.underlyingAssigner.verboseAssign = verbose

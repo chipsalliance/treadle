@@ -200,7 +200,7 @@ class ExpressionViewBuilder(
           // if it's a register we use the name of its input side
           def renameIfRegister(name: String): String = {
             if (symbolTable.isRegister(name)) {
-              s"$name${ExpressionViewBuilder.RegisterInputSuffix}"
+              SymbolTable.makeRegisterInputName(name)
             }
             else {
               name
@@ -250,7 +250,7 @@ class ExpressionViewBuilder(
 
         case DefRegister(info, name, tpe, clockExpression, resetExpression, initValueExpression) =>
           val expandedName = expand(name)
-          val registerIn  = symbolTable(s"$expandedName${ExpressionViewBuilder.RegisterInputSuffix}")
+          val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
           val registerOut = symbolTable(expandedName)
           expressionViews(registerOut) = expression"$registerIn"
 
@@ -298,7 +298,6 @@ class ExpressionViewBuilder(
 }
 
 object ExpressionViewBuilder {
-  val RegisterInputSuffix = "/in"
 
   def getExpressionViews(
       symbolTable: SymbolTable,

@@ -100,8 +100,8 @@ class ExpressionCompiler(
     }
     val adjustedAssigner = {
       if(triggersFound.contains(symbol)) {
-        val prevSymbol = symbolTable(symbol.name + "/prev")
-        dataStore.TriggerChecker(symbol, prevSymbol, assigner)
+        val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
+        dataStore.TriggerChecker(symbol, upTransitionSymbol, assigner)
       }
       else {
         assigner
@@ -599,12 +599,11 @@ class ExpressionCompiler(
           }
           else {
             val registerOut = symbolTable(expandedName)
-            val registerIn  = symbolTable(s"$expandedName${ExpressionCompiler.RegisterInputSuffix}")
+            val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
 
-            val lhsName = s"$expandedName${ExpressionCompiler.RegisterInputSuffix}"
             val processedExpression = processExpression(con.expr)
             val triggerSymbol = symbolTable.triggerFor(registerOut)
-            val triggerSymbolPrevious = symbolTable(triggerSymbol.name + "/prev")
+            val triggerSymbolPrevious = symbolTable(SymbolTable.makeUpTransitionName(triggerSymbol))
 
             val wrappedExpression: ExpressionResult = processedExpression match {
               case mi : MuxInts =>
@@ -708,9 +707,7 @@ class ExpressionCompiler(
           val clockResult = processExpression(clockExpression)
           symbolTable.getSymbolFromGetter(clockResult, dataStore) match {
             case Some(clockSymbol) =>
-              val clockPrevious = symbolTable(clockSymbol.name + "/prev")
-
-              val registerIn  = symbolTable(s"$expandedName${ExpressionCompiler.RegisterInputSuffix}")
+              val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
               val registerOut = symbolTable(expandedName)
 
               if(! triggersFound.contains(clockSymbol)) {

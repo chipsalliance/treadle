@@ -3,7 +3,6 @@
 package treadle.executable
 
 import firrtl.CommonOptions
-import firrtl.ir.IntWidth
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -40,10 +39,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     val simulator = ExecutionEngine(simpleFirrtl, optionsManager)
 
     val symbolTable = simulator.symbolTable
-    val scheduler   = simulator.scheduler
 
     val keyToDependent = symbolTable.childrenOf
-    val DependentToKey = symbolTable.parentsOf
 
     keyToDependent.reachableFrom(symbolTable("clock")).size should be (4)
 
@@ -79,14 +76,13 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager
-    val tester = new TreadleTester(simpleFirrtl)
+    val tester = new TreadleTester(simpleFirrtl, optionsManager)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
     val scheduler   = simulator.scheduler
 
     val childrenOf = symbolTable.childrenOf
-    val parentsOf  = symbolTable.parentsOf
 
     childrenOf.reachableFrom(symbolTable("clock")).size should be (0)
 
@@ -128,14 +124,12 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager
-    val tester = new TreadleTester(simpleFirrtl)
+    val tester = new TreadleTester(simpleFirrtl, optionsManager)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
-    val scheduler   = simulator.scheduler
 
     val childrenOf = symbolTable.childrenOf
-    val parentsOf  = symbolTable.parentsOf
 
     childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
 
@@ -191,10 +185,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
-    val scheduler   = simulator.scheduler
 
     val childrenOf = symbolTable.childrenOf
-    val parentsOf  = symbolTable.parentsOf
 
     childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
 
@@ -227,33 +219,4 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     tester.expect("io_out1", 75)
     tester.report()
   }
-
-
-  """Orphaned symbols should be found correctly""" in {
-    val simpleFirrtl: String =
-      s"""
-         |circuit Simple :
-         |  module Simple :
-         |    input clock : Clock
-         |    input reset : UInt<1>
-         |    input io_in1 : UInt<16>
-         |    input io_in2 : UInt<16>
-         |    output io_out1 : UInt<17>
-         |
-         |    reg b3 : UInt<16>, clock with :
-         |      reset => (UInt<1>("h0"), b3)
-         |
-         |    node a1 = UInt<8>("h3")
-         |    node a2 = UInt<8>("h8")
-         |    node a3 = add(a1, a2)
-         |
-         |    io_out1 <= a3
-         """
-        .stripMargin
-
-    val tester = new TreadleTester(simpleFirrtl)
-    val simulator = tester.engine
-
-  }
-
 }

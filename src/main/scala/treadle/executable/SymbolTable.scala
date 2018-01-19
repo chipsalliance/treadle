@@ -129,6 +129,15 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
 }
 
 object SymbolTable extends LazyLogging {
+
+  val UpTransitionSuffix = "/rising"
+  def makeUpTransitionName(name: String): String = name + UpTransitionSuffix
+  def makeUpTransitionName(symbol: Symbol): String = symbol.name + UpTransitionSuffix
+
+  val RegisterInputSuffix = "/in"
+  def makeRegisterInputName(name: String): String = name + RegisterInputSuffix
+  def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
+
   def apply(nameToSymbol: mutable.HashMap[String, Symbol]): SymbolTable = new SymbolTable(nameToSymbol)
 
   //scalastyle:off cyclomatic.complexity method.length
@@ -193,7 +202,7 @@ object SymbolTable extends LazyLogging {
           con.loc match {
             case (_: WRef | _: WSubField | _: WSubIndex) =>
               val name = if (registerNames.contains(expand(con.loc.serialize))) {
-                expand(con.loc.serialize) + "/in"
+                SymbolTable.makeRegisterInputName(expand(con.loc.serialize))
               }
               else {
                 expand(con.loc.serialize)
@@ -230,14 +239,14 @@ object SymbolTable extends LazyLogging {
         case DefRegister(info, name, tpe, clockExpression, resetExpression, _) =>
           val expandedName = expand(name)
 
-          val registerIn = Symbol(expandedName + "/in", tpe, RegKind, info = info)
+          val registerIn = Symbol(SymbolTable.makeRegisterInputName(expandedName), tpe, RegKind, info = info)
           val registerOut = Symbol(expandedName, tpe, RegKind, info = info)
           registerNames += registerOut.name
           nameToSymbol(registerIn.name) = registerIn
           nameToSymbol(registerOut.name) = registerOut
 
           expressionToReferences(clockExpression).headOption.foreach { clockSymbol =>
-            val registerClockPreviousName = clockSymbol.name + "/prev"
+            val registerClockPreviousName = SymbolTable.makeUpTransitionName(clockSymbol)
             val registerClockPrevious = nameToSymbol.get(registerClockPreviousName) match {
               case Some(symbol) =>
                 symbol
@@ -306,9 +315,9 @@ object SymbolTable extends LazyLogging {
           val symbol = Symbol(expandedName, port.tpe, PortKind)
           nameToSymbol(expandedName) = symbol
           if(port.tpe == firrtl.ir.ClockType) {
-            val prevName = expandedName + "/prev"
-            val prevSymbol = Symbol(prevName, port.tpe, PortKind)
-            nameToSymbol(prevName) = prevSymbol
+            val upTransitionName = SymbolTable.makeUpTransitionName(expandedName)
+            val upTransitionSymbol = Symbol(upTransitionName, port.tpe, PortKind)
+            nameToSymbol(upTransitionName) = upTransitionSymbol
           }
           if(modulePrefix.isEmpty) {  // this is true only at top level
             if(port.direction == Input) {

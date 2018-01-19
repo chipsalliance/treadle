@@ -2,7 +2,7 @@
 
 package treadle
 
-import treadle.executable.Scheduler
+import treadle.executable.{Scheduler, SymbolTable}
 import treadle.vcd.{Change, VCD, Wire}
 
 import scala.tools.jline.console.ConsoleReader
@@ -153,7 +153,7 @@ class ReplVcdController(val repl: TreadleRepl, val interpreter: ExecutionEngine,
         else if(interpreter.symbolTable.contains(fullName)) {
           val isRegister = interpreter.isRegister(fullName)
           val name = if(isRegister) {
-            fullName + "/in"
+            SymbolTable.makeRegisterInputName(fullName)
           }
           else {
             fullName
