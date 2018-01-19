@@ -53,9 +53,9 @@ class DynamicMemorySearch extends FlatSpec with Matchers {
     val n = 8
     val w = 4
 
-    new InterpretiveTester(input) {
-//      interpreter.setVerbose(true)
-//      interpreter.sourceState.memories("list").setVerbose()
+    new TreadleTester(input) {
+//      engine.setVerbose(true)
+//      engine.sourceState.memories("list").setVerbose()
 
       val list: Array[Int] = Array.fill(n)(0)
       random.setSeed(0L)
@@ -71,7 +71,7 @@ class DynamicMemorySearch extends FlatSpec with Matchers {
         step()
       }
 
-      // println(s"${interpreter.circuitState.memories("list").toString}")
+      // println(s"${engine.circuitState.memories("list").toString}")
 
       for (k <- 0 until 160) {
         println(s"memory test iteration $k") // ${"X"*80}")
@@ -101,12 +101,12 @@ class DynamicMemorySearch extends FlatSpec with Matchers {
         } else {
           list.length - 1
         }
-        // println(s"test pass $k ${this.interpreter.circuitState.prettyString()}")
+        // println(s"test pass $k ${this.engine.circuitState.prettyString()}")
 
         var waitCount = 0
         while(waitCount <= n && peek("io_done") == Big0) {
           // println(s"Waiting for done $waitCount")
-          // println(this.interpreter.circuitState.prettyString())
+          // println(this.engine.circuitState.prettyString())
           // println(s"external list ${list.mkString(",")}")
           step()
           waitCount += 1

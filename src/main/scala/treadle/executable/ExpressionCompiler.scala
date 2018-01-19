@@ -7,20 +7,24 @@ import firrtl._
 import firrtl.ir._
 import treadle._
 
+import scala.collection.mutable
+
 //noinspection ScalaUnusedSymbol
 class ExpressionCompiler(
     val symbolTable: SymbolTable,
     val dataStore: DataStore,
     scheduler: Scheduler,
-    interpreterOptions: InterpreterOptions,
+    interpreterOptions: TreadleOptions,
     blackBoxFactories: Seq[BlackBoxFactory]
 )
   extends logger.LazyLogging {
 
+  private val triggersFound = new mutable.HashSet[Symbol]
+
   def getWidth(tpe: firrtl.ir.Type): Int = {
     tpe match {
       case GroundType(IntWidth(width)) => width.toInt
-      case _ => throw new InterpreterException(s"Unresolved width found in firrtl.ir.Type $tpe")
+      case _ => throw new TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
     }
   }
 
@@ -28,7 +32,7 @@ class ExpressionCompiler(
     expression.tpe match {
       case GroundType(IntWidth(width)) => width.toInt
       case _ =>
-        throw new InterpreterException(
+        throw new TreadleException(
           s"Unresolved width found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -39,7 +43,7 @@ class ExpressionCompiler(
       case  _: SIntType    => true
       case  ClockType      => false
       case _ =>
-        throw new InterpreterException(
+        throw new TreadleException(
           s"Unsupported type found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -91,10 +95,19 @@ class ExpressionCompiler(
           case _: BigExpressionResult  => "Big"
         }
 
-        throw InterpreterException(
+        throw TreadleException(
           s"Error:assignment size mismatch ($size)${symbol.name} <= ($expressionSize)$expressionResult")
     }
-    symbolTable.addAssigner(symbol, assigner)
+    val adjustedAssigner = {
+      if(triggersFound.contains(symbol)) {
+        val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
+        dataStore.TriggerChecker(symbol, upTransitionSymbol, assigner)
+      }
+      else {
+        assigner
+      }
+    }
+    symbolTable.addAssigner(symbol, adjustedAssigner)
   }
 
   def triggeredAssign(
@@ -144,7 +157,7 @@ class ExpressionCompiler(
           case _: BigExpressionResult => "Big"
         }
 
-        throw InterpreterException(
+        throw TreadleException(
           s"Error:assignment size mismatch ($size)${memorySymbol.name} <= ($expressionSize)$expressionResult")
     }
     symbolTable.addAssigner(portSymbol, assigner)
@@ -190,7 +203,7 @@ class ExpressionCompiler(
               CatInts(e1.apply, arg1Width, e2.apply, arg2Width)
 
             case _ =>
-              throw InterpreterException(s"Error:BinaryOp:$opCode)(${args.head}, ${args.tail.head})")
+              throw TreadleException(s"Error:BinaryOp:$opCode)(${args.head}, ${args.tail.head})")
           }
         }
 
@@ -220,7 +233,7 @@ class ExpressionCompiler(
               CatLongs(e1.apply, arg1Width, e2.apply, arg2Width)
 
             case _ =>
-              throw InterpreterException(s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head})")
+              throw TreadleException(s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head})")
           }
         }
 
@@ -250,7 +263,7 @@ class ExpressionCompiler(
               CatBigs(e1.apply, arg1Width, e2.apply, arg2Width)
 
             case _ =>
-              throw InterpreterException(s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head})")
+              throw TreadleException(s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head})")
           }
         }
 
@@ -285,7 +298,7 @@ class ExpressionCompiler(
             handleBigResult(e1, e2)
 
           case _ =>
-            throw InterpreterException(
+            throw TreadleException(
               s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head}) ($arg1, $arg2)")
         }
       }
@@ -448,7 +461,7 @@ class ExpressionCompiler(
                 MuxBigs(c.apply, t.apply, f.apply)
             }
           case c =>
-            throw InterpreterException(s"Mux condition is not 1 bit $condition parsed as $c")
+            throw TreadleException(s"Mux condition is not 1 bit $condition parsed as $c")
         }
       }
 
@@ -494,10 +507,10 @@ class ExpressionCompiler(
                     case t: BigExpressionResult =>
                       MuxBigs(c.apply, t.apply, UndefinedBigs(getWidth(tpe)).apply)
                     case _ =>
-                      throw InterpreterException(s"Mux condition is not 1 bit $condition parsed as $c")
+                      throw TreadleException(s"Mux condition is not 1 bit $condition parsed as $c")
                   }
                 case c =>
-                  throw InterpreterException(s"Mux condition is not 1 bit $condition parsed as $c")
+                  throw TreadleException(s"Mux condition is not 1 bit $condition parsed as $c")
               }
             }
             else {
@@ -565,7 +578,7 @@ class ExpressionCompiler(
               case BigSize  => GetBigConstant(value.toInt)
             }
           case _ =>
-            throw new InterpreterException(s"bad expression $expression")
+            throw new TreadleException(s"bad expression $expression")
         }
         result
       }
@@ -578,16 +591,66 @@ class ExpressionCompiler(
 
         case con: Connect =>
           // if it's a register we use the name of its input side
-          def renameIfRegister(name: String): String = {
-            if (symbolTable.isRegister(name)) {
-              s"$name${ExpressionCompiler.RegisterInputSuffix}"
-            }
-            else {
-              name
-            }
+
+          val expandedName = expand(con.loc.serialize)
+          if(!symbolTable.isRegister(expandedName)) {
+            val assignedSymbol = symbolTable(expandedName)
+            makeAssigner(assignedSymbol, processExpression(con.expr))
           }
-          val lhsName = renameIfRegister(expand(con.loc.serialize))
-          makeAssigner(symbolTable(lhsName), processExpression(con.expr))
+          else {
+            val registerOut = symbolTable(expandedName)
+            val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
+
+            val processedExpression = processExpression(con.expr)
+            val triggerSymbol = symbolTable.triggerFor(registerOut)
+            val triggerSymbolPrevious = symbolTable(SymbolTable.makeUpTransitionName(triggerSymbol))
+
+            val wrappedExpression: ExpressionResult = processedExpression match {
+              case mi : MuxInts =>
+                  MuxInts(
+                    dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                    dataStore.GetInt(registerIn.index).apply,
+                    dataStore.GetInt(registerOut.index).apply
+                  )
+              case MuxLongs(cond, tval, fval) =>
+                MuxLongs(
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                  dataStore.GetLong(registerIn.index).apply,
+                  dataStore.GetLong(registerOut.index).apply
+                )
+              case MuxBigs(cond, tval, fval) =>
+                MuxBigs(
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                  dataStore.GetBig(registerIn.index).apply,
+                  dataStore.GetBig(registerOut.index).apply
+                )
+              case expression: IntExpressionResult =>
+                // If we get here, the register probably did not have a reset value
+                MuxInts(
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                  expression.apply,
+                  dataStore.GetInt(registerOut.index).apply
+                )
+              case expression: LongExpressionResult =>
+                // If we get here, the register probably did not have a reset value
+                MuxLongs(
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                  expression.apply,
+                  dataStore.GetInt(registerOut.index).apply
+                )
+              case expression: BigExpressionResult =>
+                // If we get here, the register probably did not have a reset value
+                MuxBigs(
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                  expression.apply,
+                  dataStore.GetInt(registerOut.index).apply
+                )
+              case otherExpression =>
+                otherExpression
+            }
+            makeAssigner(registerIn, processedExpression)
+            makeAssigner(registerOut, wrappedExpression)
+          }
 
         case WDefInstance(info, instanceName, moduleName, _) =>
           val subModule = FindModule(moduleName, circuit)
@@ -637,52 +700,21 @@ class ExpressionCompiler(
 
         case DefRegister(info, name, tpe, clockExpression, resetExpression, initValueExpression) =>
 
-          //TODO (chick) There should only be once assignment per memorySymbol so we have to  mux the reset and clock here
-
           logger.debug(s"declaration:DefRegister:$name")
 
           val expandedName = expand(name)
 
           val clockResult = processExpression(clockExpression)
-          val resetResult = processExpression(resetExpression)
-          val resetValue  = processExpression(initValueExpression)
+          symbolTable.getSymbolFromGetter(clockResult, dataStore) match {
+            case Some(clockSymbol) =>
+              val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
+              val registerOut = symbolTable(expandedName)
 
-          val clockTrigger = symbolTable.getSymbolFromGetter(clockResult, dataStore)
-          val resetTrigger = symbolTable.getSymbolFromGetter(resetResult, dataStore)
-
-          val registerIn  = symbolTable(s"$expandedName${ExpressionCompiler.RegisterInputSuffix}")
-          val registerOut = symbolTable(expandedName)
-
-          val addResetTrigger = resetResult match {
-            case GetIntConstant(n) => n != 0
-            case _                 => true
-          }
-
-          registerIn.dataSize match {
-            case IntSize =>
-              triggeredAssign(clockTrigger, registerOut, dataStore.GetInt(registerIn.index))
-              if(addResetTrigger) resetValue match {
-                case rv: IntExpressionResult  =>
-                  triggeredAssign(resetTrigger, registerOut, rv)
-                case rv: LongExpressionResult => triggeredAssign(resetTrigger, registerOut, LongToInt(rv.apply))
-                case rv: BigExpressionResult  => triggeredAssign(resetTrigger, registerOut, ToInt(rv.apply))
-              }
-            case LongSize =>
-              triggeredAssign(clockTrigger, registerOut, dataStore.GetLong(registerIn.index))
-              if(addResetTrigger) resetValue match {
-                case rv: IntExpressionResult  => triggeredAssign(resetTrigger, registerOut, ToLong(rv.apply))
-                case rv: LongExpressionResult => triggeredAssign(resetTrigger, registerOut, rv)
-                case rv: BigExpressionResult  => triggeredAssign(resetTrigger, registerOut, BigToLong(rv.apply))
-              }
-            case BigSize =>
-              triggeredAssign(clockTrigger, registerOut, dataStore.GetBig(registerIn.index))
-              if(addResetTrigger) resetValue match {
-                case rv: IntExpressionResult  => triggeredAssign(resetTrigger, registerOut, ToBig(rv.apply))
-                case rv: LongExpressionResult => triggeredAssign(resetTrigger, registerOut, LongToBig(rv.apply))
-                case rv: BigExpressionResult  => triggeredAssign(resetTrigger, registerOut, rv)
+              if(! triggersFound.contains(clockSymbol)) {
+                triggersFound += clockSymbol
               }
             case _ =>
-              throw InterpreterException(s"bad register $statement")
+              logger.warn(s"Found register with no clock specified")
           }
 
         case defMemory: DefMemory =>
@@ -708,7 +740,7 @@ class ExpressionCompiler(
         case EmptyStmt =>
         case conditionally: Conditionally =>
           // logger.debug(s"got a conditionally $conditionally")
-          throw new InterpreterException(s"conditionally unsupported in interpreter $conditionally")
+          throw new TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
           println(s"TODO: Unhandled statement $statement")
       }
@@ -729,9 +761,9 @@ class ExpressionCompiler(
     val module = FindModule(circuit.main, circuit) match {
       case regularModule: firrtl.ir.Module => regularModule
       case externalModule: firrtl.ir.ExtModule =>
-        throw InterpreterException(s"Top level module must be a regular module $externalModule")
+        throw TreadleException(s"Top level module must be a regular module $externalModule")
       case x =>
-        throw InterpreterException(s"Top level module is not the right kind of module $x")
+        throw TreadleException(s"Top level module is not the right kind of module $x")
     }
 
     processModule("", module, circuit)

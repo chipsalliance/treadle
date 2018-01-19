@@ -5,7 +5,7 @@ package treadle
 import org.scalatest.{Matchers, FreeSpec}
 
 class CarryOrChain3 extends FreeSpec with Matchers {
-  val input =
+  private val input =
     """
       |circuit ORChain :
       |  module ORBlock :
@@ -50,7 +50,7 @@ class CarryOrChain3 extends FreeSpec with Matchers {
       bin.toList.map( "01".indexOf(_)).map( BigInt(_)).reverse.toArray
     }
 
-    val tester = new InterpretiveTester(input)
+    val tester = new TreadleTester(input)
 
     val lst = List( (v("001"),v("111")))
     for ( (a,co) <- lst) {
@@ -59,11 +59,11 @@ class CarryOrChain3 extends FreeSpec with Matchers {
       for( (y,idx) <- a.zipWithIndex) {
         tester.poke( s"io_a_$idx", y)
       }
-      tester.step(1)
+      tester.step()
       for( (y,idx) <- co.zipWithIndex) {
         tester.expect( s"io_co_$idx", y)
       }
-      tester.step(1)
+      tester.step()
     }
 
     tester.report()

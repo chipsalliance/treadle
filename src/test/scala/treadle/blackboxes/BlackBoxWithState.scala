@@ -3,7 +3,7 @@
 package treadle.blackboxes
 
 import firrtl.ir.Type
-import treadle.{BlackBoxFactory, BlackBoxImplementation, InterpreterOptionsManager, InterpretiveTester}
+import treadle.{BlackBoxFactory, BlackBoxImplementation, InterpreterOptionsManager, TreadleTester}
 import org.scalatest.{FreeSpec, Matchers}
 
 
@@ -36,9 +36,9 @@ class BlackBoxWithState extends FreeSpec with Matchers {
 //    printf(clock, and(and(UInt<1>("h1"), _T_6), UInt<1>("h1")), "m.io.data %d io.data %d\n", m.data, io_data) @[AccumBlackBoxSpec.scala 96:9:@23.6]
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(blackBoxFactories = Seq(new AccumBlackBoxFactory))
+      treadleOptions = treadleOptions.copy(blackBoxFactories = Seq(new AccumBlackBoxFactory))
     }
-    val tester = new InterpretiveTester(input, manager)
+    val tester = new TreadleTester(input, manager)
 
     val initialValue = tester.peek("io_data")
     println(s"Initial value is $initialValue")
@@ -58,7 +58,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
 
 /**
   * This is an implementation of a black box whose verilog is contained inline in AccumBlackBox, an instance of this
-  * class will be placed into a black box factory so that it can be passed properly to the firrtl interpreter
+  * class will be placed into a black box factory so that it can be passed properly to the firrtl engine
   * @param name black box name
   */
 class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImplementation {

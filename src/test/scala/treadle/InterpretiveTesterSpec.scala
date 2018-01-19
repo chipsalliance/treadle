@@ -25,7 +25,7 @@
 //      """.stripMargin
 //
 //    val tester = new InterpretiveTester(input)
-//    val interpreter = tester.interpreter
+//    val engine = tester.engine
 //
 //    interpreter.circuitState.isStale should be (false)
 //

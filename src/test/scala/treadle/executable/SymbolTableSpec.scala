@@ -2,7 +2,7 @@
 
 package treadle.executable
 
-import firrtl.ir.IntWidth
+import firrtl.CommonOptions
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -36,17 +36,13 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager
-    val simulator = FirrtlTerp(simpleFirrtl, optionsManager)
+    val simulator = ExecutionEngine(simpleFirrtl, optionsManager)
 
     val symbolTable = simulator.symbolTable
-    val scheduler   = simulator.scheduler
 
     val keyToDependent = symbolTable.childrenOf
-    val DependentToKey = symbolTable.parentsOf
 
-    keyToDependent.reachableFrom(symbolTable("clock")).size should be (3)
-
-    scheduler.triggeredAssigns.size should be (1)
+    keyToDependent.reachableFrom(symbolTable("clock")).size should be (4)
 
     symbolTable.registerNames.toList.sorted.foreach { key =>
       val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
@@ -80,14 +76,13 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager
-    val tester = new InterpretiveTester(simpleFirrtl)
-    val simulator = tester.interpreter
+    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
     val scheduler   = simulator.scheduler
 
     val childrenOf = symbolTable.childrenOf
-    val parentsOf  = symbolTable.parentsOf
 
     childrenOf.reachableFrom(symbolTable("clock")).size should be (0)
 
@@ -129,18 +124,15 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager
-    val tester = new InterpretiveTester(simpleFirrtl)
-    val simulator = tester.interpreter
+    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
-    val scheduler   = simulator.scheduler
 
     val childrenOf = symbolTable.childrenOf
-    val parentsOf  = symbolTable.parentsOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (3)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
 
-    scheduler.triggeredAssigns.size should be (1)
     childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
 
     println("All dependencies")
@@ -185,18 +177,19 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val tester = new InterpretiveTester(simpleFirrtl)
-    val simulator = tester.interpreter
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = TreadleOptions(setVerbose = true)
+      commonOptions = CommonOptions(targetDirName = "test_run_dir")
+    }
+    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
-    val scheduler   = simulator.scheduler
 
     val childrenOf = symbolTable.childrenOf
-    val parentsOf  = symbolTable.parentsOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (3)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
 
-    scheduler.triggeredAssigns.size should be (1)
     childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
     childrenOf.reachableFrom(symbolTable("io_in2")) should not contain symbolTable("io_out1")
     childrenOf.reachableFrom(symbolTable("io_in2")) should contain (symbolTable("b3/in"))
@@ -226,33 +219,4 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     tester.expect("io_out1", 75)
     tester.report()
   }
-
-
-  """Orphaned symbols should be found correctly""" in {
-    val simpleFirrtl: String =
-      s"""
-         |circuit Simple :
-         |  module Simple :
-         |    input clock : Clock
-         |    input reset : UInt<1>
-         |    input io_in1 : UInt<16>
-         |    input io_in2 : UInt<16>
-         |    output io_out1 : UInt<17>
-         |
-         |    reg b3 : UInt<16>, clock with :
-         |      reset => (UInt<1>("h0"), b3)
-         |
-         |    node a1 = UInt<8>("h3")
-         |    node a2 = UInt<8>("h8")
-         |    node a3 = add(a1, a2)
-         |
-         |    io_out1 <= a3
-         """
-        .stripMargin
-
-    val tester = new InterpretiveTester(simpleFirrtl)
-    val simulator = tester.interpreter
-
-  }
-
 }

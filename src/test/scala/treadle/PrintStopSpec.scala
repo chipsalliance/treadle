@@ -16,11 +16,11 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val engine = ExecutionEngine(input)
 
     for (cycle_number <- 0 to 10) {
-      interpreter.doCycles(2)
-      interpreter.stopped should be (false)
+      engine.doCycles(2)
+      engine.stopped should be (false)
     }
   }
 
@@ -34,13 +34,13 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val engine = ExecutionEngine(input)
 
     intercept[StopException] {
-      interpreter.doCycles(2)
+      engine.doCycles(2)
     }
-    interpreter.stopped should be (true)
-    interpreter.lastStopResult.get should be (2)
+    engine.stopped should be (true)
+    engine.lastStopResult.get should be (2)
   }
 
   it should "return success if a stop with zero result" in {
@@ -53,13 +53,13 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val engine = ExecutionEngine(input)
 
     intercept[StopException] {
-      interpreter.doCycles(2)
+      engine.doCycles(2)
     }
-    interpreter.stopped should be (true)
-    interpreter.lastStopResult.get should be (0)
+    engine.stopped should be (true)
+    engine.lastStopResult.get should be (0)
   }
 
   behavior of "Print statement"
@@ -75,9 +75,9 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val engine = ExecutionEngine(input)
 
-    interpreter.doCycles(2)
+    engine.doCycles(2)
 
   }
   it should "support printf formatting" in {
@@ -91,9 +91,9 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val engine = ExecutionEngine(input)
 
-    interpreter.doCycles(2)
+    engine.doCycles(2)
 
   }
 
@@ -110,9 +110,9 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
         """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val engine = ExecutionEngine(input)
 
-    interpreter.doCycles(2)
+    engine.doCycles(2)
 
   }
 }

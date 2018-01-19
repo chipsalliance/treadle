@@ -5,9 +5,9 @@ package treadle
 /**
   * Created by chick on 4/21/16.
   */
-class InterpreterException(message: String) extends Exception(message)
-object InterpreterException {
-  def apply(message: String): InterpreterException = new InterpreterException(message: String)
+class TreadleException(message: String) extends Exception(message)
+object TreadleException {
+  def apply(message: String): TreadleException = new TreadleException(message: String)
 }
 
 class StopException(message: String) extends Exception(message)

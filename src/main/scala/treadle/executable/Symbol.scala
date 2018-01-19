@@ -124,7 +124,7 @@ object DataSize {
       case firrtl.ir.UIntType(IntWidth(bitWidth)) => bitWidth.toInt
       case firrtl.ir.ClockType                    => 1
       case _ =>
-        throw InterpreterException(s"Error:DataSize doesn't know size of $firrtlType")
+        throw TreadleException(s"Error:DataSize doesn't know size of $firrtlType")
     }
   }
 
@@ -165,7 +165,7 @@ object DataType {
       case _: firrtl.ir.UIntType => UnsignedInt
       case firrtl.ir.ClockType   => UnsignedInt
       case t =>
-        throw new InterpreterException(s"DataType does not know firrtl type $t")
+        throw new TreadleException(s"DataType does not know firrtl type $t")
     }
   }
 }

@@ -5,7 +5,7 @@ package treadle
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
 
 //scalastyle:off magic.number
-case class InterpreterOptions(
+case class TreadleOptions(
     writeVCD:          Boolean              = false,
     vcdShowUnderscored:Boolean              = false,
     setVerbose:        Boolean              = false,
@@ -34,72 +34,72 @@ case class InterpreterOptions(
 trait HasInterpreterOptions {
   self: ExecutionOptionsManager =>
 
-  var interpreterOptions = InterpreterOptions()
+  var treadleOptions = TreadleOptions()
 
-  parser.note("firrtl-interpreter-options")
+  parser.note("firrtl-engine-options")
 
   parser.opt[Unit]("fint-write-vcd")
     .abbr("fiwv")
     .foreach { _ =>
-      interpreterOptions = interpreterOptions.copy(writeVCD = true)
+      treadleOptions = treadleOptions.copy(writeVCD = true)
     }
     .text("writes vcd execution log, filename will be base on top")
 
   parser.opt[Unit]("fint-vcd-show-underscored-vars")
     .abbr("fivsuv")
     .foreach { _ =>
-      interpreterOptions = interpreterOptions.copy(vcdShowUnderscored = true)
+      treadleOptions = treadleOptions.copy(vcdShowUnderscored = true)
     }
     .text("vcd output by default does not show var that start with underscore, this overrides that")
 
   parser.opt[Unit]("fint-verbose")
     .abbr("fiv")
     .foreach {_ =>
-      interpreterOptions = interpreterOptions.copy(setVerbose = true)
+      treadleOptions = treadleOptions.copy(setVerbose = true)
     }
-    .text("makes interpreter very verbose")
+    .text("makes engine very verbose")
 
   parser.opt[Unit]("fint-ordered-exec")
     .abbr("fioe")
     .foreach { _ =>
-      interpreterOptions = interpreterOptions.copy(setOrderedExec = true)
+      treadleOptions = treadleOptions.copy(setOrderedExec = true)
     }
     .text("operates on dependencies optimally, can increase overhead, makes verbose mode easier to read")
 
   parser.opt[Unit]("fr-allow-cycles")
     .abbr("fiac")
     .foreach { _ =>
-      interpreterOptions = interpreterOptions.copy(allowCycles = true)
+      treadleOptions = treadleOptions.copy(allowCycles = true)
     }
-    .text(s"allow combinational loops to be processed, though unreliable, default is ${interpreterOptions.allowCycles}")
+    .text(s"allow combinational loops to be processed, though unreliable, default is ${treadleOptions.allowCycles}")
 
   parser.opt[Long]("fint-random-seed")
     .abbr("firs")
       .valueName("<long-value>")
     .foreach { x =>
-      interpreterOptions = interpreterOptions.copy(randomSeed = x)
+      treadleOptions = treadleOptions.copy(randomSeed = x)
     }
     .text("seed used for random numbers generated for tests and poison values, default is current time in ms")
 
   parser.opt[Unit]("show-firrtl-at-load")
     .abbr("fisfas")
     .foreach { _ =>
-      interpreterOptions = interpreterOptions.copy(showFirrtlAtLoad = true)
+      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = true)
     }
     .text("compiled low firrtl at firrtl load time")
 
   parser.opt[Unit]("dont-run-lower-compiler-on-load")
     .abbr("filcol")
     .foreach { _ =>
-      interpreterOptions = interpreterOptions.copy(lowCompileAtLoad = false)
+      treadleOptions = treadleOptions.copy(lowCompileAtLoad = false)
     }
     .text("run lowering compiler when firrtl file is loaded")
 
   parser.opt[Unit]("validif-random")
     .abbr("fivir")
     .foreach { _ =>
-      interpreterOptions = interpreterOptions.copy(validIfIsRandom = true)
-      interpreterOptions = interpreterOptions.copy()
+      treadleOptions = treadleOptions.copy(validIfIsRandom = true)
+      treadleOptions = treadleOptions.copy()
     }
     .text("validIf returns random value when condition is false")
 
@@ -107,19 +107,19 @@ trait HasInterpreterOptions {
     .abbr("firb")
     .valueName("<int-value>")
     .foreach { x =>
-      interpreterOptions = interpreterOptions.copy(rollbackBuffers = x)
-      interpreterOptions = interpreterOptions.copy()
+      treadleOptions = treadleOptions.copy(rollbackBuffers = x)
+      treadleOptions = treadleOptions.copy()
     }
     .text("number of rollback buffers, 0 is no buffers, default is 4")}
 
 object Driver {
 
-  def execute(firrtlInput: String, optionsManager: InterpreterOptionsManager): Option[InterpretiveTester] = {
-    val tester = new InterpretiveTester(firrtlInput, optionsManager)
+  def execute(firrtlInput: String, optionsManager: InterpreterOptionsManager): Option[TreadleTester] = {
+    val tester = new TreadleTester(firrtlInput, optionsManager)
     Some(tester)
   }
 
-  def execute(args: Array[String], firrtlInput: String): Option[InterpretiveTester] = {
+  def execute(args: Array[String], firrtlInput: String): Option[TreadleTester] = {
     val optionsManager = new InterpreterOptionsManager
 
     if (optionsManager.parser.parse(args)) {
@@ -130,7 +130,7 @@ object Driver {
   }
 }
 
-class InterpreterOptionsManager extends ExecutionOptionsManager("interpreter") with HasInterpreterSuite
+class InterpreterOptionsManager extends ExecutionOptionsManager("engine") with HasInterpreterSuite
 
 trait HasInterpreterSuite extends ExecutionOptionsManager with HasFirrtlOptions with HasInterpreterOptions {
   self : ExecutionOptionsManager =>

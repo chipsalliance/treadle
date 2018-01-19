@@ -5,7 +5,7 @@ package treadle.executable
 import firrtl._
 import firrtl.graph.DiGraph
 import firrtl.ir._
-import treadle.{BlackBoxFactory, BlackBoxImplementation, FindModule, InterpreterException}
+import treadle.{BlackBoxFactory, BlackBoxImplementation, FindModule, TreadleException}
 import logger.LazyLogging
 
 import scala.collection.immutable.Set
@@ -21,15 +21,18 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
   def addAssigner(symbol: Symbol, assigner: Assigner): Unit = {
     if(toAssigner.contains(symbol)) {
-      throw new InterpreterException(s"Assigner already exists for $symbol")
+      throw new TreadleException(s"Assigner already exists for $symbol")
     }
     toAssigner(symbol) = assigner
+  }
+  def hasAssigner(symbol: Symbol): Boolean = {
+    toAssigner.contains(symbol)
   }
 
   private val toBlackBoxImplementation: mutable.HashMap[Symbol, BlackBoxImplementation] = new mutable.HashMap()
   def addBlackBoxImplementation(symbol: Symbol, blackBoxImplementation: BlackBoxImplementation): Unit = {
     if(toBlackBoxImplementation.contains(symbol)) {
-      throw new InterpreterException(s"Assigner already exists for $symbol")
+      throw new TreadleException(s"Assigner already exists for $symbol")
     }
     toBlackBoxImplementation(symbol) = blackBoxImplementation
   }
@@ -49,6 +52,8 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
   val registerNames:    mutable.HashSet[String] = new mutable.HashSet[String]
   val inputPortsNames:  mutable.HashSet[String] = new mutable.HashSet[String]
   val outputPortsNames: mutable.HashSet[String] = new mutable.HashSet[String]
+
+  val triggerFor: mutable.HashMap[Symbol, Symbol] = new mutable.HashMap[Symbol, Symbol]
 
   def isRegister(name: String): Boolean = registerNames.contains(name)
   def isTopLevelInput(name: String): Boolean = inputPortsNames.contains(name)
@@ -124,6 +129,15 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
 }
 
 object SymbolTable extends LazyLogging {
+
+  val UpTransitionSuffix = "/rising"
+  def makeUpTransitionName(name: String): String = name + UpTransitionSuffix
+  def makeUpTransitionName(symbol: Symbol): String = symbol.name + UpTransitionSuffix
+
+  val RegisterInputSuffix = "/in"
+  def makeRegisterInputName(name: String): String = name + RegisterInputSuffix
+  def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
+
   def apply(nameToSymbol: mutable.HashMap[String, Symbol]): SymbolTable = new SymbolTable(nameToSymbol)
 
   //scalastyle:off cyclomatic.complexity method.length
@@ -141,6 +155,8 @@ object SymbolTable extends LazyLogging {
     val registerNames = new mutable.HashSet[String]
     val inputPorts    = new mutable.HashSet[String]
     val outputPorts   = new mutable.HashSet[String]
+
+    val triggerFor    = new mutable.HashMap[Symbol, Symbol]
 
     val blackBoxImplementations = new mutable.HashMap[Symbol, BlackBoxImplementation]()
 
@@ -186,7 +202,7 @@ object SymbolTable extends LazyLogging {
           con.loc match {
             case (_: WRef | _: WSubField | _: WSubIndex) =>
               val name = if (registerNames.contains(expand(con.loc.serialize))) {
-                expand(con.loc.serialize) + "/in"
+                SymbolTable.makeRegisterInputName(expand(con.loc.serialize))
               }
               else {
                 expand(con.loc.serialize)
@@ -223,11 +239,26 @@ object SymbolTable extends LazyLogging {
         case DefRegister(info, name, tpe, clockExpression, resetExpression, _) =>
           val expandedName = expand(name)
 
-          val registerIn = Symbol(expandedName + "/in", tpe, RegKind, info = info)
+          val registerIn = Symbol(SymbolTable.makeRegisterInputName(expandedName), tpe, RegKind, info = info)
           val registerOut = Symbol(expandedName, tpe, RegKind, info = info)
           registerNames += registerOut.name
           nameToSymbol(registerIn.name) = registerIn
           nameToSymbol(registerOut.name) = registerOut
+
+          expressionToReferences(clockExpression).headOption.foreach { clockSymbol =>
+            val registerClockPreviousName = SymbolTable.makeUpTransitionName(clockSymbol)
+            val registerClockPrevious = nameToSymbol.get(registerClockPreviousName) match {
+              case Some(symbol) =>
+                symbol
+              case _ =>
+                val symbol = Symbol(registerClockPreviousName, firrtl.ir.ClockType, WireKind, info = info)
+                nameToSymbol(registerClockPreviousName) = symbol
+                symbol
+            }
+            addDependency(registerClockPrevious, Set(clockSymbol, registerOut))
+
+            triggerFor(registerOut) = clockSymbol
+          }
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
@@ -249,7 +280,7 @@ object SymbolTable extends LazyLogging {
           logger.debug(f"IsInvalid found for ${invalid.expr}%20s")
 
         case conditionally: Conditionally =>
-          throw new InterpreterException(s"conditionally unsupported in interpreter $conditionally")
+          throw new TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
           println(s"TODO: Unhandled statement $s")
       }
@@ -283,6 +314,11 @@ object SymbolTable extends LazyLogging {
           val expandedName = expand(port.name)
           val symbol = Symbol(expandedName, port.tpe, PortKind)
           nameToSymbol(expandedName) = symbol
+          if(port.tpe == firrtl.ir.ClockType) {
+            val upTransitionName = SymbolTable.makeUpTransitionName(expandedName)
+            val upTransitionSymbol = Symbol(upTransitionName, port.tpe, PortKind)
+            nameToSymbol(upTransitionName) = upTransitionSymbol
+          }
           if(modulePrefix.isEmpty) {  // this is true only at top level
             if(port.direction == Input) {
               inputPorts += symbol.name
@@ -323,9 +359,9 @@ object SymbolTable extends LazyLogging {
     val module = FindModule(circuit.main, circuit) match {
       case regularModule: firrtl.ir.Module => regularModule
       case externalModule: firrtl.ir.ExtModule =>
-        throw InterpreterException(s"Top level module must be a regular module $externalModule")
+        throw TreadleException(s"Top level module must be a regular module $externalModule")
       case x =>
-        throw InterpreterException(s"Top level module is not the right kind of module $x")
+        throw TreadleException(s"Top level module is not the right kind of module $x")
     }
 
     logger.trace(s"Build SymbolTable pass 1 -- gather starting")
@@ -342,6 +378,7 @@ object SymbolTable extends LazyLogging {
     symbolTable.parentsOf        = sensitivityGraphBuilder.getParentsOfDiGraph
     symbolTable.childrenOf       = sensitivityGraphBuilder.getChildrenOfDiGraph
     symbolTable.toBlackBoxImplementation ++= blackBoxImplementations
+    symbolTable.triggerFor               ++= triggerFor
 
     val sorted: Seq[Symbol] = try {
       symbolTable.childrenOf.linearize

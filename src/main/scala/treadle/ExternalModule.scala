@@ -31,7 +31,7 @@ case class BlackBoxOutput(name: String,
 
 /**
   * This is the template for writing scala functions that implement the behaviour of a
-  * black box i.e. [[firrtl.ir.ExtModule]].  Implementing classes should add internal
+  * black box.  Implementing classes should add internal
   * variables to hold any state information.
   */
 abstract class BlackBoxImplementation {
@@ -50,7 +50,7 @@ abstract class BlackBoxImplementation {
   def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String = ""): BigInt
 
   /**
-    * Called whenever the cycle command of the interpreter is called.
+    * Called whenever the cycle command of the engine is called.
     */
   def cycle(): Unit
 
@@ -64,7 +64,7 @@ abstract class BlackBoxImplementation {
 }
 
 /**
-  * For each instantiation of an ExtModule the interpreter needs a separate instance of
+  * For each instantiation of an ExtModule the engine needs a separate instance of
   * a BlackBoxImplementation. This factory provides it.
   * @example {{{
   *   class ExampleBBFactory extends BlackBoxFactory {
@@ -73,7 +73,7 @@ abstract class BlackBoxImplementation {
   *         case "bb1" => Some(add(new BB1Impl))
   *         case "bb2" => Some(add(new BB2Impl))
   *         case "bb3" => Some(add(new BB3Impl))
-  *         case _ => throw Exception(s"ExampleBBBFactory does not know how to create $instanceName}")
+  *         case _ => throw Exception(s"ExampleBBBFactory does not know how to create " + instanceName)
   *       }
   *     }
   *   }
@@ -89,7 +89,7 @@ abstract class BlackBoxFactory {
   def createInstance(instanceName: String, blackBoxName: String): Option[BlackBoxImplementation]
 
   /**
-    * the factory remembers the implementations it created so the interpreter uses this method to call the
+    * the factory remembers the implementations it created so the engine uses this method to call the
     * cycle methods of each one
     */
   def cycle(): Unit = {

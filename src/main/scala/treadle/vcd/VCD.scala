@@ -107,7 +107,7 @@ object VCD extends LazyLogging {
     * Read and parse the specified vcd file, producing a VCD data structure
  *
     * @param vcdFile name of file to parse
-    *                @param varPrefix only retain vars that contain prefix, remove prefix while recording
+    * @param varPrefix only retain vars that contain prefix, remove prefix while recording
     * @return a populated VCD class
     */
   def read(
@@ -458,7 +458,7 @@ object VCD extends LazyLogging {
 /**
   * Accumulates changes to wires in a running circuit.  If a wire is changed that it doesn't know about it
   * will add it to the list.  Only actual changed values will be seen in final output.  This version only supports
-  * a single top level scope because right now that is what the firrtl-interpreter supports.  It probably is not too
+  * a single top level scope because right now that is what the firrtl-engine supports.  It probably is not too
   * too hard to add, all wires are initialized to 'x' in this version.
  *
   * @param date date file was created

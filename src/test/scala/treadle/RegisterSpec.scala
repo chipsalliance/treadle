@@ -17,36 +17,36 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
         |    reg reg1 : UInt<16>, clock with : (reset => (reset1, UInt(3)))
         |
-        |    reg1 <= add(reg1, UInt(1))
+        |    reg1 <= mux(reset1, UInt<16>("h03"), add(reg1, UInt(1)))
         |
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      interpreterOptions = InterpreterOptions(setVerbose = true)
+      treadleOptions = TreadleOptions(setVerbose = true)
     }
-    val interpreter = FirrtlTerp(input, optionsManager)
+    val engine = ExecutionEngine(input, optionsManager)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
+    engine.setValue("reset1", 1)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (4)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (4)
 
-    interpreter.getValue("reg1") should be (4)
+    engine.getValue("reg1") should be (4)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (5)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (5)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
+    engine.setValue("reset1", 1)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (4)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (4)
   }
 
   it should "be able to initialize registers from other places" in {
@@ -66,55 +66,55 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val interpreter = FirrtlTerp(input)
+    val engine = ExecutionEngine(input)
 
-    // interpreter.setVerbose(true)
-    interpreter.setValue("reset1", 1)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (0)
+    // engine.setVerbose(true)
+    engine.setValue("reset1", 1)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (0)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 1)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (1)
-    interpreter.getValue("reg2") should be (0)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 1)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (1)
+    engine.getValue("reg2") should be (0)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.setValue("reset2", 1)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (0)
-    interpreter.getValue("reg2") should be (1)
+    engine.setValue("reset1", 1)
+    engine.setValue("reset2", 1)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (0)
+    engine.getValue("reg2") should be (1)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (1)
-    interpreter.getValue("reg2") should be (4)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (1)
+    engine.getValue("reg2") should be (4)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (2)
-    interpreter.getValue("reg2") should be (7)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (2)
+    engine.getValue("reg2") should be (7)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (0)
-    interpreter.getValue("reg2") should be (10)
+    engine.setValue("reset1", 1)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (0)
+    engine.getValue("reg2") should be (10)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 0)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (1)
-    interpreter.getValue("reg2") should be (13)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 0)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (1)
+    engine.getValue("reg2") should be (13)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.setValue("reset2", 1)
-    interpreter.doCycles(1)
-    interpreter.getValue("reg1") should be (2)
-    interpreter.getValue("reg2") should be (1)
+    engine.setValue("reset1", 0)
+    engine.setValue("reset2", 1)
+    engine.doCycles(1)
+    engine.getValue("reg1") should be (2)
+    engine.getValue("reg2") should be (1)
 
   }
 
@@ -135,39 +135,39 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      interpreterOptions = InterpreterOptions(setVerbose = true)
+      treadleOptions = TreadleOptions(setVerbose = true)
     }
-    val interpreter = FirrtlTerp(input, optionsManager)
+    val engine = ExecutionEngine(input, optionsManager)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
+    engine.setValue("reset1", 1)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (4)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (4)
 
-    interpreter.getValue("reg1") should be (4)
+    engine.getValue("reg1") should be (4)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (5)
+    engine.setValue("reset1", 0)
+    engine.cycle()
+    engine.getValue("reg1") should be (5)
 
-    interpreter.setValue("reset1", 1)
-    interpreter.getValue("reg1") should be (5)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (3)
+    engine.setValue("reset1", 1)
+    engine.getValue("reg1") should be (5)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
+    engine.cycle()
+    engine.getValue("reg1") should be (3)
 
-    interpreter.setValue("reset1", 0)
-    interpreter.getValue("reg1") should be (3)
-    interpreter.cycle()
-    interpreter.getValue("reg1") should be (4)
+    engine.setValue("reset1", 0)
+    engine.getValue("reg1") should be (3)
+    engine.cycle()
+    engine.getValue("reg1") should be (4)
   }
 
   behavior of "poking registers"
@@ -194,7 +194,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = new InterpretiveTester(input)
+    val tester = new TreadleTester(input)
 
     tester.poke("in", 7)
     tester.step()
@@ -211,5 +211,76 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.peek("T_2") should be (42)
     tester.peek("reg2") should be (42)
     tester.peek("reg1") should be (8)
+  }
+
+  behavior of "multi-clock registers"
+
+  it should "get the timing right" in {
+    val input =
+      """
+        |circuit RegisterDependencies : @[:@2.0]
+        |  module RegisterDependencies : @[:@3.2]
+        |    input clock : Clock @[:@4.4]
+        |    input reset : UInt<1> @[:@5.4]
+        |    input io_in : UInt<16> @[:@6.4]
+        |    input io_en : UInt<1> @[:@6.4]
+        |    output io_o1 : UInt<16> @[:@6.4]
+        |    output io_o2 : UInt<16> @[:@6.4]
+        |
+        |    reg reg1 : UInt<16>, clock with :
+        |      reset => (UInt<1>("h0"), reg1)
+        |    reg clockToggle : UInt<1>, clock with :
+        |      reset => (UInt<1>("h0"), clockToggle)
+        |    reg reg2 : UInt<16>, clock with :
+        |      reset => (UInt<1>("h0"), reg2)
+        |
+        |    node _T_8 = add(reg1, UInt<1>("h1")) @[RegisterDependencies.scala 17:16:@9.4]
+        |    node _T_9 = tail(_T_8, 1) @[RegisterDependencies.scala 17:16:@10.4]
+        |
+        |    node _T_13 = eq(clockToggle, UInt<1>("h0")) @[RegisterDependencies.scala 20:18:@13.4]
+        |    node _T_14 = and(io_en, clockToggle) @[RegisterDependencies.scala 22:23:@15.4]
+        |    node clock2 = asClock(_T_14) @[RegisterDependencies.scala 22:39:@16.4]
+        |
+        |    node _T_18 = add(reg2, UInt<1>("h1")) @[RegisterDependencies.scala 26:18:@18.4]
+        |    node _T_19 = tail(_T_18, 1) @[RegisterDependencies.scala 26:18:@19.4]
+        |
+        |    io_o1 <= reg1
+        |    io_o2 <= reg2
+        |
+        |    reg1 <= mux(reset, io_in, _T_9)
+        |    clockToggle <= mux(reset, UInt<1>("h1"), _T_13)
+        |    reg2 <= mux(reset, UInt<7>("h33"), _T_19)
+        |
+      """.stripMargin
+
+    val manager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        showFirrtlAtLoad = true,
+        setVerbose = true,
+        rollbackBuffers = 15)
+    }
+    val tester = new TreadleTester(input, manager)
+
+    tester.poke("io_in", 77)
+    tester.poke("io_en", 0)
+    tester.poke("reset", 1)
+    tester.step()
+    tester.expect("reg1/in", 77)
+    tester.expect("reg2/in", 51)
+
+    tester.poke("reset", 0)
+    tester.step()
+    tester.expect("reg1", 78)
+    tester.expect("reg2", 52)
+
+    tester.step()
+    tester.expect("reg1", 79)
+    tester.expect("reg2", 53)
+
+    tester.poke("io_en", 1)
+    tester.step()
+    tester.expect("reg1", 80)
+    tester.expect("reg2", 54)
+
   }
 }

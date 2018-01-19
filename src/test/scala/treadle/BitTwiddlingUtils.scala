@@ -8,7 +8,7 @@ import treadle.utils.BitMasks
 /**
   * This object has an alternate way of computing the various primitive operations.
   * This creates a double check that the primitive operations are correct.
-  * These are based on the original interpreter and were overall designed to be correct
+  * These are based on the original engine and were overall designed to be correct
   * rather than fast.
   */
 object BitTwiddlingUtils {

@@ -2,7 +2,7 @@
 
 package treadle.vcd
 
-import treadle.{InterpreterOptionsManager, InterpretiveTester}
+import treadle.{InterpreterOptionsManager, TreadleTester}
 import firrtl.CommonOptions
 import firrtl.util.BackendCompilationUtilities
 import java.io.File
@@ -100,26 +100,26 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       """.stripMargin
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(writeVCD = true)
+      treadleOptions = treadleOptions.copy(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
-    val interpreter = new InterpretiveTester(input, manager)
-    interpreter.poke("a", -1)
-    interpreter.peek("a") should be (BigInt(-1))
-    interpreter.poke("b", -7)
-    interpreter.peek("b") should be (BigInt(-7))
+    val engine = new TreadleTester(input, manager)
+    engine.poke("a", -1)
+    engine.peek("a") should be (BigInt(-1))
+    engine.poke("b", -7)
+    engine.peek("b") should be (BigInt(-7))
 
-    interpreter.step()
-    interpreter.peek("c") should be (BigInt(-8))
+    engine.step()
+    engine.peek("c") should be (BigInt(-8))
 
-    interpreter.poke("a", 255)
-    interpreter.peek("a") should be (BigInt(-1))
-    interpreter.poke("b", 249)
-    interpreter.peek("b") should be (BigInt(-7))
+    engine.poke("a", 255)
+    engine.peek("a") should be (BigInt(-1))
+    engine.poke("b", 249)
+    engine.peek("b") should be (BigInt(-7))
 
-    interpreter.step()
-    interpreter.peek("c") should be (BigInt(-8))
-    interpreter.report()
+    engine.step()
+    engine.peek("c") should be (BigInt(-8))
+    engine.report()
 
   }
 
@@ -130,34 +130,34 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(writeVCD = true)
+      treadleOptions = treadleOptions.copy(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
 
-    val interpreter = new InterpretiveTester(input, manager)
-    interpreter.step()
-    interpreter.poke("io_a", 3)
-    interpreter.poke("io_b", 5)
-    interpreter.peek("io_a") should be (BigInt(3))
-    interpreter.peek("io_b") should be (BigInt(5))
+    val engine = new TreadleTester(input, manager)
+    engine.step()
+    engine.poke("io_a", 3)
+    engine.poke("io_b", 5)
+    engine.peek("io_a") should be (BigInt(3))
+    engine.peek("io_b") should be (BigInt(5))
 
-    interpreter.step()
-    interpreter.peek("io_c") should be (BigInt(8))
+    engine.step()
+    engine.peek("io_c") should be (BigInt(8))
 
-    //    interpreter.poke("io_a", -1)
-//    interpreter.poke("io_b", -7)
-//    interpreter.peek("io_a") should be (BigInt(-1))
-//    interpreter.peek("io_b") should be (BigInt(-7))
+    //    engine.poke("io_a", -1)
+//    engine.poke("io_b", -7)
+//    engine.peek("io_a") should be (BigInt(-1))
+//    engine.peek("io_b") should be (BigInt(-7))
 //
-//    interpreter.step()
-//    interpreter.peek("io_c") should be (BigInt(-8))
+//    engine.step()
+//    engine.peek("io_c") should be (BigInt(-8))
 
-    interpreter.report()
+    engine.report()
   }
 
   behavior of "example from edysusanto"
 
-  //TODO: Fix problem where VCD only saved if verbose mode set before interpreter instantiated
+  //TODO: Fix problem where VCD only saved if verbose mode set before engine instantiated
   it should "align register updates with clock cycles" ignore {
     val input =
       """
@@ -181,18 +181,18 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     // logger.Logger.setLevel(LogLevel.Debug)
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(writeVCD = true)
+      treadleOptions = treadleOptions.copy(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir/vcd_register_delay")
     }
     {
-      val interpreter = new InterpretiveTester(input, manager)
-      interpreter.setVerbose()
-      interpreter.poke("reset", 0)
+      val engine = new TreadleTester(input, manager)
+      engine.setVerbose()
+      engine.poke("reset", 0)
 
-      interpreter.step(50)
+      engine.step(50)
 
-      interpreter.report()
-      interpreter.finish
+      engine.report()
+      engine.finish
     }
 
 //    Thread.sleep(3000)

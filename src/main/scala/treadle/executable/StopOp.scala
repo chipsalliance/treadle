@@ -4,7 +4,7 @@ package treadle.executable
 
 import firrtl.WireKind
 import firrtl.ir.{Info, IntWidth, NoInfo, UIntType}
-import treadle.FirrtlTerp
+import treadle.ExecutionEngine
 
 case class StopOp(
     info       : Info,

@@ -19,7 +19,7 @@ object FindModule {
       case Some(externalModule: DefModule) =>
         externalModule
       case _ =>
-        throw InterpreterException(s"Could not find module $moduleName in circuit $circuit")
+        throw TreadleException(s"Could not find module $moduleName in circuit $circuit")
     }
   }
 }

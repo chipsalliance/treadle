@@ -48,22 +48,22 @@ class LifeCellSpec extends FlatSpec with Matchers {
         |      """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      interpreterOptions = InterpreterOptions(writeVCD = true)
+      treadleOptions = TreadleOptions(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
 
-    new InterpretiveTester(input, optionsManager) {
+    new TreadleTester(input, optionsManager) {
       // setVerbose()
-      step(1)
+      step()
 
       def setAlive(alive: Boolean): Unit = {
         poke("reset", 1)
-        step(1)
+        step()
         poke("reset", 0)
         poke("io_running", 0)
         poke("io_set_alive", if(alive) 1 else 0)
         poke("io_set_dead",  if(alive) 0 else 1)
-        step(1)
+        step()
         poke("io_running", 1)
         poke("io_set_alive", 0)
         poke("io_set_dead",  0)
@@ -95,7 +95,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
         0,0,0,
         0,0,0
       )
-      step(1)
+      step()
       expect("io_is_alive", 0)
 
       // dead cell with > 3 neighbors stays dead
@@ -104,7 +104,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
         1,0,1,
         1,1,1
       )
-      step(1)
+      step()
       expect("io_is_alive", 0)
 
       // live cell with > 3 neighbors stays dead
@@ -113,7 +113,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
         1,1,1,
         1,1,1
       )
-      step(1)
+      step()
       expect("io_is_alive", 0)
 
       // dead cell with exactly three neighbors becomes alive
@@ -123,14 +123,14 @@ class LifeCellSpec extends FlatSpec with Matchers {
         1,0,0,
         1,0,0
       )
-      step(1)
+      step()
       expect("io_is_alive", 1)
       setNeighborsIgnoreCenter(
         1,0,0,
         0,0,1,
         0,1,0
       )
-      step(1)
+      step()
       expect("io_is_alive", 1)
 
       // live cell with one neighbor dies
@@ -139,7 +139,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
         0,1,1,
         0,0,0
       )
-      step(1)
+      step()
       expect("io_is_alive", 0)
 
       // live cell with exactly three neighbors stays alive
@@ -148,7 +148,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
         1,1,0,
         1,0,0
       )
-      step(1)
+      step()
       expect("io_is_alive", 1)
 
       // live cell with exactly four neighbors dies
@@ -157,7 +157,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
         1,1,1,
         1,0,0
       )
-      step(1)
+      step()
       expect("io_is_alive", 0)
 
       // test set_alive
@@ -167,32 +167,32 @@ class LifeCellSpec extends FlatSpec with Matchers {
         0,0,0
       )
 
-      step(1)
+      step()
       poke("io_set_alive", 1)
       poke("io_set_dead", 0)
       poke("io_running", 1)
-      step(1)
+      step()
       expect("io_is_alive", 1)
 
       poke("io_set_alive", 1)
       poke("io_set_dead", 0)
       poke("io_running", 0)
-      step(1)
+      step()
       expect("io_is_alive", 1)
 
       poke("io_set_dead", 1)
       poke("io_set_alive", 0)
       poke("io_running", 1)
-      step(1)
+      step()
       expect("io_is_alive", 0)
 
       poke("io_set_dead", 1)
       poke("io_set_alive", 0)
       poke("io_running", 0)
-      step(1)
+      step()
       expect("io_is_alive", 0)
 
-//      interpreter.circuitState.vcdLoggerOption.get.write(optionsManager.targetDirName + "/" + "life.vcd")
+//      engine.circuitState.vcdLoggerOption.get.write(optionsManager.targetDirName + "/" + "life.vcd")
       report()
     }
   }

@@ -31,7 +31,7 @@ class FanOutAdder extends BlackBoxImplementation {
       case "out1" => Seq("in", "clock")
       case "out2" => Seq("in")
       case "out3" => Seq("in")
-      case _ => throw InterpreterException(s"$name was asked for input dependency for unknown output $outputName")
+      case _ => throw TreadleException(s"$name was asked for input dependency for unknown output $outputName")
     }
   }
 }
@@ -107,11 +107,11 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
       val factory = new FanOutAdderFactory
 
       val optionsManager = new InterpreterOptionsManager {
-        interpreterOptions = InterpreterOptions(blackBoxFactories = Seq(factory), randomSeed = 0L)
+        treadleOptions = TreadleOptions(blackBoxFactories = Seq(factory), randomSeed = 0L)
       }
-      val tester = new InterpretiveTester(adderInput, optionsManager)
-      tester.interpreter.verbose = true
-      tester.interpreter.setVerbose()
+      val tester = new TreadleTester(adderInput, optionsManager)
+      tester.engine.verbose = true
+      tester.engine.setVerbose()
 
       for(i <- 0 until 10) {
         tester.poke("in", i)
@@ -150,11 +150,11 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
       val factory = new BlackBoxCounterFactory
 
       val optionsManager = new InterpreterOptionsManager {
-        interpreterOptions = InterpreterOptions(blackBoxFactories = Seq(factory), randomSeed = 0L)
+        treadleOptions = TreadleOptions(blackBoxFactories = Seq(factory), randomSeed = 0L)
       }
-      val tester = new InterpretiveTester(input, optionsManager)
-      tester.interpreter.verbose = true
-      tester.interpreter.setVerbose()
+      val tester = new TreadleTester(input, optionsManager)
+      tester.engine.verbose = true
+      tester.engine.setVerbose()
 
       tester.poke("clear", 1)
       tester.step()

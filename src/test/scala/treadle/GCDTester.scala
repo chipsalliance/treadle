@@ -58,7 +58,7 @@ class GCDTester extends FlatSpec with Matchers {
         .stripMargin
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(showFirrtlAtLoad = true)
+      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = true)
     }
 
     val values =
@@ -66,10 +66,10 @@ class GCDTester extends FlatSpec with Matchers {
            y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = new InterpretiveTester(gcdFirrtl, manager)
+    val tester = new TreadleTester(gcdFirrtl, manager)
 
     val startTime = System.nanoTime()
-    // interpreter.setVerbose()
+    // engine.setVerbose()
     tester.poke("clock", 1)
 
     List((344, 17, 1)).foreach { case (x, y, z) =>
@@ -109,7 +109,7 @@ class GCDTester extends FlatSpec with Matchers {
     val endTime = System.nanoTime()
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
 
-    val cycle = 11 // tester.interpreter.circuitState.stateCounter
+    val cycle = 11 // tester.engine.circuitState.stateCounter
 
     println(
       f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
@@ -152,7 +152,7 @@ class GCDTester extends FlatSpec with Matchers {
         .stripMargin
 
     val manager = new InterpreterOptionsManager {
-      interpreterOptions = interpreterOptions.copy(showFirrtlAtLoad = true)
+      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = true)
     }
 
     val values =
@@ -160,10 +160,10 @@ class GCDTester extends FlatSpec with Matchers {
            y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = new InterpretiveTester(gcdFirrtl, manager)
+    val tester = new TreadleTester(gcdFirrtl, manager)
 
     val startTime = System.nanoTime()
-    // interpreter.setVerbose()
+    // engine.setVerbose()
     tester.poke("clock", 1)
 
 //    List((34, 17, 17)).foreach { case (x, y, z) =>

@@ -229,6 +229,17 @@ case class TailInts(f1: FuncInt, toDrop: Int, originalWidth: Int) extends IntExp
   }
 }
 
+case class IsPosEdge(symbol: Symbol, symbolPreviousValue: Symbol, dataStore: DataStore) extends IntExpressionResult {
+  def apply(): Int = {
+    if(dataStore.currentIntArray(symbol.index) == 1 && dataStore.currentIntArray(symbolPreviousValue.index) == 0) {
+      1
+    }
+    else {
+      0
+    }
+  }
+}
+
 case class UndefinedInts(width: Int) {
   val maxValue: Int = 1 << width
   def apply(): Int = treadle.random.nextInt(maxValue)

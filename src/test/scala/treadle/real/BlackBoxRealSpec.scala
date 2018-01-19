@@ -39,7 +39,7 @@
 //    "addition should work expand instances as found" in {
 //
 //      val optionsManager = new InterpreterOptionsManager {
-//        interpreterOptions = InterpreterOptions(blackBoxFactories = Seq(new DspRealFactory), randomSeed = 0L)
+//        interpreterOptions = TreadleOptions(blackBoxFactories = Seq(new DspRealFactory), randomSeed = 0L)
 //      }
 //      val tester = new InterpretiveTester(adderInput, optionsManager)
 //      tester.interpreter.verbose = true
@@ -55,7 +55,7 @@
 //
 //    "poison should propagate through black boxes" in {
 //      val optionsManager = new InterpreterOptionsManager {
-//        interpreterOptions = InterpreterOptions(blackBoxFactories = Seq(new DspRealFactory), randomSeed = 0L)
+//        interpreterOptions = TreadleOptions(blackBoxFactories = Seq(new DspRealFactory), randomSeed = 0L)
 //      }
 //      val tester = new InterpretiveTester(adderInput, optionsManager)
 //      tester.interpreter.verbose = true
@@ -92,7 +92,7 @@
 //      """.stripMargin
 //
 //    val optionsManager = new InterpreterOptionsManager {
-//      interpreterOptions = InterpreterOptions(blackBoxFactories = Seq(new DspRealFactory))
+//      interpreterOptions = TreadleOptions(blackBoxFactories = Seq(new DspRealFactory))
 //    }
 //    val tester = new InterpretiveTester(input, optionsManager)
 //    tester.interpreter.verbose = true

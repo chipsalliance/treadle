@@ -4,11 +4,12 @@ package treadle
 
 import firrtl.PortKind
 import firrtl.ir.Circuit
+import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.vcd.VCD
 
 //scalastyle:off magic.number
-class FirrtlTerp(
+class ExecutionEngine(
     val ast: Circuit,
     val optionsManager: HasInterpreterSuite,
     val symbolTable: SymbolTable,
@@ -16,7 +17,11 @@ class FirrtlTerp(
     val scheduler: Scheduler,
     val expressionViews: Map[Symbol, ExpressionView]
 ) {
-  private val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
+  private val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
+
+  val wallTime = new UTC()
+  val cycleTimeIncrement = 1000
+  var cycleNumber: Long = 0
 
   var vcdOption: Option[VCD] = None
   var vcdFileName: String = ""
@@ -36,18 +41,20 @@ class FirrtlTerp(
     * @param isVerbose  The desired verbose setting
     */
   def setVerbose(isVerbose: Boolean = true): Unit = {
+    verbose = isVerbose
     setLeanMode()
     scheduler.setVerboseAssign(isVerbose)
-    verbose = isVerbose
   }
 
   val timer = new Timer
 
-  val clockOption: Option[Symbol] = {
-    symbolTable.get("clock") match {
-      case Some(clock) => Some(clock)
-      case _           => symbolTable.get("clk")
-    }
+  val clockToggler: ClockToggle = symbolTable.get("clock") match {
+    case Some(clock) => new ClockToggler(clock)
+    case _           =>
+      symbolTable.get("clk") match {
+        case Some(clock) => new ClockToggler(clock)
+        case _ => new NullToggler
+      }
   }
 
   if(verbose) {
@@ -56,10 +63,11 @@ class FirrtlTerp(
   scheduler.executeAssigners(scheduler.orphanedAssigns)
   if(verbose) {
     println(s"Finished executing static assignments")
+    println(getPrettyString)
   }
 
   /**
-    * Once a stop has occured, the interpreter will not allow pokes until
+    * Once a stop has occured, the engine will not allow pokes until
     * the stop has been cleared
     */
   def clearStop(): Unit = {dataStore(StopOp.StopOpSymbol) = 0}
@@ -132,7 +140,7 @@ class FirrtlTerp(
     }
     else {
       if(offset - 1 > symbol.slots) {
-        throw InterpreterException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
+        throw TreadleException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
       }
       symbol.normalize(dataStore.getValueAtIndex(symbol.dataSize, index = symbol.index + offset))
     }
@@ -156,7 +164,7 @@ class FirrtlTerp(
                 offset:        Int = 0
               ): BigInt = {
     if(! symbolTable.contains(name)) {
-      throw InterpreterException(s"setValue: Cannot find $name in symbol table")
+      throw TreadleException(s"setValue: Cannot find $name in symbol table")
     }
     val symbol = symbolTable(name)
 
@@ -177,7 +185,7 @@ class FirrtlTerp(
     }
     else {
       if(offset - 1 > symbol.slots) {
-        throw InterpreterException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
+        throw TreadleException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
       }
       if(verbose) {
         println(s"${symbol.name}($offset) <= $value")
@@ -269,25 +277,25 @@ class FirrtlTerp(
   def cycle(showState: Boolean = false): Unit = {
     if(checkStopped("cycle")) return
 
+    cycleNumber += 1L
+
     if(inputsChanged) {
-      if(verbose) {
-        println(s"Executing assigns that depend on inputs")
-      }
-      inputsChanged = false
-      scheduler.executeInputSensitivities()
+      evaluateCircuit()
     }
 
-    clockOption.foreach { clock =>
-      vcdOption.foreach(_.raiseClock())
-      dataStore.AssignInt(clock, GetIntConstant(1).apply).run()
-    }
+    clockToggler.raiseClock()
+    vcdOption.foreach(_.raiseClock())
+    inputsChanged = true
+
     evaluateCircuit()
-    clockOption.foreach { clock =>
-      vcdOption.foreach(_.lowerClock())
-      dataStore.AssignInt(clock, GetIntConstant(0).apply).run()
-    }
+    wallTime.advance(cycleTimeIncrement)
+    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
 
-    if(showState) println(s"FirrtlTerp: next state computed ${"="*80}\n$dataInColumns")
+    clockToggler.lowerClock()
+    vcdOption.foreach(_.lowerClock())
+//    evaluateCircuit()
+
+    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
   }
 
   def doCycles(n: Int): Unit = {
@@ -333,6 +341,7 @@ class FirrtlTerp(
   }
 
   def header: String = {
+    s"CycleNumber: $cycleNumber  wallTime: ${wallTime.currentTime}\n" +
     "Buf " +
       symbolTable.keys.toArray.sorted.map { name =>
         val s = name.takeRight(9)
@@ -342,16 +351,24 @@ class FirrtlTerp(
 
   def dataInColumns: String = {
     val keys = symbolTable.keys.toArray.sorted
-    ("-" * 100) + f"\n${dataStore.previousBufferIndex}%2s  " +
-      keys.map { name =>
-        val symbol = symbolTable(name)
-        val value = symbol.normalize(dataStore.earlierValue(symbolTable(name), 1))
-        f"$value%10.10s" }.mkString("") + f"\n${dataStore.currentBufferIndex}%2s  " +
-      keys.map { name =>
-        val symbol = symbolTable(name)
-        val value = symbol.normalize(dataStore(symbolTable(name)))
-        f"$value%10.10s" }.mkString("") + "\n" +
-      ("-" * 100)
+
+    ("-" * header.length) + "\n" +
+      (if(dataStore.numberOfBuffers > 1) {
+      f"${dataStore.previousBufferIndex}%2s  " +
+        keys.map { name =>
+          val symbol = symbolTable(name)
+          val value = symbol.normalize(dataStore.earlierValue(symbolTable(name), 1))
+          f"$value%10.10s" }.mkString("") + f"\n"
+      }
+      else {
+        ""
+      }) +
+      f"${dataStore.currentBufferIndex}%2s  " +
+        keys.map { name =>
+          val symbol = symbolTable(name)
+          val value = symbol.normalize(dataStore(symbolTable(name)))
+          f"$value%10.10s" }.mkString("") + "\n" +
+        ("-" * header.length)
   }
 
   def getInfoString: String = "Info"  //TODO (chick) flesh this out
@@ -359,9 +376,43 @@ class FirrtlTerp(
     header + "\n" +
     dataInColumns
   }
+
+  trait ClockToggle {
+    def raiseClock(): Unit = {}
+    def lowerClock(): Unit = {}
+  }
+
+  class NullToggler extends ClockToggle
+
+  class ClockToggler(symbol: Symbol) extends ClockToggle {
+    val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
+
+    val upToggler = dataStore.TriggerChecker(
+      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
+    )
+    upToggler.verboseAssign = verbose
+    upToggler.underlyingAssigner.verboseAssign = verbose
+    val downToggler = dataStore.TriggerChecker(
+      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
+    )
+    downToggler.verboseAssign = verbose
+    downToggler.underlyingAssigner.verboseAssign = verbose
+
+    override def raiseClock(): Unit = {
+      if(verbose) println(s"starting raising clock")
+      upToggler.run()
+      if(verbose) println(s"finished raising clock")
+    }
+    override def lowerClock(): Unit = {
+      if(verbose) println(s"starting lowering clock")
+      downToggler.run()
+      if(verbose) println(s"finished lowering clock")
+    }
+  }
+
 }
 
-object FirrtlTerp {
+object ExecutionEngine {
   //scalastyle:off method.length
   /**
     * Construct a Firrtl Execution engine
@@ -369,8 +420,8 @@ object FirrtlTerp {
     * @param optionsManager  options that control configuration and behavior
     * @return                the constructed engine
     */
-  def apply(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): FirrtlTerp = {
-    val interpreterOptions: InterpreterOptions = optionsManager.interpreterOptions
+  def apply(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): ExecutionEngine = {
+    val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
     val ast = firrtl.Parser.parse(input.split("\n").toIterator)
     val verbose: Boolean = interpreterOptions.setVerbose
@@ -424,6 +475,6 @@ object FirrtlTerp {
       println(s"\n${scheduler.render}")
     }
 
-    new FirrtlTerp(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
+    new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
   }
 }
