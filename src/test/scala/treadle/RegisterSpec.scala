@@ -17,7 +17,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
         |    reg reg1 : UInt<16>, clock with : (reset => (reset1, UInt(3)))
         |
-        |    reg1 <= add(reg1, UInt(1))
+        |    reg1 <= mux(reset1, UInt<16>("h03"), add(reg1, UInt(1)))
         |
       """.stripMargin
 
@@ -265,25 +265,22 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.poke("io_en", 0)
     tester.poke("reset", 1)
     tester.step()
-    tester.peek("reg1/in") should be (77)
-    tester.peek("reg2/in") should be (51)
+    tester.expect("reg1/in", 77)
+    tester.expect("reg2/in", 51)
 
     tester.poke("reset", 0)
     tester.step()
-    tester.expect("reg1", 77)
-    tester.peek("reg1") should be (77)
-    tester.peek("reg2") should be (51)
+    tester.expect("reg1", 78)
+    tester.expect("reg2", 52)
 
     tester.step()
-    tester.expect("reg1", 78)
-    tester.peek("reg1") should be (78)
-    tester.peek("reg2") should be (52)
+    tester.expect("reg1", 79)
+    tester.expect("reg2", 53)
 
     tester.poke("io_en", 1)
     tester.step()
-    tester.expect("reg1", 79)
-    tester.peek("reg1") should be (79)
-    tester.peek("reg2") should be (53)
+    tester.expect("reg1", 80)
+    tester.expect("reg2", 54)
 
   }
 }

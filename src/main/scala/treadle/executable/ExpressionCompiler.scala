@@ -616,17 +616,38 @@ class ExpressionCompiler(
               case MuxLongs(cond, tval, fval) =>
                 MuxLongs(
                   dataStore.GetInt(triggerSymbolPrevious.index).apply,
-                  dataStore.GetInt(registerIn.index).apply,
-                  dataStore.GetInt(registerOut.index).apply
+                  dataStore.GetLong(registerIn.index).apply,
+                  dataStore.GetLong(registerOut.index).apply
                 )
               case MuxBigs(cond, tval, fval) =>
                 MuxBigs(
                   dataStore.GetInt(triggerSymbolPrevious.index).apply,
-                  dataStore.GetInt(registerIn.index).apply,
+                  dataStore.GetBig(registerIn.index).apply,
+                  dataStore.GetBig(registerOut.index).apply
+                )
+              case expression: IntExpressionResult =>
+                // If we get here, the register probably did not have a reset value
+                MuxInts(
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                  expression.apply,
+                  dataStore.GetInt(registerOut.index).apply
+                )
+              case expression: LongExpressionResult =>
+                // If we get here, the register probably did not have a reset value
+                MuxLongs(
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                  expression.apply,
+                  dataStore.GetInt(registerOut.index).apply
+                )
+              case expression: BigExpressionResult =>
+                // If we get here, the register probably did not have a reset value
+                MuxBigs(
+                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                  expression.apply,
                   dataStore.GetInt(registerOut.index).apply
                 )
               case otherExpression =>
-                throw new TreadleException(s"We shouldn't get here for register $registerOut, $processedExpression")
+                otherExpression
             }
             makeAssigner(registerIn, processedExpression)
             makeAssigner(registerOut, wrappedExpression)

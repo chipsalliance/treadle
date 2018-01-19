@@ -2,6 +2,7 @@
 
 package treadle.executable
 
+import firrtl.CommonOptions
 import firrtl.ir.IntWidth
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
@@ -44,9 +45,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     val keyToDependent = symbolTable.childrenOf
     val DependentToKey = symbolTable.parentsOf
 
-    keyToDependent.reachableFrom(symbolTable("clock")).size should be (3)
-
-    scheduler.triggeredAssigns.size should be (1)
+    keyToDependent.reachableFrom(symbolTable("clock")).size should be (4)
 
     symbolTable.registerNames.toList.sorted.foreach { key =>
       val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
@@ -138,9 +137,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     val childrenOf = symbolTable.childrenOf
     val parentsOf  = symbolTable.parentsOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (3)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
 
-    scheduler.triggeredAssigns.size should be (1)
     childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
 
     println("All dependencies")
@@ -185,7 +183,11 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val tester = new TreadleTester(simpleFirrtl)
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = TreadleOptions(setVerbose = true)
+      commonOptions = CommonOptions(targetDirName = "test_run_dir")
+    }
+    val tester = new TreadleTester(simpleFirrtl, optionsManager)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -194,9 +196,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     val childrenOf = symbolTable.childrenOf
     val parentsOf  = symbolTable.parentsOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (3)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
 
-    scheduler.triggeredAssigns.size should be (1)
     childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
     childrenOf.reachableFrom(symbolTable("io_in2")) should not contain symbolTable("io_out1")
     childrenOf.reachableFrom(symbolTable("io_in2")) should contain (symbolTable("b3/in"))

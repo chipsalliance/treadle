@@ -279,6 +279,10 @@ class ExecutionEngine(
 
     cycleNumber += 1L
 
+    if(inputsChanged) {
+      evaluateCircuit()
+    }
+
     clockToggler.raiseClock()
     vcdOption.foreach(_.raiseClock())
     inputsChanged = true

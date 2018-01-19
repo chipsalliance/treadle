@@ -305,6 +305,11 @@ object SymbolTable extends LazyLogging {
           val expandedName = expand(port.name)
           val symbol = Symbol(expandedName, port.tpe, PortKind)
           nameToSymbol(expandedName) = symbol
+          if(port.tpe == firrtl.ir.ClockType) {
+            val prevName = expandedName + "/prev"
+            val prevSymbol = Symbol(prevName, port.tpe, PortKind)
+            nameToSymbol(prevName) = prevSymbol
+          }
           if(modulePrefix.isEmpty) {  // this is true only at top level
             if(port.direction == Input) {
               inputPorts += symbol.name
