@@ -86,13 +86,9 @@ class GCDTester extends FlatSpec with Matchers {
 
       var count = 0
       while (tester.peek("io_v") != Big1) {
-        if(count > 1) {
-          tester.setVerbose()
-        }
         count += 1
         tester.step()
       }
-      tester.setVerbose(false)
 
       val right = tester.peek("io_z") == BigInt(z)
       if(right) {

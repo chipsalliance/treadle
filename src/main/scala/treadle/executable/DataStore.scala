@@ -3,8 +3,7 @@
 package treadle.executable
 
 import treadle.vcd.VCD
-import treadle.BlackBoxImplementation
-
+import treadle.{BlackBoxImplementation, ExecutionEngine}
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
@@ -28,9 +27,16 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   nextIndexFor(LongSize) = 0
   nextIndexFor(BigSize)  = 0
 
+  private var executionEngineOption: Option[ExecutionEngine] = None
+  def setExecutionEngine(executionEngine: ExecutionEngine): Unit = {
+    executionEngineOption = Some(executionEngine)
+  }
+
   def numberOfInts: Int  = nextIndexFor(IntSize)
   def numberOfLongs: Int = nextIndexFor(LongSize)
   def numberOfBigs: Int  = nextIndexFor(BigSize)
+
+  val watchList: mutable.HashSet[Symbol] = new mutable.HashSet()
 
   var vcdOption: Option[VCD] = None
 
@@ -117,6 +123,27 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
   }
 
+  def showAssignment(symbol: Symbol, value: BigInt): Unit = {
+    val showValue = symbol.normalize(value)
+    println(s"${symbol.name} <= $showValue")
+    if(watchList.contains(symbol)) {
+      executionEngineOption.foreach { executionEngine =>
+        println(executionEngine.renderComputation(symbol.name))
+      }
+    }
+  }
+
+  def showIndirectAssignment(symbol: Symbol, value: BigInt, index: Int): Unit = {
+    //TODO (chick) Need to build in display of index computation
+    val showValue = symbol.normalize(value)
+    println(s"${symbol.name}($index) <= $showValue")
+    if(watchList.contains(symbol)) {
+      executionEngineOption.foreach { executionEngine =>
+        println(executionEngine.renderComputation(symbol.name))
+      }
+    }
+  }
+
   case class TriggerChecker(
       symbol             : Symbol,
       prevSymbol         : Symbol,
@@ -150,12 +177,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     def runFull(): Unit = {
       val value = expression()
-      if(verboseAssign) {
-        val showValue = symbol.normalize(value)
-        println(s"${symbol.name} <= $showValue")
-      }
       currentIntArray(index) = value
       vcdUpdate(symbol, value)
+      if(verboseAssign) showAssignment(symbol, value)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -177,12 +201,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     def runFull(): Unit = {
       val value = expression()
-      if(verboseAssign) {
-        val showValue = symbol.normalize(value)
-        println(s"${symbol.name} <= $showValue")
-      }
       currentLongArray(index) = value
       vcdUpdate(symbol, value)
+      if(verboseAssign) showAssignment(symbol, value)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -207,12 +228,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
     def runFull(): Unit = {
       val value = expression()
-      if(verboseAssign) {
-        val showValue = symbol.normalize(value)
-        println(s"${symbol.name} <= $showValue")
-      }
       currentBigArray(index) = value
       vcdUpdate(symbol, value)
+      if(verboseAssign) showAssignment(symbol, value)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -273,11 +291,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       if(enable() > 0) {
         val value = expression()
-        if(verboseAssign) {
-          println(s"${symbol.name}(${getMemoryIndex.apply()}) <= $value")
-        }
-        currentIntArray(index + (getMemoryIndex.apply() % memorySymbol.slots)) = value
+        val memoryIndex = getMemoryIndex.apply()
+        currentIntArray(index + (memoryIndex % memorySymbol.slots)) = value
         vcdUpdate(symbol, value)
+        if(verboseAssign) showIndirectAssignment(symbol, value, memoryIndex)
       }
       else {
         if(verboseAssign) {
@@ -310,11 +327,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       if(enable() > 0) {
         val value = expression()
-        if(verboseAssign) {
-          println(s"${symbol.name}(${getMemoryIndex.apply() % memorySymbol.slots}) <= $value")
-        }
-        currentLongArray(index + (getMemoryIndex.apply() % memorySymbol.slots)) = value
+        val memoryIndex = getMemoryIndex.apply()
+        currentLongArray(index + (memoryIndex % memorySymbol.slots)) = value
         vcdUpdate(symbol, value)
+        if(verboseAssign) showIndirectAssignment(symbol, value, memoryIndex)
       }
       else {
         if(verboseAssign) {
@@ -347,11 +363,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       if(enable() > 0) {
         val value = expression()
-        if(verboseAssign) {
-          println(s"${symbol.name}(${getMemoryIndex.apply() % memorySymbol.slots}) <= $value")
-        }
-        currentBigArray(index + (getMemoryIndex.apply() % memorySymbol.slots)) = value
+        val memoryIndex = getMemoryIndex.apply()
+        currentBigArray(index + (memoryIndex % memorySymbol.slots)) = value
         vcdUpdate(symbol, value)
+        if(verboseAssign) showIndirectAssignment(symbol, value, memoryIndex)
       }
       else {
         if(verboseAssign) {
@@ -558,7 +573,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 }
 
 object DataStore {
-  def apply(numberOfBuffers: Int, optimizationLevel: Int = 1): DataStore = {
+  def apply(numberOfBuffers: Int, optimizationLevel: Int): DataStore = {
     new DataStore(numberOfBuffers, optimizationLevel)
   }
 }

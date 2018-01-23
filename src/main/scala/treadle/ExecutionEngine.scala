@@ -20,7 +20,7 @@ class ExecutionEngine(
   private val interpreterOptions = optionsManager.treadleOptions
 
   val wallTime = new UTC()
-  val cycleTimeIncrement = 1000
+  val cycleTimeIncrement = 500
   var cycleNumber: Long = 0
 
   var vcdOption: Option[VCD] = None
@@ -111,9 +111,6 @@ class ExecutionEngine(
 
     val symbols = symbolNames.split(",").map(_.trim).flatMap { s => symbolTable.get(s) }.distinct
 
-    /* this forces the circuit to be current */
-    scheduler.executeActiveAssigns()
-
     symbols.flatMap { symbol =>
       expressionViews.get(symbol) match {
         case Some(_) =>
@@ -129,10 +126,18 @@ class ExecutionEngine(
 
     if(inputsChanged) {
       if(verbose) {
-        println(s"Executing assigns that depend on inputs")
+        println(s"inputs have changed, updating combinationally")
       }
       inputsChanged = false
       scheduler.executeActiveAssigns()
+
+      println("Inputs" + ("-" * 120))
+
+      symbolTable.inputPortsNames.map(symbolTable(_)).foreach { symbol =>
+        println(s"${symbol.name} is ${dataStore(symbol)} ")
+      }
+      println("-" * 120)
+      println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
     }
 
     val symbol = symbolTable(name)
@@ -180,7 +185,7 @@ class ExecutionEngine(
     val adjustedValue = symbol.valueFrom(value)
     if(offset == 0) {
       if(verbose) {
-        println(s"${symbol.name} <= $value")
+        println(s"${symbol.name} <= $value  from tester")
       }
       dataStore(symbol) = adjustedValue
     }
@@ -243,7 +248,7 @@ class ExecutionEngine(
     }
 
     if(verbose) {
-      println(s"Executing assigns that depend on inputs")
+      println(s"Executing all assigns")
     }
     if(inputsChanged) {
       inputsChanged = false
@@ -273,6 +278,8 @@ class ExecutionEngine(
 
     cycleNumber += 1L
 
+    wallTime.advance(cycleTimeIncrement)
+
     if(inputsChanged) {
       evaluateCircuit()
     }
@@ -282,12 +289,11 @@ class ExecutionEngine(
     inputsChanged = true
 
     evaluateCircuit()
+
     wallTime.advance(cycleTimeIncrement)
-    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
 
     clockToggler.lowerClock()
     vcdOption.foreach(_.lowerClock())
-//    evaluateCircuit()
 
     if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
   }
@@ -442,7 +448,9 @@ object ExecutionEngine {
     }
 
     val dataStore = DataStore(
-      numberOfBuffers = interpreterOptions.rollbackBuffers + 1, optimizationLevel = if (verbose) 0 else 1)
+      numberOfBuffers = interpreterOptions.rollbackBuffers + 1,
+      optimizationLevel = if (verbose) 0 else 1
+    )
 
     symbolTable.allocateData(dataStore)
     println(s"Symbol table:\n${symbolTable.render}")
@@ -473,6 +481,8 @@ object ExecutionEngine {
       println(s"\n${scheduler.render}")
     }
 
-    new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
+    val executionEngine = new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
+    executionEngine.dataStore.setExecutionEngine(executionEngine)
+    executionEngine
   }
 }

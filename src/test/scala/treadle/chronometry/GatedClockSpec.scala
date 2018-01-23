@@ -41,7 +41,7 @@ class GatedClockSpec extends FreeSpec with Matchers {
 
   "GatedClockSpec should pass a basic test" in {
     val tester = new TreadleTester(input)
-    tester.setVerbose()
+    // tester.setVerbose()
 
     //    tester.poke("reset", 0)
 //    tester.poke("io_enable", 1)
