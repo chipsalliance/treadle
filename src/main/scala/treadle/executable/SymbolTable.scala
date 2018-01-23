@@ -101,7 +101,7 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
     }.toSet
   }
 
-  def getAllAssigners(): Seq[Assigner] = {
+  def allAssigners(): Seq[Assigner] = {
     toAssigner.values.toSeq
   }
 
@@ -154,12 +154,22 @@ object SymbolTable extends LazyLogging {
 
   //scalastyle:off cyclomatic.complexity method.length
   def apply(
-             circuit: Circuit, blackBoxFactories: Seq[BlackBoxFactory] = Seq.empty, allowCycles: Boolean = false
-           ): SymbolTable = {
+      circuit: Circuit,
+      blackBoxFactories: Seq[BlackBoxFactory] = Seq.empty,
+      allowCycles: Boolean = false
+  ): SymbolTable = {
 
     type SymbolSet = Set[Symbol]
 
     val nameToSymbol = new mutable.HashMap[String, Symbol]()
+    def addSymbol(symbol: Symbol): Unit = {
+      if(nameToSymbol.contains(symbol.name)) {
+        throw new TreadleException(s"Symbol table attempting to re-add symbol $symbol")
+      }
+      else {
+        nameToSymbol(symbol.name) = symbol
+      }
+    }
 
     val sensitivityGraphBuilder: SensitivityGraphBuilder = new SensitivityGraphBuilder
 
@@ -214,6 +224,14 @@ object SymbolTable extends LazyLogging {
         clocks.headOption
       }
 
+      def getClockRisingSymbol(clockSymbol: Symbol, info: Info = NoInfo): Symbol = {
+        val risingSymbolName = SymbolTable.makeUpTransitionName(clockSymbol)
+        nameToSymbol.getOrElseUpdate(
+          risingSymbolName,
+          Symbol(risingSymbolName, firrtl.ir.ClockType, WireKind, info = info)
+        )
+      }
+
       s match {
         case block: Block =>
           block.stmts.foreach { subStatement =>
@@ -237,8 +255,7 @@ object SymbolTable extends LazyLogging {
         case WDefInstance(_, instanceName, moduleName, _) =>
           val expandedName = expand(instanceName)
           instanceNames += expandedName
-          nameToSymbol(expandedName) =
-            Symbol(expandedName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
+          addSymbol(Symbol(expandedName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo))
 
           val subModule = FindModule(moduleName, circuit)
           val newPrefix = if (modulePrefix.isEmpty) instanceName else modulePrefix + "." + instanceName
@@ -249,14 +266,14 @@ object SymbolTable extends LazyLogging {
           logger.debug(s"declaration:DefNode:$name:${expression.serialize} ${expressionToReferences(expression)}")
           val expandedName = expand(name)
           val symbol = Symbol(expandedName, expression.tpe, firrtl.NodeKind, info = info)
-          nameToSymbol(expandedName) = symbol
+          addSymbol(symbol)
           addDependency(symbol, expressionToReferences(expression))
 
         case DefWire(info, name, tpe) =>
           logger.debug(s"declaration:DefWire:$name")
           val expandedName = expand(name)
           val symbol = Symbol(expandedName, tpe, WireKind, info = info)
-          nameToSymbol(expandedName) = symbol
+          addSymbol(symbol)
 
         case DefRegister(info, name, tpe, clockExpression, resetExpression, _) =>
           val expandedName = expand(name)
@@ -264,20 +281,12 @@ object SymbolTable extends LazyLogging {
           val registerIn = Symbol(SymbolTable.makeRegisterInputName(expandedName), tpe, RegKind, info = info)
           val registerOut = Symbol(expandedName, tpe, RegKind, info = info)
           registerNames += registerOut.name
-          nameToSymbol(registerIn.name) = registerIn
-          nameToSymbol(registerOut.name) = registerOut
+          addSymbol(registerIn)
+          addSymbol(registerOut)
 
 //          expressionToReferences(clockExpression).headOption.foreach { clockSymbol =>
           getClockSymbol(clockExpression).foreach { clockSymbol =>
-            val registerClockPreviousName = SymbolTable.makeUpTransitionName(clockSymbol)
-            val registerClockPrevious = nameToSymbol.get(registerClockPreviousName) match {
-              case Some(symbol) =>
-                symbol
-              case _ =>
-                val symbol = Symbol(registerClockPreviousName, firrtl.ir.ClockType, WireKind, info = info)
-                nameToSymbol(registerClockPreviousName) = symbol
-                symbol
-            }
+            val registerClockPrevious = getClockRisingSymbol(clockSymbol)
             addDependency(registerClockPrevious, Set(clockSymbol, registerOut))
 
             clockSignals(clockSymbol) = registerClockPrevious
@@ -292,22 +301,22 @@ object SymbolTable extends LazyLogging {
           logger.debug(s"declaration:DefMemory:${defMemory.name} becomes $expandedName")
 
           Memory.buildSymbols(defMemory, expandedName, sensitivityGraphBuilder).foreach { symbol =>
-            nameToSymbol(symbol.name) = symbol
+            addSymbol(symbol)
           }
 
-        case stop @ Stop(info, _, clockExpression, enableExpression)   =>
+        case stop @ Stop(info, _, clockExpression, _)   =>
           getClockSymbol(clockExpression) match {
             case Some(clockSymbol) =>
-              val risingSymbolName = SymbolTable.makeUpTransitionName(clockSymbol)
-              val risingSymbol = Symbol(risingSymbolName, firrtl.ir.ClockType, WireKind, info = info)
-              nameToSymbol(risingSymbolName) = risingSymbol
+              val risingSymbol = getClockRisingSymbol(clockSymbol)
 
               val stopSymbolName = makeStopName()
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
-              nameToSymbol(stopSymbolName) = stopSymbol
+              addSymbol(stopSymbol)
               stopToStopInfo(stop) = StopInfo(stopSymbol, risingSymbol)
               addDependency(stopSymbol, Set(clockSymbol))
-              nameToSymbol(StopOp.StopOpSymbol.name) = StopOp.StopOpSymbol
+              if(! nameToSymbol.contains(StopOp.StopOpSymbol.name)) {
+                addSymbol(StopOp.StopOpSymbol)
+              }
 
               clockSignals(clockSymbol) = risingSymbol
             case _ =>
@@ -342,7 +351,7 @@ object SymbolTable extends LazyLogging {
         instance.outputDependencies(outputPort.name).foreach { inputPortName =>
           sensitivityGraphBuilder.addSensitivity(
             drivingSymbol = nameToSymbol(expand(inputPortName)),
-            nameToSymbol(expand(outputPort.name))
+            sensitiveSymbol = nameToSymbol(expand(outputPort.name))
           )
         }
       }
@@ -355,11 +364,11 @@ object SymbolTable extends LazyLogging {
         for (port <- module.ports) {
           val expandedName = expand(port.name)
           val symbol = Symbol(expandedName, port.tpe, PortKind)
-          nameToSymbol(expandedName) = symbol
+          addSymbol(symbol)
           if(port.tpe == firrtl.ir.ClockType) {
             val upTransitionName = SymbolTable. makeUpTransitionName(expandedName)
             val upTransitionSymbol = Symbol(upTransitionName, port.tpe, PortKind)
-            nameToSymbol(upTransitionName) = upTransitionSymbol
+            addSymbol(upTransitionSymbol)
           }
           if(modulePrefix.isEmpty) {  // this is true only at top level
             if(port.direction == Input) {

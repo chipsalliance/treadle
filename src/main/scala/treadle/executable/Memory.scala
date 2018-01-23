@@ -248,8 +248,6 @@ object Memory {
 
       compiler.makeAssigner(chain.head, compiler.makeGetIndirect(memorySymbol, data, enable, addr))
 
-      compiler.makeAssigner(chain.head, compiler.makeGetIndirect(memorySymbol, data, enable, addr))
-
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
       chain.grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>

@@ -112,7 +112,7 @@ class ExecutionEngine(
     val symbols = symbolNames.split(",").map(_.trim).flatMap { s => symbolTable.get(s) }.distinct
 
     /* this forces the circuit to be current */
-    scheduler.executeInputSensitivities()
+    scheduler.executeActiveAssigns()
 
     symbols.flatMap { symbol =>
       expressionViews.get(symbol) match {
@@ -132,7 +132,7 @@ class ExecutionEngine(
         println(s"Executing assigns that depend on inputs")
       }
       inputsChanged = false
-      scheduler.executeInputSensitivities()
+      scheduler.executeActiveAssigns()
     }
 
     val symbol = symbolTable(name)
@@ -247,7 +247,7 @@ class ExecutionEngine(
     }
     if(inputsChanged) {
       inputsChanged = false
-      scheduler.executeInputSensitivities()
+      scheduler.executeActiveAssigns()
     }
     if (stopped) {
       lastStopResult match {
@@ -465,8 +465,8 @@ object ExecutionEngine {
     scheduler.setOrphanedAssigners(symbolTable.getAssigners(orphansAndSensitives))
 
     // println(s"Scheduler before sort ${scheduler.renderHeader}")
-//    scheduler.inputDependentAssigns ++= symbolTable.inputChildrenAssigners()
-    scheduler.inputDependentAssigns ++= symbolTable.getAllAssigners()
+//    scheduler.activeAssigns ++= symbolTable.inputChildrenAssigners()
+    scheduler.activeAssigns ++= symbolTable.allAssigners()
     scheduler.sortInputSensitiveAssigns()
 
     if(verbose) {

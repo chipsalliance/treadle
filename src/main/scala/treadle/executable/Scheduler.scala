@@ -7,14 +7,14 @@ import logger.LazyLogging
 import scala.collection.mutable
 
 class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends LazyLogging {
-  var inputDependentAssigns: mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-  val orphanedAssigns:       mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  var activeAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val orphanedAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
   def setVerboseAssign(isVerbose: Boolean): Unit = {
     def setMode(assigner: Assigner): Unit = {
       assigner.verboseAssign = isVerbose
     }
-    inputDependentAssigns.foreach { setMode }
+    activeAssigns.foreach { setMode }
     orphanedAssigns.foreach { setMode }
   }
 
@@ -22,7 +22,7 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
     def setMode(assigner: Assigner): Unit = {
       assigner.setLeanMode(setLean)
     }
-    inputDependentAssigns.foreach { setMode }
+    activeAssigns.foreach { setMode }
     orphanedAssigns.foreach { setMode }
   }
 
@@ -42,16 +42,16 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
   /**
     *  updates signals that depend on inputs
     */
-  def executeInputSensitivities(): Unit = {
-    executeAssigners(inputDependentAssigns)
+  def executeActiveAssigns(): Unit = {
+    executeAssigners(activeAssigns)
   }
 
   /**
     * de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
-    val deduplicatedAssigns = inputDependentAssigns.distinct
-    inputDependentAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
+    val deduplicatedAssigns = activeAssigns.distinct
+    activeAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
       assigner.symbol.cardinalNumber
     }
   }
@@ -70,8 +70,8 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
       orphanedAssigns.map { assigner =>
         assigner.symbol.render
       }.mkString("\n") + "\n\n" +
-    s"Combinational assigns (${inputDependentAssigns.size})\n" +
-    inputDependentAssigns.map { assigner =>
+    s"Active assigns (${activeAssigns.size})\n" +
+    activeAssigns.map { assigner =>
       assigner.symbol.render
     }.mkString("\n") + "\n\n"
   }
