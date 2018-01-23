@@ -131,13 +131,15 @@ class ExecutionEngine(
       inputsChanged = false
       scheduler.executeActiveAssigns()
 
-      println("Inputs" + ("-" * 120))
+      if(verbose) {
+        println("Inputs" + ("-" * 120))
 
-      symbolTable.inputPortsNames.map(symbolTable(_)).foreach { symbol =>
-        println(s"${symbol.name} is ${dataStore(symbol)} ")
+        symbolTable.inputPortsNames.map(symbolTable(_)).foreach { symbol =>
+          println(s"${symbol.name} is ${dataStore(symbol)} ")
+        }
+        println("-" * 120)
+        println(s"ExecutionEngine: next state computed ${"=" * 80}\n$getPrettyString")
       }
-      println("-" * 120)
-      println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
     }
 
     val symbol = symbolTable(name)
