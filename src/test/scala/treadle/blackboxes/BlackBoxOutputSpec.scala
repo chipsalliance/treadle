@@ -107,7 +107,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
       val factory = new FanOutAdderFactory
 
       val optionsManager = new InterpreterOptionsManager {
-        treadleOptions = TreadleOptions(blackBoxFactories = Seq(factory), randomSeed = 0L)
+        treadleOptions = treadleOptions.copy(blackBoxFactories = Seq(factory), randomSeed = 0L)
       }
       val tester = new TreadleTester(adderInput, optionsManager)
       tester.engine.verbose = true
@@ -150,7 +150,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
       val factory = new BlackBoxCounterFactory
 
       val optionsManager = new InterpreterOptionsManager {
-        treadleOptions = TreadleOptions(blackBoxFactories = Seq(factory), randomSeed = 0L)
+        treadleOptions = treadleOptions.copy(blackBoxFactories = Seq(factory), randomSeed = 0L)
       }
       val tester = new TreadleTester(input, optionsManager)
       tester.engine.verbose = true

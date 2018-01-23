@@ -124,7 +124,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   ) extends Assigner {
 
     def checkTransition(): Unit = {
-      val originalValue = currentIntArray(symbol.index)
+      val originalValue = currentIntArray(prevSymbol.index)
       underlyingAssigner.run()
       val finalValue = currentIntArray(symbol.index)
       val transitionValue = if(finalValue > 0 && originalValue == 0) { 1 } else { 0 }

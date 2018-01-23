@@ -121,7 +121,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @param expectedValue the BigInt value required
     */
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
-    engine.scheduler.executeInputSensitivities()
+    engine.scheduler.executeActiveAssigns()
     val value = engine.getValue(name)
     if(value != expectedValue) {
       val renderer = new ExpressionViewRenderer(

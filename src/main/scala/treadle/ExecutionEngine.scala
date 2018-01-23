@@ -8,7 +8,7 @@ import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.vcd.VCD
 
-//scalastyle:off magic.number
+//scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
     val ast: Circuit,
     val optionsManager: HasInterpreterSuite,
@@ -17,7 +17,7 @@ class ExecutionEngine(
     val scheduler: Scheduler,
     val expressionViews: Map[Symbol, ExpressionView]
 ) {
-  private val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
+  private val interpreterOptions = optionsManager.treadleOptions
 
   val wallTime = new UTC()
   val cycleTimeIncrement = 1000
@@ -25,7 +25,8 @@ class ExecutionEngine(
 
   var vcdOption: Option[VCD] = None
   var vcdFileName: String = ""
-  var verbose: Boolean = interpreterOptions.setVerbose
+  var verbose: Boolean = false
+  setVerbose(interpreterOptions.setVerbose)
   var inputsChanged: Boolean = false
 
   def setLeanMode(): Unit = {
@@ -111,7 +112,7 @@ class ExecutionEngine(
     val symbols = symbolNames.split(",").map(_.trim).flatMap { s => symbolTable.get(s) }.distinct
 
     /* this forces the circuit to be current */
-    scheduler.executeInputSensitivities()
+    scheduler.executeActiveAssigns()
 
     symbols.flatMap { symbol =>
       expressionViews.get(symbol) match {
@@ -131,7 +132,7 @@ class ExecutionEngine(
         println(s"Executing assigns that depend on inputs")
       }
       inputsChanged = false
-      scheduler.executeInputSensitivities()
+      scheduler.executeActiveAssigns()
     }
 
     val symbol = symbolTable(name)
@@ -241,19 +242,12 @@ class ExecutionEngine(
       println("-" * 120)
     }
 
-    scheduler.getTriggerExpressions.foreach { key =>
-      if(verbose) {
-        println(s"Running triggered expressions for $key")
-      }
-      scheduler.executeTriggeredAssigns(key)
-    }
-
     if(verbose) {
       println(s"Executing assigns that depend on inputs")
     }
     if(inputsChanged) {
       inputsChanged = false
-      scheduler.executeInputSensitivities()
+      scheduler.executeActiveAssigns()
     }
     if (stopped) {
       lastStopResult match {
@@ -340,8 +334,7 @@ class ExecutionEngine(
     lastStopResult.isDefined
   }
 
-  def header: String = {
-    s"CycleNumber: $cycleNumber  wallTime: ${wallTime.currentTime}\n" +
+  def fieldsHeader: String = {
     "Buf " +
       symbolTable.keys.toArray.sorted.map { name =>
         val s = name.takeRight(9)
@@ -349,10 +342,15 @@ class ExecutionEngine(
       }.mkString("")
   }
 
+  def header: String = {
+    s"CycleNumber: $cycleNumber  wallTime: ${wallTime.currentTime}\n" +
+    fieldsHeader
+  }
+
   def dataInColumns: String = {
     val keys = symbolTable.keys.toArray.sorted
 
-    ("-" * header.length) + "\n" +
+    ("-" * fieldsHeader.length) + "\n" +
       (if(dataStore.numberOfBuffers > 1) {
       f"${dataStore.previousBufferIndex}%2s  " +
         keys.map { name =>
@@ -368,7 +366,7 @@ class ExecutionEngine(
           val symbol = symbolTable(name)
           val value = symbol.normalize(dataStore(symbolTable(name)))
           f"$value%10.10s" }.mkString("") + "\n" +
-        ("-" * header.length)
+        ("-" * fieldsHeader.length)
   }
 
   def getInfoString: String = "Info"  //TODO (chick) flesh this out
@@ -467,9 +465,9 @@ object ExecutionEngine {
     scheduler.setOrphanedAssigners(symbolTable.getAssigners(orphansAndSensitives))
 
     // println(s"Scheduler before sort ${scheduler.renderHeader}")
-    scheduler.inputDependentAssigns ++= symbolTable.inputChildrenAssigners()
+//    scheduler.activeAssigns ++= symbolTable.inputChildrenAssigners()
+    scheduler.activeAssigns ++= symbolTable.allAssigners()
     scheduler.sortInputSensitiveAssigns()
-    scheduler.sortTriggeredAssigns()
 
     if(verbose) {
       println(s"\n${scheduler.render}")

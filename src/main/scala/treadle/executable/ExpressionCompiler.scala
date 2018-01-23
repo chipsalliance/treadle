@@ -79,50 +79,40 @@ class ExpressionCompiler(
   //scalastyle:off cyclomatic.complexity
   def makeAssigner(symbol: Symbol, expressionResult: ExpressionResult): Unit = {
     val assigner = (symbol.dataSize, expressionResult) match {
-      case (IntSize,  result: IntExpressionResult)  => dataStore.AssignInt(symbol, result.apply)
-      case (IntSize,  result: LongExpressionResult) => dataStore.AssignInt(symbol, ToInt(result.apply).apply)
-      case (IntSize,  result: BigExpressionResult)  => dataStore.AssignInt(symbol, ToInt(result.apply).apply)
+      case (IntSize,  result: IntExpressionResult)  => dataStore.AssignInt(symbol,  result.apply)
+      case (IntSize,  result: LongExpressionResult) => dataStore.AssignInt(symbol,  ToInt(result.apply).apply)
+      case (IntSize,  result: BigExpressionResult)  => dataStore.AssignInt(symbol,  ToInt(result.apply).apply)
       case (LongSize, result: IntExpressionResult)  => dataStore.AssignLong(symbol, ToLong(result.apply).apply)
       case (LongSize, result: LongExpressionResult) => dataStore.AssignLong(symbol, result.apply)
       case (LongSize, result: BigExpressionResult)  => dataStore.AssignLong(symbol, BigToLong(result.apply).apply)
-      case (BigSize,  result: IntExpressionResult)  => dataStore.AssignBig(symbol, ToBig(result.apply).apply)
-      case (BigSize,  result: LongExpressionResult) => dataStore.AssignBig(symbol, LongToBig(result.apply).apply)
-      case (BigSize,  result: BigExpressionResult)  => dataStore.AssignBig(symbol, result.apply)
+      case (BigSize,  result: IntExpressionResult)  => dataStore.AssignBig(symbol,  ToBig(result.apply).apply)
+      case (BigSize,  result: LongExpressionResult) => dataStore.AssignBig(symbol,  LongToBig(result.apply).apply)
+      case (BigSize,  result: BigExpressionResult)  => dataStore.AssignBig(symbol,  result.apply)
       case (size, result) =>
         val expressionSize = result match {
-          case _: IntExpressionResult  => "Int"
+          case _: IntExpressionResult => "Int"
           case _: LongExpressionResult => "Long"
-          case _: BigExpressionResult  => "Big"
+          case _: BigExpressionResult => "Big"
         }
 
         throw TreadleException(
           s"Error:assignment size mismatch ($size)${symbol.name} <= ($expressionSize)$expressionResult")
     }
+    addAssigner(assigner)
+  }
+
+  def addAssigner(assigner: Assigner): Unit = {
+    val symbol = assigner.symbol
+
     val adjustedAssigner = {
-      if(triggersFound.contains(symbol)) {
-        val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
-        dataStore.TriggerChecker(symbol, upTransitionSymbol, assigner)
-      }
-      else {
-        assigner
+      symbolTable.clockSignals.get(symbol) match {
+        case Some(triggerSignal) =>
+          dataStore.TriggerChecker(symbol, triggerSignal, assigner)
+        case _ =>
+          assigner
       }
     }
     symbolTable.addAssigner(symbol, adjustedAssigner)
-  }
-
-  def triggeredAssign(
-                       symbolOpt: Option[Symbol],
-                       value: Symbol,
-                       expressionResult: ExpressionResult
-                     ): Unit = {
-    symbolOpt.foreach { symbol =>
-      val assignment = (value.dataSize, expressionResult) match {
-        case (IntSize,  e: IntExpressionResult)  => dataStore.AssignInt(value, e.apply)
-        case (LongSize, e: LongExpressionResult) => dataStore.AssignLong(value, e.apply)
-        case (BigSize,  e: BigExpressionResult)  => dataStore.AssignBig(value, e.apply)
-      }
-      scheduler.triggeredAssigns(symbol) += assignment
-    }
   }
 
   def makeIndirectAssigner(
@@ -160,8 +150,7 @@ class ExpressionCompiler(
         throw TreadleException(
           s"Error:assignment size mismatch ($size)${memorySymbol.name} <= ($expressionSize)$expressionResult")
     }
-    symbolTable.addAssigner(portSymbol, assigner)
-    scheduler.triggeredAssigns(clock) += assigner
+    addAssigner(assigner)
   }
 
   // scalastyle:off
@@ -433,8 +422,11 @@ class ExpressionCompiler(
       }
 
       def processMux(
-                      condition: ExpressionResult, trueExpression: ExpressionResult, falseExpression: ExpressionResult
-                    ): ExpressionResult = {
+          condition: ExpressionResult,
+          trueExpression: ExpressionResult,
+          falseExpression: ExpressionResult
+      ): ExpressionResult = {
+
         condition match {
           case c: IntExpressionResult =>
             (trueExpression, falseExpression) match {
@@ -602,8 +594,7 @@ class ExpressionCompiler(
             val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
 
             val processedExpression = processExpression(con.expr)
-            val triggerSymbol = symbolTable.triggerFor(registerOut)
-            val triggerSymbolPrevious = symbolTable(SymbolTable.makeUpTransitionName(triggerSymbol))
+            val triggerSymbolPrevious = symbolTable.triggersFor(registerOut)
 
             val wrappedExpression: ExpressionResult = processedExpression match {
               case mi : MuxInts =>
@@ -679,7 +670,7 @@ class ExpressionCompiler(
                     }
                     if (port.tpe == ClockType) {
                       val portSymbol = symbolTable(expand(instanceName + "." + port.name))
-                      scheduler.triggeredAssigns(portSymbol) += blackBoxCycler
+                      addAssigner(blackBoxCycler)
                     }
                   }
                 case _ =>
@@ -702,31 +693,29 @@ class ExpressionCompiler(
 
           logger.debug(s"declaration:DefRegister:$name")
 
-          val expandedName = expand(name)
-
-          val clockResult = processExpression(clockExpression)
-          symbolTable.getSymbolFromGetter(clockResult, dataStore) match {
-            case Some(clockSymbol) =>
-              val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
-              val registerOut = symbolTable(expandedName)
-
-              if(! triggersFound.contains(clockSymbol)) {
-                triggersFound += clockSymbol
-              }
-            case _ =>
-              logger.warn(s"Found register with no clock specified")
-          }
+          /*
+          All the magic of register assignment and behavior is triggered off the connect handling.
+          Look there to understand what is going on.
+           */
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)
           logger.debug(s"declaration:DefMemory:${defMemory.name} becomes $expandedName")
           Memory.buildMemoryInternals(defMemory, expandedName, scheduler, compiler = this)
+
         case IsInvalid(info, expression) =>
-//          IsInvalid(info, processExpression(expression))
-        case Stop(info, ret, clockExpression, enableExpression) =>
-          val stopOp = StopOp(info, returnValue = ret, condition = processExpression(enableExpression), dataStore)
-          val clockTrigger = symbolTable.getSymbolFromGetter(processExpression(clockExpression), dataStore).get
-          scheduler.triggeredAssigns(clockTrigger) += stopOp
+
+        case stop @ Stop(info, returnValue, clockExpression, enableExpression) =>
+          symbolTable.stopToStopInfo.get(stop) match {
+            case Some(stopInfo) =>
+              val stopOp = StopOp(
+                stopInfo.stopSymbol, info, returnValue = returnValue,
+                condition = processExpression(enableExpression), stopInfo.triggerSymbol, dataStore
+              )
+              addAssigner(stopOp)
+            case _ =>
+              throw new TreadleException(s"Could not find symbol for Stop $stop")
+          }
 
         case Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
           val printfOp = PrintfOp(
@@ -735,9 +724,11 @@ class ExpressionCompiler(
             processExpression(enableExpression)
           )
           val clockTrigger = symbolTable.getSymbolFromGetter(processExpression(clockExpression), dataStore).get
-          scheduler.triggeredAssigns(clockTrigger) += printfOp
+          //TODO chick: add this back in
+//          scheduler.triggeredAssigns(clockTrigger) += printfOp
 
         case EmptyStmt =>
+
         case conditionally: Conditionally =>
           // logger.debug(s"got a conditionally $conditionally")
           throw new TreadleException(s"conditionally unsupported in engine $conditionally")

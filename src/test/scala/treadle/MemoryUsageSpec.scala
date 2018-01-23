@@ -67,7 +67,10 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
         |    waddr <= bits(GEN_18, 3, 0)
       """.stripMargin
 
-    val tester = new TreadleTester(chirrtlMemInput) {
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false, setVerbose = false)
+    }
+    val tester = new TreadleTester(chirrtlMemInput, optionsManager) {
       poke("reset", 1)
       step()
       poke("reset", 0)
@@ -238,7 +241,10 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
         |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
-    val tester = new TreadleTester(input) {
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false, setVerbose = false)
+    }
+    val tester = new TreadleTester(input, optionsManager) {
       // setVerbose(true)
 
       poke("outer_write_en", 1)

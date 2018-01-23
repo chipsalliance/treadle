@@ -80,13 +80,11 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
-    val scheduler   = simulator.scheduler
 
     val childrenOf = symbolTable.childrenOf
 
     childrenOf.reachableFrom(symbolTable("clock")).size should be (0)
 
-    scheduler.triggeredAssigns.size should be (0)
     childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
 
     println("All dependencies")
@@ -178,7 +176,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      treadleOptions = TreadleOptions(setVerbose = true)
+      treadleOptions = treadleOptions.copy(setVerbose = false)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
     val tester = new TreadleTester(simpleFirrtl, optionsManager)
