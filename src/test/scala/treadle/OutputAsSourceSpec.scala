@@ -21,7 +21,7 @@ class OutputAsSourceSpec extends FreeSpec with Matchers {
       """.stripMargin
 
     val tester = new TreadleTester(input)
-    tester.setVerbose(true)
+    // tester.setVerbose(true)
 
     tester.poke("in1", 1)
 

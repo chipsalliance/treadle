@@ -84,7 +84,7 @@ class RegisterCycleTest extends FreeSpec with Matchers {
 
 
       val tester = new TreadleTester(input)
-      tester.setVerbose()
+      // tester.setVerbose()
 
       tester.poke("io_In", 1)
       tester.step(3)

@@ -17,7 +17,8 @@ case class TreadleOptions(
     showFirrtlAtLoad:  Boolean              = false,
     lowCompileAtLoad:  Boolean              = true,
     validIfIsRandom:   Boolean              = false,
-    rollbackBuffers:   Int                  = 4
+    rollbackBuffers:   Int                  = 4,
+    symbolsToWatch:    Seq[String]          = Seq.empty
   )
   extends firrtl.ComposableOptions {
 
