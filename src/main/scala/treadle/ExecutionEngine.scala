@@ -362,7 +362,7 @@ class ExecutionEngine(
         keys.map { name =>
           val symbol = symbolTable(name)
           val value = symbol.normalize(dataStore.earlierValue(symbolTable(name), 1))
-          f"$value%10.10s" }.mkString("") + f"\n"
+          f" $value%9.9s" }.mkString("") + f"\n"
       }
       else {
         ""
@@ -371,7 +371,7 @@ class ExecutionEngine(
         keys.map { name =>
           val symbol = symbolTable(name)
           val value = symbol.normalize(dataStore(symbolTable(name)))
-          f"$value%10.10s" }.mkString("") + "\n" +
+          f" $value%9.9s" }.mkString("") + "\n" +
         ("-" * fieldsHeader.length)
   }
 

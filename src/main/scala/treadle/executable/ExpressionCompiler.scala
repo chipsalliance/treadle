@@ -627,14 +627,14 @@ class ExpressionCompiler(
                 MuxLongs(
                   dataStore.GetInt(triggerSymbolPrevious.index).apply,
                   expression.apply,
-                  dataStore.GetInt(registerOut.index).apply
+                  dataStore.GetLong(registerOut.index).apply
                 )
               case expression: BigExpressionResult =>
                 // If we get here, the register probably did not have a reset value
                 MuxBigs(
                   dataStore.GetInt(triggerSymbolPrevious.index).apply,
                   expression.apply,
-                  dataStore.GetInt(registerOut.index).apply
+                  dataStore.GetBig(registerOut.index).apply
                 )
               case otherExpression =>
                 otherExpression
