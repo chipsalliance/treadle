@@ -4,16 +4,19 @@ package treadle.executable
 
 import firrtl.WireKind
 import firrtl.ir.{Info, IntWidth, NoInfo, UIntType}
-import treadle.ExecutionEngine
+import treadle.{ExecutionEngine, StopException}
 
 case class StopOp(
-    info       : Info,
-    returnValue: Int,
-    condition  : ExpressionResult,
-    dataStore  : DataStore
+    symbol        : Symbol,
+    info          : Info,
+    returnValue   : Int,
+    condition     : ExpressionResult,
+    triggerSymbol : Symbol,
+    dataStore     : DataStore
 ) extends Assigner {
+  val triggerIndex = triggerSymbol.index
 
-  val symbol: Symbol = StopOp.StopOpSymbol
+  //TODO: (chick) fun should not be matching, this should be determined statically
 
   def run: FuncUnit = {
     val conditionValue = condition match {
@@ -21,8 +24,9 @@ case class StopOp(
       case e: LongExpressionResult => e.apply() > 0L
       case e: BigExpressionResult => e.apply() > Big(0)
     }
-    if (conditionValue) {
-      dataStore(symbol) = returnValue + 1
+    if(conditionValue && dataStore.currentIntArray(triggerIndex) > 0) {
+      dataStore(StopOp.StopOpSymbol) = returnValue + 1
+      throw StopException(s"Failed: Stop result $returnValue")
     }
     () => Unit
   }
@@ -32,3 +36,5 @@ object StopOp {
   val StopOpSymbol = Symbol("/stopped", IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
   StopOpSymbol.cardinalNumber = Int.MaxValue
 }
+
+case class StopInfo(stopSymbol: Symbol, triggerSymbol: Symbol)

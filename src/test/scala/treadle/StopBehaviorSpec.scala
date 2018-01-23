@@ -2,7 +2,8 @@
 
 package treadle
 
-import org.scalatest.{Matchers, FreeSpec}
+import firrtl.CommonOptions
+import org.scalatest.{FreeSpec, Matchers}
 
 class StopBehaviorSpec extends FreeSpec with Matchers {
   val input: String =
@@ -46,7 +47,10 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "Stop should abort engine immediately" in {
-    val tester = new TreadleTester(input)
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(setVerbose = false)
+    }
+    val tester = new TreadleTester(input, optionsManager)
 
     tester.poke("reset", 0)
     tester.poke("io_wrData", (0 << 24) + (255 << 16))

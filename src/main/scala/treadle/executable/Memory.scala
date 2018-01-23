@@ -246,14 +246,14 @@ object Memory {
       val pipelineReadSymbols = buildPipeLine(portName, pipelineName, memory.readLatency)
       val chain = Seq() ++ pipelineReadSymbols ++ Seq(data)
 
-      compiler.triggeredAssign(Some(clock), chain.head, compiler.makeGetIndirect(memorySymbol, data, enable, addr))
+      compiler.makeAssigner(chain.head, compiler.makeGetIndirect(memorySymbol, data, enable, addr))
 
       compiler.makeAssigner(chain.head, compiler.makeGetIndirect(memorySymbol, data, enable, addr))
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
       chain.grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>
-          compiler.triggeredAssign(Some(clock), target, compiler.makeGet(source))
+          compiler.makeAssigner(target, compiler.makeGet(source))
         case _ =>
       }
 
@@ -296,7 +296,7 @@ object Memory {
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
       chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>
-          compiler.triggeredAssign(Some(clockSymbol), target, compiler.makeGet(source))
+          compiler.makeAssigner(target, compiler.makeGet(source))
         case _ =>
       }
 

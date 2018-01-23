@@ -22,7 +22,7 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      treadleOptions = TreadleOptions(setVerbose = true)
+      treadleOptions = treadleOptions.copy(setVerbose = false)
     }
     val engine = ExecutionEngine(input, optionsManager)
 
@@ -135,7 +135,7 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      treadleOptions = TreadleOptions(setVerbose = true)
+      treadleOptions = treadleOptions.copy(setVerbose = false)
     }
     val engine = ExecutionEngine(input, optionsManager)
 
@@ -256,7 +256,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     val manager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
         showFirrtlAtLoad = true,
-        setVerbose = true,
+        setVerbose = false,
         rollbackBuffers = 15)
     }
     val tester = new TreadleTester(input, manager)
