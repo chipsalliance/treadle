@@ -3,7 +3,7 @@
 package treadle
 
 import firrtl.ir.{Expression, Type, Width}
-import treadle.executable.{Assigner, FuncUnit, Symbol}
+import treadle.executable.{Assigner, DataStore, FuncUnit, NoTransition, PositiveEdge, Symbol, Transition}
 
 import scala.collection._
 
@@ -52,7 +52,7 @@ abstract class BlackBoxImplementation {
   /**
     * Called whenever the cycle command of the engine is called.
     */
-  def cycle(): Unit
+  def cycle(transition: Transition): Unit = {}
 
   /**
     * returns a list of names of inputs that this output depends on.
@@ -87,19 +87,20 @@ abstract class BlackBoxFactory {
     blackBox
   }
   def createInstance(instanceName: String, blackBoxName: String): Option[BlackBoxImplementation]
-
-  /**
-    * the factory remembers the implementations it created so the engine uses this method to call the
-    * cycle methods of each one
-    */
-  def cycle(): Unit = {
-    boxes.values.foreach { box => box.cycle() }
-  }
 }
 
-case class BlackBoxCycler(symbol: Symbol, blackBox: BlackBoxImplementation) extends Assigner {
+case class BlackBoxCycler(
+    symbol: Symbol,
+    blackBox: BlackBoxImplementation,
+    transitionSymbol: Symbol,
+    dataStore: DataStore
+) extends Assigner {
+
+  private val index = transitionSymbol.index
+
   override def run: FuncUnit = {
-    blackBox.cycle()
+    val transition = if(dataStore.currentIntArray(index) == 1) PositiveEdge else NoTransition
+    blackBox.cycle(transition)
     () => Unit
   }
 }

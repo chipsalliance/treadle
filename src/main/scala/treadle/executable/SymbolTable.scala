@@ -184,6 +184,12 @@ object SymbolTable extends LazyLogging {
 
     val blackBoxImplementations = new mutable.HashMap[Symbol, BlackBoxImplementation]()
 
+    def addDependency(sensitiveSymbol: Symbol, drivingSymbols: Set[Symbol]): Unit = {
+      drivingSymbols.foreach { drivingSymbol =>
+        sensitivityGraphBuilder.addSensitivity(drivingSymbol = drivingSymbol, sensitiveSymbol)
+      }
+    }
+
     // scalastyle:off
     def processDependencyStatements(modulePrefix: String, s: Statement): Unit = {
       def expand(name: String): String = if (modulePrefix.isEmpty) name else modulePrefix + "." + name
@@ -208,12 +214,6 @@ object SymbolTable extends LazyLogging {
             throw new Exception(s"expressionToReferences:error: unhandled expression $expression")
         }
         result
-      }
-
-      def addDependency(sensitiveSymbol: Symbol, drivingSymbols: Set[Symbol]): Unit = {
-        drivingSymbols.foreach { drivingSymbol =>
-          sensitivityGraphBuilder.addSensitivity(drivingSymbol = drivingSymbol, sensitiveSymbol)
-        }
       }
 
       def getClockSymbol(expression: Expression): Option[Symbol] = {
@@ -252,15 +252,42 @@ object SymbolTable extends LazyLogging {
               addDependency(symbol, expressionToReferences(con.expr))
           }
 
-        case WDefInstance(_, instanceName, moduleName, _) =>
+        case WDefInstance(info, instanceName, moduleName, _) =>
+          /*
+          Port symbols are created by ProcessPorts
+           */
           val expandedName = expand(instanceName)
           instanceNames += expandedName
-          addSymbol(Symbol(expandedName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo))
+          val instanceSymbol = Symbol(expandedName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
+          addSymbol(instanceSymbol)
 
           val subModule = FindModule(moduleName, circuit)
           val newPrefix = if (modulePrefix.isEmpty) instanceName else modulePrefix + "." + instanceName
           logger.debug(s"declaration:WDefInstance:$instanceName:$moduleName prefix now $newPrefix")
           processModule(newPrefix, subModule)
+
+          subModule match {
+            case extModule: ExtModule =>
+              blackBoxImplementations.get(instanceSymbol) match {
+                case Some(implementation) =>
+
+                  for (port <- extModule.ports) {
+                    if(port.direction == Output) {
+                      val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))
+                      implementation.outputDependencies(port.name).foreach { inputName =>
+                        val inputSymbol = nameToSymbol(expand(instanceName + "." + inputName))
+                        addDependency(portSymbol, Set(inputSymbol))
+                      }
+                    }
+                  }
+                case _ =>
+                  println(
+                    s"""WARNING: external module "${extModule.defname}"($modulePrefix:${extModule.name})""" +
+                      """was not matched with an implementation""")
+              }
+            case _ =>
+            // not external module, it was processed above
+          }
 
         case DefNode(info, name, expression) =>
           logger.debug(s"declaration:DefNode:$name:${expression.serialize} ${expressionToReferences(expression)}")
@@ -369,6 +396,8 @@ object SymbolTable extends LazyLogging {
             val upTransitionName = SymbolTable. makeUpTransitionName(expandedName)
             val upTransitionSymbol = Symbol(upTransitionName, port.tpe, PortKind)
             addSymbol(upTransitionSymbol)
+            addDependency(upTransitionSymbol, Set(symbol))
+            clockSignals(symbol) = upTransitionSymbol
           }
           if(modulePrefix.isEmpty) {  // this is true only at top level
             if(port.direction == Input) {

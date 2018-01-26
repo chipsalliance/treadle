@@ -83,7 +83,11 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (0)
+    // clock transition state is the only thing reachable from here
+    childrenOf.reachableFrom(symbolTable("clock")) should
+      contain (symbolTable(SymbolTable.makeUpTransitionName("clock")))
+
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (1)
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
 

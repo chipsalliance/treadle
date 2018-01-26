@@ -17,10 +17,10 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    output c : Fixed
         |    c <= mul(a, b)""".stripMargin
 
-    val tester = new TreadleTester(input)
-    tester.engine.verbose = true
-    tester.engine.setVerbose(true)
-
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(setVerbose = false)
+    }
+    val tester = new TreadleTester(input, optionsManager)
 
     tester.poke("a", BigInt("10", 2))
     tester.poke("b", BigInt("100", 2))
@@ -56,10 +56,11 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    io_out is invalid
         |    io_out <= io_in
       """.stripMargin
-    val tester = new TreadleTester(input)
-    tester.engine.verbose = true
-    tester.engine.setVerbose(true)
 
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(setVerbose = false)
+    }
+    val tester = new TreadleTester(input, optionsManager)
 
     tester.poke("io_in", BigInt("11", 2))
     println(s"got ${tester.peek("io_out")}")
@@ -79,10 +80,12 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    node T_2 = bpset(io.in, 0)
         |    io.out <= T_2
       """.stripMargin
-    val tester = new TreadleTester(input)
-    tester.engine.verbose = true
-    tester.engine.setVerbose(true)
 
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(setVerbose = false)
+    }
+
+    val tester = new TreadleTester(input, optionsManager)
 
     tester.poke("io_in", BigInt("1011", 2))
     println(s"got ${tester.peek("io_out")}")

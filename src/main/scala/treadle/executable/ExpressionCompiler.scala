@@ -656,8 +656,6 @@ class ExpressionCompiler(
               symbolTable.getBlackboxImplementation(instanceSymbol) match {
                 case Some(implementation) =>
                   val instanceSymbol = symbolTable(expand(instanceName))
-                  val blackBoxCycler = BlackBoxCycler(instanceSymbol, implementation)
-                  symbolTable.addAssigner(instanceSymbol, blackBoxCycler)
 
                   for (port <- extModule.ports) {
                     if (port.direction == Output) {
@@ -670,7 +668,9 @@ class ExpressionCompiler(
                     }
                     if (port.tpe == ClockType) {
                       val portSymbol = symbolTable(expand(instanceName + "." + port.name))
-                      addAssigner(blackBoxCycler)
+                      val transitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(portSymbol))
+                      val blackBoxCycler = BlackBoxCycler(instanceSymbol, implementation, transitionSymbol, dataStore)
+                      symbolTable.addAssigner(instanceSymbol, blackBoxCycler)
                     }
                   }
                 case _ =>
@@ -759,8 +759,4 @@ class ExpressionCompiler(
 
     processModule("", module, circuit)
   }
-}
-
-object ExpressionCompiler {
-  val RegisterInputSuffix = "/in"
 }
