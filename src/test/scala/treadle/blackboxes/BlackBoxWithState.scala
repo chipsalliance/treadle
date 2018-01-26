@@ -72,14 +72,14 @@ class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImpleme
     }
   }
 
-  def cycle(transition: Transition): Unit = {
+  override def cycle(transition: Transition): Unit = {
     transition match {
       case PositiveEdge =>
         ps = ns
         ns = ps + 1
-        println(s"blackbox:$name ps $ps ns $ns")
+        // println(s"blackbox:$name ps $ps ns $ns")
       case _ =>
-        println(s"not positive edge, not action for cycle in $name")
+        // println(s"not positive edge, not action for cycle in $name")
     }
   }
 

@@ -52,7 +52,7 @@ abstract class BlackBoxImplementation {
   /**
     * Called whenever the cycle command of the engine is called.
     */
-  def cycle(transition: Transition): Unit
+  def cycle(transition: Transition): Unit = {}
 
   /**
     * returns a list of names of inputs that this output depends on.
