@@ -53,9 +53,10 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
   val inputPortsNames:  mutable.HashSet[String] = new mutable.HashSet[String]
   val outputPortsNames: mutable.HashSet[String] = new mutable.HashSet[String]
 
-  val clockSignals   : mutable.HashMap[Symbol, Symbol] = new mutable.HashMap[Symbol, Symbol]
-  val triggersFor    : mutable.HashMap[Symbol, Symbol] = new mutable.HashMap[Symbol, Symbol]
-  val stopToStopInfo : mutable.HashMap[Stop, StopInfo] = new mutable.HashMap[Stop, StopInfo]
+  val clockSignals     : mutable.HashMap[Symbol, Symbol]   = new mutable.HashMap[Symbol, Symbol]
+  val triggersFor      : mutable.HashMap[Symbol, Symbol]   = new mutable.HashMap[Symbol, Symbol]
+  val stopToStopInfo   : mutable.HashMap[Stop, StopInfo]   = new mutable.HashMap[Stop, StopInfo]
+  val printToPrintInfo : mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
 
   def isRegister(name: String): Boolean = registerNames.contains(name)
   def isTopLevelInput(name: String): Boolean = inputPortsNames.contains(name)
@@ -150,6 +151,12 @@ object SymbolTable extends LazyLogging {
     s"/stop${stopSymbolsFound - 1}"
   }
 
+  var printSymbolsFound: Int = 0
+  def makePrintName(): String = {
+    printSymbolsFound += 1
+    s"/print${printSymbolsFound - 1}"
+  }
+
   def apply(nameToSymbol: mutable.HashMap[String, Symbol]): SymbolTable = new SymbolTable(nameToSymbol)
 
   //scalastyle:off cyclomatic.complexity method.length
@@ -178,9 +185,10 @@ object SymbolTable extends LazyLogging {
     val inputPorts    = new mutable.HashSet[String]
     val outputPorts   = new mutable.HashSet[String]
 
-    val clockSignals    = new mutable.HashMap[Symbol, Symbol]
-    val triggersFor     = new mutable.HashMap[Symbol, Symbol]
-    val stopToStopInfo  = new mutable.HashMap[Stop, StopInfo]
+    val clockSignals      = new mutable.HashMap[Symbol, Symbol]
+    val triggersFor       = new mutable.HashMap[Symbol, Symbol]
+    val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
+    val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
 
     val blackBoxImplementations = new mutable.HashMap[Symbol, BlackBoxImplementation]()
 
@@ -350,8 +358,26 @@ object SymbolTable extends LazyLogging {
               throw new TreadleException(s"Can't find clock for $stop")
           }
 
-        case _: Print  =>
+        case print @ Print(info, string, args, clockExpression, enableExpression)  =>
+          getClockSymbol(clockExpression) match {
+            case Some(clockSymbol) =>
+              val risingSymbol = getClockRisingSymbol(clockSymbol)
 
+              val printSymbolName = makePrintName()
+              val printSymbol = Symbol(
+                printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
+
+              addSymbol(printSymbol)
+              printToPrintInfo(print) = PrintInfo(printSymbol, risingSymbol)
+              addDependency(printSymbol, Set(clockSymbol))
+              if(! nameToSymbol.contains(StopOp.StopOpSymbol.name)) {
+                addSymbol(StopOp.StopOpSymbol)
+              }
+
+              clockSignals(clockSymbol) = risingSymbol
+            case _ =>
+              throw new TreadleException(s"Can't find clock for $print")
+          }
         case EmptyStmt =>
 
         case invalid: IsInvalid =>
@@ -458,6 +484,7 @@ object SymbolTable extends LazyLogging {
     symbolTable.toBlackBoxImplementation ++= blackBoxImplementations
     symbolTable.clockSignals             ++= clockSignals
     symbolTable.stopToStopInfo           ++= stopToStopInfo
+    symbolTable.printToPrintInfo         ++= printToPrintInfo
     symbolTable.triggersFor              ++= triggersFor
 
     symbolTable.parentsOf                = sensitivityGraphBuilder.getParentsOfDiGraph

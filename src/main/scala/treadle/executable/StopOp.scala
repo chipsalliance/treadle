@@ -14,7 +14,8 @@ case class StopOp(
     triggerSymbol : Symbol,
     dataStore     : DataStore
 ) extends Assigner {
-  val triggerIndex = triggerSymbol.index
+
+  private val triggerIndex = triggerSymbol.index
 
   //TODO: (chick) fun should not be matching, this should be determined statically
 
@@ -24,7 +25,7 @@ case class StopOp(
       case e: LongExpressionResult => e.apply() > 0L
       case e: BigExpressionResult => e.apply() > Big(0)
     }
-    if(conditionValue && dataStore.currentIntArray(triggerIndex) > 0) {
+    if(conditionValue && dataStore.currentIntArray(triggerIndex) == 1) {
       dataStore(StopOp.StopOpSymbol) = returnValue + 1
       throw StopException(s"Failed: Stop result $returnValue")
     }

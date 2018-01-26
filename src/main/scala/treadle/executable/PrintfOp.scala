@@ -6,13 +6,16 @@ import firrtl.WireKind
 import firrtl.ir._
 
 case class PrintfOp(
-                     info: Info,
-                     string: StringLit,
-                     args: Seq[ExpressionResult],
-                     condition: ExpressionResult
-                   ) extends Assigner {
+    symbol        : Symbol,
+    info          : Info,
+    string        : StringLit,
+    args          : Seq[ExpressionResult],
+    condition     : ExpressionResult,
+    triggerSymbol : Symbol,
+    dataStore     : DataStore
+) extends Assigner {
 
-  val symbol: Symbol = PrintfOp.PrintfOpSymbol
+  private val triggerIndex = triggerSymbol.index
 
   def run: FuncUnit = {
     val conditionValue = condition match {
@@ -20,14 +23,15 @@ case class PrintfOp(
       case e: LongExpressionResult => e.apply() > 0L
       case e: BigExpressionResult  => e.apply() > Big(0)
     }
-    if(conditionValue) {
+    if(conditionValue && dataStore.currentIntArray(triggerIndex) == 1) {
       val currentArgValues = args.map {
         case e: IntExpressionResult  => e.apply()
         case e: LongExpressionResult => e.apply()
         case e: BigExpressionResult  => e.apply()
       }
       val formatString = string.escape
-      print(executeVerilogPrint(formatString, currentArgValues))
+      val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
+      print(instantiatedString.drop(1).dropRight(1))
     }
     () => Unit
   }
@@ -76,3 +80,5 @@ object PrintfOp {
   PrintfOpSymbol.index = 0
   PrintfOpSymbol.cardinalNumber = Int.MaxValue - 1 // this goes after everything except for StopOp
 }
+
+case class PrintInfo(printSymbol: Symbol, triggerSymbol: Symbol)
