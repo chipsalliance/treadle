@@ -5,6 +5,7 @@ package treadle.blackboxes
 import firrtl.ir.Type
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.executable.{PositiveEdge, Transition}
 
 //scalastyle:off magic.number
 
@@ -24,7 +25,7 @@ class FanOutAdder extends BlackBoxImplementation {
     inputValues.head + BigInt(inc)
   }
 
-  override def cycle(): Unit = {}
+  override def cycle(transition: Transition): Unit = {}
 
   override def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
@@ -58,8 +59,10 @@ class BlackBoxCounter extends BlackBoxImplementation {
     counter
   }
 
-  override def cycle(): Unit = {
-    if(! clearSet) counter += 1
+  override def cycle(transition: Transition): Unit = {
+    if(transition == PositiveEdge) {
+      if(! clearSet) counter += 1
+    }
   }
 
   override def outputDependencies(outputName: String): Seq[String] = {
@@ -123,7 +126,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
     }
   }
 
-  "this test a black box of an accumulator that implements reset" - {
+  "this tests a black box of an accumulator that implements reset" - {
     val input =
       """
         |circuit CounterTest :

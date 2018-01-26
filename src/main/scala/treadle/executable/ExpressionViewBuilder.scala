@@ -222,7 +222,6 @@ class ExpressionViewBuilder(
               symbolTable.getBlackboxImplementation(instanceSymbol) match {
                 case Some(implementation) =>
                   val instanceSymbol = symbolTable(expand(instanceName))
-                  val blackBoxCycler = BlackBoxCycler(instanceSymbol, implementation)
 
                   for (port <- extModule.ports) {
                     if (port.direction == Output) {

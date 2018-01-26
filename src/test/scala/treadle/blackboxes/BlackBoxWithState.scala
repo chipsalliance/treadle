@@ -5,6 +5,7 @@ package treadle.blackboxes
 import firrtl.ir.Type
 import treadle.{BlackBoxFactory, BlackBoxImplementation, InterpreterOptionsManager, TreadleTester}
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.executable.{PositiveEdge, Transition}
 
 
 // scalastyle:off magic.number
@@ -24,7 +25,6 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         |    input clock : Clock @[:@11.4]
         |    input reset : UInt<1> @[:@12.4]
         |    output io_data : UInt<16> @[:@13.4]
-        |    input io_clock : Clock @[:@13.4]
         |
         |    inst m of AccumBlackBox @[AccumBlackBoxSpec.scala 93:17:@15.4]
         |    node _T_4 = bits(reset, 0, 0) @[AccumBlackBoxSpec.scala 96:9:@20.4]
@@ -36,7 +36,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
 //    printf(clock, and(and(UInt<1>("h1"), _T_6), UInt<1>("h1")), "m.io.data %d io.data %d\n", m.data, io_data) @[AccumBlackBoxSpec.scala 96:9:@23.6]
 
     val manager = new InterpreterOptionsManager {
-      treadleOptions = treadleOptions.copy(blackBoxFactories = Seq(new AccumBlackBoxFactory))
+      treadleOptions = treadleOptions.copy(setVerbose = true, blackBoxFactories = Seq(new AccumBlackBoxFactory))
     }
     val tester = new TreadleTester(input, manager)
 
@@ -73,10 +73,15 @@ class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImpleme
     }
   }
 
-  def cycle(): Unit = {
-    ps = ns
-    ns = ps + 1
-    println(s"blackbox:$name ps $ps ns $ns")
+  def cycle(transition: Transition): Unit = {
+    transition match {
+      case PositiveEdge =>
+        ps = ns
+        ns = ps + 1
+        println(s"blackbox:$name ps $ps ns $ns")
+      case _ =>
+        println(s"not positive edge, not action for cycle in $name")
+    }
   }
 
   def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {

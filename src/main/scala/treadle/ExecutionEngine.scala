@@ -58,11 +58,14 @@ class ExecutionEngine(
       }
   }
 
-  if(verbose) {
+  if(verbose && scheduler.orphanedAssigns.nonEmpty) {
     println(s"Executing static assignments")
   }
+  else {
+    println(s"No static assignments")
+  }
   scheduler.executeAssigners(scheduler.orphanedAssigns)
-  if(verbose) {
+  if(verbose && scheduler.orphanedAssigns.nonEmpty) {
     println(s"Finished executing static assignments")
     println(getPrettyString)
   }
@@ -240,21 +243,24 @@ class ExecutionEngine(
   def evaluateCircuit(specificDependencies: Seq[String] = Seq()): Unit = {
     dataStore.advanceBuffers()
 
-    if(verbose) {
-      println("Inputs" + ("-" * 120))
-
-      symbolTable.inputPortsNames.map(symbolTable(_)).foreach { symbol =>
-        println(s"${symbol.name} is ${dataStore(symbol)} ")
-      }
-      println("-" * 120)
-    }
-
-    if(verbose) {
-      println(s"Executing all assigns")
-    }
     if(inputsChanged) {
       inputsChanged = false
+      if(verbose) {
+        println("Inputs" + ("-" * 120))
+
+        symbolTable.inputPortsNames.map(symbolTable(_)).foreach { symbol =>
+          println(s"${symbol.name} is ${dataStore(symbol)} ")
+        }
+        println("-" * 120)
+      }
+
+      if(verbose) {
+        println(s"Executing all assigns")
+      }
       scheduler.executeActiveAssigns()
+      if(verbose) {
+        println(s"Executing all assigns finished")
+      }
     }
     if (stopped) {
       lastStopResult match {
@@ -455,7 +461,10 @@ object ExecutionEngine {
     )
 
     symbolTable.allocateData(dataStore)
-    println(s"Symbol table:\n${symbolTable.render}")
+
+    if(verbose) {
+      println(s"Symbol table:\n${symbolTable.render}")
+    }
 
     val scheduler = new Scheduler(dataStore, symbolTable)
 
