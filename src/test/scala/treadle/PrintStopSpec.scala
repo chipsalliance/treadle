@@ -115,4 +115,61 @@ class PrintStopSpec extends FlatSpec with Matchers {
     engine.doCycles(2)
 
   }
+
+  it should "print at the right part of clock cycle" in {
+    val input =
+      """
+        |circuit Stop0 :
+        |  module Stop0 :
+        |    input clock : Clock
+        |    input reset: UInt<1>
+        |    input in1 : UInt<16>
+        |    input in2 : UInt<16>
+        |    input enable: UInt<1>
+        |
+        |    node x = add(in1, UInt<1>("h1"))
+        |
+        |    reg reg : UInt<8>, clock with :
+        |      reset => (reset, UInt<8>("h0"))
+        |
+        |    reg <= add(reg, UInt<1>("h1"))
+        |    node clockInt = asUInt(clock)
+        |
+        |    printf(clock, enable, "in1: %d, x : %d, reg: %d, clock %d, enable: %d\n", in1, x, reg, clockInt, enable)
+        |
+        """.stripMargin
+
+    val tester = new TreadleTester(input)
+    tester.poke("enable", 0)
+    tester.poke("in1", 1)
+    println("before peek")
+    println(s"x ${tester.peek("x")}")
+    println("after peek")
+
+    tester.poke("in2", 2)
+    println("before cycle")
+    tester.step()
+    println("after cycle")
+    println("before peek")
+    println(s"x ${tester.peek("x")}")
+    println("after peek")
+
+    tester.poke("enable", 1)
+    tester.poke("in1", 1)
+    println("before peek")
+    println(s"x ${tester.peek("x")}")
+    println("after peek")
+
+    tester.poke("in2", 2)
+    println("before cycle")
+    tester.step()
+    println("after cycle")
+    println("before peek")
+    println(s"x ${tester.peek("x")}")
+    println("after peek")
+
+    println("before peek")
+    tester.step()
+    println("after peek")
+  }
 }

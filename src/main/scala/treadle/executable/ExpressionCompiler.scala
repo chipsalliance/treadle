@@ -717,15 +717,22 @@ class ExpressionCompiler(
               throw new TreadleException(s"Could not find symbol for Stop $stop")
           }
 
-        case Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
-          val printfOp = PrintfOp(
-            info, stringLiteral,
-            argExpressions.map { expression => processExpression(expression) },
-            processExpression(enableExpression)
-          )
-          val clockTrigger = symbolTable.getSymbolFromGetter(processExpression(clockExpression), dataStore).get
-          //TODO chick: add this back in
-//          scheduler.triggeredAssigns(clockTrigger) += printfOp
+        case print @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
+
+          symbolTable.printToPrintInfo.get(print) match {
+            case Some(printInfo) =>
+              val printOp = PrintfOp(
+                printInfo.printSymbol,
+                info, stringLiteral,
+                argExpressions.map { expression => processExpression(expression) },
+                processExpression(enableExpression),
+                printInfo.triggerSymbol,
+                dataStore
+              )
+              addAssigner(printOp)
+            case _ =>
+              throw new TreadleException(s"Could not find symbol for Print $print")
+          }
 
         case EmptyStmt =>
 
