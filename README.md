@@ -47,8 +47,8 @@ The easiest way to invoke the interpreter is through a test based harness. The I
 ClassicTester, it's api consists of poke, peek and expect statements. Here is an example of a GCD Circuit
 
 ```scala
-import Chisel._
-import firrtl_interpreter.InterpretiveTester
+import chisel._
+import treadle.TreadleTester
 import org.scalatest.{Matchers, FlatSpec}
 
 object GCDCalculator {
@@ -70,29 +70,28 @@ object GCDCalculator {
 }
 
 class GCD extends Module {
-  val io = new Bundle {
-    val a  = UInt(INPUT,  16)
-    val b  = UInt(INPUT,  16)
-    val e  = Bool(INPUT)
-    val z  = UInt(OUTPUT, 16)
-    val v  = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle {
+    val a  = Input(UInt(16.W))
+    val b  = Input(UInt(16.W)))
+    val e  = Input(Bool())
+    val z  = Output(UInt(16.W))
+    val v  = Output(Bool())
+  })
   val x  = Reg(UInt())
   val y  = Reg(UInt())
-  when   (x > y) { x := x - y }
-  unless (x > y) { y := y - x }
+  when(x > y) { x := x - y }
+    .elsewhen(x <= y) { y := y - x }
   when (io.e) { x := io.a; y := io.b }
   io.z := x
   io.v := y === UInt(0)
 }
 
-
-class InterpreterUsageSpec extends FlatSpec with Matchers {
+class TreadleUsageSpec extends FlatSpec with Matchers {
 
   "GCD" should "return correct values for a range of inputs" in {
     val s = Driver.emit(() => new GCD)
 
-    val tester = new InterpretiveTester(s)
+    val tester = new TreadleTester(s)
 
     for {
       i <- 1 to 100
