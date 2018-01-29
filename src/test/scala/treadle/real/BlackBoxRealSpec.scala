@@ -39,7 +39,7 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
 
       val optionsManager = new InterpreterOptionsManager {
         treadleOptions = treadleOptions.copy(
-          setVerbose = true,
+          setVerbose = false,
           blackBoxFactories = Seq(new DspRealFactory),
           randomSeed = 0L
         )
@@ -75,7 +75,7 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
 
     val optionsManager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = true,
+        setVerbose = false,
         blackBoxFactories = Seq(new DspRealFactory),
         randomSeed = 0L
       )
