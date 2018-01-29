@@ -349,8 +349,10 @@ object SymbolTable extends LazyLogging {
               addSymbol(stopSymbol)
               stopToStopInfo(stop) = StopInfo(stopSymbol, risingSymbol)
               addDependency(stopSymbol, Set(clockSymbol))
-              if(! nameToSymbol.contains(StopOp.StopOpSymbol.name)) {
-                addSymbol(StopOp.StopOpSymbol)
+              if(! nameToSymbol.contains(StopOp.stopHappenedName)) {
+                addSymbol(
+                  Symbol(StopOp.stopHappenedName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(31)), NoInfo)
+                )
               }
 
               clockSignals(clockSymbol) = risingSymbol
@@ -370,9 +372,6 @@ object SymbolTable extends LazyLogging {
               addSymbol(printSymbol)
               printToPrintInfo(print) = PrintInfo(printSymbol, risingSymbol)
               addDependency(printSymbol, Set(clockSymbol))
-              if(! nameToSymbol.contains(StopOp.StopOpSymbol.name)) {
-                addSymbol(StopOp.StopOpSymbol)
-              }
 
               clockSignals(clockSymbol) = risingSymbol
             case _ =>

@@ -710,7 +710,9 @@ class ExpressionCompiler(
             case Some(stopInfo) =>
               val stopOp = StopOp(
                 stopInfo.stopSymbol, info, returnValue = returnValue,
-                condition = processExpression(enableExpression), stopInfo.triggerSymbol, dataStore
+                condition = processExpression(enableExpression), stopInfo.triggerSymbol,
+                symbolTable(StopOp.stopHappenedName),
+                dataStore
               )
               addAssigner(stopOp)
             case _ =>

@@ -12,6 +12,7 @@ case class StopOp(
     returnValue   : Int,
     condition     : ExpressionResult,
     triggerSymbol : Symbol,
+    hasStopped    : Symbol,
     dataStore     : DataStore
 ) extends Assigner {
 
@@ -26,7 +27,7 @@ case class StopOp(
       case e: BigExpressionResult => e.apply() > Big(0)
     }
     if(conditionValue && dataStore.currentIntArray(triggerIndex) == 1) {
-      dataStore(StopOp.StopOpSymbol) = returnValue + 1
+      dataStore(hasStopped) = returnValue + 1
       throw StopException(s"Failed: Stop result $returnValue")
     }
     () => Unit
@@ -34,7 +35,7 @@ case class StopOp(
 }
 
 object StopOp {
-  val StopOpSymbol = Symbol("/stopped", IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
+  val stopHappenedName = "/stopped"
 }
 
 case class StopInfo(stopSymbol: Symbol, triggerSymbol: Symbol)

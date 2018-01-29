@@ -70,12 +70,6 @@ class ExecutionEngine(
     println(getPrettyString)
   }
 
-  /**
-    * Once a stop has occured, the engine will not allow pokes until
-    * the stop has been cleared
-    */
-  def clearStop(): Unit = {dataStore(StopOp.StopOpSymbol) = 0}
-
   def makeVCDLogger(fileName: String, showUnderscored: Boolean): Unit = {
     val vcd = VCD(ast.main)
 
@@ -318,6 +312,7 @@ class ExecutionEngine(
     }
   }
 
+  private val stopHappenedSymbolOpt = symbolTable.get(StopOp.stopHappenedName)
   /**
     * returns that value specified by a StopOp when
     * its condition is satisfied.  Only defined when
@@ -325,17 +320,17 @@ class ExecutionEngine(
     * @return
     */
   def lastStopResult: Option[Int] = {
-    if(symbolTable.contains(StopOp.StopOpSymbol.name)) {
-      val stopValue = dataStore(StopOp.StopOpSymbol).toInt
-      if (stopValue > 0) {
-        Some(stopValue - 1)
-      }
-      else {
+    stopHappenedSymbolOpt match {
+      case Some(hasStoppedSymbol) =>
+        val stopValue = dataStore(hasStoppedSymbol).toInt
+        if (stopValue > 0) {
+          Some(stopValue - 1)
+        }
+        else {
+          None
+        }
+      case _ =>
         None
-      }
-    }
-    else {
-      None
     }
   }
 

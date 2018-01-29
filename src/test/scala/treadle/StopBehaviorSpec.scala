@@ -48,7 +48,7 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
 
   "Stop should abort engine immediately" in {
     val optionsManager = new InterpreterOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
+      treadleOptions = treadleOptions.copy(setVerbose = true)
     }
     val tester = new TreadleTester(input, optionsManager)
 
