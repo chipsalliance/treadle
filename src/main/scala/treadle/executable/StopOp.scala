@@ -35,7 +35,6 @@ case class StopOp(
 
 object StopOp {
   val StopOpSymbol = Symbol("/stopped", IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
-  StopOpSymbol.cardinalNumber = Int.MaxValue
 }
 
 case class StopInfo(stopSymbol: Symbol, triggerSymbol: Symbol)

@@ -145,18 +145,6 @@ object SymbolTable extends LazyLogging {
   def makeRegisterInputName(name: String): String = name + RegisterInputSuffix
   def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
 
-  var stopSymbolsFound: Int = 0
-  def makeStopName(): String = {
-    stopSymbolsFound += 1
-    s"/stop${stopSymbolsFound - 1}"
-  }
-
-  var printSymbolsFound: Int = 0
-  def makePrintName(): String = {
-    printSymbolsFound += 1
-    s"/print${printSymbolsFound - 1}"
-  }
-
   def apply(nameToSymbol: mutable.HashMap[String, Symbol]): SymbolTable = new SymbolTable(nameToSymbol)
 
   //scalastyle:off cyclomatic.complexity method.length
@@ -167,6 +155,18 @@ object SymbolTable extends LazyLogging {
   ): SymbolTable = {
 
     type SymbolSet = Set[Symbol]
+
+    var stopSymbolsFound: Int = 0
+    def makeStopName(): String = {
+      stopSymbolsFound += 1
+      s"/stop${stopSymbolsFound - 1}"
+    }
+
+    var printSymbolsFound: Int = 0
+    def makePrintName(): String = {
+      printSymbolsFound += 1
+      s"/print${printSymbolsFound - 1}"
+    }
 
     val nameToSymbol = new mutable.HashMap[String, Symbol]()
     def addSymbol(symbol: Symbol): Unit = {
@@ -358,7 +358,7 @@ object SymbolTable extends LazyLogging {
               throw new TreadleException(s"Can't find clock for $stop")
           }
 
-        case print @ Print(info, string, args, clockExpression, enableExpression)  =>
+        case print @ Print(info, _, _, clockExpression, _)  =>
           getClockSymbol(clockExpression) match {
             case Some(clockSymbol) =>
               val risingSymbol = getClockRisingSymbol(clockSymbol)
@@ -505,7 +505,21 @@ object SymbolTable extends LazyLogging {
     logger.trace(s"Build SymbolTable pass 2 -- linearize complete")
 
 
-    sorted.zipWithIndex.foreach { case (symbol, index) => symbol.cardinalNumber = index }
+    sorted.zipWithIndex.foreach { case (symbol, index) =>
+      val adjustedIndex = if(symbol.name.startsWith("/stopped")) {
+        Int.MaxValue
+      }
+      else if(symbol.name.startsWith("/stop")) {
+        Int.MaxValue - 1
+      }
+      else if(symbol.name.startsWith("/print")) {
+        Int.MaxValue - 2
+      }
+      else {
+        index
+      }
+      symbol.cardinalNumber = adjustedIndex
+    }
 
     logger.trace(s"Build SymbolTable pass 3 -- sort complete")
     // logger.debug(s"Sorted elements\n${sorted.map(_.name).mkString("\n")}")

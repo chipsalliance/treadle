@@ -77,8 +77,6 @@ case class PrintfOp(
 
 object PrintfOp {
   val PrintfOpSymbol = Symbol("printfop", IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
-  PrintfOpSymbol.index = 0
-  PrintfOpSymbol.cardinalNumber = Int.MaxValue - 1 // this goes after everything except for StopOp
 }
 
 case class PrintInfo(printSymbol: Symbol, triggerSymbol: Symbol)
