@@ -619,21 +619,21 @@ class ExpressionCompiler(
                 // If we get here, the register probably did not have a reset value
                 MuxInts(
                   dataStore.GetInt(triggerSymbolPrevious.index).apply,
-                  expression.apply,
+                  dataStore.GetInt(registerIn.index).apply,
                   dataStore.GetInt(registerOut.index).apply
                 )
               case expression: LongExpressionResult =>
                 // If we get here, the register probably did not have a reset value
                 MuxLongs(
                   dataStore.GetInt(triggerSymbolPrevious.index).apply,
-                  expression.apply,
+                  dataStore.GetLong(registerIn.index).apply,
                   dataStore.GetLong(registerOut.index).apply
                 )
               case expression: BigExpressionResult =>
                 // If we get here, the register probably did not have a reset value
                 MuxBigs(
                   dataStore.GetInt(triggerSymbolPrevious.index).apply,
-                  expression.apply,
+                  dataStore.GetBig(registerIn.index).apply,
                   dataStore.GetBig(registerOut.index).apply
                 )
               case otherExpression =>

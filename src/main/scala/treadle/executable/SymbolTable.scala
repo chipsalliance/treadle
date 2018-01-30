@@ -330,6 +330,7 @@ object SymbolTable extends LazyLogging {
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
+          addDependency(registerIn, Set(registerOut))
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)
