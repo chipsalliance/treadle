@@ -33,9 +33,9 @@ class VecSpec extends FreeSpec with Matchers {
 
     val optionsManager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = true,
-        setVerbose = true,
-        showFirrtlAtLoad = true
+        writeVCD = false,
+        setVerbose = false,
+        showFirrtlAtLoad = false
       )
     }
 
@@ -116,8 +116,8 @@ class VecSpec extends FreeSpec with Matchers {
 
     val optionsManager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = true,
-        setVerbose = true
+        writeVCD = false,
+        setVerbose = false
       )
     }
 
@@ -127,21 +127,9 @@ class VecSpec extends FreeSpec with Matchers {
     tester.step()
     tester.poke("reset", 0)
 
-    println(s"value is ${tester.engine.renderComputation("value")}")
-    tester.step()
-    println(s"value is ${tester.engine.renderComputation("value")}")
-    tester.step()
-    println(s"value is ${tester.engine.renderComputation("value")}")
-    tester.step()
-    println(s"value is ${tester.engine.renderComputation("value")}")
-    tester.step()
-    println(s"value is ${tester.engine.renderComputation("value")}")
-    tester.step()
-    println(s"value is ${tester.engine.renderComputation("value")}")
-    tester.step()
-    println(s"value is ${tester.engine.renderComputation("value")}")
-    tester.step()
-    println(s"value is ${tester.engine.renderComputation("value")}")
-    tester.step()
+    intercept[StopException] {
+      tester.step(10)
+    }
+    tester.engine.lastStopResult should be (Some(0))
   }
 }

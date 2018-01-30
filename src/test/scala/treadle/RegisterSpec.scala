@@ -255,7 +255,7 @@ class RegisterSpec extends FlatSpec with Matchers {
 
     val manager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = true,
+        showFirrtlAtLoad = false,
         setVerbose = false,
         rollbackBuffers = 15)
     }
