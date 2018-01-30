@@ -588,7 +588,7 @@ case class VCD(
     * @return         false if the value is not different
     */
   def wireChanged(wireName: String, value: BigInt, width: Int = 1): Boolean = {
-    if(ignoreUnderscoredNames && wireName.startsWith("_")) return false
+    if(ignoreUnderscoredNames && (wireName.startsWith("_") || wireName.contains("/"))) return false
 
     def updateInfo(): Unit = {
       val wire = wires(wireName)

@@ -90,8 +90,6 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @param value a value to put on that port
     */
   def poke(name: String, value: BigInt): Unit = {
-    if(engine.checkStopped(s"poke($name, $value)")) return
-
     try {
       val isRegister = engine.symbolTable.isRegister(name)
 //      engine.circuitState.vcdLowerClock()
@@ -109,8 +107,6 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @return A BigInt value currently set at name
     */
   def peek(name: String): BigInt = {
-    if(engine.checkStopped(s"peek($name)")) return 0
-
     engine.getValue(name)
   }
 
@@ -141,10 +137,6 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @param n cycles to perform
     */
   def step(n: Int = 1): Unit = {
-    if(engine.checkStopped(s"step($n)")) return
-
-//    println(engine.getPrettyString)
-
     for(_ <- 0 until n) {
       cycleCount += 1
       engine.cycle(engine.verbose)
@@ -159,8 +151,6 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @param value a value to put on that port
     */
   def pokeMemory(name: String, index: Int, value: BigInt): Unit = {
-    if (engine.checkStopped(s"pokeMemory($name, $value)")) return
-
     engine.symbolTable.get(name) match {
       case Some(memory) =>
         engine.setValue(name, value = value, offset = index)

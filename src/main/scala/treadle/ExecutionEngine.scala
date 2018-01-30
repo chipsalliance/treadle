@@ -58,15 +58,19 @@ class ExecutionEngine(
       }
   }
 
-  if(verbose && scheduler.orphanedAssigns.nonEmpty) {
-    println(s"Executing static assignments")
-  }
-  else {
-    println(s"No static assignments")
+  if(verbose) {
+    if (scheduler.orphanedAssigns.nonEmpty) {
+      println(s"Executing static assignments")
+    }
+    else {
+      println(s"No static assignments")
+    }
   }
   scheduler.executeAssigners(scheduler.orphanedAssigns)
-  if(verbose && scheduler.orphanedAssigns.nonEmpty) {
-    println(s"Finished executing static assignments")
+  if(verbose) {
+    if(scheduler.orphanedAssigns.nonEmpty) {
+      println(s"Finished executing static assignments")
+    }
     println(getPrettyString)
   }
 
@@ -96,7 +100,9 @@ class ExecutionEngine(
     setLeanMode()
   }
   def writeVCD(): Unit = {
-    vcdOption.foreach(_.write(vcdFileName))
+    vcdOption.foreach { vcd =>
+      vcd.write(vcdFileName)
+    }
   }
 
   setVerbose(interpreterOptions.setVerbose)
@@ -117,6 +123,23 @@ class ExecutionEngine(
     }.mkString("\n")
   }
 
+  private def runAssigns(): Unit = {
+    try {
+      scheduler.executeActiveAssigns()
+      if(lastStopResult.isDefined) {
+        throw StopException(s"Failed: Stop result ${lastStopResult.get}")
+      }
+    }
+    catch {
+      case s: StopException =>
+        writeVCD()
+        throw s
+      case s: TreadleException =>
+        writeVCD()
+        throw s
+    }
+  }
+
   def getValue(name: String, offset: Int = 0): BigInt = {
     assert(symbolTable.contains(name),
       s"Error: getValue($name) is not an element of this circuit")
@@ -126,7 +149,7 @@ class ExecutionEngine(
         println(s"inputs have changed, updating combinationally")
       }
       inputsChanged = false
-      scheduler.executeActiveAssigns()
+      runAssigns()
 
       if(verbose) {
         println("Inputs" + ("-" * 120))
@@ -178,7 +201,7 @@ class ExecutionEngine(
     if(!force) {
       assert(symbol.dataKind == PortKind,
         s"Error: setValue($name) not on input, use setValue($name, force=true) to override")
-      if(checkStopped("setValue")) return Big0
+      return Big0
     }
 
     val adjustedValue = symbol.valueFrom(value)
@@ -251,19 +274,9 @@ class ExecutionEngine(
       if(verbose) {
         println(s"Executing all assigns")
       }
-      scheduler.executeActiveAssigns()
+      runAssigns()
       if(verbose) {
         println(s"Executing all assigns finished")
-      }
-    }
-    if (stopped) {
-      lastStopResult match {
-        case Some(0) =>
-          throw StopException(s"Success: Stop result 0")
-        case Some(errorResult) =>
-          throw StopException(s"Failure: Stop result $errorResult")
-        case result =>
-          throw StopException(s"Failure: Stop with unexpected result $result")
       }
     }
   }
@@ -276,33 +289,31 @@ class ExecutionEngine(
   }
 
   def cycle(showState: Boolean = false): Unit = {
-    if(checkStopped("cycle")) return
-
     cycleNumber += 1L
 
     wallTime.advance(cycleTimeIncrement)
+    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
 
     if(inputsChanged) {
       evaluateCircuit()
     }
 
     clockToggler.raiseClock()
-    vcdOption.foreach(_.raiseClock())
+//    vcdOption.foreach(_.raiseClock())
     inputsChanged = true
 
     evaluateCircuit()
 
     wallTime.advance(cycleTimeIncrement)
+    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
 
     clockToggler.lowerClock()
-    vcdOption.foreach(_.lowerClock())
+//    vcdOption.foreach(_.lowerClock())
 
     if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
   }
 
   def doCycles(n: Int): Unit = {
-    if(checkStopped(s"doCycles($n)")) return
-
     println(s"Initial state ${"-"*80}\n$dataInColumns")
 
     for(cycle_number <- 1 to n) {

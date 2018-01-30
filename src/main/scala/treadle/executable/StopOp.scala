@@ -28,7 +28,6 @@ case class StopOp(
     }
     if(conditionValue && dataStore.currentIntArray(triggerIndex) == 1) {
       dataStore(hasStopped) = returnValue + 1
-      throw StopException(s"Failed: Stop result $returnValue")
     }
     () => Unit
   }

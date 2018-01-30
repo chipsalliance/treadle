@@ -615,30 +615,30 @@ class ExpressionCompiler(
                   dataStore.GetBig(registerIn.index).apply,
                   dataStore.GetBig(registerOut.index).apply
                 )
-              case expression: IntExpressionResult =>
-                // If we get here, the register probably did not have a reset value
-                MuxInts(
-                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
-                  expression.apply,
-                  dataStore.GetInt(registerOut.index).apply
-                )
-              case expression: LongExpressionResult =>
-                // If we get here, the register probably did not have a reset value
-                MuxLongs(
-                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
-                  expression.apply,
-                  dataStore.GetLong(registerOut.index).apply
-                )
-              case expression: BigExpressionResult =>
-                // If we get here, the register probably did not have a reset value
-                MuxBigs(
-                  dataStore.GetInt(triggerSymbolPrevious.index).apply,
-                  expression.apply,
-                  dataStore.GetBig(registerOut.index).apply
-                )
+
               case otherExpression =>
-                otherExpression
+                registerOut.dataSize match {
+                  case IntSize =>
+                    MuxInts(
+                      dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                      dataStore.GetInt(registerIn.index).apply,
+                      dataStore.GetInt(registerOut.index).apply
+                    )
+                  case LongSize =>
+                    MuxLongs(
+                      dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                      dataStore.GetLong(registerIn.index).apply,
+                      dataStore.GetLong(registerOut.index).apply
+                    )
+                  case BigSize =>
+                    MuxBigs(
+                      dataStore.GetInt(triggerSymbolPrevious.index).apply,
+                      dataStore.GetBig(registerIn.index).apply,
+                      dataStore.GetBig(registerOut.index).apply
+                    )
+                }
             }
+
             makeAssigner(registerIn, processedExpression)
             makeAssigner(registerOut, wrappedExpression)
           }
