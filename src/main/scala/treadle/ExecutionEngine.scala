@@ -292,21 +292,23 @@ class ExecutionEngine(
     cycleNumber += 1L
 
     wallTime.advance(cycleTimeIncrement)
+    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
 
     if(inputsChanged) {
       evaluateCircuit()
     }
 
     clockToggler.raiseClock()
-    vcdOption.foreach(_.raiseClock())
+//    vcdOption.foreach(_.raiseClock())
     inputsChanged = true
 
     evaluateCircuit()
 
     wallTime.advance(cycleTimeIncrement)
+    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
 
     clockToggler.lowerClock()
-    vcdOption.foreach(_.lowerClock())
+//    vcdOption.foreach(_.lowerClock())
 
     if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
   }
