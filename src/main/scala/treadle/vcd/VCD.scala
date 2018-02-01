@@ -46,7 +46,13 @@ object VCD extends LazyLogging {
   val ValueChangeVectorX: Regex = """\s*([rbh]).*x.*\s*""".r
   val TimeStamp: Regex = """\s*#(\d+)\s*""".r
 
-  def apply(moduleName: String, timeScale: String = "1ps", comment: String = ""): VCD = {
+  def apply(
+      moduleName: String,
+      timeScale: String = "1ps",
+      comment: String = "",
+      showUnderscoredNames: Boolean = false
+  ): VCD = {
+
     val tz = TimeZone.getTimeZone("UTC")
     val df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ")
     df.setTimeZone(tz)
@@ -58,7 +64,7 @@ object VCD extends LazyLogging {
       comment,
       timeScale,
       moduleName,
-      ignoreUnderscoredNames = true
+      ignoreUnderscoredNames = ! showUnderscoredNames
     )
   }
 

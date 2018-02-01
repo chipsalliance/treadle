@@ -75,7 +75,7 @@ class ExecutionEngine(
   }
 
   def makeVCDLogger(fileName: String, showUnderscored: Boolean): Unit = {
-    val vcd = VCD(ast.main)
+    val vcd = VCD(ast.main, showUnderscoredNames = showUnderscored)
 
     symbolTable.instanceNames.foreach { name =>
       vcd.scopeRoot.addScope(name)
@@ -93,12 +93,14 @@ class ExecutionEngine(
 
     setLeanMode()
   }
+
   def disableVCD(): Unit = {
     writeVCD()
     vcdOption = None
     vcdFileName = ""
     setLeanMode()
   }
+
   def writeVCD(): Unit = {
     vcdOption.foreach { vcd =>
       vcd.write(vcdFileName)
@@ -127,7 +129,8 @@ class ExecutionEngine(
     try {
       scheduler.executeActiveAssigns()
       if(lastStopResult.isDefined) {
-        throw StopException(s"Failed: Stop result ${lastStopResult.get}")
+        val stopKind = if(lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
+        throw StopException(s"$stopKind: result ${lastStopResult.get}")
       }
     }
     catch {
@@ -210,6 +213,9 @@ class ExecutionEngine(
         println(s"${symbol.name} <= $value  from tester")
       }
       dataStore(symbol) = adjustedValue
+      vcdOption.foreach { vcd =>
+        vcd.wireChanged(symbol.name, dataStore(symbol), symbol.bitWidth)
+      }
     }
     else {
       if(offset - 1 > symbol.slots) {
