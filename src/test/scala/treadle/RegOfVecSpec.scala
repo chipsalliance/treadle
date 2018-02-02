@@ -156,7 +156,6 @@ class RegOfVecSpec extends FreeSpec with Matchers {
     //
     tester.poke("reset", 1)
     show()
-    show()
     tester.poke("reset", 0)
 
 

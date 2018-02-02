@@ -109,8 +109,6 @@ class ExecutionEngine(
 
   setVerbose(interpreterOptions.setVerbose)
 
-  var isStale: Boolean = false
-
   def renderComputation(symbolNames: String): String = {
     val renderer = new ExpressionViewRenderer(dataStore, symbolTable, expressionViews)
 
@@ -187,6 +185,7 @@ class ExecutionEngine(
     * @param registerPoke changes which side of a register is poked
     * @return the concrete value that was derived from type and value
     */
+  //scalastyle:off method.length
   def setValue(
                 name:         String,
                 value:        BigInt,
@@ -285,13 +284,6 @@ class ExecutionEngine(
         println(s"Executing all assigns finished")
       }
     }
-  }
-
-  def checkStopped(attemptedCommand: => String = "command"): Boolean = {
-    if(stopped) {
-      println(s"circuit has been stopped: ignoring $attemptedCommand")
-    }
-    stopped
   }
 
   def cycle(showState: Boolean = false): Unit = {

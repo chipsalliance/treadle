@@ -3,7 +3,7 @@
 package treadle.executable
 
 import treadle.vcd.VCD
-import treadle.{BlackBoxImplementation, ExecutionEngine}
+import treadle.{BlackBoxImplementation, ExecutionEngine, TreadleException}
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
@@ -30,6 +30,14 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   private var executionEngineOption: Option[ExecutionEngine] = None
   def setExecutionEngine(executionEngine: ExecutionEngine): Unit = {
     executionEngineOption = Some(executionEngine)
+    executionEngine.optionsManager.treadleOptions.symbolsToWatch.foreach { symbolName =>
+      if(executionEngine.symbolTable.contains(symbolName)) {
+        watchList += executionEngine.symbolTable(symbolName)
+      }
+      else {
+        throw TreadleException(s"treadleOptions.symbols to watch has bad symbolName $symbolName")
+      }
+    }
   }
 
   def numberOfInts: Int  = nextIndexFor(IntSize)
