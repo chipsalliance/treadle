@@ -259,9 +259,11 @@ class ExpressionViewBuilder(
 //          Memory.buildMemoryInternals(defMemory, expandedName, scheduler, compiler = this)
         case IsInvalid(info, expression) =>
 
-        case Stop(info, ret, clockExpression, enableExpression) =>
+        case stop @ Stop(info, ret, clockExpression, enableExpression) =>
+          expressionViews(symbolTable.stopToStopInfo(stop).stopSymbol) = processExpression(enableExpression)
 
-        case Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
+        case print @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
+          expressionViews(symbolTable.printToPrintInfo(print).printSymbol) = processExpression(enableExpression)
 
         case EmptyStmt =>
         case conditionally: Conditionally =>
