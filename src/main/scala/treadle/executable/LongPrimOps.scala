@@ -25,11 +25,27 @@ case class MulLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
 }
 
 case class DivLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
-  def apply(): Long = f1() / f2()
+  def apply(): Long = {
+    val divisor = f2()
+    if(divisor == 0) {
+      0
+    }
+    else {
+      f1() / divisor
+    }
+  }
 }
 
 case class RemLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
-  def apply(): Long = f1() % f2()
+  def apply(): Long = {
+    val modulus = f2()
+    if(modulus == 0) {
+      0
+    }
+    else {
+      f1() % modulus
+    }
+  }
 }
 
 case class MuxLongs(condition: FuncInt, trueClause: FuncLong, falseClause: FuncLong) extends LongExpressionResult {

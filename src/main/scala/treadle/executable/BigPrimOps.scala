@@ -25,11 +25,27 @@ case class MulBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
 }
 
 case class DivBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
-  def apply(): Big = f1() / f2()
+  def apply(): Big = {
+    val divisor = f2()
+    if(divisor == 0) {
+      0
+    }
+    else {
+      f1() / divisor
+    }
+  }
 }
 
 case class RemBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
-  def apply(): Big = f1() % f2()
+  def apply(): Big = {
+    val modulus = f2()
+    if(modulus == 0) {
+      0
+    }
+    else {
+      f1() % modulus
+    }
+  }
 }
 
 case class MuxBigs(condition: FuncInt, trueClause: FuncBig, falseClause: FuncBig) extends BigExpressionResult {

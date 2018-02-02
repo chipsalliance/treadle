@@ -49,11 +49,27 @@ case class MulInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
 }
 
 case class DivInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = f1() / f2()
+  def apply(): Int = {
+    val divisor = f2()
+    if(divisor == 0) {
+      0
+    }
+    else {
+      f1() / divisor
+    }
+  }
 }
 
 case class RemInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = f1() % f2()
+  def apply(): Int = {
+    val modulus = f2()
+    if(modulus == 0) {
+      0
+    }
+    else {
+      f1() % modulus
+    }
+  }
 }
 
 case class MuxInts(condition: FuncInt, trueClause: FuncInt, falseClause: FuncInt) extends IntExpressionResult {

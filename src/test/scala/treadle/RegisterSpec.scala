@@ -120,6 +120,33 @@ class RegisterSpec extends FlatSpec with Matchers {
 
   behavior of "reset support"
 
+  it should "have register decrement as reset lowers" in {
+    val input =
+      """
+        |circuit RegInc :
+        |  module RegInc :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |
+        |    reg reg1 : UInt<16>, clock with : (reset => (reset, UInt(3)))  @[RegisterSpec.scala 131:20]
+        |
+        |    reg1 <= add(reg1, UInt(1))
+        |
+      """.stripMargin
+
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(setVerbose = true, writeVCD = true)
+    }
+    val tester = new TreadleTester(input, optionsManager)
+    tester.poke("reset", 1)
+    tester.step()
+    tester.poke("reset", 0)
+    tester.step(1)
+    tester.finish
+  }
+
+  behavior of "reset support, 2"
+
   it should "reset takes precedence over next value" in {
     val input =
       """
@@ -135,7 +162,7 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
+      treadleOptions = treadleOptions.copy(setVerbose = true, writeVCD = true)
     }
     val engine = ExecutionEngine(input, optionsManager)
 

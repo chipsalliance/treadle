@@ -192,11 +192,10 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     }
     s"test ${engine.ast.main} " +
       s"$status $expectationsMet tests passed " +
-//      s"in ${engine.circuitState.stateCounter} cycles " +
       f"in $cycleCount cycles in $elapsedSeconds%.6f seconds"
   }
   /**
-    * A simplistic report of the number of expects that passed and
+    * A simplistic report of the number of expects that passed
     */
   def report(): Unit = {
     engine.writeVCD()
@@ -204,6 +203,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   }
 
   def finish: Boolean = {
+    engine.writeVCD()
     isOK
   }
 }

@@ -7,7 +7,6 @@ import firrtl.CommonOptions
 import firrtl.util.BackendCompilationUtilities
 import java.io.File
 
-import logger.LogLevel
 import org.scalatest.{FlatSpec, Matchers}
 
 // scalastyle:off magic.number
