@@ -21,16 +21,18 @@ case class StopOp(
   //TODO: (chick) run should not use match, this should be determined statically
 
   def run: FuncUnit = {
-    val conditionValue = condition match {
-      case e: IntExpressionResult => e.apply() > 0
-      case e: LongExpressionResult => e.apply() > 0L
-      case e: BigExpressionResult => e.apply() > Big(0)
-    }
-    if(conditionValue && dataStore.currentIntArray(triggerIndex) == 1) {
-      if(verboseAssign) {
-        println(s"clock ${symbol.name} has fired")
+    if(dataStore.currentIntArray(triggerIndex) == 1) {
+      val conditionValue = condition match {
+        case e: IntExpressionResult => e.apply() > 0
+        case e: LongExpressionResult => e.apply() > 0L
+        case e: BigExpressionResult => e.apply() > Big(0)
       }
-      dataStore(hasStopped) = returnValue
+      if (conditionValue) {
+        if (verboseAssign) {
+          println(s"clock ${symbol.name} has fired")
+        }
+        dataStore(hasStopped) = returnValue + 1
+      }
     }
     () => Unit
   }
