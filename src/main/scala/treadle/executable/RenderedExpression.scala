@@ -82,6 +82,8 @@ class ExpressionViewRenderer(
                       }
                     case _ =>
                   }
+                case x =>
+                  x.toString
               }
           }
         }

@@ -243,7 +243,8 @@ class ExpressionViewBuilder(
           }
 
         case DefNode(info, name, expression) =>
-          expressionViews(symbolTable(expand(name))) = processExpression(expression)
+          val lhsName = expand(name)
+          expressionViews(symbolTable(lhsName)) = processExpression(expression)
 
         case DefWire(info, name, tpe) =>
 

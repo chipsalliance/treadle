@@ -33,6 +33,12 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     executionEngine.optionsManager.treadleOptions.symbolsToWatch.foreach { symbolName =>
       if(executionEngine.symbolTable.contains(symbolName)) {
         watchList += executionEngine.symbolTable(symbolName)
+        executionEngine.scheduler.activeAssigns.foreach { assigner =>
+          if(assigner.symbol.name == symbolName) {
+            assigner.verboseAssign = true
+            assigner.setLeanMode(false)
+          }
+        }
       }
       else {
         throw TreadleException(s"treadleOptions.symbols to watch has bad symbolName $symbolName")
@@ -159,11 +165,15 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   ) extends Assigner {
 
     def checkTransition(): Unit = {
-      val originalValue = currentIntArray(prevSymbol.index)
+      val originalValue = currentIntArray(symbol.index)
       underlyingAssigner.run()
       val finalValue = currentIntArray(symbol.index)
       val transitionValue = if(finalValue > 0 && originalValue == 0) { 1 } else { 0 }
       currentIntArray(prevSymbol.index) = transitionValue
+      vcdOption.foreach { vcd =>
+        //TODO: (chick) figure out whether this should be done at all or protected by if below
+        vcd.wireChanged(prevSymbol.name, transitionValue)
+      }
       if(verboseAssign) {
         val showValue = symbol.normalize(transitionValue)
         println(s"${prevSymbol.name} <= $showValue")

@@ -289,12 +289,12 @@ class ExecutionEngine(
   def cycle(showState: Boolean = false): Unit = {
     cycleNumber += 1L
 
-    wallTime.advance(cycleTimeIncrement)
-    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
-
     if(inputsChanged) {
       evaluateCircuit()
     }
+
+    wallTime.advance(cycleTimeIncrement)
+    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
 
     clockToggler.raiseClock()
 //    vcdOption.foreach(_.raiseClock())
@@ -423,6 +423,7 @@ class ExecutionEngine(
       if(verbose) println(s"starting lowering clock")
       downToggler.run()
       if(verbose) println(s"finished lowering clock")
+      inputsChanged = true
     }
   }
 
@@ -437,6 +438,8 @@ object ExecutionEngine {
     * @return                the constructed engine
     */
   def apply(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): ExecutionEngine = {
+    val t0 = System.nanoTime()
+
     val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
     val ast = firrtl.Parser.parse(input.split("\n").toIterator)
@@ -498,6 +501,12 @@ object ExecutionEngine {
 
     val executionEngine = new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
     executionEngine.dataStore.setExecutionEngine(executionEngine)
+
+    val t1 = System.nanoTime()
+    val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
+    println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
+      s"${scheduler.activeAssigns.size} statements")
+
     executionEngine
   }
 }

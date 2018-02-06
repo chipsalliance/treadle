@@ -538,7 +538,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
             try {
               val newValue = makeRandom(symbol.firrtlType)
               interpreter.setValue(symbol.name, newValue)
-              console.println(s"setting ${symbol.name} to $newValue")
+              // console.println(s"setting ${symbol.name} to $newValue")
             }
             catch {
               case e: Exception =>

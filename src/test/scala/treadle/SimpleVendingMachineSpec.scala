@@ -151,20 +151,20 @@ class SimpleVendingMachineSpec extends FreeSpec with Matchers{
     val optionsManager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
-        vcdShowUnderscored = true,
-        setVerbose = true,
-        showFirrtlAtLoad = true,
-        symbolsToWatch = Seq("value", "value/in")
+        vcdShowUnderscored = false,
+        setVerbose = false,
+        showFirrtlAtLoad = false,
+        rollbackBuffers = 0,
+        symbolsToWatch = Seq("dut.state", "dut.state/in")
       )
     }
 
     val tester = new TreadleTester(input, optionsManager)
 
     tester.poke("reset", 1)
-    tester.engine.renderComputation("value")
     tester.step()
-    tester.engine.renderComputation("value")
     tester.poke("reset", 0)
-    tester.step()
+    tester.step(8)
+    tester.report()
   }
 }
