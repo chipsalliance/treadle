@@ -423,7 +423,7 @@ class ExecutionEngine(
       if(verbose) println(s"starting lowering clock")
       downToggler.run()
       if(verbose) println(s"finished lowering clock")
-      inputsChanged = true
+      // inputsChanged = true
     }
   }
 

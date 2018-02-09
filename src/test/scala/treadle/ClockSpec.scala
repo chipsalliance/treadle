@@ -53,7 +53,10 @@ class ClockSpec extends FreeSpec with Matchers {
     tester.poke("reset", 1)
     tester.step()
     tester.poke("reset", 0)
-    tester.step(100)
+    intercept[StopException] {
+      tester.step(100)
+    }
+    tester.engine.lastStopResult should be (Some(0))
     tester.report()
   }
 }

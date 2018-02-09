@@ -197,18 +197,22 @@ class ExpressionViewBuilder(
           }
 
         case con: Connect =>
-          // if it's a register we use the name of its input side
-          def renameIfRegister(name: String): String = {
-            if (symbolTable.isRegister(name)) {
-              SymbolTable.makeRegisterInputName(name)
-            }
-            else {
-              name
-            }
+          val expandedName = expand(con.loc.serialize)
+          if(!symbolTable.isRegister(expandedName)) {
+            val assignedSymbol = symbolTable(expandedName)
+            expressionViews(symbolTable(expandedName)) = processExpression(con.expr)
           }
-          val lhsName = renameIfRegister(expand(con.loc.serialize))
-          val view = processExpression(con.expr)
-          expressionViews(symbolTable(lhsName)) = view
+          else {
+            val registerOut = symbolTable(expandedName)
+            val registerIn = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
+
+            val processedExpression = processExpression(con.expr)
+            val triggerSymbolPrevious = symbolTable.triggersFor(registerOut)
+
+
+            expressionViews(registerIn) = processedExpression
+            expressionViews(registerOut) = expression"Mux($triggerSymbolPrevious, $registerIn, $registerOut)"
+          }
 
         case WDefInstance(info, instanceName, moduleName, _) =>
           val subModule = FindModule(moduleName, circuit)
@@ -249,15 +253,11 @@ class ExpressionViewBuilder(
         case DefWire(info, name, tpe) =>
 
         case DefRegister(info, name, tpe, clockExpression, resetExpression, initValueExpression) =>
-          val expandedName = expand(name)
-          val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
-          val registerOut = symbolTable(expandedName)
-          expressionViews(registerOut) = expression"$registerIn"
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)
           logger.debug(s"declaration:DefMemory:${defMemory.name} becomes $expandedName")
-//          Memory.buildMemoryInternals(defMemory, expandedName, scheduler, compiler = this)
+
         case IsInvalid(info, expression) =>
 
         case stop @ Stop(info, ret, clockExpression, enableExpression) =>
