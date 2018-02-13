@@ -3,7 +3,8 @@ package treadle
 
 import java.io.PrintWriter
 
-import treadle.executable.ExpressionViewRenderer
+import treadle.chronometry.UTC
+import treadle.executable.{Assigner, ExpressionViewRenderer}
 
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
@@ -23,19 +24,40 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
   treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
 
-  val engine: ExecutionEngine                = ExecutionEngine(input, optionsManager)
-  val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
+  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager)
+  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
 
-  setVerbose(interpreterOptions.setVerbose)
+  setVerbose(treadleOptions.setVerbose)
 
-  if(interpreterOptions.writeVCD) {
+  if(treadleOptions.writeVCD) {
     optionsManager.setTopNameIfNotSet(engine.ast.main)
     optionsManager.makeTargetDir()
     engine.makeVCDLogger(
-      interpreterOptions.vcdOutputFileName(optionsManager),
-      interpreterOptions.vcdShowUnderscored
+      treadleOptions.vcdOutputFileName(optionsManager),
+      treadleOptions.vcdShowUnderscored
     )
   }
+
+  val clockName: String = treadleOptions.clockName
+  val resetName: String = treadleOptions.resetName
+
+  val combinationalDelay: Long = 10
+
+  val upClockTogglerOption: Option[Assigner] = if(engine.symbolTable.contains(clockName)) {
+    Some(engine.makeUpToggler(engine.symbolTable(clockName)))
+  }
+  else {
+    None
+  }
+
+  val downClockTogglerOption: Option[Assigner] = if(engine.symbolTable.contains(clockName)) {
+    Some(engine.makeUpToggler(engine.symbolTable(clockName)))
+  }
+  else {
+    None
+  }
+
+  val wallTime = UTC()
 
   def setVerbose(value: Boolean = true): Unit = {
     engine.setVerbose(value)
@@ -107,6 +129,9 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @return A BigInt value currently set at name
     */
   def peek(name: String): BigInt = {
+    if(engine.inputsChanged) {
+      engine.advanceTime(combinationalDelay)
+    }
     engine.getValue(name)
   }
 
@@ -118,7 +143,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     */
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
     engine.scheduler.executeActiveAssigns()
-    val value = engine.getValue(name)
+    val value = peek(name)
     if(value != expectedValue) {
       val renderer = new ExpressionViewRenderer(
         engine.dataStore, engine.symbolTable, engine.expressionViews)
@@ -143,6 +168,28 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     }
   }
 
+  def newStep(): Unit = {
+    if(! engine.symbolTable.contains(clockName)) {
+      println(s"Current clock name $clockName not found in circuit, see options for fint-clock-name")
+      throw TreadleException(s"Attempt to step with no signal named $clockName")
+    }
+
+
+
+    upClockTogglerOption.foreach { toggler =>
+      toggler.run()
+    }
+
+    downClockTogglerOption.foreach { toggler =>
+      toggler.run()
+    }
+
+    cycleCount += 1
+
+//    engine.wallTime.advance()
+//    engine.setValue(clockName, 1)
+  }
+
   /**
     * Pokes value to the named memory at offset
     *
@@ -152,7 +199,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     */
   def pokeMemory(name: String, index: Int, value: BigInt): Unit = {
     engine.symbolTable.get(name) match {
-      case Some(memory) =>
+      case Some(_) =>
         engine.setValue(name, value = value, offset = index)
       case _ =>
         throw TreadleException(s"Error: memory $name.forceWrite($index, $value). memory not found")
@@ -161,7 +208,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
   def peekMemory(name: String, index: Int): BigInt = {
     engine.symbolTable.get(name) match {
-      case Some(memory) =>
+      case Some(_) =>
         engine.getValue(name, offset = index)
       case _ =>
         throw TreadleException(s"Error: get memory $name.forceWrite($index). memory not found")

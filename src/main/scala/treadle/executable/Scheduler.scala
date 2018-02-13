@@ -33,10 +33,15 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
   def executeAssigners(assigners: Seq[Assigner]): Unit = {
     var index = 0
     val lastIndex = assigners.length
+    // val t0 = System.nanoTime()
     while(index < lastIndex) {
       assigners(index).run()
       index += 1
     }
+    //  val t1 = System.nanoTime()
+    //  val isLean = assigners.forall(x => !x.verboseAssign)
+    //  println(s"$index assigners in ${t1 - t0} ns, ${index.toDouble * 1000000000 / (t1 - t0)} nodes/sec" +
+    //          s" ${1000000000 / (t1 - t0)} Hz  isLean $isLean")
   }
 
   /**

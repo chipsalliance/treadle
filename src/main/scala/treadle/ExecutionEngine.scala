@@ -19,7 +19,7 @@ class ExecutionEngine(
 ) {
   private val interpreterOptions = optionsManager.treadleOptions
 
-  val wallTime = new UTC()
+  val wallTime = UTC()
   val cycleTimeIncrement = 500
   var cycleNumber: Long = 0
 
@@ -132,12 +132,9 @@ class ExecutionEngine(
       }
     }
     catch {
-      case s: StopException =>
+      case throwable: Throwable =>
         writeVCD()
-        throw s
-      case s: TreadleException =>
-        writeVCD()
-        throw s
+        throw throwable
     }
   }
 
@@ -187,12 +184,12 @@ class ExecutionEngine(
     */
   //scalastyle:off method.length
   def setValue(
-                name:         String,
-                value:        BigInt,
-                force:        Boolean = true,
-                registerPoke: Boolean = false,
-                offset:        Int = 0
-              ): BigInt = {
+    name: String,
+    value: BigInt,
+    force: Boolean = true,
+    registerPoke: Boolean = false,
+    offset: Int = 0
+  ): BigInt = {
     if(! symbolTable.contains(name)) {
       throw TreadleException(s"setValue: Cannot find $name in symbol table")
     }
@@ -262,7 +259,7 @@ class ExecutionEngine(
   def validNames: Iterable[String] = symbolTable.keys
   def symbols: Iterable[Symbol] = symbolTable.symbols
 
-  def evaluateCircuit(specificDependencies: Seq[String] = Seq()): Unit = {
+  def evaluateCircuit(): Unit = {
     dataStore.advanceBuffers()
 
     if(inputsChanged) {
@@ -286,6 +283,15 @@ class ExecutionEngine(
     }
   }
 
+  def advanceTime(increment: Long): Unit = {
+    if(increment > 0) {
+      if(inputsChanged) {
+        evaluateCircuit()
+      }
+//      wallTime.advance(increment)
+    }
+  }
+
   def cycle(showState: Boolean = false): Unit = {
     cycleNumber += 1L
 
@@ -293,22 +299,18 @@ class ExecutionEngine(
       evaluateCircuit()
     }
 
-    wallTime.advance(cycleTimeIncrement)
+//    wallTime.advance(cycleTimeIncrement)
     vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
 
     clockToggler.raiseClock()
-//    vcdOption.foreach(_.raiseClock())
     inputsChanged = true
 
     evaluateCircuit()
 
-    wallTime.advance(cycleTimeIncrement)
+//    wallTime.advance(cycleTimeIncrement)
     vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
 
     clockToggler.lowerClock()
-//    vcdOption.foreach(_.lowerClock())
-
-    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
   }
 
   def doCycles(n: Int): Unit = {
@@ -399,6 +401,26 @@ class ExecutionEngine(
   }
 
   class NullToggler extends ClockToggle
+
+  def makeUpToggler(symbol: Symbol): Assigner = {
+    val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
+    val assigner = dataStore.TriggerChecker(
+      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
+    )
+    assigner.verboseAssign = verbose
+    assigner.underlyingAssigner.verboseAssign = verbose
+    assigner
+  }
+
+  def makeDownToggler(symbol: Symbol): Assigner = {
+    val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
+    val assigner = dataStore.TriggerChecker(
+      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
+    )
+    assigner.verboseAssign = verbose
+    assigner.underlyingAssigner.verboseAssign = verbose
+    assigner
+  }
 
   class ClockToggler(symbol: Symbol) extends ClockToggle {
     val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))

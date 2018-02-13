@@ -6,19 +6,21 @@ import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
 
 //scalastyle:off magic.number
 case class TreadleOptions(
-    writeVCD:          Boolean              = false,
-    vcdShowUnderscored:Boolean              = false,
-    setVerbose:        Boolean              = false,
-    setOrderedExec:    Boolean              = false,
-    allowCycles:       Boolean              = false,
-    randomSeed:        Long                 = System.currentTimeMillis(),
-    blackBoxFactories: Seq[BlackBoxFactory] = Seq.empty,
-    maxExecutionDepth: Long                 = Int.MaxValue,
-    showFirrtlAtLoad:  Boolean              = false,
-    lowCompileAtLoad:  Boolean              = true,
-    validIfIsRandom:   Boolean              = false,
-    rollbackBuffers:   Int                  = 4,
-    symbolsToWatch:    Seq[String]          = Seq.empty
+    writeVCD           : Boolean              = false,
+    vcdShowUnderscored : Boolean              = false,
+    setVerbose         : Boolean              = false,
+    setOrderedExec     : Boolean              = false,
+    allowCycles        : Boolean              = false,
+    randomSeed         : Long                 = System.currentTimeMillis(),
+    blackBoxFactories  : Seq[BlackBoxFactory] = Seq.empty,
+    maxExecutionDepth  : Long                 = Int.MaxValue,
+    showFirrtlAtLoad   : Boolean              = false,
+    lowCompileAtLoad   : Boolean              = true,
+    validIfIsRandom    : Boolean              = false,
+    rollbackBuffers    : Int                  = 4,
+    clockName          : String               = "clock",
+    resetName          : String               = "reset",
+    symbolsToWatch:    Seq[String]            = Seq.empty
   )
   extends firrtl.ComposableOptions {
 
@@ -100,7 +102,6 @@ trait HasInterpreterOptions {
     .abbr("fivir")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(validIfIsRandom = true)
-      treadleOptions = treadleOptions.copy()
     }
     .text("validIf returns random value when condition is false")
 
@@ -109,9 +110,25 @@ trait HasInterpreterOptions {
     .valueName("<int-value>")
     .foreach { x =>
       treadleOptions = treadleOptions.copy(rollbackBuffers = x)
-      treadleOptions = treadleOptions.copy()
     }
-    .text("number of rollback buffers, 0 is no buffers, default is 4")}
+    .text("number of rollback buffers, 0 is no buffers, default is 4")
+
+  parser.opt[String]("fint-clock-name")
+    .abbr("ficn")
+    .valueName("<string>")
+    .foreach { x =>
+      treadleOptions = treadleOptions.copy(clockName = x)
+    }
+    .text("name of default clock")
+
+  parser.opt[String]("fint-reset-name")
+    .abbr("firn")
+    .valueName("<string>")
+    .foreach { x =>
+      treadleOptions = treadleOptions.copy(resetName = x)
+    }
+    .text("name of default reset")
+}
 
 object Driver {
 
