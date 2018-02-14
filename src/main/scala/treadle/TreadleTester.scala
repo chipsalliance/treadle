@@ -4,7 +4,7 @@ package treadle
 import java.io.PrintWriter
 
 import treadle.chronometry.UTC
-import treadle.executable.{Assigner, ExpressionViewRenderer}
+import treadle.executable.{Assigner, ClockInfo, ExpressionViewRenderer}
 
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
@@ -43,27 +43,49 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
   val combinationalDelay: Long = 10
 
-  val upClockTogglerOption: Option[Assigner] = if(engine.symbolTable.contains(clockName)) {
-    Some(engine.makeUpToggler(engine.symbolTable(clockName)))
-  }
-  else {
-    None
-  }
-
-  val downClockTogglerOption: Option[Assigner] = if(engine.symbolTable.contains(clockName)) {
-    Some(engine.makeUpToggler(engine.symbolTable(clockName)))
-  }
-  else {
-    None
-  }
-
   val wallTime = UTC()
+  wallTime.onTimeChange = () => { engine.vcdOption.foreach { vcd => vcd.setTime(wallTime.currentTime)}}
 
   def setVerbose(value: Boolean = true): Unit = {
     engine.setVerbose(value)
   }
 
   val startTime: Long = System.nanoTime()
+
+  val clockInfoList: Seq[ClockInfo] = if(treadleOptions.clockInfo.isEmpty) {
+    if(engine.symbolTable.contains("clock")) {
+      Seq(ClockInfo())
+    }
+    else if(engine.symbolTable.contains("clk")) {
+      Seq(ClockInfo("clk"))
+    }
+    else {
+      Seq()
+    }
+  }
+  else {
+    treadleOptions.clockInfo
+  }
+
+  clockInfoList.foreach { clockInfo =>
+    engine.symbolTable.get(clockInfo.name) match {
+      case Some(clockSymbol) =>
+        val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
+
+        wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, taskName = s"${clockInfo.name}/up") { () =>
+          engine.makeUpToggler(clockSymbol).run()
+          engine.inputsChanged = true
+        }
+
+        wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
+          engine.makeDownToggler(clockSymbol).run()
+        }
+
+      case _ =>
+        throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
+
+    }
+  }
 
   def makeSnapshot(): Unit = {
     val snapshotName = optionsManager.getBuildFileName(".datastore.snapshot.json")
@@ -130,7 +152,8 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     */
   def peek(name: String): BigInt = {
     if(engine.inputsChanged) {
-      engine.advanceTime(combinationalDelay)
+      engine.evaluateCircuit()
+      wallTime.incrementTime(combinationalDelay)
     }
     engine.getValue(name)
   }
@@ -142,7 +165,6 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @param expectedValue the BigInt value required
     */
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
-    engine.scheduler.executeActiveAssigns()
     val value = peek(name)
     if(value != expectedValue) {
       val renderer = new ExpressionViewRenderer(
@@ -158,36 +180,21 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   /**
     * Cycles the circuit n steps (with a default of one)
     * At each step registers and memories are advanced and all other elements recomputed
- *
+    *
     * @param n cycles to perform
     */
-  def step(n: Int = 1): Unit = {
+  def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = None): Unit = {
+    if(engine.inputsChanged) {
+      engine.evaluateCircuit()
+    }
+
     for(_ <- 0 until n) {
       cycleCount += 1
-      engine.cycle(engine.verbose)
+      val clockName = if(clockInfoOpt.isDefined) { clockInfoOpt.get.name } else { clockInfoList.head.name }
+      wallTime.runToTask(s"$clockName/up")
+      engine.evaluateCircuit()
+      wallTime.runToTask(s"$clockName/down")
     }
-  }
-
-  def newStep(): Unit = {
-    if(! engine.symbolTable.contains(clockName)) {
-      println(s"Current clock name $clockName not found in circuit, see options for fint-clock-name")
-      throw TreadleException(s"Attempt to step with no signal named $clockName")
-    }
-
-
-
-    upClockTogglerOption.foreach { toggler =>
-      toggler.run()
-    }
-
-    downClockTogglerOption.foreach { toggler =>
-      toggler.run()
-    }
-
-    cycleCount += 1
-
-//    engine.wallTime.advance()
-//    engine.setValue(clockName, 1)
   }
 
   /**
@@ -252,5 +259,11 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   def finish: Boolean = {
     engine.writeVCD()
     isOK
+  }
+}
+
+object TreadleTester {
+  def apply(input : String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): TreadleTester = {
+    new TreadleTester(input, optionsManager)
   }
 }

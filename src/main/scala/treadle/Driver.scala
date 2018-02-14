@@ -3,6 +3,7 @@
 package treadle
 
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
+import treadle.executable.ClockInfo
 
 //scalastyle:off magic.number
 case class TreadleOptions(
@@ -19,6 +20,7 @@ case class TreadleOptions(
     validIfIsRandom    : Boolean              = false,
     rollbackBuffers    : Int                  = 4,
     clockName          : String               = "clock",
+    clockInfo          : Seq[ClockInfo]       = Seq.empty,
     resetName          : String               = "reset",
     symbolsToWatch:    Seq[String]            = Seq.empty
   )
@@ -120,6 +122,27 @@ trait HasInterpreterOptions {
       treadleOptions = treadleOptions.copy(clockName = x)
     }
     .text("name of default clock")
+
+  def parseClockInfo(input: String): ClockInfo = {
+    input.split(":").map(_.trim).toList match {
+      case name :: Nil =>
+        ClockInfo(name)
+      case name :: period :: Nil =>
+        ClockInfo(name, period.toLong)
+      case name :: period :: offset :: Nil =>
+        ClockInfo(name, period.toLong, offset.toLong)
+      case _ =>
+        throw new TreadleException(s"Bad clock info string $input, should be name[:period[:offset]]")
+    }
+  }
+  parser.opt[String]("fint-clock-info")
+    .abbr("fici")
+    .unbounded()
+    .valueName("<string>")
+    .foreach { x =>
+      treadleOptions = treadleOptions.copy(clockInfo = treadleOptions.clockInfo ++ Seq(parseClockInfo(x)))
+    }
+    .text("clock-name[:period[:initial-offset]]")
 
   parser.opt[String]("fint-reset-name")
     .abbr("firn")

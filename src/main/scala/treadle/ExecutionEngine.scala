@@ -19,7 +19,6 @@ class ExecutionEngine(
 ) {
   private val interpreterOptions = optionsManager.treadleOptions
 
-  val wallTime = UTC()
   val cycleTimeIncrement = 500
   var cycleNumber: Long = 0
 
@@ -363,7 +362,6 @@ class ExecutionEngine(
   }
 
   def header: String = {
-    s"CycleNumber: $cycleNumber  wallTime: ${wallTime.currentTime}\n" +
     fieldsHeader
   }
 

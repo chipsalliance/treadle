@@ -8,15 +8,18 @@ class UTC private (scaleName: String = "picoseconds") {
   private var internalTime: Long = 0L
   def currentTime:  Long = internalTime
 
-  val eventQueue = new mutable.PriorityQueue[Event]()
+  val eventQueue = new mutable.PriorityQueue[Task]()
 
-  def addRecurringTask(period: Long, initialOffset: Long = 0)(thunk: () => Unit): Unit = {
-    val task = RecurringTask(internalTime + initialOffset, period, thunk)
+  var onTimeChange: () => Unit = () => {}
+
+  def addRecurringTask(period: Long, initialOffset: Long = 0, taskName: String = "")(thunk: () => Unit): Unit = {
+    val task = RecurringTask(internalTime + initialOffset, period, taskName, thunk)
     eventQueue.enqueue(task)
   }
 
-  def addOneTimeTask(time: Long)(thunk: () => Unit): Unit = {
-    eventQueue.enqueue(OneTimeTask(time, thunk))
+  def addOneTimeTask(time: Long, taskName: String = "")(thunk: () => Unit): Unit = {
+    val task = OneTimeTask(time, taskName, thunk)
+    eventQueue.enqueue(task)
   }
 
   def hasNextTask: Boolean = {
@@ -39,14 +42,23 @@ class UTC private (scaleName: String = "picoseconds") {
     }
   }
 
-  def advance(): Unit = {
-    runNextTask()
+  def runToTask(taskName: String): Unit = {
+    if(eventQueue.nonEmpty) {
+      val done = eventQueue.head.taskName == taskName
+      runNextTask()
+      if(! done) runToTask(taskName)
+    }
   }
 
   def runUntil(time: Long): Unit = {
     while(eventQueue.nonEmpty && eventQueue.head.time <= time) {
       runNextTask()
     }
+    internalTime = time
+  }
+
+  def incrementTime(increment: Long): Unit = {
+    runUntil(internalTime + increment)
   }
 }
 
@@ -54,9 +66,12 @@ object UTC {
   def apply(scaleName: String = "picoseconds"): UTC = new UTC(scaleName)
 }
 
-trait Event extends Ordered[Event] {
+
+trait Task extends Ordered[Task] {
+  def taskName: String
+  def run(): Unit
   def time: Long
-  override def compare(that: Event): Int = {
+  override def compare(that: Task): Int = {
     if(this.time < that.time) {
       1
     }
@@ -69,18 +84,13 @@ trait Event extends Ordered[Event] {
   }
 }
 
-trait Task extends Event {
-  def time: Long
-  def run(): Unit
-}
-
-case class OneTimeTask(time: Long, thunk: () => Unit) extends Task {
+case class OneTimeTask(time: Long, taskName: String, thunk: () => Unit) extends Task {
   def run(): Unit = {
     thunk()
   }
 }
 
-case class RecurringTask(time: Long, period: Long, thunk: () => Unit) extends Task {
+case class RecurringTask(time: Long, period: Long, taskName: String, thunk: () => Unit) extends Task {
   def run(): Unit = {
     thunk()
   }

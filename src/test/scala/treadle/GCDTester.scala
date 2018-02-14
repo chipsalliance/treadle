@@ -148,7 +148,10 @@ class GCDTester extends FlatSpec with Matchers {
         .stripMargin
 
     val manager = new InterpreterOptionsManager {
-      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false)
+      treadleOptions = treadleOptions.copy(
+        showFirrtlAtLoad = false,
+        rollbackBuffers = 0
+      )
     }
 
     val values =

@@ -22,31 +22,34 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
+      treadleOptions = treadleOptions.copy(
+        setVerbose = true,
+        symbolsToWatch = Seq("reg1", "reg1/in")
+      )
     }
-    val engine = ExecutionEngine(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
-    engine.setValue("reset1", 1)
-    engine.cycle()
-    engine.getValue("reg1") should be (3)
+    tester.poke("reset1", 1)
+    tester.step()
+    tester.peek("reg1") should be (3)
 
-    engine.setValue("reset1", 0)
-    engine.cycle()
-    engine.getValue("reg1") should be (4)
+    tester.poke("reset1", 0)
+    tester.step()
+    tester.peek("reg1") should be (4)
 
-    engine.getValue("reg1") should be (4)
+    tester.peek("reg1") should be (4)
 
-    engine.setValue("reset1", 0)
-    engine.cycle()
-    engine.getValue("reg1") should be (5)
+    tester.poke("reset1", 0)
+    tester.step()
+    tester.peek("reg1") should be (5)
 
-    engine.setValue("reset1", 1)
-    engine.cycle()
-    engine.getValue("reg1") should be (3)
+    tester.poke("reset1", 1)
+    tester.step()
+    tester.peek("reg1") should be (3)
 
-    engine.setValue("reset1", 0)
-    engine.cycle()
-    engine.getValue("reg1") should be (4)
+    tester.poke("reset1", 0)
+    tester.step()
+    tester.peek("reg1") should be (4)
   }
 
   it should "be able to initialize registers from other places" in {
@@ -66,55 +69,55 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val engine = ExecutionEngine(input)
+    val tester = TreadleTester(input)
 
-    // engine.setVerbose(true)
-    engine.setValue("reset1", 1)
-    engine.setValue("reset2", 0)
-    engine.doCycles(1)
-    engine.getValue("reg1") should be (0)
+    // tester.setVerbose(true)
+    tester.poke("reset1", 1)
+    tester.poke("reset2", 0)
+    tester.step()
+    tester.peek("reg1") should be (0)
 
-    engine.setValue("reset1", 0)
-    engine.setValue("reset2", 1)
-    engine.doCycles(1)
-    engine.getValue("reg1") should be (1)
-    engine.getValue("reg2") should be (0)
+    tester.poke("reset1", 0)
+    tester.poke("reset2", 1)
+    tester.step()
+    tester.peek("reg1") should be (1)
+    tester.peek("reg2") should be (0)
 
-    engine.setValue("reset1", 1)
-    engine.setValue("reset2", 1)
-    engine.doCycles(1)
-    engine.getValue("reg1") should be (0)
-    engine.getValue("reg2") should be (1)
+    tester.poke("reset1", 1)
+    tester.poke("reset2", 1)
+    tester.step()
+    tester.peek("reg1") should be (0)
+    tester.peek("reg2") should be (1)
 
-    engine.setValue("reset1", 0)
-    engine.setValue("reset2", 0)
-    engine.doCycles(1)
-    engine.getValue("reg1") should be (1)
-    engine.getValue("reg2") should be (4)
+    tester.poke("reset1", 0)
+    tester.poke("reset2", 0)
+    tester.step()
+    tester.peek("reg1") should be (1)
+    tester.peek("reg2") should be (4)
 
-    engine.setValue("reset1", 0)
-    engine.setValue("reset2", 0)
-    engine.doCycles(1)
-    engine.getValue("reg1") should be (2)
-    engine.getValue("reg2") should be (7)
+    tester.poke("reset1", 0)
+    tester.poke("reset2", 0)
+    tester.step()
+    tester.peek("reg1") should be (2)
+    tester.peek("reg2") should be (7)
 
-    engine.setValue("reset1", 1)
-    engine.setValue("reset2", 0)
-    engine.doCycles(1)
-    engine.getValue("reg1") should be (0)
-    engine.getValue("reg2") should be (10)
+    tester.poke("reset1", 1)
+    tester.poke("reset2", 0)
+    tester.step()
+    tester.peek("reg1") should be (0)
+    tester.peek("reg2") should be (10)
 
-    engine.setValue("reset1", 0)
-    engine.setValue("reset2", 0)
-    engine.doCycles(1)
-    engine.getValue("reg1") should be (1)
-    engine.getValue("reg2") should be (13)
+    tester.poke("reset1", 0)
+    tester.poke("reset2", 0)
+    tester.step()
+    tester.peek("reg1") should be (1)
+    tester.peek("reg2") should be (13)
 
-    engine.setValue("reset1", 0)
-    engine.setValue("reset2", 1)
-    engine.doCycles(1)
-    engine.getValue("reg1") should be (2)
-    engine.getValue("reg2") should be (1)
+    tester.poke("reset1", 0)
+    tester.poke("reset2", 1)
+    tester.step()
+    tester.peek("reg1") should be (2)
+    tester.peek("reg2") should be (1)
 
   }
 
@@ -141,7 +144,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.poke("reset", 1)
     tester.step()
     tester.poke("reset", 0)
-    tester.step(1)
+    tester.step()
     tester.finish
   }
 
@@ -164,37 +167,37 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(setVerbose = true, writeVCD = true)
     }
-    val engine = ExecutionEngine(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
-    engine.setValue("reset1", 1)
-    engine.cycle()
-    engine.getValue("reg1") should be (3)
-    engine.cycle()
-    engine.getValue("reg1") should be (3)
-    engine.cycle()
-    engine.getValue("reg1") should be (3)
+    tester.poke("reset1", 1)
+    tester.step()
+    tester.peek("reg1") should be (3)
+    tester.step()
+    tester.peek("reg1") should be (3)
+    tester.step()
+    tester.peek("reg1") should be (3)
 
-    engine.setValue("reset1", 0)
-    engine.cycle()
-    engine.getValue("reg1") should be (4)
+    tester.poke("reset1", 0)
+    tester.step()
+    tester.peek("reg1") should be (4)
 
-    engine.getValue("reg1") should be (4)
+    tester.peek("reg1") should be (4)
 
-    engine.setValue("reset1", 0)
-    engine.cycle()
-    engine.getValue("reg1") should be (5)
+    tester.poke("reset1", 0)
+    tester.step()
+    tester.peek("reg1") should be (5)
 
-    engine.setValue("reset1", 1)
-    engine.getValue("reg1") should be (5)
-    engine.cycle()
-    engine.getValue("reg1") should be (3)
-    engine.cycle()
-    engine.getValue("reg1") should be (3)
+    tester.poke("reset1", 1)
+    tester.peek("reg1") should be (5)
+    tester.step()
+    tester.peek("reg1") should be (3)
+    tester.step()
+    tester.peek("reg1") should be (3)
 
-    engine.setValue("reset1", 0)
-    engine.getValue("reg1") should be (3)
-    engine.cycle()
-    engine.getValue("reg1") should be (4)
+    tester.poke("reset1", 0)
+    tester.peek("reg1") should be (3)
+    tester.step()
+    tester.peek("reg1") should be (4)
   }
 
   behavior of "poking registers"

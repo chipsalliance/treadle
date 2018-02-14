@@ -51,6 +51,31 @@ class ChronometrySpec extends FreeSpec with Matchers {
     }
   }
 
+  "API supports run until task name" in {
+    val utc = UTC()
+    var cycle = 0
+
+    utc.addRecurringTask(1000, 500, "clock/up") { () =>
+      println(s"clock up at ${utc.currentTime}")
+      cycle += 1
+    }
+
+    utc.addRecurringTask(1000, 1000) { () =>
+      println(s"clock down at ${utc.currentTime}")
+      cycle += 7
+    }
+
+    utc.addOneTimeTask(155, "samuel") { () =>
+      println(s"one time task samuel")
+      cycle += 4
+    }
+
+    utc.runToTask("clock/up")
+
+    cycle should be (5)
+
+  }
+
 
   "UTC can schedule events for two clocks, 1 to 3 ratio" in {
     val utc = UTC()

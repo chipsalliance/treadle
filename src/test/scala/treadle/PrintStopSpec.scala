@@ -16,11 +16,11 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val engine = ExecutionEngine(input)
+    val tester = TreadleTester(input)
 
     for (cycle_number <- 0 to 10) {
-      engine.doCycles(2)
-      engine.stopped should be (false)
+      tester.step(2)
+      tester.engine.stopped should be (false)
     }
   }
 
@@ -34,13 +34,13 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val engine = ExecutionEngine(input)
+    val tester = TreadleTester(input)
 
     intercept[StopException] {
-      engine.doCycles(2)
+      tester.step(2)
     }
-    engine.stopped should be (true)
-    engine.lastStopResult.get should be (2)
+    tester.engine.stopped should be (true)
+    tester.engine.lastStopResult.get should be (2)
   }
 
   it should "return success if a stop with zero result" in {
@@ -53,13 +53,13 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val engine = ExecutionEngine(input)
+    val tester = TreadleTester(input)
 
     intercept[StopException] {
-      engine.doCycles(2)
+      tester.step(2)
     }
-    engine.stopped should be (true)
-    engine.lastStopResult.get should be (0)
+    tester.engine.stopped should be (true)
+    tester.engine.lastStopResult.get should be (0)
   }
 
   behavior of "Print statement"
@@ -75,9 +75,9 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val engine = ExecutionEngine(input)
+    val tester = TreadleTester(input)
 
-    engine.doCycles(2)
+    tester.step(2)
 
   }
   it should "support printf formatting" in {
@@ -91,9 +91,9 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val engine = ExecutionEngine(input)
+    val tester = TreadleTester(input)
 
-    engine.doCycles(2)
+    tester.step(2)
 
   }
 
@@ -110,9 +110,9 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
         """.stripMargin
 
-    val engine = ExecutionEngine(input)
+    val tester = TreadleTester(input)
 
-    engine.doCycles(2)
+    tester.step(2)
 
   }
 

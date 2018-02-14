@@ -623,28 +623,12 @@ case class VCD(
     }
   }
 
-  def incrementTime(increment: Int = 1) {
+  def incrementTime(increment: Long = 1L) {
     timeStamp += increment
   }
 
-  def raiseClock(): Unit = {
-    if(isNewValue(VCD.ClockName, BigInt(1))) {
-      incrementTime()
-      logger.info(f"vcd-clock  time $timeStamp%6d clock raised")
-      wireChanged(VCD.ClockName, BigInt(1))
-    } else {
-      logger.info(f"vcd-clock  time $timeStamp%6d clock already raised")
-    }
-  }
-
-  def lowerClock(): Unit = {
-    if(isNewValue(VCD.ClockName, BigInt(0))) {
-      logger.info(f"vcd-clock  time $timeStamp%6d clock lowered")
-      incrementTime()
-      wireChanged(VCD.ClockName, BigInt(0))
-    } else {
-      logger.info(f"vcd-clock  time $timeStamp%6d clock already lowered")
-    }
+  def setTime(time: Long): Unit = {
+    timeStamp = time
   }
 
   def wiresFor(change: Change): Set[Wire] = {
