@@ -7,6 +7,10 @@ import scala.collection.mutable
 class UTC private (scaleName: String = "picoseconds") {
   private var internalTime: Long = 0L
   def currentTime:  Long = internalTime
+  def setTime(time: Long): Unit = {
+    internalTime = time
+    onTimeChange()
+  }
 
   val eventQueue = new mutable.PriorityQueue[Task]()
 
@@ -30,11 +34,11 @@ class UTC private (scaleName: String = "picoseconds") {
     if(hasNextTask) {
       eventQueue.dequeue() match {
         case recurringTask: RecurringTask =>
-          internalTime = recurringTask.time
+          setTime(recurringTask.time)
           recurringTask.run()
           eventQueue.enqueue(recurringTask.copy(time = internalTime + recurringTask.period))
         case oneTimeTask: OneTimeTask =>
-          internalTime = oneTimeTask.time
+          setTime(oneTimeTask.time)
           oneTimeTask.run()
         case _ =>
           // do nothing
@@ -54,7 +58,7 @@ class UTC private (scaleName: String = "picoseconds") {
     while(eventQueue.nonEmpty && eventQueue.head.time <= time) {
       runNextTask()
     }
-    internalTime = time
+    setTime(time)
   }
 
   def incrementTime(increment: Long): Unit = {

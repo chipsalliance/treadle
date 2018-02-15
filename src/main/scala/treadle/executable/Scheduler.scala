@@ -12,7 +12,7 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
 
   def setVerboseAssign(isVerbose: Boolean): Unit = {
     def setMode(assigner: Assigner): Unit = {
-      assigner.verboseAssign = isVerbose
+      assigner.setVerbose(isVerbose)
     }
     activeAssigns.foreach { setMode }
     orphanedAssigns.foreach { setMode }

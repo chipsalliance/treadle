@@ -24,7 +24,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = true,
-        symbolsToWatch = Seq("reg1", "reg1/in")
+        noDefaultReset = true
       )
     }
     val tester = TreadleTester(input, optionsManager)
@@ -69,7 +69,13 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = true,
+        noDefaultReset = true
+      )
+    }
+    val tester = TreadleTester(input, optionsManager)
 
     // tester.setVerbose(true)
     tester.poke("reset1", 1)
@@ -165,7 +171,10 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new InterpreterOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = true, writeVCD = true)
+      treadleOptions = treadleOptions.copy(
+        setVerbose = true,
+        noDefaultReset = true,
+        writeVCD = true)
     }
     val tester = TreadleTester(input, optionsManager)
 
@@ -224,7 +233,14 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = new TreadleTester(input)
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = true,
+        noDefaultReset = true
+      )
+    }
+    val tester = TreadleTester(input, optionsManager)
+
 
     tester.poke("in", 7)
     tester.step()
@@ -287,6 +303,7 @@ class RegisterSpec extends FlatSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         showFirrtlAtLoad = false,
         setVerbose = false,
+        noDefaultReset = true,
         rollbackBuffers = 15)
     }
     val tester = new TreadleTester(input, manager)

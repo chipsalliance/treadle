@@ -22,5 +22,8 @@ package object executable {
     def run: FuncUnit
     def setLeanMode(isLean: Boolean): Unit = {}
     def render: String = symbol.render
+    def setVerbose(value: Boolean): Unit = {
+      verboseAssign = value
+    }
   }
 }

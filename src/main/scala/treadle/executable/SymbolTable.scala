@@ -284,8 +284,12 @@ object SymbolTable extends LazyLogging {
                       val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))
                       implementation.outputDependencies(port.name).foreach { inputName =>
                         val inputSymbol = nameToSymbol(expand(instanceName + "." + inputName))
-                        addDependency(portSymbol, Set(inputSymbol))
+                        addDependency(portSymbol, Set(inputSymbol, instanceSymbol))
                       }
+                    }
+                    if(port.tpe == ClockType) {
+                      val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))
+                      addDependency(instanceSymbol, Set(nameToSymbol(makeUpTransitionName(portSymbol))))
                     }
                   }
                 case _ =>

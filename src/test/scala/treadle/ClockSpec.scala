@@ -50,9 +50,9 @@ class ClockSpec extends FreeSpec with Matchers {
     }
 
     val tester = new TreadleTester(input, optionsManager)
-    tester.poke("reset", 1)
-    tester.step()
-    tester.poke("reset", 0)
+//    tester.poke("reset", 1)
+//    tester.step()
+//    tester.poke("reset", 0)
     intercept[StopException] {
       tester.step(100)
     }

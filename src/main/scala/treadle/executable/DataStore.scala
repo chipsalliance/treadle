@@ -35,7 +35,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         watchList += executionEngine.symbolTable(symbolName)
         executionEngine.scheduler.activeAssigns.foreach { assigner =>
           if(assigner.symbol.name == symbolName) {
-            assigner.verboseAssign = true
+            assigner.setVerbose(true)
             assigner.setLeanMode(false)
           }
         }
@@ -181,6 +181,16 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
     override def run: FuncUnit = {
       checkTransition _
+    }
+
+    override def setLeanMode(isLean: Boolean): Unit = {
+      underlyingAssigner.setLeanMode(isLean)
+      super.setLeanMode(isLean)
+    }
+
+    override def setVerbose(value: Boolean): Unit = {
+      underlyingAssigner.setVerbose(value)
+      super.setVerbose(value)
     }
   }
 

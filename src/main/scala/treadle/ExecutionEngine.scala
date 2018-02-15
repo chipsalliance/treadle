@@ -48,15 +48,6 @@ class ExecutionEngine(
 
   val timer = new Timer
 
-  val clockToggler: ClockToggle = symbolTable.get("clock") match {
-    case Some(clock) => new ClockToggler(clock)
-    case _           =>
-      symbolTable.get("clk") match {
-        case Some(clock) => new ClockToggler(clock)
-        case _ => new NullToggler
-      }
-  }
-
   if(verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
       println(s"Executing static assignments")
@@ -291,37 +282,6 @@ class ExecutionEngine(
     }
   }
 
-  def cycle(showState: Boolean = false): Unit = {
-    cycleNumber += 1L
-
-    if(inputsChanged) {
-      evaluateCircuit()
-    }
-
-//    wallTime.advance(cycleTimeIncrement)
-    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
-
-    clockToggler.raiseClock()
-    inputsChanged = true
-
-    evaluateCircuit()
-
-//    wallTime.advance(cycleTimeIncrement)
-    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
-
-    clockToggler.lowerClock()
-  }
-
-  def doCycles(n: Int): Unit = {
-    println(s"Initial state ${"-"*80}\n$dataInColumns")
-
-    for(cycle_number <- 1 to n) {
-      println(s"Cycle $cycle_number ${"-"*80}")
-      cycle()
-      if(stopped) return
-    }
-  }
-
   private val stopHappenedSymbolOpt = symbolTable.get(StopOp.stopHappenedName)
   /**
     * returns that value specified by a StopOp when
@@ -405,8 +365,7 @@ class ExecutionEngine(
     val assigner = dataStore.TriggerChecker(
       symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
     )
-    assigner.verboseAssign = verbose
-    assigner.underlyingAssigner.verboseAssign = verbose
+    assigner.setVerbose(verbose)
     assigner
   }
 
@@ -415,38 +374,9 @@ class ExecutionEngine(
     val assigner = dataStore.TriggerChecker(
       symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
     )
-    assigner.verboseAssign = verbose
-    assigner.underlyingAssigner.verboseAssign = verbose
+    assigner.setVerbose(verbose)
     assigner
   }
-
-  class ClockToggler(symbol: Symbol) extends ClockToggle {
-    val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
-
-    val upToggler = dataStore.TriggerChecker(
-      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
-    )
-    upToggler.verboseAssign = verbose
-    upToggler.underlyingAssigner.verboseAssign = verbose
-    val downToggler = dataStore.TriggerChecker(
-      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
-    )
-    downToggler.verboseAssign = verbose
-    downToggler.underlyingAssigner.verboseAssign = verbose
-
-    override def raiseClock(): Unit = {
-      if(verbose) println(s"starting raising clock")
-      upToggler.run()
-      if(verbose) println(s"finished raising clock")
-    }
-    override def lowerClock(): Unit = {
-      if(verbose) println(s"starting lowering clock")
-      downToggler.run()
-      if(verbose) println(s"finished lowering clock")
-      // inputsChanged = true
-    }
-  }
-
 }
 
 object ExecutionEngine {

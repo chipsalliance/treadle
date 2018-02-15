@@ -22,7 +22,8 @@ case class TreadleOptions(
     clockName          : String               = "clock",
     clockInfo          : Seq[ClockInfo]       = Seq.empty,
     resetName          : String               = "reset",
-    symbolsToWatch:    Seq[String]            = Seq.empty
+    noDefaultReset     : Boolean              = false,
+    symbolsToWatch     : Seq[String]          = Seq.empty
   )
   extends firrtl.ComposableOptions {
 
@@ -106,6 +107,13 @@ trait HasInterpreterOptions {
       treadleOptions = treadleOptions.copy(validIfIsRandom = true)
     }
     .text("validIf returns random value when condition is false")
+
+  parser.opt[Unit]("no-default-reset")
+    .abbr("findr")
+    .foreach { _ =>
+      treadleOptions = treadleOptions.copy(noDefaultReset = true)
+    }
+    .text("this prevents the tester fromdoing reset on it's own at startup")
 
   parser.opt[Int]("fint-rollback-buffers")
     .abbr("firb")

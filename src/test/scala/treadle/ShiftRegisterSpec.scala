@@ -47,10 +47,10 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
 
     val tester = new TreadleTester(input, optionsManager)
 
-    tester.poke("reset", 1)
-    tester.step()
-    tester.poke("reset", 0)
-    tester.step(8)
+    intercept[StopException] {
+      tester.step(8)
+    }
+    tester.engine.lastStopResult should be (Some(0))
     tester.report()
   }
 }

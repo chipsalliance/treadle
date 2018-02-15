@@ -4,7 +4,7 @@ package treadle
 import java.io.PrintWriter
 
 import treadle.chronometry.UTC
-import treadle.executable.{Assigner, ClockInfo, ExpressionViewRenderer}
+import treadle.executable.{ClockInfo, ExpressionViewRenderer}
 
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
@@ -44,7 +44,10 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   val combinationalDelay: Long = 10
 
   val wallTime = UTC()
-  wallTime.onTimeChange = () => { engine.vcdOption.foreach { vcd => vcd.setTime(wallTime.currentTime)}}
+  wallTime.onTimeChange = () => {
+    engine.vcdOption.foreach { vcd =>
+      vcd.setTime(wallTime.currentTime)}
+  }
 
   def setVerbose(value: Boolean = true): Unit = {
     engine.setVerbose(value)
@@ -79,11 +82,28 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
         wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
           engine.makeDownToggler(clockSymbol).run()
+          engine.inputsChanged = true
         }
 
       case _ =>
         throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
 
+    }
+  }
+
+  if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {
+    clockInfoList.headOption.foreach { clockInfo =>
+      reset(clockInfo.period + clockInfo.initialOffset)
+    }
+  }
+
+  def reset(timeRaised: Long): Unit = {
+    engine.setValue(resetName, 1)
+    engine.inputsChanged = true
+
+    wallTime.addOneTimeTask(wallTime.currentTime + timeRaised) { () =>
+      engine.setValue(resetName, 0)
+      engine.inputsChanged = true
     }
   }
 
@@ -183,17 +203,25 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     *
     * @param n cycles to perform
     */
-  def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = None): Unit = {
+  def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = clockInfoList.headOption): Unit = {
+    if(engine.verbose) println(s"In step at ${wallTime.currentTime}")
     if(engine.inputsChanged) {
       engine.evaluateCircuit()
     }
 
-    for(_ <- 0 until n) {
-      cycleCount += 1
-      val clockName = if(clockInfoOpt.isDefined) { clockInfoOpt.get.name } else { clockInfoList.head.name }
-      wallTime.runToTask(s"$clockName/up")
-      engine.evaluateCircuit()
-      wallTime.runToTask(s"$clockName/down")
+    if(clockInfoOpt.isDefined) {
+      for (_ <- 0 until n) {
+        cycleCount += 1
+        if (engine.verbose) println(s"step $cycleCount at ${wallTime.currentTime}")
+        val clockName = clockInfoOpt.get.name
+        wallTime.runToTask(s"$clockName/up")
+        wallTime.runUntil(wallTime.currentTime)
+        if (engine.verbose) println(s"clock raised at ${wallTime.currentTime}")
+        engine.evaluateCircuit()
+        wallTime.runToTask(s"$clockName/down")
+        wallTime.runUntil(wallTime.currentTime)
+        if (engine.verbose) println(s"Step finished step at ${wallTime.currentTime}")
+      }
     }
   }
 
