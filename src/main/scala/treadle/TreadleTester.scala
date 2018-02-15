@@ -103,6 +103,9 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
     wallTime.addOneTimeTask(wallTime.currentTime + timeRaised) { () =>
       engine.setValue(resetName, 0)
+      if(engine.verbose) {
+        println(s"reset dropped at ${wallTime.currentTime}")
+      }
       engine.inputsChanged = true
     }
   }
@@ -172,8 +175,14 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     */
   def peek(name: String): BigInt = {
     if(engine.inputsChanged) {
+      if(engine.verbose) {
+        println(s"peeking $name on stale circuit, refreshing START")
+      }
       engine.evaluateCircuit()
       wallTime.incrementTime(combinationalDelay)
+      if(engine.verbose) {
+        println(s"peeking $name on stale circuit, refreshing DONE")
+      }
     }
     engine.getValue(name)
   }
@@ -205,12 +214,12 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     */
   def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = clockInfoList.headOption): Unit = {
     if(engine.verbose) println(s"In step at ${wallTime.currentTime}")
-    if(engine.inputsChanged) {
-      engine.evaluateCircuit()
-    }
-
     if(clockInfoOpt.isDefined) {
       for (_ <- 0 until n) {
+        if(engine.inputsChanged) {
+          engine.evaluateCircuit()
+        }
+
         cycleCount += 1
         if (engine.verbose) println(s"step $cycleCount at ${wallTime.currentTime}")
         val clockName = clockInfoOpt.get.name
