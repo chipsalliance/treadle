@@ -4,6 +4,7 @@ package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
 
+//scalastyle:off magic.number
 class SimpleVendingMachineSpec extends FreeSpec with Matchers{
   "Simple Vending machine should dispense at the right time" in {
     val input =
@@ -161,7 +162,10 @@ class SimpleVendingMachineSpec extends FreeSpec with Matchers{
 
     val tester = new TreadleTester(input, optionsManager)
 
-    tester.step(100)
+    intercept[StopException] {
+      tester.step(80)
+    }
+    tester.engine.lastStopResult should be (Some(0))
     tester.report()
   }
 }
