@@ -28,7 +28,7 @@ case class StopOp(
         case e: BigExpressionResult => e.apply() > Big(0)
       }
       if (conditionValue) {
-        if (verboseAssign) {
+        if (isVerbose) {
           println(s"clock ${symbol.name} has fired")
         }
         dataStore(hasStopped) = returnValue + 1

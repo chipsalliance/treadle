@@ -18,12 +18,20 @@ package object executable {
 
   trait Assigner {
     val symbol: Symbol
-    var verboseAssign: Boolean = false
     def run: FuncUnit
     def setLeanMode(isLean: Boolean): Unit = {}
     def render: String = symbol.render
+
+    private var verboseAssign: Boolean = false
+    def isVerbose: Boolean = verboseAssign
     def setVerbose(value: Boolean): Unit = {
       verboseAssign = value
+    }
+
+    private var renderAssign: Boolean = false
+    def doRender: Boolean = renderAssign
+    def setRender(value: Boolean): Unit = {
+      renderAssign = value
     }
   }
 }

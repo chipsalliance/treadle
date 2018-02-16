@@ -174,7 +174,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
     engine.setValue(resetName, 1)
     engine.inputsChanged = true
 
-    wallTime.addOneTimeTask(wallTime.currentTime + timeRaised) { () =>
+    wallTime.addOneTimeTask(wallTime.currentTime + timeRaised, "reset-task") { () =>
       engine.setValue(resetName, 0)
       if(engine.verbose) {
         println(s"reset dropped at ${wallTime.currentTime}")
@@ -718,14 +718,16 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           getOneArg("reset [numberOfSteps]", Some("1")) match {
             case Some(numberOfStepsString) =>
               try {
-                engine.setValue("reset", 1)
-                val numberOfSteps = numberOfStepsString.toInt
-                for(_ <- 0 until numberOfSteps) {
-                  step()
-                  engine.evaluateCircuit()
+                clockInfoList.headOption match {
+                  case Some(clockInfo) =>
+                    val extraTime = clockInfo.period * numberOfStepsString.toInt
+                    reset(clockInfo.initialOffset + extraTime)
+                    wallTime.runToTask("reset-task")
+                  case _ =>
+                    engine.setValue("reset", 1)
+                    engine.advanceTime(combinationalDelay)
+                    engine.setValue("reset", 0)
                 }
-                engine.setValue("reset", 0)
-                // console.println(engine.circuitState.prettyString())
               }
               catch {
                 case e: Exception =>

@@ -101,7 +101,7 @@ case class BlackBoxCycler(
   override def run: FuncUnit = {
     val transition = if(dataStore.currentIntArray(index) == 1) PositiveEdge else NoTransition
     blackBox.cycle(transition)
-    if(verboseAssign) {
+    if(isVerbose) {
       println(s"${symbol.name} : black box cycle($transition)")
     }
     () => Unit
