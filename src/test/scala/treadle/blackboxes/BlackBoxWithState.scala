@@ -35,7 +35,11 @@ class BlackBoxWithState extends FreeSpec with Matchers {
       """.stripMargin
 
     val manager = new InterpreterOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false, blackBoxFactories = Seq(new AccumBlackBoxFactory))
+      treadleOptions = treadleOptions.copy(
+        setVerbose = true,
+        symbolsToWatch = Seq("m.clock/rising", "io_data"),
+        blackBoxFactories = Seq(new AccumBlackBoxFactory)
+      )
     }
     val tester = new TreadleTester(input, manager)
 

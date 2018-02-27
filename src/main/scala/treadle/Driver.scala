@@ -3,22 +3,27 @@
 package treadle
 
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
+import treadle.executable.ClockInfo
 
 //scalastyle:off magic.number
 case class TreadleOptions(
-    writeVCD:          Boolean              = false,
-    vcdShowUnderscored:Boolean              = false,
-    setVerbose:        Boolean              = false,
-    setOrderedExec:    Boolean              = false,
-    allowCycles:       Boolean              = false,
-    randomSeed:        Long                 = System.currentTimeMillis(),
-    blackBoxFactories: Seq[BlackBoxFactory] = Seq.empty,
-    maxExecutionDepth: Long                 = Int.MaxValue,
-    showFirrtlAtLoad:  Boolean              = false,
-    lowCompileAtLoad:  Boolean              = true,
-    validIfIsRandom:   Boolean              = false,
-    rollbackBuffers:   Int                  = 4,
-    symbolsToWatch:    Seq[String]          = Seq.empty
+    writeVCD           : Boolean              = false,
+    vcdShowUnderscored : Boolean              = false,
+    setVerbose         : Boolean              = false,
+    setOrderedExec     : Boolean              = false,
+    allowCycles        : Boolean              = false,
+    randomSeed         : Long                 = System.currentTimeMillis(),
+    blackBoxFactories  : Seq[BlackBoxFactory] = Seq.empty,
+    maxExecutionDepth  : Long                 = Int.MaxValue,
+    showFirrtlAtLoad   : Boolean              = false,
+    lowCompileAtLoad   : Boolean              = true,
+    validIfIsRandom    : Boolean              = false,
+    rollbackBuffers    : Int                  = 4,
+    clockName          : String               = "clock",
+    clockInfo          : Seq[ClockInfo]       = Seq.empty,
+    resetName          : String               = "reset",
+    noDefaultReset     : Boolean              = false,
+    symbolsToWatch     : Seq[String]          = Seq.empty
   )
   extends firrtl.ComposableOptions {
 
@@ -100,18 +105,61 @@ trait HasInterpreterOptions {
     .abbr("fivir")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(validIfIsRandom = true)
-      treadleOptions = treadleOptions.copy()
     }
     .text("validIf returns random value when condition is false")
+
+  parser.opt[Unit]("no-default-reset")
+    .abbr("findr")
+    .foreach { _ =>
+      treadleOptions = treadleOptions.copy(noDefaultReset = true)
+    }
+    .text("this prevents the tester fromdoing reset on it's own at startup")
 
   parser.opt[Int]("fint-rollback-buffers")
     .abbr("firb")
     .valueName("<int-value>")
     .foreach { x =>
       treadleOptions = treadleOptions.copy(rollbackBuffers = x)
-      treadleOptions = treadleOptions.copy()
     }
-    .text("number of rollback buffers, 0 is no buffers, default is 4")}
+    .text("number of rollback buffers, 0 is no buffers, default is 4")
+
+  parser.opt[String]("fint-clock-name")
+    .abbr("ficn")
+    .valueName("<string>")
+    .foreach { x =>
+      treadleOptions = treadleOptions.copy(clockName = x)
+    }
+    .text("name of default clock")
+
+  def parseClockInfo(input: String): ClockInfo = {
+    input.split(":").map(_.trim).toList match {
+      case name :: Nil =>
+        ClockInfo(name)
+      case name :: period :: Nil =>
+        ClockInfo(name, period.toLong)
+      case name :: period :: offset :: Nil =>
+        ClockInfo(name, period.toLong, offset.toLong)
+      case _ =>
+        throw new TreadleException(s"Bad clock info string $input, should be name[:period[:offset]]")
+    }
+  }
+  parser.opt[String]("fint-clock-info")
+    .abbr("fici")
+    .unbounded()
+    .valueName("<string>")
+    .foreach { x =>
+      treadleOptions = treadleOptions.copy(clockInfo = treadleOptions.clockInfo ++ Seq(parseClockInfo(x)))
+    }
+    .text("clock-name[:period[:initial-offset]]")
+
+  parser.opt[String]("fint-reset-name")
+    .abbr("firn")
+    .valueName("<string>")
+    .foreach { x =>
+      treadleOptions = treadleOptions.copy(resetName = x)
+    }
+    .text("name of default reset")
+}
 
 object Driver {
 

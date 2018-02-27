@@ -71,6 +71,22 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     println(vcd.serialize)
   }
 
+  it should "be able to serialize negative and positive values" in {
+    val wire = Wire("testwire", "t", width = 4)
+    val s = new StringBuilder
+    for( i <- -8 to 7) {
+      val change = Change(wire, i)
+      val string = s"$i => ${change.serialize}"
+      println(string)
+      s ++= string + "\n"
+    }
+    s.toString().contains("-8 => b1000") should be (true)
+    s.toString().contains("-1 => b1111") should be (true)
+    s.toString().contains("0 => b0000") should be (true)
+    s.toString().contains("1 => b0001") should be (true)
+    s.toString().contains("7 => b0111") should be (true)
+  }
+
   behavior of "VCD reader"
 
   it should "be able to read a file" in {

@@ -27,14 +27,14 @@
 //    val tester = new InterpretiveTester(input)
 //    val engine = tester.engine
 //
-//    interpreter.circuitState.isStale should be (false)
+//    engine.circuitState.isStale should be (false)
 //
 //    tester.poke("a", 1)
 //
-//    interpreter.circuitState.isStale should be (true)
+//    engine.circuitState.isStale should be (true)
 //
 //    tester.peek("c")
 //
-//    interpreter.circuitState.isStale should be (false)
+//    engine.circuitState.isStale should be (false)
 //  }
 //}

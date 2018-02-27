@@ -3,7 +3,8 @@ package treadle
 
 import java.io.PrintWriter
 
-import treadle.executable.ExpressionViewRenderer
+import treadle.chronometry.UTC
+import treadle.executable.{ClockInfo, ExpressionViewRenderer}
 
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
@@ -23,18 +24,29 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
   treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
 
-  val engine: ExecutionEngine                = ExecutionEngine(input, optionsManager)
-  val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
+  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager)
+  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
 
-  setVerbose(interpreterOptions.setVerbose)
+  setVerbose(treadleOptions.setVerbose)
 
-  if(interpreterOptions.writeVCD) {
+  if(treadleOptions.writeVCD) {
     optionsManager.setTopNameIfNotSet(engine.ast.main)
     optionsManager.makeTargetDir()
     engine.makeVCDLogger(
-      interpreterOptions.vcdOutputFileName(optionsManager),
-      interpreterOptions.vcdShowUnderscored
+      treadleOptions.vcdOutputFileName(optionsManager),
+      treadleOptions.vcdShowUnderscored
     )
+  }
+
+  val clockName: String = treadleOptions.clockName
+  val resetName: String = treadleOptions.resetName
+
+  val combinationalDelay: Long = 10
+
+  val wallTime = UTC()
+  wallTime.onTimeChange = () => {
+    engine.vcdOption.foreach { vcd =>
+      vcd.setTime(wallTime.currentTime)}
   }
 
   def setVerbose(value: Boolean = true): Unit = {
@@ -42,6 +54,61 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   }
 
   val startTime: Long = System.nanoTime()
+
+  val clockInfoList: Seq[ClockInfo] = if(treadleOptions.clockInfo.isEmpty) {
+    if(engine.symbolTable.contains("clock")) {
+      Seq(ClockInfo())
+    }
+    else if(engine.symbolTable.contains("clk")) {
+      Seq(ClockInfo("clk"))
+    }
+    else {
+      Seq()
+    }
+  }
+  else {
+    treadleOptions.clockInfo
+  }
+
+  clockInfoList.foreach { clockInfo =>
+    engine.symbolTable.get(clockInfo.name) match {
+      case Some(clockSymbol) =>
+        val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
+
+        wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, taskName = s"${clockInfo.name}/up") { () =>
+          engine.makeUpToggler(clockSymbol).run()
+          engine.inputsChanged = true
+        }
+
+        wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
+          engine.makeDownToggler(clockSymbol).run()
+          engine.inputsChanged = true
+        }
+
+      case _ =>
+        throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
+
+    }
+  }
+
+  if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {
+    clockInfoList.headOption.foreach { clockInfo =>
+      reset(clockInfo.period + clockInfo.initialOffset)
+    }
+  }
+
+  def reset(timeRaised: Long): Unit = {
+    engine.setValue(resetName, 1)
+    engine.inputsChanged = true
+
+    wallTime.addOneTimeTask(wallTime.currentTime + timeRaised) { () =>
+      engine.setValue(resetName, 0)
+      if(engine.verbose) {
+        println(s"reset dropped at ${wallTime.currentTime}")
+      }
+      engine.inputsChanged = true
+    }
+  }
 
   def makeSnapshot(): Unit = {
     val snapshotName = optionsManager.getBuildFileName(".datastore.snapshot.json")
@@ -107,6 +174,16 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @return A BigInt value currently set at name
     */
   def peek(name: String): BigInt = {
+    if(engine.inputsChanged) {
+      if(engine.verbose) {
+        println(s"peeking $name on stale circuit, refreshing START")
+      }
+      engine.evaluateCircuit()
+      wallTime.incrementTime(combinationalDelay)
+      if(engine.verbose) {
+        println(s"peeking $name on stale circuit, refreshing DONE")
+      }
+    }
     engine.getValue(name)
   }
 
@@ -117,8 +194,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     * @param expectedValue the BigInt value required
     */
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
-    engine.scheduler.executeActiveAssigns()
-    val value = engine.getValue(name)
+    val value = peek(name)
     if(value != expectedValue) {
       val renderer = new ExpressionViewRenderer(
         engine.dataStore, engine.symbolTable, engine.expressionViews)
@@ -133,13 +209,28 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   /**
     * Cycles the circuit n steps (with a default of one)
     * At each step registers and memories are advanced and all other elements recomputed
- *
+    *
     * @param n cycles to perform
     */
-  def step(n: Int = 1): Unit = {
-    for(_ <- 0 until n) {
-      cycleCount += 1
-      engine.cycle(engine.verbose)
+  def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = clockInfoList.headOption): Unit = {
+    if(engine.verbose) println(s"In step at ${wallTime.currentTime}")
+    if(clockInfoOpt.isDefined) {
+      for (_ <- 0 until n) {
+        if(engine.inputsChanged) {
+          engine.evaluateCircuit()
+        }
+
+        cycleCount += 1
+        if (engine.verbose) println(s"step $cycleCount at ${wallTime.currentTime}")
+        val clockName = clockInfoOpt.get.name
+        wallTime.runToTask(s"$clockName/up")
+        wallTime.runUntil(wallTime.currentTime)
+        if (engine.verbose) println(s"clock raised at ${wallTime.currentTime}")
+        engine.evaluateCircuit()
+        wallTime.runToTask(s"$clockName/down")
+        wallTime.runUntil(wallTime.currentTime)
+        if (engine.verbose) println(s"Step finished step at ${wallTime.currentTime}")
+      }
     }
   }
 
@@ -152,7 +243,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     */
   def pokeMemory(name: String, index: Int, value: BigInt): Unit = {
     engine.symbolTable.get(name) match {
-      case Some(memory) =>
+      case Some(_) =>
         engine.setValue(name, value = value, offset = index)
       case _ =>
         throw TreadleException(s"Error: memory $name.forceWrite($index, $value). memory not found")
@@ -161,7 +252,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 
   def peekMemory(name: String, index: Int): BigInt = {
     engine.symbolTable.get(name) match {
-      case Some(memory) =>
+      case Some(_) =>
         engine.getValue(name, offset = index)
       case _ =>
         throw TreadleException(s"Error: get memory $name.forceWrite($index). memory not found")
@@ -205,5 +296,11 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   def finish: Boolean = {
     engine.writeVCD()
     isOK
+  }
+}
+
+object TreadleTester {
+  def apply(input : String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): TreadleTester = {
+    new TreadleTester(input, optionsManager)
   }
 }

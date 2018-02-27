@@ -30,12 +30,36 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   private var executionEngineOption: Option[ExecutionEngine] = None
   def setExecutionEngine(executionEngine: ExecutionEngine): Unit = {
     executionEngineOption = Some(executionEngine)
+
     executionEngine.optionsManager.treadleOptions.symbolsToWatch.foreach { symbolName =>
-      if(executionEngine.symbolTable.contains(symbolName)) {
+      if (executionEngine.symbolTable.contains(symbolName)) {
         watchList += executionEngine.symbolTable(symbolName)
       }
       else {
         throw TreadleException(s"treadleOptions.symbols to watch has bad symbolName $symbolName")
+      }
+    }
+
+    setAssignmentDisplayModes()
+  }
+
+  def setAssignmentDisplayModes(): Unit = {
+    executionEngineOption.foreach { executionEngine =>
+      val watchList = executionEngine.optionsManager.treadleOptions.symbolsToWatch.map { symbolName =>
+        executionEngine.symbolTable.get(symbolName) match {
+          case Some(symbol) =>
+            symbol
+          case _ =>
+            throw TreadleException(s"treadleOptions.symbols to watch has bad symbolName $symbolName")
+        }
+      }
+
+      val verbose = executionEngineOption.get.verbose
+      executionEngine.scheduler.activeAssigns.foreach { assigner =>
+        val render = watchList.contains(assigner.symbol)
+        assigner.setLeanMode(!verbose && !render)
+        assigner.setVerbose(verbose)
+        assigner.setRender(render)
       }
     }
   }
@@ -131,24 +155,20 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
   }
 
-  def showAssignment(symbol: Symbol, value: BigInt): Unit = {
-    val showValue = symbol.normalize(value)
+  def showAssignment(symbol: Symbol): Unit = {
+    val showValue = symbol.normalize(apply(symbol))
     println(s"${symbol.name} <= $showValue")
-    if(watchList.contains(symbol)) {
-      executionEngineOption.foreach { executionEngine =>
-        println(executionEngine.renderComputation(symbol.name))
-      }
-    }
   }
 
   def showIndirectAssignment(symbol: Symbol, value: BigInt, index: Int): Unit = {
     //TODO (chick) Need to build in display of index computation
     val showValue = symbol.normalize(value)
     println(s"${symbol.name}($index) <= $showValue")
-    if(watchList.contains(symbol)) {
-      executionEngineOption.foreach { executionEngine =>
-        println(executionEngine.renderComputation(symbol.name))
-      }
+  }
+
+  def renderAssignment(symbol: Symbol): Unit = {
+    executionEngineOption.foreach { executionEngine =>
+      println(executionEngine.renderComputation(symbol.name))
     }
   }
 
@@ -159,18 +179,36 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   ) extends Assigner {
 
     def checkTransition(): Unit = {
-      val originalValue = currentIntArray(prevSymbol.index)
+      val originalValue = currentIntArray(symbol.index)
       underlyingAssigner.run()
       val finalValue = currentIntArray(symbol.index)
       val transitionValue = if(finalValue > 0 && originalValue == 0) { 1 } else { 0 }
       currentIntArray(prevSymbol.index) = transitionValue
-      if(verboseAssign) {
-        val showValue = symbol.normalize(transitionValue)
-        println(s"${prevSymbol.name} <= $showValue")
+      vcdOption.foreach { vcd =>
+        //TODO: (chick) figure out whether this should be done at all or protected by if below
+        vcd.wireChanged(prevSymbol.name, transitionValue)
       }
+      if(isVerbose) showAssignment(prevSymbol)
+      if(doRender) renderAssignment(prevSymbol)
     }
+
     override def run: FuncUnit = {
       checkTransition _
+    }
+
+    override def setLeanMode(isLean: Boolean): Unit = {
+      underlyingAssigner.setLeanMode(isLean)
+      super.setLeanMode(isLean)
+    }
+
+    override def setVerbose(value: Boolean): Unit = {
+      underlyingAssigner.setVerbose(value)
+      super.setVerbose(value)
+    }
+
+    override def setRender(value: Boolean): Unit = {
+      underlyingAssigner.setRender(value)
+      super.setVerbose(value)
     }
   }
 
@@ -187,7 +225,8 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       val value = expression()
       currentIntArray(index) = value
       vcdUpdate(symbol, value)
-      if(verboseAssign) showAssignment(symbol, value)
+      if(isVerbose) showAssignment(symbol)
+      if(doRender) renderAssignment(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -211,7 +250,8 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       val value = expression()
       currentLongArray(index) = value
       vcdUpdate(symbol, value)
-      if(verboseAssign) showAssignment(symbol, value)
+      if(isVerbose) showAssignment(symbol)
+      if(doRender) renderAssignment(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -238,7 +278,8 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       val value = expression()
       currentBigArray(index) = value
       vcdUpdate(symbol, value)
-      if(verboseAssign) showAssignment(symbol, value)
+      if(isVerbose) showAssignment(symbol)
+      if(doRender) renderAssignment(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -302,10 +343,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val memoryIndex = getMemoryIndex.apply()
         currentIntArray(index + (memoryIndex % memorySymbol.slots)) = value
         vcdUpdate(symbol, value)
-        if(verboseAssign) showIndirectAssignment(symbol, value, memoryIndex)
+        if(isVerbose) showIndirectAssignment(symbol, value, memoryIndex)
       }
       else {
-        if(verboseAssign) {
+        if(isVerbose) {
           println(s"${symbol.name}(${getMemoryIndex.apply() % memorySymbol.slots}) <= NOT ENABLED")
         }
       }
@@ -338,10 +379,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val memoryIndex = getMemoryIndex.apply()
         currentLongArray(index + (memoryIndex % memorySymbol.slots)) = value
         vcdUpdate(symbol, value)
-        if(verboseAssign) showIndirectAssignment(symbol, value, memoryIndex)
+        if(isVerbose) showIndirectAssignment(symbol, value, memoryIndex)
       }
       else {
-        if(verboseAssign) {
+        if(isVerbose) {
           println(s"${symbol.name}(${getMemoryIndex.apply() % memorySymbol.slots}) <= NOT ENABLED")
         }
       }
@@ -374,10 +415,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val memoryIndex = getMemoryIndex.apply()
         currentBigArray(index + (memoryIndex % memorySymbol.slots)) = value
         vcdUpdate(symbol, value)
-        if(verboseAssign) showIndirectAssignment(symbol, value, memoryIndex)
+        if(isVerbose) showIndirectAssignment(symbol, value, memoryIndex)
       }
       else {
-        if(verboseAssign) {
+        if(isVerbose) {
           println(s"${symbol.name}(${getMemoryIndex.apply() % memorySymbol.slots}) <= NOT ENABLED")
         }
       }

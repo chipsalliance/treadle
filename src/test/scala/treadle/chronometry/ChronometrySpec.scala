@@ -2,61 +2,127 @@
 
 package treadle.chronometry
 
-import firrtl.WireKind
-import firrtl.ir.{IntWidth, UIntType}
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.executable._
 
 // scalastyle:off magic.number
 class ChronometrySpec extends FreeSpec with Matchers {
-  "UTC can schedule events for single clock" in {
-    val utc = new UTC()
-    val basicClock = ScheduledClock(Symbol("bob", UIntType(IntWidth(1)), WireKind ), 100)
-    utc.register(basicClock)
+  "UTC can schedule a single task" in {
+    val utc = UTC()
+    var x = 0
 
-    for(i <- 0 until 10) {
-      val events = utc.nextClocks()
-      events.length should be (1)
-      println(events.head)
+    utc.hasNextTask should be (false)
+
+    utc.addOneTimeTask(10) { () =>
+      println(s"task number one")
+      x = 1
+    }
+
+    utc.hasNextTask should be (true)
+
+    utc.runNextTask()
+
+    x should be (1)
+
+    utc.hasNextTask should be (false)
+  }
+
+  "A clock requires two recurring tasks, one for rising one for falling" in {
+    val utc = UTC()
+    var cycle = 0
+
+    utc.addRecurringTask(1000, 500) { () =>
+      println(s"clock up at ${utc.currentTime}")
+      cycle += 1
+    }
+
+    println(s"first tasks at " + utc.eventQueue.head.time)
+
+    utc.addRecurringTask(1000, 1000) { () =>
+      println(s"clock down at ${utc.currentTime}")
+    }
+
+    for(i <- 1 to 10) {
+      utc.runNextTask()
+      utc.currentTime should be ((i - 1) * 1000 + 500)
+      cycle should be (i)
+      utc.runNextTask()
+
+      utc.hasNextTask should be (true)
     }
   }
 
-  "UTC can schedule events for two clocks, 1 to 3 ratio" in {
-    val utc = new UTC()
-    val basicClock = ScheduledClock(Symbol("bob", UIntType(IntWidth(1)), WireKind ), 100)
-    val oneThirdClock = ScheduledClock(Symbol("carol", UIntType(IntWidth(1)), WireKind ), 300)
-    utc.register(basicClock)
-    utc.register(oneThirdClock)
+  "API supports run until task name" in {
+    val utc = UTC()
+    var cycle = 0
 
-    for(i <- 0 until 10) {
-      val events = utc.nextClocks()
-      if(i % 3 == 2) {
-        events.length should be (2)
-
-      }
-      else {
-        events.length should be (1)
-
-      }
-      println(s"Events at time ${utc.currentTime}")
-      println(events.mkString("\n"))
+    utc.addRecurringTask(1000, 500, "clock/up") { () =>
+      println(s"clock up at ${utc.currentTime}")
+      cycle += 1
     }
+
+    utc.addRecurringTask(1000, 1000) { () =>
+      println(s"clock down at ${utc.currentTime}")
+      cycle += 7
+    }
+
+    utc.addOneTimeTask(155, "samuel") { () =>
+      println(s"one time task samuel")
+      cycle += 4
+    }
+
+    utc.runToTask("clock/up")
+
+    cycle should be (5)
+
+  }
+
+
+  "UTC can schedule events for two clocks, 1 to 3 ratio" in {
+    val utc = UTC()
+    var cycleA = 0
+    var cycleB = 0
+
+    utc.addRecurringTask(1000) { () =>
+      println(s"clock fast up   at ${utc.currentTime}")
+      cycleA += 1
+    }
+
+    utc.addRecurringTask(1000, 500) { () =>
+      println(s"clock fast down at ${utc.currentTime}")
+    }
+
+    utc.addRecurringTask(3000) { () =>
+      println(s"clock slow up   at ${utc.currentTime}")
+      cycleB += 1
+    }
+
+    utc.addRecurringTask(3000, 1500) { () =>
+      println(s"clock slow down at ${utc.currentTime}")
+    }
+
+    for(_ <- 0 to 30) {
+      utc.runNextTask()
+    }
+
+    cycleA should be (cycleB * 3)
   }
 
   "How slow is one clock" in {
     val toDo = 10000000L
 
-    val utc = new UTC()
-    val clock0 = ScheduledClock(Symbol("dog", UIntType(IntWidth(1)), WireKind ), 100)
-    utc.register(clock0)
+    val utc = UTC()
+    var cycle = 0
+
+    utc.addRecurringTask(1000, 500) { () =>
+      cycle += 1
+    }
+
+    utc.addRecurringTask(1000, 1000) { () =>
+    }
 
     val startTime = System.currentTimeMillis()
-    for(i <- 0L until toDo) {
-      val events = utc.nextClocks()
-      if(i % (toDo / 10) == 0) {
-        println(s"Events at time ${utc.currentTime}")
-        println(events.mkString("\n"))
-      }
+    for(_ <- 1L to toDo) {
+      utc.runNextTask()
     }
     val stopTime = System.currentTimeMillis()
 
@@ -64,30 +130,49 @@ class ChronometrySpec extends FreeSpec with Matchers {
     println(
       f"$toDo events in ${(stopTime - startTime) / 1000.0}%10.5f seconds," +
         f"rate = $eps%10.5f KHz utc = ${utc.currentTime}")
+
+    eps should be > 1000.0  // clock should be fairly lean, i.e. be at least a mega-hz
   }
 
   "How slow are three clocks" in {
     val toDo = 10000000L
 
-    val utc = new UTC()
-    val clock0 = ScheduledClock(Symbol("dog", UIntType(IntWidth(1)), WireKind ), 100)
-    val clock1 = ScheduledClock(Symbol("cat", UIntType(IntWidth(1)), WireKind ), 300)
-    val clock2 = ScheduledClock(Symbol("fox", UIntType(IntWidth(1)), WireKind ), 17)
-    utc.register(clock0)
-    utc.register(clock1)
-    utc.register(clock2)
+    val utc = UTC()
+    var cycle = 0
+
+    utc.addRecurringTask(1000, 500) { () =>
+      cycle += 1
+    }
+
+    utc.addRecurringTask(1000, 1000) { () =>
+    }
+
+    utc.addRecurringTask(3000, 2000) { () =>
+      cycle += 1
+    }
+
+    utc.addRecurringTask(3000, 1000) { () =>
+    }
+
+    utc.addRecurringTask(900, 500) { () =>
+      cycle += 1
+    }
+
+    utc.addRecurringTask(900, 1000) { () =>
+    }
 
     val startTime = System.currentTimeMillis()
-    for(i <- 0L until toDo) {
-      val events = utc.nextClocks()
-      if(i % (toDo / 10) == 0) {
-        println(s"Events at time ${utc.currentTime}")
-        println(events.mkString("\n"))
-      }
+    for(_ <- 1L to toDo) {
+      utc.runNextTask()
     }
     val stopTime = System.currentTimeMillis()
 
     val eps = toDo.toDouble / (stopTime - startTime)
-    println(f"$toDo events in ${(stopTime - startTime) / 1000.0}%10.5f seconds, rate = $eps%10.5f MHz utc = ${utc.currentTime}")
+    println(
+      f"$toDo events in ${(stopTime - startTime) / 1000.0}%10.5f seconds," +
+        f"rate = $eps%10.5f KHz utc = ${utc.currentTime}")
+
+    eps should be > 1000.0  // clock should be fairly lean, i.e. be at least a mega-hz
   }
+
 }

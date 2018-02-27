@@ -116,7 +116,7 @@ package object treadle {
   }
 
   def doubleToBigIntBits(double: Double): BigInt = {
-    BigInt(java.lang.Double.doubleToLongBits(double))
+    BigInt(java.lang.Double.doubleToLongBits(double).toBinaryString, 2)
   }
 
   def bigIntBitsToDouble(bigInt: BigInt): Double = {

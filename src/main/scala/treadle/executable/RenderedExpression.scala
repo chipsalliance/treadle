@@ -82,7 +82,23 @@ class ExpressionViewRenderer(
                       }
                     case _ =>
                   }
+                case x =>
+                  x.toString
               }
+            case ms: Symbol =>
+              val arg = args.drop(if(dataStore(ms) > 0) 1 else 2).head  //TODO: (CHICK) is this right?
+              arg match {
+                case ev2: ExpressionView =>
+                  ev2.args.head match {
+                    case sss: Symbol =>
+                      symbolsSeen += sss
+                    case _ =>
+                  }
+                case _ =>
+              }
+            case x =>
+                x.toString
+
           }
         }
       }

@@ -110,7 +110,7 @@ class ReplVcdController(val repl: TreadleRepl, val interpreter: ExecutionEngine,
 
     if(needToStep) {
       console.println(s"vcd step called at $now")
-      interpreter.cycle()
+      repl.step()
     }
     needToStep
   }

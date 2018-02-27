@@ -3,52 +3,79 @@
 package treadle.chronometry
 
 import scala.collection.mutable
-import treadle.executable._
 
-class UTC(scaleName: String = "picoseconds") {
-  private var time: Long = 0L
-  def currentTime:  Long = time
-
-  val eventQueue = new mutable.PriorityQueue[Event]()
-
-  def register(clock: ScheduledClock): Unit = {
-    eventQueue.enqueue(Event(clock.period + clock.offset, clock))
+class UTC private (scaleName: String = "picoseconds") {
+  private var internalTime: Long = 0L
+  def currentTime:  Long = internalTime
+  def setTime(time: Long): Unit = {
+    internalTime = time
+    onTimeChange()
   }
 
-  def advance(increment: Long): Unit = {
-    time += increment
+  val eventQueue = new mutable.PriorityQueue[Task]()
+
+  var onTimeChange: () => Unit = () => {}
+
+  def addRecurringTask(period: Long, initialOffset: Long = 0, taskName: String = "")(thunk: () => Unit): Unit = {
+    val task = RecurringTask(internalTime + initialOffset, period, taskName, thunk)
+    eventQueue.enqueue(task)
   }
 
-  def nextEvent(nowEvents: List[Event] = List.empty): List[Event] = {
-    if(nowEvents.isEmpty) {
-      val event = eventQueue.dequeue()
-      time = event.time
-      nextEvent(event :: Nil)
-    }
-    else {
-      eventQueue.headOption match {
-        case Some(event) =>
-          if(event.time == nowEvents.head.time) {
-            nextEvent(eventQueue.dequeue() :: nowEvents)
-          }
-          else {
-           nowEvents
-          }
+  def addOneTimeTask(time: Long, taskName: String = "")(thunk: () => Unit): Unit = {
+    val task = OneTimeTask(time, taskName, thunk)
+    eventQueue.enqueue(task)
+  }
+
+  def hasNextTask: Boolean = {
+    eventQueue.nonEmpty
+  }
+
+  def runNextTask(): Unit = {
+    if(hasNextTask) {
+      eventQueue.dequeue() match {
+        case recurringTask: RecurringTask =>
+          setTime(recurringTask.time)
+          recurringTask.run()
+          eventQueue.enqueue(recurringTask.copy(time = internalTime + recurringTask.period))
+        case oneTimeTask: OneTimeTask =>
+          setTime(oneTimeTask.time)
+          oneTimeTask.run()
         case _ =>
-          nowEvents
+          // do nothing
       }
     }
   }
 
-  def nextClocks(): Seq[Symbol] = {
-    val nowEvents = nextEvent()
-    nowEvents.foreach { event => eventQueue.enqueue(Event(time + event.clock.period, event.clock))}
-    nowEvents.map { event => event.clock.symbol }
+  def runToTask(taskName: String): Unit = {
+    if(eventQueue.nonEmpty) {
+      val done = eventQueue.head.taskName == taskName
+      runNextTask()
+      if(! done) runToTask(taskName)
+    }
+  }
+
+  def runUntil(time: Long): Unit = {
+    while(eventQueue.nonEmpty && eventQueue.head.time <= time) {
+      runNextTask()
+    }
+    setTime(time)
+  }
+
+  def incrementTime(increment: Long): Unit = {
+    runUntil(internalTime + increment)
   }
 }
 
-case class Event(time: Long, clock: ScheduledClock) extends Ordered[Event] {
-  override def compare(that: Event): Int = {
+object UTC {
+  def apply(scaleName: String = "picoseconds"): UTC = new UTC(scaleName)
+}
+
+
+trait Task extends Ordered[Task] {
+  def taskName: String
+  def run(): Unit
+  def time: Long
+  override def compare(that: Task): Int = {
     if(this.time < that.time) {
       1
     }
@@ -58,5 +85,17 @@ case class Event(time: Long, clock: ScheduledClock) extends Ordered[Event] {
     else {
       -1
     }
+  }
+}
+
+case class OneTimeTask(time: Long, taskName: String, thunk: () => Unit) extends Task {
+  def run(): Unit = {
+    thunk()
+  }
+}
+
+case class RecurringTask(time: Long, period: Long, taskName: String, thunk: () => Unit) extends Task {
+  def run(): Unit = {
+    thunk()
   }
 }

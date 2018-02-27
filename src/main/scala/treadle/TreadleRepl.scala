@@ -5,6 +5,8 @@ import java.io.{File, PrintWriter}
 
 import treadle.vcd.VCD
 import logger.Logger
+import treadle.chronometry.UTC
+import treadle.executable.ClockInfo
 
 import scala.collection.mutable.ArrayBuffer
 import scala.tools.jline.console.ConsoleReader
@@ -27,9 +29,9 @@ abstract class Command(val name: String) {
 
 class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConfig) {
   val replConfig: ReplConfig = optionsManager.replConfig
-  val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
+  def treadleOptions: TreadleOptions = optionsManager.treadleOptions
 
-  treadle.random.setSeed(interpreterOptions.randomSeed)
+  treadle.random.setSeed(treadleOptions.randomSeed)
 
   val terminal: Terminal = TerminalFactory.create()
   val console = new ConsoleReader
@@ -46,7 +48,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
 
   var currentEngineOpt: Option[ExecutionEngine] = None
 
-  def interpreter: ExecutionEngine = currentEngineOpt.get
+  def engine: ExecutionEngine = currentEngineOpt.get
   var args = Array.empty[String]
   var done = false
 
@@ -63,9 +65,10 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
   def loadSource(input: String): Unit = {
     currentEngineOpt = Some(ExecutionEngine(input, optionsManager))
     currentEngineOpt.foreach { _ =>
-      interpreter.setVerbose(interpreterOptions.setVerbose)
+      engine.setVerbose(treadleOptions.setVerbose)
     }
     buildCompletions()
+    buildClockInfoList()
   }
 
   def loadFile(fileName: String): Unit = {
@@ -96,7 +99,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
     }
     try {
       currentVcdScript = Some(VCD.read(fileName, dutName))
-      replVcdController = Some(new ReplVcdController(this, this.interpreter, currentVcdScript.get))
+      replVcdController = Some(new ReplVcdController(this, this.engine, currentVcdScript.get))
     }
     catch {
       case e: Exception =>
@@ -115,6 +118,102 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
     else if(numberString.startsWith("b")) { parseWithRadix(numberString.drop(1), 2) }
     else                                  { parseWithRadix(numberString, 10) }
   }
+
+  val clockName: String = treadleOptions.clockName
+  val resetName: String = treadleOptions.resetName
+
+  val combinationalDelay: Long = 10
+
+  val wallTime = UTC()
+  wallTime.onTimeChange = () => {
+    engine.vcdOption.foreach { vcd =>
+      vcd.setTime(wallTime.currentTime)}
+  }
+
+  var clockInfoList: Seq[ClockInfo] = Seq.empty
+
+  def buildClockInfoList(): Unit = {
+    clockInfoList = if (treadleOptions.clockInfo.isEmpty) {
+      if (engine.symbolTable.contains("clock")) {
+        Seq(ClockInfo())
+      }
+      else if (engine.symbolTable.contains("clk")) {
+        Seq(ClockInfo("clk"))
+      }
+      else {
+        Seq()
+      }
+    }
+    else {
+      treadleOptions.clockInfo
+    }
+
+    clockInfoList.foreach { clockInfo =>
+      engine.symbolTable.get(clockInfo.name) match {
+        case Some(clockSymbol) =>
+          val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
+
+          wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, taskName = s"${clockInfo.name}/up") { () =>
+            engine.makeUpToggler(clockSymbol).run()
+            engine.inputsChanged = true
+          }
+
+          wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
+            engine.makeDownToggler(clockSymbol).run()
+            engine.inputsChanged = true
+          }
+
+        case _ =>
+          throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
+
+      }
+    }
+  }
+
+  def reset(timeRaised: Long): Unit = {
+    engine.setValue(resetName, 1)
+    engine.inputsChanged = true
+
+    wallTime.addOneTimeTask(wallTime.currentTime + timeRaised, "reset-task") { () =>
+      engine.setValue(resetName, 0)
+      if(engine.verbose) {
+        println(s"reset dropped at ${wallTime.currentTime}")
+      }
+      engine.inputsChanged = true
+    }
+  }
+
+  var cycleCount: Long = 0L
+
+  /**
+    * Cycles the circuit n steps (with a default of one)
+    * At each step registers and memories are advanced and all other elements recomputed
+    *
+    * @param n cycles to perform
+    */
+  def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = clockInfoList.headOption): Unit = {
+    if(engine.verbose) println(s"In step at ${wallTime.currentTime}")
+    if(clockInfoOpt.isDefined) {
+      for (_ <- 0 until n) {
+        if(engine.inputsChanged) {
+          engine.evaluateCircuit()
+        }
+
+        cycleCount += 1
+        if (engine.verbose) println(s"step $cycleCount at ${wallTime.currentTime}")
+        val clockName = clockInfoOpt.get.name
+        wallTime.runToTask(s"$clockName/up")
+        wallTime.runUntil(wallTime.currentTime)
+        if (engine.verbose) println(s"clock raised at ${wallTime.currentTime}")
+        engine.evaluateCircuit()
+        wallTime.runToTask(s"$clockName/down")
+        wallTime.runUntil(wallTime.currentTime)
+        if (engine.verbose) println(s"Step finished step at ${wallTime.currentTime}")
+      }
+    }
+  }
+
+
   // scalastyle:off number.of.methods
   object Commands {
     def getOneArg(failureMessage: String, argOption: Option[String] = None): Option[String] = {
@@ -311,17 +410,17 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           getOneArg("treadle.vcd [fileName|done]",
             argOption = Some("out.treadle.vcd")) match {
             case Some("done")   =>
-              interpreter.disableVCD()
+              engine.disableVCD()
             case Some(fileName) =>
-              interpreter.makeVCDLogger(
+              engine.makeVCDLogger(
                 fileName, showUnderscored = optionsManager.treadleOptions.vcdShowUnderscored)
             case _ =>
-              interpreter.disableVCD()
+              engine.disableVCD()
           }
         }
       },
       new Command("type") {
-        private def peekableThings = interpreter.validNames.toSeq
+        private def peekableThings = engine.validNames.toSeq
         def usage: (String, String) = ("type regex", "show the current type of things matching the regex")
         override def completer: Option[ArgumentCompleter] = {
           if(currentEngineOpt.isEmpty) {
@@ -346,7 +445,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                   portRegex.findFirstIn(settableThing) match {
                     case Some(_) =>
                       try {
-                        val value = interpreter.getValue(settableThing)
+                        val value = engine.getValue(settableThing)
                         console.println(s"type $settableThing $value")
                         true
                       }
@@ -381,7 +480,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                 "poke"
               }),
               new StringsCompleter(
-                jlist(interpreter.getInputPorts ++ interpreter.getRegisterNames)
+                jlist(engine.getInputPorts ++ engine.getRegisterNames)
               )
             ))
           }
@@ -391,7 +490,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
             case (Some(portName), Some(valueString)) =>
               try {
                 val numberValue = parseNumber(valueString)
-                interpreter.setValue(portName, numberValue)
+                engine.setValue(portName, numberValue)
               }
               catch {
                 case e: Exception =>
@@ -403,7 +502,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
       },
       new Command("rpoke") {
         private def settableThings = {
-          interpreter.getInputPorts ++ interpreter.getRegisterNames
+          engine.getInputPorts ++ engine.getRegisterNames
         }
         def usage: (String, String) = ("rpoke regex value", "poke value into ports that match regex")
         override def completer: Option[ArgumentCompleter] = {
@@ -428,7 +527,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                 val setThings = settableThings.flatMap { settableThing =>
                   portRegex.findFirstIn(settableThing) match {
                     case Some(_) =>
-                      interpreter.setValue(settableThing, pokeValue)
+                      engine.setValue(settableThing, pokeValue)
                       Some(settableThing)
                     case _ => None
                   }
@@ -461,7 +560,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
               new StringsCompleter({
                 "peek"
               }),
-              new StringsCompleter(jlist(interpreter.validNames.toSeq))
+              new StringsCompleter(jlist(engine.validNames.toSeq))
             ))
           }
         }
@@ -469,7 +568,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           getOneArg("peek componentName") match {
             case Some(componentName) =>
               try {
-                val value = interpreter.getValue(componentName)
+                val value = engine.getValue(componentName)
                 console.println(s"peek $componentName $value")
               }
               catch {
@@ -483,7 +582,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         }
       },
       new Command("rpeek") {
-        private def peekableThings = interpreter.validNames.toSeq
+        private def peekableThings = engine.validNames.toSeq
         def usage: (String, String) = ("rpeek regex", "show the current value of things matching the regex")
         override def completer: Option[ArgumentCompleter] = {
           if(currentEngineOpt.isEmpty) {
@@ -508,7 +607,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                   portRegex.findFirstIn(settableThing) match {
                     case Some(_) =>
                       try {
-                        val value = interpreter.getValue(settableThing)
+                        val value = engine.getValue(settableThing)
                         console.println(s"rpeek $settableThing $value")
                         true
                       }
@@ -534,11 +633,11 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
       new Command("randomize") {
         def usage: (String, String) = ("randomize", "randomize all inputs except reset)")
         def run(args: Array[String]): Unit = {
-          for(symbol <- interpreter.symbols) {
+          for(symbol <- engine.symbols) {
             try {
               val newValue = makeRandom(symbol.firrtlType)
-              interpreter.setValue(symbol.name, newValue)
-              console.println(s"setting ${symbol.name} to $newValue")
+              engine.setValue(symbol.name, newValue)
+              // console.println(s"setting ${symbol.name} to $newValue")
             }
             catch {
               case e: Exception =>
@@ -565,7 +664,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
 //                TypeInstanceFactory.makeRandomSimilar(memory.dataStore.underlyingData.head, poisoned = false))
 //            }
 //          }
-          console.println(interpreter.getPrettyString)
+          console.println(engine.getPrettyString)
         }
       },
 //      new Command("poison") {
@@ -619,14 +718,16 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           getOneArg("reset [numberOfSteps]", Some("1")) match {
             case Some(numberOfStepsString) =>
               try {
-                interpreter.setValue("reset", 1)
-                val numberOfSteps = numberOfStepsString.toInt
-                for(_ <- 0 until numberOfSteps) {
-                  interpreter.cycle()
-                  interpreter.evaluateCircuit()
+                clockInfoList.headOption match {
+                  case Some(clockInfo) =>
+                    val extraTime = clockInfo.period * numberOfStepsString.toInt
+                    reset(clockInfo.initialOffset + extraTime)
+                    wallTime.runToTask("reset-task")
+                  case _ =>
+                    engine.setValue("reset", 1)
+                    engine.advanceTime(combinationalDelay)
+                    engine.setValue("reset", 0)
                 }
-                interpreter.setValue("reset", 0)
-                // console.println(engine.circuitState.prettyString())
               }
               catch {
                 case e: Exception =>
@@ -644,16 +745,16 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
             case Some(numberOfStepsString) =>
               try {
                 val numberOfSteps = numberOfStepsString.toInt
-                interpreter.timer("steps") {
+                engine.timer("steps") {
                   for (_ <- 0 until numberOfSteps) {
-                    interpreter.timer("step") {
-                      interpreter.cycle()
+                    engine.timer("step") {
+                      step()
                     }
                   }
                 }
                 if(! scriptRunning) {
                   // console.println(engine.circuitState.prettyString())
-                  console.println(s"step $numberOfSteps in ${interpreter.timer.prettyLastTime("steps")}")
+                  console.println(s"step $numberOfSteps in ${engine.timer.prettyLastTime("steps")}")
                 }
               }
               catch {
@@ -679,11 +780,11 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                 val value = valueString.toInt
 
                 var tries = 0
-                while(tries < maxNumberOfSteps && interpreter.getValue(componentName) != BigInt(value)) {
-                  interpreter.cycle()
+                while(tries < maxNumberOfSteps && engine.getValue(componentName) != BigInt(value)) {
+                  step()
                   tries += 1
                 }
-                if(interpreter.getValue(componentName) != BigInt(value)) {
+                if(engine.getValue(componentName) != BigInt(value)) {
                   console.println(
                     s"waitfor exhausted $componentName did not take on value $value in $maxNumberOfSteps cycles")
                 }
@@ -716,11 +817,11 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         def run(args: Array[String]): Unit = {
           getOneArg("", Some("state")) match {
             case Some("lofirrtl") =>
-              console.println(interpreter.ast.serialize)
+              console.println(engine.ast.serialize)
             case Some("input") =>
-              console.println(interpreter.ast.serialize)
+              console.println(engine.ast.serialize)
             case _ =>
-              console.println(interpreter.getPrettyString)
+              console.println(engine.getPrettyString)
           }
         }
       },
@@ -733,7 +834,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           else {
             Some(new ArgumentCompleter(
               new StringsCompleter({ "display"}),
-              new StringsCompleter(jlist(interpreter.symbolTable.keys.toSeq))
+              new StringsCompleter(jlist(engine.symbolTable.keys.toSeq))
             ))
           }
         }
@@ -742,17 +843,17 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           getOneArg("", Some("state")) match {
             case Some(symbolList) =>
               if(currentEngineOpt.isDefined) {
-                console.println(interpreter.renderComputation(symbolList))
+                console.println(engine.renderComputation(symbolList))
               }
             case _ =>
-              console.println(interpreter.getPrettyString)
+              console.println(engine.getPrettyString)
           }
         }
       },
       new Command("info") {
         def usage: (String, String) = ("info", "show information about the circuit")
         def run(args: Array[String]): Unit = {
-          console.println(interpreter.getInfoString)
+          console.println(engine.getInfoString)
         }
       },
 //      new Command("timing") {
@@ -829,12 +930,12 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         }
         def run(args: Array[String]): Unit = {
           getOneArg("verbose must be followed by true false or toggle", Some("toggle")) match {
-            case Some("toggle") => interpreter.setVerbose(! interpreter.verbose)
-            case Some("true")   => interpreter.setVerbose()
-            case Some("false")  => interpreter.setVerbose(false)
+            case Some("toggle") => engine.setVerbose(! engine.verbose)
+            case Some("true")   => engine.setVerbose()
+            case Some("false")  => engine.setVerbose(false)
             case _ =>
           }
-          console.println(s"evaluator verbosity is now ${interpreter.verbose}")
+          console.println(s"evaluator verbosity is now ${engine.verbose}")
         }
       },
       new Command("snapshot") {
@@ -855,11 +956,11 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           getOneArg("snapshot requires a file name") match {
             case Some(fileName) =>
               val writer = new PrintWriter(new File(fileName))
-              writer.write(interpreter.dataStore.serialize)
+              writer.write(engine.dataStore.serialize)
               writer.close()
             case _ =>
           }
-          console.println(interpreter.dataStore.serialize)
+          console.println(engine.dataStore.serialize)
         }
       },
       new Command("restore") {
@@ -880,7 +981,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           getOneArg("snapshot requires a file name") match {
             case Some(fileName) =>
               val jsonSource = Source.fromFile(new File(fileName)).getLines().mkString("\n")
-              interpreter.dataStore.deserialize(jsonSource)
+              engine.dataStore.deserialize(jsonSource)
             case _ =>
           }
         }

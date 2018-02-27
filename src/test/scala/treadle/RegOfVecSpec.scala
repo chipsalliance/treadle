@@ -99,16 +99,10 @@ class RegOfVecSpec extends FreeSpec with Matchers {
     }
 
     val tester = new TreadleTester(input, optionsManager)
-//
+
     tester.poke("reset", 1)
     tester.step(3)
     tester.poke("reset", 0)
-
-    def show(): Unit = {
-      for(name <- Seq("regOfVec_0", "regOfVec_2")) {
-        println(s"${tester.engine.renderComputation(name)}")
-      }
-    }
 
     intercept[StopException] {
       tester.step(10)
@@ -153,11 +147,6 @@ class RegOfVecSpec extends FreeSpec with Matchers {
     }
 
     val tester = new TreadleTester(input, optionsManager)
-    //
-    tester.poke("reset", 1)
-    show()
-    tester.poke("reset", 0)
-
 
     def show(): Unit = {
       tester.step()

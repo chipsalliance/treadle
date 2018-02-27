@@ -4,7 +4,6 @@ package treadle
 
 import firrtl.PortKind
 import firrtl.ir.Circuit
-import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.vcd.VCD
 
@@ -19,7 +18,6 @@ class ExecutionEngine(
 ) {
   private val interpreterOptions = optionsManager.treadleOptions
 
-  val wallTime = new UTC()
   val cycleTimeIncrement = 500
   var cycleNumber: Long = 0
 
@@ -48,15 +46,6 @@ class ExecutionEngine(
   }
 
   val timer = new Timer
-
-  val clockToggler: ClockToggle = symbolTable.get("clock") match {
-    case Some(clock) => new ClockToggler(clock)
-    case _           =>
-      symbolTable.get("clk") match {
-        case Some(clock) => new ClockToggler(clock)
-        case _ => new NullToggler
-      }
-  }
 
   if(verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
@@ -132,12 +121,9 @@ class ExecutionEngine(
       }
     }
     catch {
-      case s: StopException =>
+      case throwable: Throwable =>
         writeVCD()
-        throw s
-      case s: TreadleException =>
-        writeVCD()
-        throw s
+        throw throwable
     }
   }
 
@@ -187,12 +173,12 @@ class ExecutionEngine(
     */
   //scalastyle:off method.length
   def setValue(
-                name:         String,
-                value:        BigInt,
-                force:        Boolean = true,
-                registerPoke: Boolean = false,
-                offset:        Int = 0
-              ): BigInt = {
+    name: String,
+    value: BigInt,
+    force: Boolean = true,
+    registerPoke: Boolean = false,
+    offset: Int = 0
+  ): BigInt = {
     if(! symbolTable.contains(name)) {
       throw TreadleException(s"setValue: Cannot find $name in symbol table")
     }
@@ -262,7 +248,7 @@ class ExecutionEngine(
   def validNames: Iterable[String] = symbolTable.keys
   def symbols: Iterable[Symbol] = symbolTable.symbols
 
-  def evaluateCircuit(specificDependencies: Seq[String] = Seq()): Unit = {
+  def evaluateCircuit(): Unit = {
     dataStore.advanceBuffers()
 
     if(inputsChanged) {
@@ -286,38 +272,12 @@ class ExecutionEngine(
     }
   }
 
-  def cycle(showState: Boolean = false): Unit = {
-    cycleNumber += 1L
-
-    wallTime.advance(cycleTimeIncrement)
-    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
-
-    if(inputsChanged) {
-      evaluateCircuit()
-    }
-
-    clockToggler.raiseClock()
-//    vcdOption.foreach(_.raiseClock())
-    inputsChanged = true
-
-    evaluateCircuit()
-
-    wallTime.advance(cycleTimeIncrement)
-    vcdOption.foreach { vcd => vcd.incrementTime(cycleTimeIncrement)}
-
-    clockToggler.lowerClock()
-//    vcdOption.foreach(_.lowerClock())
-
-    if(showState) println(s"ExecutionEngine: next state computed ${"="*80}\n$getPrettyString")
-  }
-
-  def doCycles(n: Int): Unit = {
-    println(s"Initial state ${"-"*80}\n$dataInColumns")
-
-    for(cycle_number <- 1 to n) {
-      println(s"Cycle $cycle_number ${"-"*80}")
-      cycle()
-      if(stopped) return
+  def advanceTime(increment: Long): Unit = {
+    if(increment > 0) {
+      if(inputsChanged) {
+        evaluateCircuit()
+      }
+//      wallTime.advance(increment)
     }
   }
 
@@ -361,7 +321,6 @@ class ExecutionEngine(
   }
 
   def header: String = {
-    s"CycleNumber: $cycleNumber  wallTime: ${wallTime.currentTime}\n" +
     fieldsHeader
   }
 
@@ -400,32 +359,23 @@ class ExecutionEngine(
 
   class NullToggler extends ClockToggle
 
-  class ClockToggler(symbol: Symbol) extends ClockToggle {
+  def makeUpToggler(symbol: Symbol): Assigner = {
     val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
-
-    val upToggler = dataStore.TriggerChecker(
+    val assigner = dataStore.TriggerChecker(
       symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
     )
-    upToggler.verboseAssign = verbose
-    upToggler.underlyingAssigner.verboseAssign = verbose
-    val downToggler = dataStore.TriggerChecker(
-      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
-    )
-    downToggler.verboseAssign = verbose
-    downToggler.underlyingAssigner.verboseAssign = verbose
-
-    override def raiseClock(): Unit = {
-      if(verbose) println(s"starting raising clock")
-      upToggler.run()
-      if(verbose) println(s"finished raising clock")
-    }
-    override def lowerClock(): Unit = {
-      if(verbose) println(s"starting lowering clock")
-      downToggler.run()
-      if(verbose) println(s"finished lowering clock")
-    }
+    assigner.setVerbose(verbose)
+    assigner
   }
 
+  def makeDownToggler(symbol: Symbol): Assigner = {
+    val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
+    val assigner = dataStore.TriggerChecker(
+      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
+    )
+    assigner.setVerbose(verbose)
+    assigner
+  }
 }
 
 object ExecutionEngine {
@@ -437,6 +387,8 @@ object ExecutionEngine {
     * @return                the constructed engine
     */
   def apply(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): ExecutionEngine = {
+    val t0 = System.nanoTime()
+
     val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
     val ast = firrtl.Parser.parse(input.split("\n").toIterator)
@@ -498,6 +450,12 @@ object ExecutionEngine {
 
     val executionEngine = new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
     executionEngine.dataStore.setExecutionEngine(executionEngine)
+
+    val t1 = System.nanoTime()
+    val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
+    println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
+      s"${scheduler.activeAssigns.size} statements")
+
     executionEngine
   }
 }

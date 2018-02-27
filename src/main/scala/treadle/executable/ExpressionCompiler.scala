@@ -560,14 +560,14 @@ class ExpressionCompiler(
           case UIntLiteral(value, IntWidth(width)) =>
             DataSize(width) match {
               case IntSize  => GetIntConstant(value.toInt)
-              case LongSize => GetLongConstant(value.toInt)
-              case BigSize  => GetBigConstant(value.toInt)
+              case LongSize => GetLongConstant(value.toLong)
+              case BigSize  => GetBigConstant(value)
             }
           case SIntLiteral(value, IntWidth(width)) =>
             DataSize(width) match {
               case IntSize  => GetIntConstant(value.toInt)
-              case LongSize => GetLongConstant(value.toInt)
-              case BigSize  => GetBigConstant(value.toInt)
+              case LongSize => GetLongConstant(value.toLong)
+              case BigSize  => GetBigConstant(value)
             }
           case _ =>
             throw new TreadleException(s"bad expression $expression")
@@ -656,6 +656,8 @@ class ExpressionCompiler(
               symbolTable.getBlackboxImplementation(instanceSymbol) match {
                 case Some(implementation) =>
                   val instanceSymbol = symbolTable(expand(instanceName))
+
+                  implementation.setParams(extModule.params)
 
                   for (port <- extModule.ports) {
                     if (port.direction == Output) {

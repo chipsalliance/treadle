@@ -4,6 +4,7 @@ package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
 
+//scalastyle:off magic.number
 class SimpleVendingMachineSpec extends FreeSpec with Matchers{
   "Simple Vending machine should dispense at the right time" in {
     val input =
@@ -151,20 +152,20 @@ class SimpleVendingMachineSpec extends FreeSpec with Matchers{
     val optionsManager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
-        vcdShowUnderscored = true,
+        vcdShowUnderscored = false,
         setVerbose = true,
-        showFirrtlAtLoad = true,
-        symbolsToWatch = Seq("value", "value/in")
+        showFirrtlAtLoad = false,
+        rollbackBuffers = 0,
+        symbolsToWatch = Seq("dut.state", "dut.state/in")
       )
     }
 
     val tester = new TreadleTester(input, optionsManager)
 
-    tester.poke("reset", 1)
-    tester.engine.renderComputation("value")
-    tester.step()
-    tester.engine.renderComputation("value")
-    tester.poke("reset", 0)
-    tester.step()
+    intercept[StopException] {
+      tester.step(80)
+    }
+    tester.engine.lastStopResult should be (Some(0))
+    tester.report()
   }
 }
