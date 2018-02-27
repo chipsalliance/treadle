@@ -2,7 +2,7 @@
 
 package treadle
 
-import firrtl.ir.{Expression, Type, Width}
+import firrtl.ir.{Expression, Param, Type, Width}
 import treadle.executable.{Assigner, DataStore, FuncUnit, NoTransition, PositiveEdge, Symbol, Transition}
 
 import scala.collection._
@@ -34,7 +34,7 @@ case class BlackBoxOutput(name: String,
   * black box.  Implementing classes should add internal
   * variables to hold any state information.
   */
-abstract class BlackBoxImplementation {
+trait BlackBoxImplementation {
   def name: String
   def fullName(componentName: String): String = s"$name.$componentName"
 
@@ -61,6 +61,12 @@ abstract class BlackBoxImplementation {
     * @return
     */
   def outputDependencies(outputName: String): Seq[String]
+
+  /**
+    * Add any parameters to the black box implementation
+    */
+  def setParams(params: Seq[Param]): Unit = {
+  }
 }
 
 /**

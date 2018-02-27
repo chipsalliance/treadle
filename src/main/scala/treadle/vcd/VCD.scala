@@ -711,28 +711,16 @@ case class Wire(name: String, id: String, width: Int, path: Array[String] = Arra
 case class Change(wire: Wire, value: BigInt) {
   def serialize: String = {
     if(wire.width == 1) {
-      s"${if(value < 0) "x" else value.toString()}${wire.id}"
-    }
-    else {
-      if(value < 0) {
-        serializeUninitialized
-      }
-      else {
-        "b" +
-          (wire.width - 1 to 0 by -1).map { index => if (value.testBit(index)) "1" else "0" }.mkString("") +
-          s" ${wire.id}"
-      }
-    }
-  }
-  def serializeUninitialized: String = {
-    if(wire.width == 1) {
-      s"$value${wire.id}"
+      s"b$value ${wire.id}"
     }
     else {
       "b" +
-        (wire.width - 1 to 0 by -1).map { _ => "x" }.mkString("") +
+        (wire.width - 1 to 0 by -1).map { index => if (value.testBit(index)) "1" else "0" }.mkString("") +
         s" ${wire.id}"
     }
+  }
+  def serializeUninitialized: String = {
+    s"b${"x" * wire.width} ${wire.id}"
   }
 }
 

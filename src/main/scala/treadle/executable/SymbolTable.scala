@@ -278,7 +278,7 @@ object SymbolTable extends LazyLogging {
             case extModule: ExtModule =>
               blackBoxImplementations.get(instanceSymbol) match {
                 case Some(implementation) =>
-
+                  implementation.setParams(extModule.params)
                   for (port <- extModule.ports) {
                     if(port.direction == Output) {
                       val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))

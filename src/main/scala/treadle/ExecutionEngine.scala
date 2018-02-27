@@ -4,7 +4,6 @@ package treadle
 
 import firrtl.PortKind
 import firrtl.ir.Circuit
-import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.vcd.VCD
 

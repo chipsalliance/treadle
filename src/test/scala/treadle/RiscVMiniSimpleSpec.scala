@@ -11,8 +11,8 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
 
     val optionsManager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = true,
-        vcdShowUnderscored = true,
+        writeVCD = false,
+        vcdShowUnderscored = false,
         setVerbose = false,
         showFirrtlAtLoad = false,
         symbolsToWatch = Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")
@@ -22,9 +22,9 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
     val tester = new TreadleTester(input, optionsManager)
 
     intercept[StopException] {
-      tester.step(2)
+      tester.step(300)
     }
     tester.engine.lastStopResult should be (Some(0))
   }
-
 }
+
