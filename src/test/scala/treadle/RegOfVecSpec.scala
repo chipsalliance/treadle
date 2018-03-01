@@ -141,7 +141,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
         vcdShowUnderscored = true,
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = true
       )
     }
