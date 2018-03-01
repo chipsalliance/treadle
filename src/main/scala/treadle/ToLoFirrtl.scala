@@ -10,8 +10,8 @@ object ToLoFirrtl {
             optionsManager: ExecutionOptionsManager with HasFirrtlOptions with HasInterpreterOptions): Circuit = {
     val compiler = new LowFirrtlCompiler
 
-    val annotationMap = AnnotationMap(optionsManager.firrtlOptions.annotations)
-    val compileResult = compiler.compileAndEmit(firrtl.CircuitState(c, ChirrtlForm, Some(annotationMap)))
+    val annotations = optionsManager.firrtlOptions.annotations
+    val compileResult = compiler.compileAndEmit(firrtl.CircuitState(c, ChirrtlForm, annotations))
     compileResult.circuit
   }
 }
