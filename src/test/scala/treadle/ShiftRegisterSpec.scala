@@ -38,7 +38,7 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
         vcdShowUnderscored = false,
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = false,
         rollbackBuffers = 4,
         symbolsToWatch = Seq("sr", "sr/in")

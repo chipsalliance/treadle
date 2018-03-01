@@ -153,7 +153,7 @@ class SimpleVendingMachineSpec extends FreeSpec with Matchers{
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
         vcdShowUnderscored = false,
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = false,
         rollbackBuffers = 0,
         symbolsToWatch = Seq("dut.state", "dut.state/in")

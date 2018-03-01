@@ -95,7 +95,7 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
           treadleOptions = treadleOptions.copy(
             writeVCD = false,
             vcdShowUnderscored = false,
-            setVerbose = true,
+            setVerbose = false,
             showFirrtlAtLoad = true,
             rollbackBuffers = 0,
             symbolsToWatch = Seq()
