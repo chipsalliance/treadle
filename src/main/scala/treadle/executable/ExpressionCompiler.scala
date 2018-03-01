@@ -256,37 +256,79 @@ class ExpressionCompiler(
           }
         }
 
-        (arg1, arg2) match {
-          case (e1: IntExpressionResult, e2: IntExpressionResult) =>
+        (DataSize(getWidth(tpe)), arg1, arg2) match {
+
+          case (IntSize,  e1: IntExpressionResult, e2: IntExpressionResult) =>
             handleIntResult(e1, e2)
 
-          case (e1: IntExpressionResult, e2: LongExpressionResult) =>
-            handleLongResult(ToLong(e1.apply), e2)
-
-          case (e1: IntExpressionResult, e2: BigExpressionResult) =>
-            handleBigResult(ToBig(e1.apply), e2)
-
-
-          case (e1: LongExpressionResult, e2: IntExpressionResult) =>
+          case (IntSize, e1: LongExpressionResult, e2: IntExpressionResult) =>
             handleLongResult(e1, ToLong(e2.apply))
-
-          case (e1: LongExpressionResult, e2: LongExpressionResult) =>
-            handleLongResult(e1, e2)
-
-          case (e1: LongExpressionResult, e2: BigExpressionResult) =>
-            handleBigResult(LongToBig(e1.apply), e2)
-
-
-          case (e1: BigExpressionResult, e2: IntExpressionResult) =>
+          case (IntSize, e1: BigExpressionResult, e2: IntExpressionResult) =>
             handleBigResult(e1, ToBig(e2.apply))
 
-          case (e1: BigExpressionResult, e2: LongExpressionResult) =>
+          case (IntSize, e1: IntExpressionResult, e2: LongExpressionResult) =>
+            handleLongResult(ToLong(e1.apply), e2)
+          case (IntSize, e1: LongExpressionResult, e2: LongExpressionResult) =>
+            handleLongResult(e1, e2)
+          case (IntSize, e1: BigExpressionResult, e2: LongExpressionResult) =>
             handleBigResult(e1, LongToBig(e2.apply))
 
-          case (e1: BigExpressionResult, e2: BigExpressionResult) =>
+          case (IntSize, e1: IntExpressionResult, e2: BigExpressionResult) =>
+            handleBigResult(ToBig(e1.apply), e2)
+          case (IntSize, e1: LongExpressionResult, e2: BigExpressionResult) =>
+            handleBigResult(LongToBig(e1.apply), e2)
+          case (IntSize, e1: BigExpressionResult, e2: BigExpressionResult) =>
+            handleBigResult(e1, e2)
+          case (IntSize, _, _) =>
+            throw TreadleException(
+              s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head}) ($arg1, $arg2)")
+
+          case (LongSize, e1: IntExpressionResult, e2: IntExpressionResult) =>
+            handleLongResult(ToLong(e1.apply), ToLong(e2.apply))
+          case (LongSize, e1: LongExpressionResult, e2: IntExpressionResult) =>
+            handleLongResult(e1, ToLong(e2.apply))
+          case (LongSize, e1: BigExpressionResult, e2: IntExpressionResult) =>
+            handleBigResult(e1, ToBig(e2.apply))
+
+          case (LongSize, e1: IntExpressionResult, e2: LongExpressionResult) =>
+            handleLongResult(ToLong(e1.apply), e2)
+          case (LongSize, e1: LongExpressionResult, e2: LongExpressionResult) =>
+            handleLongResult(e1, e2)
+          case (LongSize, e1: BigExpressionResult, e2: LongExpressionResult) =>
+            handleBigResult(e1, LongToBig(e2.apply))
+
+          case (LongSize, e1: IntExpressionResult, e2: BigExpressionResult) =>
+            handleBigResult(ToBig(e1.apply), e2)
+          case (LongSize, e1: LongExpressionResult, e2: BigExpressionResult) =>
+            handleBigResult(LongToBig(e1.apply), e2)
+          case (LongSize, e1: BigExpressionResult, e2: BigExpressionResult) =>
+            handleBigResult(e1, e2)
+          case (LongSize, _, _) =>
+            throw TreadleException(
+              s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head}) ($arg1, $arg2)")
+
+          case (BigSize, e1: IntExpressionResult, e2: IntExpressionResult) =>
+            handleBigResult(ToBig(e1.apply), ToBig(e2.apply))
+          case (BigSize, e1: LongExpressionResult, e2: IntExpressionResult) =>
+            handleBigResult(LongToBig(e1.apply), ToBig(e2.apply))
+          case (BigSize, e1: BigExpressionResult, e2: IntExpressionResult) =>
+            handleBigResult(e1, ToBig(e2.apply))
+
+          case (BigSize, e1: IntExpressionResult, e2: LongExpressionResult) =>
+            handleBigResult(ToBig(e1.apply), LongToBig(e2.apply))
+          case (BigSize, e1: LongExpressionResult, e2: LongExpressionResult) =>
+            handleBigResult(LongToBig(e1.apply), LongToBig(e2.apply))
+          case (BigSize, e1: BigExpressionResult, e2: LongExpressionResult) =>
+            handleBigResult(e1, LongToBig(e2.apply))
+
+          case (BigSize, e1: IntExpressionResult, e2: BigExpressionResult) =>
+            handleBigResult(ToBig(e1.apply), e2)
+          case (BigSize, e1: LongExpressionResult, e2: BigExpressionResult) =>
+            handleBigResult(LongToBig(e1.apply), e2)
+          case (BigSize, e1: BigExpressionResult, e2: BigExpressionResult) =>
             handleBigResult(e1, e2)
 
-          case _ =>
+          case (BigSize, _, _) =>
             throw TreadleException(
               s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head}) ($arg1, $arg2)")
         }

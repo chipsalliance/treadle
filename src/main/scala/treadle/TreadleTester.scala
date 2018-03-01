@@ -159,7 +159,6 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
   def poke(name: String, value: BigInt): Unit = {
     try {
       val isRegister = engine.symbolTable.isRegister(name)
-//      engine.circuitState.vcdLowerClock()
       engine.setValue(name, value, registerPoke = isRegister)
     }
     catch {

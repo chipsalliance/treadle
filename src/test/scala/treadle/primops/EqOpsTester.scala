@@ -67,4 +67,38 @@ class EqOpsTester extends FreeSpec with Matchers {
 
     tester.peek("out") should be (1)
   }
+
+
+  "results of equals on large numbers should have widths all work" in {
+    val input =
+      """
+        |circuit CatProblem :
+        |  module CatProblem :
+        |    input clock : Clock
+        |    output out : UInt<1>
+        |
+        |    node _T_310 = cat(UInt<32>("hffdff06f"), UInt<32>("h73")) @[Cat.scala 30:58]
+        |    node _T_311 = cat(UInt<32>("h0"), UInt<32>("habcdef")) @[Cat.scala 30:58]
+        |    node _T_312 = eq(_T_311, _T_310) @[Cat.scala 30:58]
+        |
+        |    out <= _T_312
+        |
+          """.stripMargin
+
+    val optionsManager = new InterpreterOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        writeVCD = false,
+        vcdShowUnderscored = false,
+        setVerbose = true,
+        showFirrtlAtLoad = true,
+        rollbackBuffers = 0,
+        symbolsToWatch = Seq()
+      )
+    }
+
+    val tester = new TreadleTester(input, optionsManager)
+    tester.peek("out") should be (BigInt(0))
+    println(s"peek out ${tester.peek("out") != BigInt(0)}")
+    tester.report()
+  }
 }

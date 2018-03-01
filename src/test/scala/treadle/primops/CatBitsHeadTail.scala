@@ -74,6 +74,39 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
         }
       }
 
+      "sign extension should not happen" in {
+        val input =
+          """
+            |circuit CatProblem :
+            |  module CatProblem :
+            |    input clock : Clock
+            |    output out : UInt<160>
+            |
+            |    node _T_310 = cat(UInt<32>("hffdff06f"), UInt<32>("h73")) @[Cat.scala 30:58]
+            |    node _T_311 = cat(UInt<32>("h0"), UInt<32>("h0")) @[Cat.scala 30:58]
+            |    node _T_312 = cat(_T_311, UInt<32>("h0")) @[Cat.scala 30:58]
+            |    node _T_313 = cat(_T_312, _T_310) @[Cat.scala 30:58]
+            |
+            |    out <= _T_313
+            |
+          """.stripMargin
+
+        val optionsManager = new InterpreterOptionsManager {
+          treadleOptions = treadleOptions.copy(
+            writeVCD = false,
+            vcdShowUnderscored = false,
+            setVerbose = true,
+            showFirrtlAtLoad = true,
+            rollbackBuffers = 0,
+            symbolsToWatch = Seq()
+          )
+        }
+
+        val tester = new TreadleTester(input, optionsManager)
+        println(s"peek out 0x${tester.peek("out").toString(16)}")
+        tester.report()
+      }
+
     }
 
     "Bits should bass the following tests" - {

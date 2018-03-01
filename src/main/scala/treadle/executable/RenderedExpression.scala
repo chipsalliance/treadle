@@ -45,8 +45,16 @@ class ExpressionViewRenderer(
   private val symbolsSeen = new mutable.HashSet[Symbol]()
 
   //scalastyle:off cyclomatic.complexity method.length
-  private def renderInternal(): String = {
+  private def renderInternal(currentOutputFormat: String = "d"): String = {
     val builder = new StringBuilder()
+
+    def formatOutput(value: BigInt): String = {
+      currentOutputFormat match {
+        case "d" => value.toString
+        case "h" | "x" => f"0x$value%x"
+        case "b" => s"b${value.toString(2)}"
+      }
+    }
 
     def renderView(view: ExpressionView, displayDepth: Int, lookBackDepth: Int): String = {
       val builder = new StringBuilder()
@@ -118,9 +126,11 @@ class ExpressionViewRenderer(
 
           symbolsSeen += symbol
 
+          val value = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
+
           val string = s"${symbol.name} <= " +
               (if(lookBackDepth > 0) Console.RED else "") +
-              s"${symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))}" +
+              s"${formatOutput(value)}" +
               (if(lookBackDepth > 0) Console.RESET else "")
           string
 
@@ -150,7 +160,7 @@ class ExpressionViewRenderer(
         if(lookBackDepth > 0) {
           builder ++= Console.RED
         }
-        builder ++= s"$currentValue : "
+        builder ++= s"${formatOutput(currentValue)} : "
         if(lookBackDepth > 0) {
           builder ++= Console.RESET
         }
@@ -167,10 +177,10 @@ class ExpressionViewRenderer(
     result
   }
 
-  def render(symbol: Symbol, lookBackDepth: Int = 0): String = {
+  def render(symbol: Symbol, lookBackDepth: Int = 0, outputFormat: String = "d"): String = {
     symbolsToDo.enqueue(SymbolAtDepth(symbol, 0, lookBackDepth))
 
-    renderInternal()
+    renderInternal(outputFormat)
   }
 }
 
