@@ -62,6 +62,16 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
   var currentVcdScript: Option[VCD] = None
   var replVcdController: Option[ReplVcdController] = None
 
+  var outputFormat: String = optionsManager.replConfig.outputFormat
+
+  def formatOutput(value: BigInt): String = {
+    outputFormat match {
+      case "d" => value.toString
+      case "h" | "x" => f"0x$value%x"
+      case "b" => s"b${value.toString(2)}"
+    }
+  }
+
   def loadSource(input: String): Unit = {
     currentEngineOpt = Some(ExecutionEngine(input, optionsManager))
     currentEngineOpt.foreach { _ =>
@@ -251,15 +261,22 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                      arg1Option: Option[String] = None,
                      arg2Option: Option[String] = None,
                      arg3Option: Option[String] = None
-                  ): Option[(String,String,String)] = {
-      (args.length, arg1Option, arg2Option, arg3Option) match {
-        case (4, _, _, _)                             => Some(args(1), args(2), args(3))
-        case (3, _, _, Some(arg3))                    => Some(args(1), args(2), arg3)
-        case (2, _, Some(arg2), Some(arg3))           => Some(args(1), arg2, arg3)
-        case (1, Some(arg1), Some(arg2), Some(arg3))  => Some(arg1, arg2, arg3)
-        case _ =>
-          error(failureMessage)
-          None
+                  ): (Option[String],Option[String],Option[String]) = {
+      if(args.length == 4) {
+        (Some(args(1)), Some(args(2)), Some(args(3)))
+      }
+      else if(args.length == 3) {
+        (Some(args(1)), Some(args(2)), arg3Option)
+      }
+      else if(args.length == 2) {
+        (Some(args(1)), arg2Option, arg3Option)
+      }
+      else if(args.length == 1) {
+        (arg1Option, arg2Option, arg3Option)
+      }
+      else {
+        error(failureMessage)
+        (None, None, None)
       }
     }
 
@@ -446,7 +463,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                     case Some(_) =>
                       try {
                         val value = engine.getValue(settableThing)
-                        console.println(s"type $settableThing $value")
+                        console.println(s"type $settableThing ${formatOutput(value)}")
                         true
                       }
                       catch { case _: Exception => false}
@@ -550,7 +567,9 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         }
       },
       new Command("peek") {
-        def usage: (String, String) = ("peek componentName", "show the current value of the named circuit component")
+        def usage: (String, String) =
+          ("peek componentName [offset]", "show the current value of the signal")
+
         override def completer: Option[ArgumentCompleter] = {
           if(currentEngineOpt.isEmpty) {
             None
@@ -565,11 +584,24 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           }
         }
         def run(args: Array[String]): Unit = {
-          getOneArg("peek componentName") match {
-            case Some(componentName) =>
+          getTwoArgs("peek componentName", arg2Option = Some("0")) match {
+            case (Some(componentName), Some(offsetString)) =>
               try {
-                val value = engine.getValue(componentName)
-                console.println(s"peek $componentName $value")
+                val offset = offsetString.headOption match {
+                  case Some('b') => BigInt(offsetString.tail, 2).toInt
+                  case Some('d') => BigInt(offsetString.tail, 10).toInt
+                  case Some('x') => BigInt(offsetString.tail, 16).toInt
+                  case Some('h') => BigInt(offsetString.tail, 16).toInt
+                  case _ => offsetString.toInt
+                }
+                if(offset > 0) {
+                  val value = engine.getValue(componentName, offset)
+                  console.println(s"peek $componentName($offset) ${formatOutput(value)}")
+                }
+                else {
+                  val value = engine.getValue(componentName)
+                  console.println(s"peek $componentName ${formatOutput(value)}")
+                }
               }
               catch {
                 case e: Exception =>
@@ -578,12 +610,13 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                   error(s"exception ${a.getMessage}")
               }
             case _ =>
+              println(s"You must specify a signal name")
           }
         }
       },
       new Command("rpeek") {
         private def peekableThings = engine.validNames.toSeq
-        def usage: (String, String) = ("rpeek regex", "show the current value of things matching the regex")
+        def usage: (String, String) = ("rpeek regex", "show the current value of signals matching the regex")
         override def completer: Option[ArgumentCompleter] = {
           if(currentEngineOpt.isEmpty) {
             None
@@ -608,7 +641,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                     case Some(_) =>
                       try {
                         val value = engine.getValue(settableThing)
-                        console.println(s"rpeek $settableThing $value")
+                        console.println(s"rpeek $settableThing ${formatOutput(value)}")
                         true
                       }
                       catch { case _: Exception => false}
@@ -774,7 +807,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
             arg2Option = Some("1"),
             arg3Option = Some("100")
           ) match {
-            case Some((componentName, valueString, maxNumberOfStepsString)) =>
+            case (Some(componentName), Some(valueString), Some(maxNumberOfStepsString)) =>
               try {
                 val maxNumberOfSteps = maxNumberOfStepsString.toInt
                 val value = valueString.toInt
@@ -786,10 +819,11 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                 }
                 if(engine.getValue(componentName) != BigInt(value)) {
                   console.println(
-                    s"waitfor exhausted $componentName did not take on value $value in $maxNumberOfSteps cycles")
+                    s"waitfor exhausted $componentName did not take on" +
+                            " value ${formatOutput(value)} in $maxNumberOfSteps cycles")
                 }
                 else {
-                  console.println(s"$componentName == value $value in $tries cycles")
+                  console.println(s"$componentName == value ${formatOutput(value)} in $tries cycles")
                 }
               }
               catch {
@@ -797,6 +831,55 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                   error(s"exception ${e.getMessage} $e")
               }
             case _ =>
+          }
+        }
+      },
+      new Command("depend") {
+        def usage: (String, String) = ("depend [childrenOf|parentsOf|compare] signal [signal]",
+          "show dependency relationship to signal or between to signal")
+
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentEngineOpt.isEmpty) {
+            None
+          }
+          else {
+            def peekableThings = engine.validNames.toSeq
+
+            Some(new ArgumentCompleter(
+              new StringsCompleter({ "depend"}),
+              new StringsCompleter(jlist(Seq("childrenOf", "parentsOf", "compare"))),
+              new StringsCompleter(jlist(peekableThings)),
+              new StringsCompleter(jlist(peekableThings))
+            ))
+          }
+        }
+
+        def run(args: Array[String]): Unit = {
+          val table = engine.symbolTable
+          getThreeArgs(
+            "depend [childrenOf|parentsOf] signal [signal]"
+          ) match {
+            case (Some("childrenOf"), Some(signal), _) =>
+              println(table.getChildren(Seq(table(signal))).map(_.name).toList.sorted.mkString("\n"))
+            case (Some("parentsOf"), Some(signal), _) =>
+              println(table.getParents(Seq(table(signal))).map(_.name).toList.sorted.mkString("\n"))
+            case (Some("compare"), Some(signal1), Some(signal2)) =>
+              if(table.getChildren(Seq(table(signal1)))
+                        .contains(table(signal2))) {
+                println(s"$signal1 drives $signal2")
+              }
+              else if(table.getChildren(Seq(table(signal1)))
+                      .contains(table(signal2))) {
+                println(s"$signal1 is driven by $signal2")
+              }
+              else {
+                println(s"there is no dependency between $signal1 and $signal2")
+              }
+            case (Some("compare"), Some(signal1), None) =>
+              println(s"you must specify two signals when using compare")
+            case _ =>
+              println(usage)
+
           }
         }
       },
@@ -843,7 +926,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           getOneArg("", Some("state")) match {
             case Some(symbolList) =>
               if(currentEngineOpt.isDefined) {
-                console.println(engine.renderComputation(symbolList))
+                console.println(engine.renderComputation(symbolList, outputFormat))
               }
             case _ =>
               console.println(engine.getPrettyString)
@@ -1097,7 +1180,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
     }
     buildCompletions()
 
-    console.setPrompt("firrtl>> ")
+    console.setPrompt("treadle>> ")
 
     if(replConfig.runScriptAtStart) {
       currentScript match {

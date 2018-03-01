@@ -98,7 +98,7 @@ class ExecutionEngine(
 
   setVerbose(interpreterOptions.setVerbose)
 
-  def renderComputation(symbolNames: String): String = {
+  def renderComputation(symbolNames: String, outputFormat: String = "d"): String = {
     val renderer = new ExpressionViewRenderer(dataStore, symbolTable, expressionViews)
 
     val symbols = symbolNames.split(",").map(_.trim).flatMap { s => symbolTable.get(s) }.distinct
@@ -106,7 +106,7 @@ class ExecutionEngine(
     symbols.flatMap { symbol =>
       expressionViews.get(symbol) match {
         case Some(_) =>
-          Some(s"${renderer.render(symbol)}")
+          Some(s"${renderer.render(symbol, outputFormat = outputFormat)}")
         case _ => None
       }
     }.mkString("\n")
@@ -364,6 +364,7 @@ class ExecutionEngine(
     val assigner = dataStore.TriggerChecker(
       symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
     )
+    if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
     assigner
   }
@@ -373,6 +374,7 @@ class ExecutionEngine(
     val assigner = dataStore.TriggerChecker(
       symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
     )
+    if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
     assigner
   }

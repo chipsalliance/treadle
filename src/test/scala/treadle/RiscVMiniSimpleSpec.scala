@@ -15,7 +15,8 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
         vcdShowUnderscored = false,
         setVerbose = false,
         showFirrtlAtLoad = false,
-        symbolsToWatch = Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")
+        rollbackBuffers = 0,
+        symbolsToWatch = Seq() // Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")
       )
     }
 
@@ -24,6 +25,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
     intercept[StopException] {
       tester.step(300)
     }
+    tester.report()
     tester.engine.lastStopResult should be (Some(0))
   }
 }

@@ -157,7 +157,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
   def showAssignment(symbol: Symbol): Unit = {
     val showValue = symbol.normalize(apply(symbol))
-    println(s"${symbol.name} <= $showValue")
+    println(s"${symbol.name} <= $showValue h${showValue.toString(16)}")
   }
 
   def showIndirectAssignment(symbol: Symbol, value: BigInt, index: Int): Unit = {

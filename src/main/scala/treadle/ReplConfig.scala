@@ -5,13 +5,15 @@ package treadle
 import firrtl.ExecutionOptionsManager
 
 case class ReplConfig(
-    firrtlSourceName:  String  = "",
-    scriptName:        String  = "",
-    firrtlSource:      String = "",
-    useVcdScript:      Boolean = false,
-    vcdScriptOverride: String = "",
-    runScriptAtStart:  Boolean = false)
-  extends firrtl.ComposableOptions
+  firrtlSourceName : String = "",
+  scriptName       : String = "",
+  firrtlSource     : String = "",
+  useVcdScript     : Boolean = false,
+  vcdScriptOverride: String = "",
+  runScriptAtStart : Boolean = false,
+  outputFormat     : String = "d"
+)
+        extends firrtl.ComposableOptions
 
 trait HasReplConfig {
   self: ExecutionOptionsManager =>
@@ -50,6 +52,14 @@ trait HasReplConfig {
       replConfig = replConfig.copy(vcdScriptOverride = x, useVcdScript = true)
     }
     .text("load vcd file as script, default is false")
+
+  parser.opt[String]("fr-display-format")
+    .abbr("frdf")
+    .valueName("format")
+    .foreach { x =>
+      replConfig = replConfig.copy(outputFormat = x)
+    }
+    .text("how to display values d - decimal, x - hex, b - binary")
 
   parser.opt[Unit]("fr-run-script-on-startup")
     .abbr("frrsos")
