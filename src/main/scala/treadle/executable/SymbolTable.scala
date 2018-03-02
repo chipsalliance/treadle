@@ -53,7 +53,6 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
   val inputPortsNames:  mutable.HashSet[String] = new mutable.HashSet[String]
   val outputPortsNames: mutable.HashSet[String] = new mutable.HashSet[String]
 
-  val clockSignals     : mutable.HashMap[Symbol, Symbol]   = new mutable.HashMap[Symbol, Symbol]
   val triggersFor      : mutable.HashMap[Symbol, Symbol]   = new mutable.HashMap[Symbol, Symbol]
   val stopToStopInfo   : mutable.HashMap[Stop, StopInfo]   = new mutable.HashMap[Stop, StopInfo]
   val printToPrintInfo : mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
@@ -323,15 +322,6 @@ object SymbolTable extends LazyLogging {
           addSymbol(registerIn)
           addSymbol(registerOut)
 
-//          expressionToReferences(clockExpression).headOption.foreach { clockSymbol =>
-          getClockSymbol(clockExpression).foreach { clockSymbol =>
-            val registerClockPrevious = getClockRisingSymbol(clockSymbol)
-            addDependency(registerClockPrevious, Set(clockSymbol, registerOut))
-
-            clockSignals(clockSymbol) = registerClockPrevious
-            triggersFor(registerOut)  = registerClockPrevious
-          }
-
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
           addDependency(registerIn, Set(registerOut))
@@ -486,7 +476,6 @@ object SymbolTable extends LazyLogging {
     symbolTable.inputPortsNames          ++= inputPorts
     symbolTable.outputPortsNames         ++= outputPorts
     symbolTable.toBlackBoxImplementation ++= blackBoxImplementations
-    symbolTable.clockSignals             ++= clockSignals
     symbolTable.stopToStopInfo           ++= stopToStopInfo
     symbolTable.printToPrintInfo         ++= printToPrintInfo
     symbolTable.triggersFor              ++= triggersFor

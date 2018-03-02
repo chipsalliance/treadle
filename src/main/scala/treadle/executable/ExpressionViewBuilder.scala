@@ -207,11 +207,9 @@ class ExpressionViewBuilder(
             val registerIn = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
 
             val processedExpression = processExpression(con.expr)
-            val triggerSymbolPrevious = symbolTable.triggersFor(registerOut)
-
 
             expressionViews(registerIn) = processedExpression
-            expressionViews(registerOut) = expression"Mux($triggerSymbolPrevious, $registerIn, $registerOut)"
+            expressionViews(registerOut) = expression"$registerOut"
           }
 
         case WDefInstance(info, instanceName, moduleName, _) =>

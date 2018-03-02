@@ -54,13 +54,12 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
 
     tester.poke("reset", 0)
     tester.poke("io_wrData", (0 << 24) + (255 << 16))
-    println(s"reset value is ${tester.engine.getValue("reset")}")
+    println(s"reset value is ${tester.peek("reset")}")
 
     intercept[StopException] {
       tester.step()
     }
 
-    tester.report()
     tester.reportString should include ("Failed: Stop result 47")
   }
 }

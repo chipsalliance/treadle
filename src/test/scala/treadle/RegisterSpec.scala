@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class RegisterSpec extends FlatSpec with Matchers {
   behavior of "register reset"
 
-  it should "reset registers when there condition is true" in {
+  it should "reset registers when their condition is true" in {
     val input =
       """
         |circuit RegInc :
