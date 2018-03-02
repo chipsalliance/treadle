@@ -53,7 +53,6 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
   val inputPortsNames:  mutable.HashSet[String] = new mutable.HashSet[String]
   val outputPortsNames: mutable.HashSet[String] = new mutable.HashSet[String]
 
-  val triggersFor      : mutable.HashMap[Symbol, Symbol]   = new mutable.HashMap[Symbol, Symbol]
   val stopToStopInfo   : mutable.HashMap[Stop, StopInfo]   = new mutable.HashMap[Stop, StopInfo]
   val printToPrintInfo : mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
 
@@ -136,10 +135,6 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
 
 object SymbolTable extends LazyLogging {
 
-  val UpTransitionSuffix = "/rising"
-  def makeUpTransitionName(name: String): String = name + UpTransitionSuffix
-  def makeUpTransitionName(symbol: Symbol): String = symbol.name + UpTransitionSuffix
-
   val RegisterInputSuffix = "/in"
   def makeRegisterInputName(name: String): String = name + RegisterInputSuffix
   def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
@@ -185,7 +180,6 @@ object SymbolTable extends LazyLogging {
     val outputPorts   = new mutable.HashSet[String]
 
     val clockSignals      = new mutable.HashMap[Symbol, Symbol]
-    val triggersFor       = new mutable.HashMap[Symbol, Symbol]
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
 
@@ -229,14 +223,6 @@ object SymbolTable extends LazyLogging {
           symbol.firrtlType == firrtl.ir.ClockType
         }
         clocks.headOption
-      }
-
-      def getClockRisingSymbol(clockSymbol: Symbol, info: Info = NoInfo): Symbol = {
-        val risingSymbolName = SymbolTable.makeUpTransitionName(clockSymbol)
-        nameToSymbol.getOrElseUpdate(
-          risingSymbolName,
-          Symbol(risingSymbolName, firrtl.ir.ClockType, WireKind, info = info)
-        )
       }
 
       s match {
@@ -285,10 +271,6 @@ object SymbolTable extends LazyLogging {
                         val inputSymbol = nameToSymbol(expand(instanceName + "." + inputName))
                         addDependency(portSymbol, Set(inputSymbol, instanceSymbol))
                       }
-                    }
-                    if(port.tpe == ClockType) {
-                      val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))
-                      addDependency(instanceSymbol, Set(nameToSymbol(makeUpTransitionName(portSymbol))))
                     }
                   }
                 case _ =>
@@ -406,13 +388,6 @@ object SymbolTable extends LazyLogging {
           val expandedName = expand(port.name)
           val symbol = Symbol(expandedName, port.tpe, PortKind)
           addSymbol(symbol)
-          if(port.tpe == firrtl.ir.ClockType) {
-            val upTransitionName = SymbolTable. makeUpTransitionName(expandedName)
-            val upTransitionSymbol = Symbol(upTransitionName, port.tpe, PortKind)
-            addSymbol(upTransitionSymbol)
-            addDependency(upTransitionSymbol, Set(symbol))
-            clockSignals(symbol) = upTransitionSymbol
-          }
           if(modulePrefix.isEmpty) {  // this is true only at top level
             if(port.direction == Input) {
               inputPorts += symbol.name
@@ -472,7 +447,6 @@ object SymbolTable extends LazyLogging {
     symbolTable.toBlackBoxImplementation ++= blackBoxImplementations
     symbolTable.stopToStopInfo           ++= stopToStopInfo
     symbolTable.printToPrintInfo         ++= printToPrintInfo
-    symbolTable.triggersFor              ++= triggersFor
 
     symbolTable.parentsOf                = sensitivityGraphBuilder.getParentsOfDiGraph
     symbolTable.childrenOf               = sensitivityGraphBuilder.getChildrenOfDiGraph

@@ -360,20 +360,16 @@ class ExecutionEngine(
   class NullToggler extends ClockToggle
 
   def makeUpToggler(symbol: Symbol): Assigner = {
-    val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
-    val assigner = dataStore.TriggerChecker(
-      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(1).apply)
-    )
+    val assigner = dataStore.AssignInt(symbol, GetIntConstant(1).apply)
+
     if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
     assigner
   }
 
   def makeDownToggler(symbol: Symbol): Assigner = {
-    val upTransitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(symbol))
-    val assigner = dataStore.TriggerChecker(
-      symbol, upTransitionSymbol, dataStore.AssignInt(symbol, GetIntConstant(0).apply)
-    )
+    val assigner = dataStore.AssignInt(symbol, GetIntConstant(0).apply)
+
     if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
     assigner
