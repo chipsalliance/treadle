@@ -748,7 +748,7 @@ class ExpressionCompiler(
               val intClockExpression = processExpression(clockExpression) match {
                 case i : IntExpressionResult => i
                 case _ =>
-                  throw TreadleException(s"Error: stop ${stop} has non integer clock")
+                  throw TreadleException(s"Error: stop $stop has non integer clock")
               }
               val stopOp = StopOp(
                 symbol          = stopInfo.stopSymbol,
@@ -768,12 +768,17 @@ class ExpressionCompiler(
 
           symbolTable.printToPrintInfo.get(print) match {
             case Some(printInfo) =>
+              val intClockExpression = processExpression(clockExpression) match {
+                case i : IntExpressionResult => i
+                case _ =>
+                  throw TreadleException(s"Error: printf $print has non integer clock")
+              }
               val printOp = PrintfOp(
                 printInfo.printSymbol,
                 info, stringLiteral,
                 argExpressions.map { expression => processExpression(expression) },
                 processExpression(enableExpression),
-                printInfo.triggerSymbol,
+                intClockExpression,
                 dataStore
               )
               addAssigner(printOp)

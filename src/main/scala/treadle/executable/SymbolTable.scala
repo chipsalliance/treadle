@@ -337,12 +337,10 @@ object SymbolTable extends LazyLogging {
         case stop @ Stop(info, _, clockExpression, _)   =>
           getClockSymbol(clockExpression) match {
             case Some(clockSymbol) =>
-              val risingSymbol = getClockRisingSymbol(clockSymbol)
-
               val stopSymbolName = makeStopName()
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(stopSymbol)
-              stopToStopInfo(stop) = StopInfo(stopSymbol, risingSymbol)
+              stopToStopInfo(stop) = StopInfo(stopSymbol)
               addDependency(stopSymbol, Set(clockSymbol))
               if(! nameToSymbol.contains(StopOp.stopHappenedName)) {
                 addSymbol(
@@ -350,7 +348,6 @@ object SymbolTable extends LazyLogging {
                 )
               }
 
-              clockSignals(clockSymbol) = risingSymbol
             case _ =>
               throw new TreadleException(s"Can't find clock for $stop")
           }
@@ -358,17 +355,14 @@ object SymbolTable extends LazyLogging {
         case print @ Print(info, _, _, clockExpression, _)  =>
           getClockSymbol(clockExpression) match {
             case Some(clockSymbol) =>
-              val risingSymbol = getClockRisingSymbol(clockSymbol)
-
               val printSymbolName = makePrintName()
               val printSymbol = Symbol(
                 printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
 
               addSymbol(printSymbol)
-              printToPrintInfo(print) = PrintInfo(printSymbol, risingSymbol)
+              printToPrintInfo(print) = PrintInfo(printSymbol)
               addDependency(printSymbol, Set(clockSymbol))
 
-              clockSignals(clockSymbol) = risingSymbol
             case _ =>
               throw new TreadleException(s"Can't find clock for $print")
           }

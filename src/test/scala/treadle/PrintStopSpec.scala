@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 package treadle
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import org.scalatest.{FlatSpec, Matchers}
 
 class PrintStopSpec extends FlatSpec with Matchers {
@@ -65,55 +67,69 @@ class PrintStopSpec extends FlatSpec with Matchers {
   behavior of "Print statement"
 
   it should "be visible" in {
-    val input =
-      """
-        |circuit Stop0 :
-        |  module Stop0 :
-        |    input clk : Clock
-        |
-        |    printf(clk, UInt(1), "HELLO WORLD\n")
-        |
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val input =
+        """
+          |circuit Stop0 :
+          |  module Stop0 :
+          |    input clk : Clock
+          |
+          |    printf(clk, UInt(1), "HELLO WORLD\n")
+          |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+      val tester = TreadleTester(input)
 
-    tester.step(2)
+      tester.step(2)
+    }
+    output.toString().contains("HELLO WORLD") should be (true)
+    output.toString.split("\n").count(_.contains("HELLO WORLD")) should be (2)
 
   }
+
   it should "support printf formatting" in {
-    val input =
-      """
-        |circuit Stop0 :
-        |  module Stop0 :
-        |    input clk : Clock
-        |
-        |    printf(clk, UInt(1), "HELLO WORLD int %d hex %x SIint %d\n", UInt(7), UInt(31), SInt(-2) )
-        |
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val input =
+        """
+          |circuit Stop0 :
+          |  module Stop0 :
+          |    input clk : Clock
+          |
+          |    printf(clk, UInt(1), "HELLO WORLD int %d hex %x SIint %d\n", UInt(7), UInt(31), SInt(-2) )
+          |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+      val tester = TreadleTester(input)
 
-    tester.step(2)
+      tester.step(2)
+    }
+
+    output.toString().contains("HELLO WORLD int 7 hex 1f SIint -2") should be (true)
 
   }
 
 
   it should "support printf formatting with binary" in {
-    val input =
-      """
-        |circuit Stop0 :
-        |  module Stop0 :
-        |    input clk : Clock
-        |
-        |    printf(clk, UInt(1), "char %c int %d hex %x SIint %d %b\n", UInt(77), UInt(7), UInt(255), SInt(-2), SInt(7) )
-        |    printf(clk, UInt(1), "char %c int %d hex %x SIint %d %b\n", UInt(48), UInt(7), UInt(255), SInt(-2), SInt(-7) )
-        |
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val input =
+        """
+          |circuit Stop0 :
+          |  module Stop0 :
+          |    input clk : Clock
+          |
+          |    printf(clk, UInt(1), "char %c int %d hex %x SIint %d %b\n", UInt(77), UInt(7), UInt(255), SInt(-2), SInt(7) )
+          |    printf(clk, UInt(1), "char %c int %d hex %x SIint %d %b\n", UInt(48), UInt(7), UInt(255), SInt(-2), SInt(-7) )
+          |
         """.stripMargin
 
-    val tester = TreadleTester(input)
+      val tester = TreadleTester(input)
 
-    tester.step(2)
-
+      tester.step(2)
+    }
+    output.toString().contains("char M int 7 hex ff SIint -2 111") should be (true)
   }
 
   it should "print at the right part of clock cycle" in {

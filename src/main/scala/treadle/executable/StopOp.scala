@@ -43,4 +43,4 @@ object StopOp {
   val stopHappenedName = "/stopped"
 }
 
-case class StopInfo(stopSymbol: Symbol, triggerSymbol: Symbol)
+case class StopInfo(stopSymbol: Symbol)
