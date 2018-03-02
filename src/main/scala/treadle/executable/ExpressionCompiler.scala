@@ -696,9 +696,8 @@ class ExpressionCompiler(
                       makeAssigner(portSymbol, shim)
                     }
                     if (port.tpe == ClockType) {
-                      val portSymbol = symbolTable(expand(instanceName + "." + port.name))
-                      val transitionSymbol = symbolTable(SymbolTable.makeUpTransitionName(portSymbol))
-                      val blackBoxCycler = BlackBoxCycler(instanceSymbol, implementation, transitionSymbol, dataStore)
+                      val clockSymbol = symbolTable(expand(instanceName + "." + port.name))
+                      val blackBoxCycler = BlackBoxCycler(instanceSymbol, implementation, clockSymbol, dataStore)
                       symbolTable.addAssigner(instanceSymbol, blackBoxCycler)
                     }
                   }

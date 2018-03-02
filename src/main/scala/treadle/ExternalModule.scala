@@ -98,14 +98,17 @@ abstract class BlackBoxFactory {
 case class BlackBoxCycler(
     symbol: Symbol,
     blackBox: BlackBoxImplementation,
-    transitionSymbol: Symbol,
+    clockSymbol: Symbol,
     dataStore: DataStore
 ) extends Assigner {
 
-  private val index = transitionSymbol.index
+  var lastClockValue = dataStore.currentIntArray(clockSymbol.index)
 
   override def run: FuncUnit = {
-    val transition = if(dataStore.currentIntArray(index) == 1) PositiveEdge else NoTransition
+    val clockValue = dataStore.currentIntArray(clockSymbol.index)
+    val transition = if(clockValue > 0 && lastClockValue == 0) PositiveEdge else NoTransition
+    lastClockValue = clockValue
+
     blackBox.cycle(transition)
     if(isVerbose) {
       println(s"${symbol.name} : black box cycle($transition)")
