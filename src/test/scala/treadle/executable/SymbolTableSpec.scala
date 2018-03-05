@@ -42,7 +42,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val keyToDependent = symbolTable.childrenOf
 
-    keyToDependent.reachableFrom(symbolTable("clock")).size should be (5)
+    keyToDependent.reachableFrom(symbolTable("clock")).size should be (4)
 
     symbolTable.registerNames.toList.sorted.foreach { key =>
       val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
@@ -83,11 +83,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
-    // clock transition state is the only thing reachable from here
-    childrenOf.reachableFrom(symbolTable("clock")) should
-      contain (symbolTable(SymbolTable.makeUpTransitionName("clock")))
-
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (1)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (0)
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
 
@@ -133,7 +129,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (5)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
 
@@ -190,7 +186,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (5)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
     childrenOf.reachableFrom(symbolTable("io_in2")) should not contain symbolTable("io_out1")

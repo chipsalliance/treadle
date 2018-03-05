@@ -172,46 +172,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
   }
 
-  case class TriggerChecker(
-      symbol             : Symbol,
-      prevSymbol         : Symbol,
-      underlyingAssigner : Assigner
-  ) extends Assigner {
-
-    def checkTransition(): Unit = {
-      val originalValue = currentIntArray(symbol.index)
-      underlyingAssigner.run()
-      val finalValue = currentIntArray(symbol.index)
-      val transitionValue = if(finalValue > 0 && originalValue == 0) { 1 } else { 0 }
-      currentIntArray(prevSymbol.index) = transitionValue
-      vcdOption.foreach { vcd =>
-        //TODO: (chick) figure out whether this should be done at all or protected by if below
-        vcd.wireChanged(prevSymbol.name, transitionValue)
-      }
-      if(isVerbose) showAssignment(prevSymbol)
-      if(doRender) renderAssignment(prevSymbol)
-    }
-
-    override def run: FuncUnit = {
-      checkTransition _
-    }
-
-    override def setLeanMode(isLean: Boolean): Unit = {
-      underlyingAssigner.setLeanMode(isLean)
-      super.setLeanMode(isLean)
-    }
-
-    override def setVerbose(value: Boolean): Unit = {
-      underlyingAssigner.setVerbose(value)
-      super.setVerbose(value)
-    }
-
-    override def setRender(value: Boolean): Unit = {
-      underlyingAssigner.setRender(value)
-      super.setVerbose(value)
-    }
-  }
-
   case class GetInt(index: Int) extends IntExpressionResult {
     def apply(): Int = currentIntArray(index)
   }
@@ -224,6 +184,38 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       val value = expression()
       currentIntArray(index) = value
+      vcdUpdate(symbol, value)
+      if(isVerbose) showAssignment(symbol)
+      if(doRender) renderAssignment(symbol)
+    }
+
+    override def setLeanMode(isLean: Boolean): Unit = {
+      run = if(isLean) runLean _ else runFull _
+    }
+    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+  }
+
+  case class PosEdgeAssignInt(symbol: Symbol, clockExpression: FuncInt, expression: FuncInt) extends Assigner {
+    val index: Int = symbol.index
+
+    var lastClockValue = clockExpression()
+
+    def runLean(): Unit = {
+      val clockValue = clockExpression()
+      if(clockValue > 0 && lastClockValue == 0) {
+        currentIntArray(index) = expression()
+      }
+      lastClockValue = clockValue
+    }
+
+    def runFull(): Unit = {
+      val value = expression()
+      val clockValue = clockExpression()
+      if(clockValue > 0 && lastClockValue == 0) {
+        currentIntArray(index) = expression()
+      }
+      lastClockValue = clockValue
+
       vcdUpdate(symbol, value)
       if(isVerbose) showAssignment(symbol)
       if(doRender) renderAssignment(symbol)
@@ -264,6 +256,41 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
   }
 
+  case class PosEdgeAssignLong(symbol: Symbol, clockExpression: FuncInt, expression: FuncLong) extends Assigner {
+    val index: Int = symbol.index
+
+    var lastClockValue = clockExpression()
+
+    def runLean(): Unit = {
+      val clockValue = clockExpression()
+
+      if(clockValue > 0 && lastClockValue == 0) {
+        currentLongArray(index) = expression()
+      }
+      lastClockValue = clockValue
+    }
+
+    def runFull(): Unit = {
+      val value = expression()
+      val clockValue = clockExpression()
+
+      if(clockValue > 0 && lastClockValue == 0) {
+        currentLongArray(index) = value
+      }
+      lastClockValue = clockValue
+
+      vcdUpdate(symbol, value)
+      if(isVerbose) showAssignment(symbol)
+      if(doRender) renderAssignment(symbol)
+    }
+
+    override def setLeanMode(isLean: Boolean): Unit = {
+      run = if(isLean) runLean _ else runFull _
+    }
+    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+  }
+
+
   case class GetBig(index: Int) extends BigExpressionResult {
     def apply(): Big = currentBigArray(index)
   }
@@ -287,6 +314,39 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
     var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
   }
+
+  case class PosEdgeAssignBig(symbol: Symbol, clockExpression: FuncInt, expression: FuncBig) extends Assigner {
+    val index: Int = symbol.index
+
+    var lastClockValue = clockExpression()
+
+    def runLean(): Unit = {
+      val clockValue = clockExpression()
+      if(clockValue > 0 && lastClockValue == 0) {
+        currentBigArray(index) = expression()
+      }
+      lastClockValue = clockValue
+    }
+
+    def runFull(): Unit = {
+      val value = expression()
+      val clockValue = clockExpression()
+      if(clockValue > 0 && lastClockValue == 0) {
+        currentBigArray(index) = value
+      }
+      lastClockValue = clockValue
+
+      vcdUpdate(symbol, value)
+      if(isVerbose) showAssignment(symbol)
+      if(doRender) renderAssignment(symbol)
+    }
+
+    override def setLeanMode(isLean: Boolean): Unit = {
+      run = if(isLean) runLean _ else runFull _
+    }
+    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+  }
+
 
   /** for memory implementations */
   case class GetIntIndirect(

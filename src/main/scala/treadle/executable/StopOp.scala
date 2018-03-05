@@ -2,26 +2,25 @@
 
 package treadle.executable
 
-import firrtl.WireKind
-import firrtl.ir.{Info, IntWidth, NoInfo, UIntType}
-import treadle.{ExecutionEngine, StopException}
+import firrtl.ir.Info
 
 case class StopOp(
-    symbol        : Symbol,
-    info          : Info,
-    returnValue   : Int,
-    condition     : ExpressionResult,
-    triggerSymbol : Symbol,
-    hasStopped    : Symbol,
-    dataStore     : DataStore
+    symbol          : Symbol,
+    info            : Info,
+    returnValue     : Int,
+    condition       : ExpressionResult,
+    clockExpression : IntExpressionResult,
+    hasStopped      : Symbol,
+    dataStore       : DataStore
 ) extends Assigner {
-
-  private val triggerIndex = triggerSymbol.index
 
   //TODO: (chick) run should not use match, this should be determined statically
 
+  var lastClockValue = clockExpression()
+
   def run: FuncUnit = {
-    if(dataStore.currentIntArray(triggerIndex) == 1) {
+    val clockValue = clockExpression()
+    if(clockValue > 0 && lastClockValue == 0) {
       val conditionValue = condition match {
         case e: IntExpressionResult => e.apply() > 0
         case e: LongExpressionResult => e.apply() > 0L
@@ -34,6 +33,8 @@ case class StopOp(
         dataStore(hasStopped) = returnValue + 1
       }
     }
+    lastClockValue = clockValue
+
     () => Unit
   }
 }
@@ -42,4 +43,4 @@ object StopOp {
   val stopHappenedName = "/stopped"
 }
 
-case class StopInfo(stopSymbol: Symbol, triggerSymbol: Symbol)
+case class StopInfo(stopSymbol: Symbol)

@@ -37,7 +37,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
     val manager = new InterpreterOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
-        symbolsToWatch = Seq("m.clock/rising", "io_data"),
+        symbolsToWatch = Seq("io_data"),
         blackBoxFactories = Seq(new AccumBlackBoxFactory)
       )
     }

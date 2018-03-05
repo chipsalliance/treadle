@@ -6,32 +6,35 @@ import firrtl.WireKind
 import firrtl.ir._
 
 case class PrintfOp(
-    symbol        : Symbol,
-    info          : Info,
-    string        : StringLit,
-    args          : Seq[ExpressionResult],
-    condition     : ExpressionResult,
-    triggerSymbol : Symbol,
-    dataStore     : DataStore
+    symbol          : Symbol,
+    info            : Info,
+    string          : StringLit,
+    args            : Seq[ExpressionResult],
+    condition       : ExpressionResult,
+    clockExpression : IntExpressionResult,
+    dataStore       : DataStore
 ) extends Assigner {
 
-  private val triggerIndex = triggerSymbol.index
+  var lastClockValue = clockExpression()
 
   def run: FuncUnit = {
-    val conditionValue = condition match {
-      case e: IntExpressionResult  => e.apply() > 0
-      case e: LongExpressionResult => e.apply() > 0L
-      case e: BigExpressionResult  => e.apply() > Big(0)
-    }
-    if(conditionValue && dataStore.currentIntArray(triggerIndex) == 1) {
-      val currentArgValues = args.map {
-        case e: IntExpressionResult  => e.apply()
-        case e: LongExpressionResult => e.apply()
-        case e: BigExpressionResult  => e.apply()
+    val clockValue = clockExpression()
+    if(clockValue > 0 && lastClockValue == 0) {
+      val conditionValue = condition match {
+        case e: IntExpressionResult => e.apply() > 0
+        case e: LongExpressionResult => e.apply() > 0L
+        case e: BigExpressionResult => e.apply() > Big(0)
       }
-      val formatString = string.escape
-      val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
-      print(instantiatedString.drop(1).dropRight(1))
+      if (conditionValue) {
+        val currentArgValues = args.map {
+          case e: IntExpressionResult => e.apply()
+          case e: LongExpressionResult => e.apply()
+          case e: BigExpressionResult => e.apply()
+        }
+        val formatString = string.escape
+        val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
+        print(instantiatedString.drop(1).dropRight(1))
+      }
     }
     () => Unit
   }
@@ -79,4 +82,4 @@ object PrintfOp {
   val PrintfOpSymbol = Symbol("printfop", IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
 }
 
-case class PrintInfo(printSymbol: Symbol, triggerSymbol: Symbol)
+case class PrintInfo(printSymbol: Symbol)
