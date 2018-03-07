@@ -170,27 +170,5 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
         tester.step()
       }
     }
-
-    "each output should hold a different values" in {
-
-      val factory = new BlackBoxCounterFactory
-
-      val optionsManager = new InterpreterOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(factory),
-          randomSeed = 0L)
-      }
-      val tester = new TreadleTester(input, optionsManager)
-
-      tester.poke("clear", 1)
-      tester.step()
-      tester.poke("clear", 0)
-
-      for(i <- 0 until 10) {
-        tester.expect("counter", i)
-        tester.step()
-      }
-    }
   }
 }

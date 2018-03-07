@@ -19,7 +19,6 @@ case class TreadleOptions(
     lowCompileAtLoad   : Boolean              = true,
     validIfIsRandom    : Boolean              = false,
     rollbackBuffers    : Int                  = 4,
-    clockName          : String               = "clock",
     clockInfo          : Seq[ClockInfo]       = Seq.empty,
     resetName          : String               = "reset",
     noDefaultReset     : Boolean              = false,
@@ -122,14 +121,6 @@ trait HasInterpreterOptions {
       treadleOptions = treadleOptions.copy(rollbackBuffers = x)
     }
     .text("number of rollback buffers, 0 is no buffers, default is 4")
-
-  parser.opt[String]("fint-clock-name")
-    .abbr("ficn")
-    .valueName("<string>")
-    .foreach { x =>
-      treadleOptions = treadleOptions.copy(clockName = x)
-    }
-    .text("name of default clock")
 
   def parseClockInfo(input: String): ClockInfo = {
     input.split(":").map(_.trim).toList match {
