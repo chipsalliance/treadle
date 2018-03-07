@@ -17,6 +17,8 @@ import collection.JavaConverters._
 import scala.io.Source
 import scala.util.matching.Regex
 
+import treadle.executable.Symbol
+
 abstract class Command(val name: String) {
   def run(args: Array[String]): Unit
   def usage: (String, String)
@@ -129,7 +131,6 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
     else                                  { parseWithRadix(numberString, 10) }
   }
 
-  val clockName: String = treadleOptions.clockName
   val resetName: String = treadleOptions.resetName
 
   val combinationalDelay: Long = 10
@@ -163,7 +164,8 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
         case Some(clockSymbol) =>
           val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
 
-          wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, taskName = s"${clockInfo.name}/up") { () =>
+          wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, taskName = s"${clockInfo.name}/up") {
+            () =>
             engine.makeUpToggler(clockSymbol).run()
             engine.inputsChanged = true
           }
@@ -436,34 +438,40 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
           }
         }
       },
-      new Command("type") {
+      new Command("symbol") {
         private def peekableThings = engine.validNames.toSeq
-        def usage: (String, String) = ("type regex", "show the current type of things matching the regex")
+        def usage: (String, String) = ("symbol regex", "show symbol information")
+
         override def completer: Option[ArgumentCompleter] = {
           if(currentEngineOpt.isEmpty) {
             None
           }
           else {
             Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "type"
-              }),
+              new StringsCompleter({"symbol"}),
               new StringsCompleter(jlist(peekableThings))
             ))
           }
         }
+
         //scalastyle:off cyclomatic.complexity
         def run(args: Array[String]): Unit = {
-          getOneArg("type regex") match {
+          var linesShown = 0
+          getOneArg("symbol regex") match {
             case Some((peekRegex)) =>
               try {
                 val portRegex = peekRegex.r
-                val numberOfThingsPeeked = peekableThings.sorted.count { settableThing =>
-                  portRegex.findFirstIn(settableThing) match {
+                val numberOfThingsPeeked = peekableThings.sorted.count { signal =>
+                  portRegex.findFirstIn(signal) match {
                     case Some(_) =>
                       try {
-                        val value = engine.getValue(settableThing)
-                        console.println(s"type $settableThing ${formatOutput(value)}")
+                        val value = engine.getValue(signal)
+                        val symbol = engine.symbolTable(signal)
+                        if(linesShown % 50 == 0) {
+                          console.println(s"${Symbol.renderHeader}")
+                        }
+                        linesShown += 1
+                        console.println(s"${symbol.render} ${formatOutput(value)}")
                         true
                       }
                       catch { case _: Exception => false}
@@ -472,7 +480,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
                   }
                 }
                 if(numberOfThingsPeeked == 0) {
-                  console.println(s"Sorry now settable ports matched regex $peekRegex")
+                  console.println(s"Sorry no settable ports matched regex $peekRegex")
                 }
               }
               catch {

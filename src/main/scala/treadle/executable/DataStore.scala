@@ -27,6 +27,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   nextIndexFor(LongSize) = 0
   nextIndexFor(BigSize)  = 0
 
+  val plugIns       : mutable.HashMap[String, DataStorePlugIn] = new mutable.HashMap()
+  val activePlugins : mutable.ArrayBuffer[DataStorePlugIn]     = new mutable.ArrayBuffer()
+
   private var executionEngineOption: Option[ExecutionEngine] = None
   def setExecutionEngine(executionEngine: ExecutionEngine): Unit = {
     executionEngineOption = Some(executionEngine)

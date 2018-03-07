@@ -38,7 +38,6 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     )
   }
 
-  val clockName: String = treadleOptions.clockName
   val resetName: String = treadleOptions.resetName
 
   val combinationalDelay: Long = 10

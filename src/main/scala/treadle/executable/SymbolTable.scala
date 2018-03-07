@@ -136,8 +136,12 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
 object SymbolTable extends LazyLogging {
 
   val RegisterInputSuffix = "/in"
+  val LastValueSuffix     = "/last"
+
   def makeRegisterInputName(name: String): String = name + RegisterInputSuffix
   def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
+  def makeLastValueName(name: String)       : String = name + LastValueSuffix
+  def makeLastValueName(symbol: Symbol)     : String = symbol.name + LastValueSuffix
 
   def apply(nameToSymbol: mutable.HashMap[String, Symbol]): SymbolTable = new SymbolTable(nameToSymbol)
 
