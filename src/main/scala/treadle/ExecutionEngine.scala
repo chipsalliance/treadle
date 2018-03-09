@@ -23,9 +23,24 @@ class ExecutionEngine(
 
   var vcdOption: Option[VCD] = None
   var vcdFileName: String = ""
+
   var verbose: Boolean = false
   setVerbose(interpreterOptions.setVerbose)
+
   var inputsChanged: Boolean = false
+
+  /* Default dataStore plugins */
+
+  dataStore.addPlugin(
+    "show-assigns", new ReportAssignments(dataStore), enable = optionsManager.treadleOptions.setVerbose)
+
+  dataStore.addPlugin(
+    "show-computation",
+    new RenderComputations(dataStore),
+    enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
+  )
+
+  dataStore.allAssigners ++= scheduler.activeAssigns ++ scheduler.orphanedAssigns
 
   def setLeanMode(): Unit = {
     val canBeLean = ! (verbose || vcdOption.isDefined)
@@ -78,16 +93,15 @@ class ExecutionEngine(
     vcdOption = Some(vcd)
     vcdFileName = fileName
 
-    dataStore.vcdOption = vcdOption
-
-    setLeanMode()
+    val vcdPluIn = new VcdHook(dataStore, vcd)
+    dataStore.addPlugin(ExecutionEngine.VCDHookName, vcdPluIn, enable = true)
   }
 
   def disableVCD(): Unit = {
     writeVCD()
     vcdOption = None
     vcdFileName = ""
-    setLeanMode()
+    dataStore.removePlugin(ExecutionEngine.VCDHookName)
   }
 
   def writeVCD(): Unit = {
@@ -197,7 +211,7 @@ class ExecutionEngine(
       if(verbose) {
         println(s"${symbol.name} <= $value  from tester")
       }
-      dataStore(symbol) = adjustedValue
+      dataStore.update(symbol, adjustedValue)
       vcdOption.foreach { vcd =>
         vcd.wireChanged(symbol.name, dataStore(symbol), symbol.bitWidth)
       }
@@ -377,6 +391,8 @@ class ExecutionEngine(
 }
 
 object ExecutionEngine {
+
+  val VCDHookName = "log-vcd"
   //scalastyle:off method.length
   /**
     * Construct a Firrtl Execution engine
