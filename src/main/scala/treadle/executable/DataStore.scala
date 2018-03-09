@@ -27,10 +27,31 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   nextIndexFor(LongSize) = 0
   nextIndexFor(BigSize)  = 0
 
-  val plugIns       : mutable.HashMap[String, DataStorePlugIn] = new mutable.HashMap()
-  val activePlugins : mutable.ArrayBuffer[DataStorePlugIn]     = new mutable.ArrayBuffer()
+  val allAssigners  : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer()
 
-  private var executionEngineOption: Option[ExecutionEngine] = None
+  var leanMode      : Boolean = true
+  val plugins       : mutable.HashMap[String, DataStorePlugin] = new mutable.HashMap()
+  val activePlugins : mutable.ArrayBuffer[DataStorePlugin]     = new mutable.ArrayBuffer()
+
+  def addPlugin(name: String, plugin: DataStorePlugin, enable: Boolean): Unit = {
+    if(plugins.contains(name)) {
+      throw TreadleException(s"Attempt to add already loaded plugin $name new $plugin, existing ${plugins(name)}")
+    }
+    plugins(name) = plugin
+    plugin.setEnabled(enable)
+  }
+
+  def removePlugin(name: String): Unit = {
+    if(plugins.contains(name)) {
+      println(s"Could not find plugin $name to remove it")
+    }
+    val plugin = plugins(name)
+    plugin.setEnabled(false)  // remove from active and should return to lean mode if no other plugins are active
+    plugins.remove(name)
+  }
+
+  var executionEngineOption: Option[ExecutionEngine] = None
+
   def setExecutionEngine(executionEngine: ExecutionEngine): Unit = {
     executionEngineOption = Some(executionEngine)
 
@@ -73,13 +94,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
   val watchList: mutable.HashSet[Symbol] = new mutable.HashSet()
 
-  var vcdOption: Option[VCD] = None
-
-  def vcdUpdate(symbol: Symbol, value: BigInt): Unit = {
-    if(vcdOption.isDefined) {
-      vcdOption.get.wireChanged(symbol.name, value, width = symbol.bitWidth)
-    }
-  }
   def getSizes: (Int, Int, Int) = {
     (nextIndexFor(IntSize), nextIndexFor(LongSize), nextIndexFor(BigSize))
   }
@@ -158,6 +172,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
   }
 
+  def runPlugins(symbol: Symbol, offset: Int = -1): Unit = {
+    activePlugins.foreach { _.run(symbol, offset) }
+  }
+
   def showAssignment(symbol: Symbol): Unit = {
     val showValue = symbol.normalize(apply(symbol))
     println(s"${symbol.name} <= $showValue h${showValue.toString(16)}")
@@ -187,15 +205,16 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       val value = expression()
       currentIntArray(index) = value
-      vcdUpdate(symbol, value)
-      if(isVerbose) showAssignment(symbol)
-      if(doRender) renderAssignment(symbol)
+      runPlugins(symbol)
+//      vcdUpdate(symbol, value)
+//      if(isVerbose) showAssignment(symbol)
+//      if(doRender) renderAssignment(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
   case class PosEdgeAssignInt(symbol: Symbol, clockExpression: FuncInt, expression: FuncInt) extends Assigner {
@@ -219,15 +238,13 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       }
       lastClockValue = clockValue
 
-      vcdUpdate(symbol, value)
-      if(isVerbose) showAssignment(symbol)
-      if(doRender) renderAssignment(symbol)
+      runPlugins(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
   case class GetLong(index: Int) extends LongExpressionResult {
@@ -244,9 +261,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       val value = expression()
       currentLongArray(index) = value
-      vcdUpdate(symbol, value)
-      if(isVerbose) showAssignment(symbol)
-      if(doRender) renderAssignment(symbol)
+      runPlugins(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -256,7 +271,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         runFull _
       }
     }
-    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
   case class PosEdgeAssignLong(symbol: Symbol, clockExpression: FuncInt, expression: FuncLong) extends Assigner {
@@ -281,16 +296,13 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         currentLongArray(index) = value
       }
       lastClockValue = clockValue
-
-      vcdUpdate(symbol, value)
-      if(isVerbose) showAssignment(symbol)
-      if(doRender) renderAssignment(symbol)
+      runPlugins(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
 
@@ -307,15 +319,13 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       val value = expression()
       currentBigArray(index) = value
-      vcdUpdate(symbol, value)
-      if(isVerbose) showAssignment(symbol)
-      if(doRender) renderAssignment(symbol)
+      runPlugins(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
   case class PosEdgeAssignBig(symbol: Symbol, clockExpression: FuncInt, expression: FuncBig) extends Assigner {
@@ -339,15 +349,13 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       }
       lastClockValue = clockValue
 
-      vcdUpdate(symbol, value)
-      if(isVerbose) showAssignment(symbol)
-      if(doRender) renderAssignment(symbol)
+      runPlugins(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = if(optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
 
@@ -405,20 +413,14 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
         currentIntArray(index + (memoryIndex % memorySymbol.slots)) = value
-        vcdUpdate(symbol, value)
-        if(isVerbose) showIndirectAssignment(symbol, value, memoryIndex)
-      }
-      else {
-        if(isVerbose) {
-          println(s"${symbol.name}(${getMemoryIndex.apply() % memorySymbol.slots}) <= NOT ENABLED")
-        }
+        runPlugins(symbol, memoryIndex)
       }
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = if (optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
   case class AssignLongIndirect(
@@ -441,20 +443,14 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
         currentLongArray(index + (memoryIndex % memorySymbol.slots)) = value
-        vcdUpdate(symbol, value)
-        if(isVerbose) showIndirectAssignment(symbol, value, memoryIndex)
-      }
-      else {
-        if(isVerbose) {
-          println(s"${symbol.name}(${getMemoryIndex.apply() % memorySymbol.slots}) <= NOT ENABLED")
-        }
+        runPlugins(symbol, memoryIndex)
       }
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = if (optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
   case class AssignBigIndirect(
@@ -477,20 +473,14 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
         currentBigArray(index + (memoryIndex % memorySymbol.slots)) = value
-        vcdUpdate(symbol, value)
-        if(isVerbose) showIndirectAssignment(symbol, value, memoryIndex)
-      }
-      else {
-        if(isVerbose) {
-          println(s"${symbol.name}(${getMemoryIndex.apply() % memorySymbol.slots}) <= NOT ENABLED")
-        }
+        runPlugins(symbol, memoryIndex)
       }
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = if (optimizationLevel == 0) runFull _ else runLean _
+    var run: FuncUnit = runLean _
   }
 
   case class BlackBoxShim(
@@ -515,6 +505,14 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       case IntSize  => currentIntArray(symbol.index)
       case LongSize => currentLongArray(symbol.index)
       case BigSize  => currentBigArray(symbol.index)
+    }
+  }
+
+  def apply(symbol: Symbol, offset: Int): Big = {
+    symbol.dataSize match {
+      case IntSize  => currentIntArray(symbol.index + offset)
+      case LongSize => currentLongArray(symbol.index + offset)
+      case BigSize  => currentBigArray(symbol.index + offset)
     }
   }
 

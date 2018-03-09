@@ -883,7 +883,7 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
               else {
                 println(s"there is no dependency between $signal1 and $signal2")
               }
-            case (Some("compare"), Some(signal1), None) =>
+            case (Some("compare"), Some(_), None) =>
               println(s"you must specify two signals when using compare")
             case _ =>
               println(usage)
