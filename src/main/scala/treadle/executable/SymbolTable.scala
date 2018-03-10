@@ -337,6 +337,8 @@ object SymbolTable extends LazyLogging {
               val stopSymbolName = makeStopName()
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(stopSymbol)
+              val lastClockSymbol = SymbolTable.makeLastValueSymbol(stopSymbol)
+              addSymbol(lastClockSymbol)
               stopToStopInfo(stop) = StopInfo(stopSymbol)
               addDependency(stopSymbol, Set(clockSymbol))
               if(! nameToSymbol.contains(StopOp.stopHappenedName)) {

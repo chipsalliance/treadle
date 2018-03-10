@@ -757,6 +757,8 @@ class ExpressionCompiler(
                 case _ =>
                   throw TreadleException(s"Error: stop $stop has non integer clock")
               }
+              val lastClockSymbol = symbolTable(SymbolTable.makeLastValueName(stopInfo.stopSymbol))
+
               val stopOp = StopOp(
                 symbol          = stopInfo.stopSymbol,
                 info            = info,
@@ -764,6 +766,7 @@ class ExpressionCompiler(
                 condition       = processExpression(enableExpression),
                 clockExpression = intClockExpression,
                 hasStopped      = symbolTable(StopOp.stopHappenedName),
+                clockLastValue  = lastClockSymbol,
                 dataStore       = dataStore
               )
               addAssigner(stopOp)

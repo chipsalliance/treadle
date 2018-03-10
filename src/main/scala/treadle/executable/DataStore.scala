@@ -233,16 +233,16 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     expression: FuncInt
   ) extends Assigner {
 
-    val index: Int         = symbol.index
-    val registerLatchIndex = lastValueSymbol.index
+    val index: Int          = symbol.index
+    val lastClockValueIndex = lastValueSymbol.index
 
     def runLean(): Unit = {
-      val lastClockValue = currentIntArray(registerLatchIndex)
+      val lastClockValue = currentIntArray(lastClockValueIndex)
       val clockValue = clockExpression()
       if(clockValue > 0 && lastClockValue == 0) {
         currentIntArray(index) = expression()
       }
-      currentIntArray(registerLatchIndex) = clockValue
+      currentIntArray(lastClockValueIndex) = clockValue
     }
 
     def runFull(): Unit = {
@@ -290,16 +290,16 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     expression: FuncLong
   ) extends Assigner {
 
-    val index: Int = symbol.index
-    val registerLatchIndex = lastValueSymbol.index
+    val index: Int = symbol .index
+    val lastClockValueIndex = lastValueSymbol.index
 
     def runLean(): Unit = {
-      val lastClockValue = currentIntArray(registerLatchIndex)
+      val lastClockValue = currentIntArray(lastClockValueIndex)
       val clockValue = clockExpression()
       if(clockValue > 0 && lastClockValue == 0) {
         currentLongArray(index) = expression()
       }
-      currentIntArray(registerLatchIndex) = clockValue
+      currentIntArray(lastClockValueIndex) = clockValue
     }
 
     def runFull(): Unit = {
@@ -343,16 +343,16 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     expression: FuncBig
   ) extends Assigner {
 
-    val index: Int         = symbol.index
-    val registerLatchIndex = lastValueSymbol.index
+    val index: Int          = symbol.index
+    val lastClockValueIndex = lastValueSymbol.index
 
     def runLean(): Unit = {
-      val lastClockValue = currentIntArray(registerLatchIndex)
+      val lastClockValue = currentIntArray(lastClockValueIndex)
       val clockValue = clockExpression()
       if(clockValue > 0 && lastClockValue == 0) {
         currentBigArray(index) = expression()
       }
-      currentIntArray(registerLatchIndex) = clockValue
+      currentIntArray(lastClockValueIndex) = clockValue
     }
 
     def runFull(): Unit = {
