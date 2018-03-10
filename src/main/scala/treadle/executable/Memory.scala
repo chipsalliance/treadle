@@ -37,8 +37,8 @@ object Memory {
 
       val register = Symbol(s"$baseName$index", dataType, WireKind)
       val registerIn = SymbolTable.makeRegisterInputSymbol(register)
-      val registerLatch = SymbolTable.makeLastValueSymbol(register)
-      lastValueSymbols += registerLatch
+      val lastClockValue = SymbolTable.makeLastValueSymbol(register)
+      lastValueSymbols += lastClockValue
       Seq(registerIn, register)
     }
 

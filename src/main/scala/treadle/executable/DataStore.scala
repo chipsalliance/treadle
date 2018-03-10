@@ -193,12 +193,12 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
   }
 
-  def getRegisterLatchIndex(symbol: Symbol): Int = {
+  def getRegisterLastValueIndex(symbol: Symbol): Int = {
     executionEngineOption match {
       case Some(executionEngine) =>
         executionEngine.symbolTable(SymbolTable.makeLastValueName(symbol)).index
       case _ =>
-        throw TreadleException(s"Could not find latch index for $symbol")
+        throw TreadleException(s"Could not find clock last value index for $symbol")
     }
   }
 

@@ -312,12 +312,12 @@ object SymbolTable extends LazyLogging {
 
           val registerIn = Symbol(SymbolTable.makeRegisterInputName(expandedName), tpe, RegKind, info = info)
           val registerOut = Symbol(expandedName, tpe, RegKind, info = info)
-          val registerLatch = Symbol(SymbolTable.makeLastValueName(registerOut), UIntType(IntWidth(1)))
+          val clockLastValue = Symbol(SymbolTable.makeLastValueName(registerOut), UIntType(IntWidth(1)))
 
           registerNames += registerOut.name
           addSymbol(registerIn)
           addSymbol(registerOut)
-          addSymbol(registerLatch)
+          addSymbol(clockLastValue)
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
