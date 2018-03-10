@@ -10,13 +10,11 @@ case class PrintfOp(
   info            : Info,
   string          : StringLit,
   args            : Seq[ExpressionResult],
-  condition       : ExpressionResult,
+  condition       : IntExpressionResult,
   clockExpression : IntExpressionResult,
   clockLastValue  : Symbol,
   dataStore       : DataStore
 ) extends Assigner {
-
-  //TODO: (chick) run should not use match, this should be determined statically
 
   private val lastClockValueIndex = clockLastValue.index
 
@@ -25,11 +23,7 @@ case class PrintfOp(
     val lastClockValue = dataStore.currentIntArray(lastClockValueIndex)
 
     if(clockValue > 0 && lastClockValue == 0) {
-      val conditionValue = condition match {
-        case e: IntExpressionResult => e.apply() > 0
-        case e: LongExpressionResult => e.apply() > 0L
-        case e: BigExpressionResult => e.apply() > Big(0)
-      }
+      val conditionValue = condition.apply() > 0
       if (conditionValue) {
         val currentArgValues = args.map {
           case e: IntExpressionResult => e.apply()

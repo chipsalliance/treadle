@@ -757,13 +757,20 @@ class ExpressionCompiler(
                 case _ =>
                   throw TreadleException(s"Error: stop $stop has non integer clock")
               }
+              val intExpression = processExpression(enableExpression) match {
+                case i : IntExpressionResult  => i
+                case l : LongExpressionResult => LongToInt(l.apply)
+                case b : BigExpressionResult  => ToInt(b.apply)
+                case _ =>
+                  throw TreadleException(s"Error: stop $stop has unknown condition type")
+              }
               val lastClockSymbol = symbolTable(SymbolTable.makeLastValueName(stopInfo.stopSymbol))
 
               val stopOp = StopOp(
                 symbol          = stopInfo.stopSymbol,
                 info            = info,
                 returnValue     = returnValue,
-                condition       = processExpression(enableExpression),
+                condition       = intExpression,
                 clockExpression = intClockExpression,
                 hasStopped      = symbolTable(StopOp.stopHappenedName),
                 clockLastValue  = lastClockSymbol,
@@ -774,14 +781,21 @@ class ExpressionCompiler(
               throw new TreadleException(s"Could not find symbol for Stop $stop")
           }
 
-        case print @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
+        case printf @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
 
-          symbolTable.printToPrintInfo.get(print) match {
+          symbolTable.printToPrintInfo.get(printf) match {
             case Some(printInfo) =>
               val intClockExpression = processExpression(clockExpression) match {
                 case i : IntExpressionResult => i
                 case _ =>
-                  throw TreadleException(s"Error: printf $print has non integer clock")
+                  throw TreadleException(s"Error: printf $printf has non integer clock")
+              }
+              val intExpression = processExpression(enableExpression) match {
+                case i : IntExpressionResult  => i
+                case l : LongExpressionResult => LongToInt(l.apply)
+                case b : BigExpressionResult  => ToInt(b.apply)
+                case _ =>
+                  throw TreadleException(s"Error: printf $printf has unknown condition type")
               }
 
               val lastClockSymbol = symbolTable(SymbolTable.makeLastValueName(printInfo.printSymbol))
@@ -790,14 +804,14 @@ class ExpressionCompiler(
                 printInfo.printSymbol,
                 info, stringLiteral,
                 argExpressions.map { expression => processExpression(expression) },
-                processExpression(enableExpression),
+                intExpression,
                 intClockExpression,
                 lastClockSymbol,
                 dataStore
               )
               addAssigner(printOp)
             case _ =>
-              throw new TreadleException(s"Could not find symbol for Print $print")
+              throw new TreadleException(s"Could not find symbol for Print $printf")
           }
 
         case EmptyStmt =>
