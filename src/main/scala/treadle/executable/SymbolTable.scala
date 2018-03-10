@@ -357,8 +357,11 @@ object SymbolTable extends LazyLogging {
               val printSymbolName = makePrintName()
               val printSymbol = Symbol(
                 printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
-
               addSymbol(printSymbol)
+
+              val lastClockSymbol = SymbolTable.makeLastValueSymbol(printSymbol)
+              addSymbol(lastClockSymbol)
+
               printToPrintInfo(print) = PrintInfo(printSymbol)
               addDependency(printSymbol, Set(clockSymbol))
 

@@ -17,7 +17,7 @@ case class StopOp(
 
   //TODO: (chick) run should not use match, this should be determined statically
 
-  val lastClockValueIndex = clockLastValue.index
+  private val lastClockValueIndex = clockLastValue.index
 
 
   def run: FuncUnit = {

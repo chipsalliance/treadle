@@ -783,12 +783,16 @@ class ExpressionCompiler(
                 case _ =>
                   throw TreadleException(s"Error: printf $print has non integer clock")
               }
+
+              val lastClockSymbol = symbolTable(SymbolTable.makeLastValueName(printInfo.printSymbol))
+
               val printOp = PrintfOp(
                 printInfo.printSymbol,
                 info, stringLiteral,
                 argExpressions.map { expression => processExpression(expression) },
                 processExpression(enableExpression),
                 intClockExpression,
+                lastClockSymbol,
                 dataStore
               )
               addAssigner(printOp)
