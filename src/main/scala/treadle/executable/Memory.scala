@@ -4,7 +4,9 @@ package treadle.executable
 
 import treadle._
 import firrtl.{MemKind, WireKind}
-import firrtl.ir.{DefMemory, IntWidth}
+import firrtl.ir.{DefMemory, IntWidth, UIntType}
+
+import scala.collection.mutable
 
 object Memory {
   //scalastyle:off method.length
@@ -24,8 +26,21 @@ object Memory {
                     sensitivityGraphBuilder: SensitivityGraphBuilder
   ): Seq[Symbol] = {
     val memorySymbol = Symbol(expandedName, memory.dataType, MemKind, memory.depth)
-    val addrWidth = IntWidth(requiredBitsForUInt(memory.depth - 1))
-    val addrType  = firrtl.ir.UIntType(addrWidth)
+    val addrWidth    = IntWidth(requiredBitsForUInt(memory.depth - 1))
+    val addrType     = firrtl.ir.UIntType(addrWidth)
+    val dataType     = memory.dataType
+    val booleanType  = firrtl.ir.UIntType(IntWidth(1))
+
+    val lastValueSymbols = new mutable.ArrayBuffer[Symbol]()
+
+    def buildRegisterTriple(baseName: String, index: Int, dataType: firrtl.ir.Type): Seq[Symbol] = {
+
+      val register = Symbol(s"$baseName$index", dataType, WireKind)
+      val registerIn = SymbolTable.makeRegisterInputSymbol(register)
+      val registerLatch = SymbolTable.makeLastValueSymbol(register)
+      lastValueSymbols += registerLatch
+      Seq(registerIn, register)
+    }
 
     def buildPipelineDependencies(rootSymbol:      Symbol,
                                   pipelineSymbols: Seq[Symbol],
@@ -60,20 +75,17 @@ object Memory {
     val readerSymbols = memory.readers.flatMap { readerString =>
       val readerName = s"$expandedName.$readerString"
 
-      val en   = Symbol(s"$readerName.en",   firrtl.ir.UIntType(IntWidth(1)), WireKind)
-      val clk  = Symbol(s"$readerName.clk",  firrtl.ir.UIntType(IntWidth(1)), WireKind)
+      val en   = Symbol(s"$readerName.en",   booleanType, WireKind)
+      val clk  = Symbol(s"$readerName.clk",  booleanType, WireKind)
       val addr = Symbol(s"$readerName.addr", addrType, WireKind)
-      val data = Symbol(s"$readerName.data", memory.dataType, WireKind)
+      val data = Symbol(s"$readerName.data", dataType, WireKind)
 
       val readerInterfaceSymbols = Seq(en, clk, addr, data)
 
       sensitivityGraphBuilder.addSensitivity(clk, data)
 
       val pipelineDataSymbols = (0 until memory.readLatency).flatMap { n =>
-        Seq(
-          Symbol(s"$expandedName.$readerString.pipeline_$n/in", memory.dataType, WireKind),
-          Symbol(s"$expandedName.$readerString.pipeline_$n", memory.dataType, WireKind)
-        )
+        buildRegisterTriple(s"$expandedName.$readerString.pipeline_", n, dataType)
       }
 
       buildPipelineDependencies(addr, pipelineDataSymbols, Some(data))
@@ -84,14 +96,14 @@ object Memory {
     val writerSymbols = memory.writers.flatMap { writerString =>
       val writerName = s"$expandedName.$writerString"
 
-      val portSymbol = Symbol(writerName, memory.dataType, WireKind)
+      val portSymbol = Symbol(writerName, dataType, WireKind)
 
-      val en    = Symbol(s"$writerName.en", firrtl.ir.UIntType(IntWidth(1)), WireKind)
-      val clk   = Symbol(s"$writerName.clk", firrtl.ir.UIntType(IntWidth(1)), WireKind)
+      val en    = Symbol(s"$writerName.en", booleanType, WireKind)
+      val clk   = Symbol(s"$writerName.clk", booleanType, WireKind)
       val addr  = Symbol(s"$writerName.addr", addrType, WireKind)
-      val mask  = Symbol(s"$writerName.mask", firrtl.ir.UIntType(IntWidth(1)), WireKind)
-      val data  = Symbol(s"$writerName.data", memory.dataType, WireKind)
-      val valid = Symbol(s"$writerName.valid", firrtl.ir.UIntType(IntWidth(1)), WireKind)
+      val mask  = Symbol(s"$writerName.mask", booleanType, WireKind)
+      val data  = Symbol(s"$writerName.data", dataType, WireKind)
+      val valid = Symbol(s"$writerName.valid", booleanType, WireKind)
 
       val memoryInterfaceSymbols = Seq(en, clk, addr, mask, data, valid)
 
@@ -100,26 +112,17 @@ object Memory {
       sensitivityGraphBuilder.addSensitivity(mask, valid)
 
       val pipelineValidSymbols = (0 until memory.writeLatency).flatMap { n =>
-        Seq(
-          Symbol(s"$expandedName.$writerString.pipeline_valid_$n/in", firrtl.ir.UIntType(IntWidth(1)), WireKind),
-          Symbol(s"$expandedName.$writerString.pipeline_valid_$n", firrtl.ir.UIntType(IntWidth(1)), WireKind)
-        )
+        buildRegisterTriple(s"$expandedName.$writerString.pipeline_valid_", n, booleanType)
       }
       buildPipelineDependencies(valid, pipelineValidSymbols, clockSymbol = Some(clk))
 
       val pipelineDataSymbols = (0 until memory.writeLatency).flatMap { n =>
-        Seq(
-          Symbol(s"$expandedName.$writerString.pipeline_data_$n/in", memory.dataType, WireKind),
-          Symbol(s"$expandedName.$writerString.pipeline_data_$n", memory.dataType, WireKind)
-        )
+        buildRegisterTriple(s"$expandedName.$writerString.pipeline_data_", n, dataType)
       }
       buildPipelineDependencies(data, pipelineDataSymbols, clockSymbol = Some(clk))
 
       val pipelineAddrSymbols = (0 until memory.writeLatency).flatMap { n =>
-        Seq(
-          Symbol(s"$expandedName.$writerString.pipeline_addr_$n/in", addrType, WireKind),
-          Symbol(s"$expandedName.$writerString.pipeline_addr_$n", addrType, WireKind)
-        )
+        buildRegisterTriple(s"$expandedName.$writerString.pipeline_addr_", n, addrType)
       }
       buildPipelineDependencies(addr, pipelineAddrSymbols, clockSymbol = Some(clk))
 
@@ -129,16 +132,16 @@ object Memory {
     val readerWriterSymbols = memory.readwriters.flatMap { readWriterString =>
       val writerName = s"$expandedName.$readWriterString"
 
-      val portSymbol = Symbol(writerName, memory.dataType, WireKind)
+      val portSymbol = Symbol(writerName, dataType, WireKind)
 
-      val en    =  Symbol(s"$writerName.en", firrtl.ir.UIntType(IntWidth(1)), WireKind)
-      val clk   =  Symbol(s"$writerName.clk", firrtl.ir.UIntType(IntWidth(1)), WireKind)
+      val en    =  Symbol(s"$writerName.en", booleanType, WireKind)
+      val clk   =  Symbol(s"$writerName.clk", booleanType, WireKind)
       val addr  =  Symbol(s"$writerName.addr", addrType, WireKind)
-      val rdata =  Symbol(s"$writerName.rdata", memory.dataType, WireKind)
-      val mode  =  Symbol(s"$writerName.wmode", firrtl.ir.UIntType(IntWidth(1)), WireKind)
-      val mask  =  Symbol(s"$writerName.wmask", firrtl.ir.UIntType(IntWidth(1)), WireKind)
-      val wdata =  Symbol(s"$writerName.wdata", memory.dataType, WireKind)
-      val valid =  Symbol(s"$writerName.valid", firrtl.ir.UIntType(IntWidth(1)), WireKind)
+      val rdata =  Symbol(s"$writerName.rdata", dataType, WireKind)
+      val mode  =  Symbol(s"$writerName.wmode", booleanType, WireKind)
+      val mask  =  Symbol(s"$writerName.wmask", booleanType, WireKind)
+      val wdata =  Symbol(s"$writerName.wdata", dataType, WireKind)
+      val valid =  Symbol(s"$writerName.valid", booleanType, WireKind)
 
       val memoryInterfaceSymbols = Seq(en, clk, addr, rdata, mode, mask, wdata, valid)
 
@@ -149,42 +152,31 @@ object Memory {
       sensitivityGraphBuilder.addSensitivity(mask, valid)
 
       val pipelineReadDataSymbols = (0 until memory.readLatency).flatMap { n =>
-        Seq(
-          Symbol(s"$expandedName.$readWriterString.pipeline_rdata_$n/in", memory.dataType, WireKind),
-          Symbol(s"$expandedName.$readWriterString.pipeline_rdata_$n", memory.dataType, WireKind)
-        )
+        buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_rdata_", n, dataType)
       }
       buildPipelineDependencies(addr, pipelineReadDataSymbols, Some(rdata), clockSymbol = Some(clk))
 
       val pipelineEnableSymbols = (0 until memory.writeLatency).flatMap { n =>
-        Seq(
-          Symbol(s"$expandedName.$readWriterString.pipeline_valid_$n/in", firrtl.ir.UIntType(IntWidth(1)), WireKind),
-          Symbol(s"$expandedName.$readWriterString.pipeline_valid_$n", firrtl.ir.UIntType(IntWidth(1)), WireKind)
-        )
+        buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_valid_", n, booleanType)
       }
       buildPipelineDependencies(valid, pipelineEnableSymbols, clockSymbol = Some(clk))
 
       val pipelineWriteDataSymbols = (0 until memory.writeLatency).flatMap { n =>
-        Seq(
-          Symbol(s"$expandedName.$readWriterString.pipeline_wdata_$n/in", memory.dataType, WireKind),
-          Symbol(s"$expandedName.$readWriterString.pipeline_wdata_$n", memory.dataType, WireKind)
-        )
+        buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_wdata_", n, dataType)
       }
       buildPipelineDependencies(wdata, pipelineWriteDataSymbols, clockSymbol = Some(clk))
 
       val pipelineAddrSymbols = (0 until memory.writeLatency).flatMap { n =>
-        Seq(
-          Symbol(s"$expandedName.$readWriterString.pipeline_addr_$n/in", addrType, WireKind),
-          Symbol(s"$expandedName.$readWriterString.pipeline_addr_$n", addrType, WireKind)
-        )
+        buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_addr_", n, addrType)
       }
       buildPipelineDependencies(addr, pipelineAddrSymbols, clockSymbol = Some(clk))
 
-      memoryInterfaceSymbols    ++
-        pipelineReadDataSymbols ++
-        pipelineEnableSymbols   ++
-        pipelineAddrSymbols     ++
+      memoryInterfaceSymbols     ++
+        pipelineReadDataSymbols  ++
+        pipelineEnableSymbols    ++
+        pipelineAddrSymbols      ++
         pipelineWriteDataSymbols ++
+        lastValueSymbols             ++
         Seq(portSymbol)
     }
 
@@ -330,9 +322,9 @@ object Memory {
       compiler.makeIndirectAssigner(
         portSymbol,
         memorySymbol,
-        endOfAddrPipeline,
-        endOfValidPipeline,
-        compiler.makeGet(endOfDataPipeline),
+        memoryIndex      = endOfAddrPipeline.index,
+        enableIndex      = endOfValidPipeline.index,
+        expressionResult = compiler.makeGet(endOfDataPipeline),
         clock
       )
     }
@@ -370,8 +362,8 @@ object Memory {
       compiler.makeIndirectAssigner(
         portSymbol,
         memorySymbol,
-        endOfAddrPipeline,
-        endOfValidPipeline,
+        endOfAddrPipeline.index,
+        endOfValidPipeline.index,
         compiler.makeGet(endOfDataPipeline),
         clock
       )

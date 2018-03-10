@@ -140,8 +140,16 @@ object SymbolTable extends LazyLogging {
 
   def makeRegisterInputName(name: String): String = name + RegisterInputSuffix
   def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
+  def makeRegisterInputSymbol(symbol: Symbol): Symbol = {
+    Symbol(makeRegisterInputName(symbol), symbol.firrtlType, WireKind, info = symbol.info)
+  }
+
   def makeLastValueName(name: String)       : String = name + LastValueSuffix
   def makeLastValueName(symbol: Symbol)     : String = symbol.name + LastValueSuffix
+
+  def makeLastValueSymbol(symbol: Symbol): Symbol = {
+    Symbol(makeLastValueName(symbol), UIntType(IntWidth(1)))
+  }
 
   def apply(nameToSymbol: mutable.HashMap[String, Symbol]): SymbolTable = new SymbolTable(nameToSymbol)
 
@@ -304,9 +312,12 @@ object SymbolTable extends LazyLogging {
 
           val registerIn = Symbol(SymbolTable.makeRegisterInputName(expandedName), tpe, RegKind, info = info)
           val registerOut = Symbol(expandedName, tpe, RegKind, info = info)
+          val registerLatch = Symbol(SymbolTable.makeLastValueName(registerOut), UIntType(IntWidth(1)))
+
           registerNames += registerOut.name
           addSymbol(registerIn)
           addSymbol(registerOut)
+          addSymbol(registerLatch)
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
