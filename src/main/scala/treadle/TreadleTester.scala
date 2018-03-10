@@ -257,6 +257,23 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     }
   }
 
+  /**
+    * require that a value be present on the named component
+    *
+    * @param name component name
+    * @param expectedValue the BigInt value required
+    */
+  def expectMemory(name: String, index: Int, expectedValue: BigInt, message: String = ""): Unit = {
+    val value = peekMemory(name, index)
+    if(value != expectedValue) {
+      val renderer = new ExpressionViewRenderer(
+        engine.dataStore, engine.symbolTable, engine.expressionViews)
+      val calculation = renderer.render(engine.symbolTable(name))
+      fail(new TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+    }
+    expectationsMet += 1
+  }
+
 
   def reportString: String = {
     val endTime = System.nanoTime()

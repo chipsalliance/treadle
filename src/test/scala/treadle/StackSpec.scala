@@ -81,10 +81,7 @@ class StackSpec extends FreeSpec with Matchers {
       """.stripMargin
 
     val tester = new TreadleTester(input)
-    tester.poke("reset", 1)
-    tester.step()
 
-    tester.poke("reset", 0)
     tester.poke("io_en", 1)
     tester.poke("io_push", 1)
     tester.poke("io_dataIn", 11)
@@ -92,26 +89,23 @@ class StackSpec extends FreeSpec with Matchers {
 
     tester.step()
 
-    println(s"sp              ${tester.peek("sp")}")
-    println(s"dataOut         ${tester.peekMemory("io_dataOut", 1)}")
-    println(s"PEEKMEM: mem(0) ${tester.peekMemory("sp", 0)}")
-    println(s"PEEKMEM: mem(1) ${tester.peekMemory("sp", 1)}")
+    tester.expectMemory("io_dataOut", 1, 11)
+    tester.expectMemory("sp", 0, 0)
+    tester.expectMemory("sp", 1, 1)
 
     tester.poke("io_dataIn", 22)
     tester.step()
 
-    println(s"sp              ${tester.peek("sp")}")
-    println(s"dataOut         ${tester.peekMemory("io_dataOut", 1)}")
-    println(s"PEEKMEM: mem(0) ${tester.peekMemory("sp", 0)}")
-    println(s"PEEKMEM: mem(1) ${tester.peekMemory("sp", 1)}")
+    tester.expectMemory("io_dataOut", 1, 22)
+    tester.expectMemory("sp", 0, 0)
+    tester.expectMemory("sp", 1, 1)
 
     tester.poke("io_dataIn", 33)
     tester.step()
 
-    println(s"sp              ${tester.peek("sp")}")
-    println(s"dataOut         ${tester.peekMemory("io_dataOut", 1)}")
-    println(s"PEEKMEM: mem(0) ${tester.peekMemory("sp", 0)}")
-    println(s"PEEKMEM: mem(1) ${tester.peekMemory("sp", 1)}")
+    tester.expectMemory("io_dataOut", 1, 33)
+    tester.expectMemory("sp", 0, 1)
+    tester.expectMemory("sp", 1, 1)
 
     tester.report()
   }
