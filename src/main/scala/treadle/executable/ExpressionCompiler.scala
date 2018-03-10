@@ -104,28 +104,29 @@ class ExpressionCompiler(
   def makeClockedAssigner(
     symbol           : Symbol,
     clockSymbol      : IntExpressionResult,
+    lastValueSymbol  : Symbol,
     expressionResult : ExpressionResult
   ): Unit = {
 
     val assigner = (symbol.dataSize, expressionResult) match {
       case (IntSize,  result: IntExpressionResult)  =>
-        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, result.apply)
+        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, lastValueSymbol, result.apply)
       case (IntSize,  result: LongExpressionResult) =>
-        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, ToInt(result.apply).apply)
+        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, lastValueSymbol, ToInt(result.apply).apply)
       case (IntSize,  result: BigExpressionResult)  =>
-        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, ToInt(result.apply).apply)
+        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, lastValueSymbol, ToInt(result.apply).apply)
       case (LongSize, result: IntExpressionResult)  =>
-        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, ToLong(result.apply).apply)
+        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, lastValueSymbol, ToLong(result.apply).apply)
       case (LongSize, result: LongExpressionResult) =>
-        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, result.apply)
+        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, lastValueSymbol, result.apply)
       case (LongSize, result: BigExpressionResult)  =>
-        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, BigToLong(result.apply).apply)
+        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, lastValueSymbol, BigToLong(result.apply).apply)
       case (BigSize,  result: IntExpressionResult)  =>
-        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, ToBig(result.apply).apply)
+        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, lastValueSymbol, ToBig(result.apply).apply)
       case (BigSize,  result: LongExpressionResult) =>
-        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, LongToBig(result.apply).apply)
+        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, lastValueSymbol, LongToBig(result.apply).apply)
       case (BigSize,  result: BigExpressionResult)  =>
-        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, result.apply)
+        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, lastValueSymbol, result.apply)
       case (size, result) =>
         val expressionSize = result match {
           case _: IntExpressionResult => "Int"
@@ -145,16 +146,18 @@ class ExpressionCompiler(
   }
 
   def makeIndirectAssigner(
-      portSymbol      : Symbol,
-      memorySymbol    : Symbol,
-      indexSymbol     : Symbol,
-      enableSymbol    : Symbol,
-      expressionResult: ExpressionResult,
-      clock           : Symbol
+    portSymbol       : Symbol,
+    memorySymbol     : Symbol,
+    memoryIndex      : Int,
+    enableIndex      : Int,
+    expressionResult : ExpressionResult,
+    clock            : Symbol
   ): Unit = {
 
-    def getIndex = dataStore.GetInt(indexSymbol.index).apply _
-    def getEnable = dataStore.GetInt(enableSymbol.index).apply _
+    def getIndex = dataStore.GetInt(memoryIndex).apply _
+    def getEnable = {
+      dataStore.GetInt(enableIndex).apply _
+    }
 
     val assigner = (memorySymbol.dataSize, expressionResult) match {
       case (IntSize, result: IntExpressionResult) =>
@@ -729,7 +732,12 @@ class ExpressionCompiler(
 
           clockExpressionResult match {
             case intClockExpression : IntExpressionResult =>
-              makeClockedAssigner(registerOut, intClockExpression, makeGet(registerIn))
+              makeClockedAssigner(
+                registerOut,
+                intClockExpression,
+                symbolTable(SymbolTable.makeLastValueName(registerOut)),
+                makeGet(registerIn)
+              )
             case _ =>
               throw TreadleException(s"Error: register ${registerOut.name} has non integer clock")
           }
@@ -749,13 +757,23 @@ class ExpressionCompiler(
                 case _ =>
                   throw TreadleException(s"Error: stop $stop has non integer clock")
               }
+              val intExpression = processExpression(enableExpression) match {
+                case i : IntExpressionResult  => i
+                case l : LongExpressionResult => LongToInt(l.apply)
+                case b : BigExpressionResult  => ToInt(b.apply)
+                case _ =>
+                  throw TreadleException(s"Error: stop $stop has unknown condition type")
+              }
+              val lastClockSymbol = symbolTable(SymbolTable.makeLastValueName(stopInfo.stopSymbol))
+
               val stopOp = StopOp(
                 symbol          = stopInfo.stopSymbol,
                 info            = info,
                 returnValue     = returnValue,
-                condition       = processExpression(enableExpression),
+                condition       = intExpression,
                 clockExpression = intClockExpression,
                 hasStopped      = symbolTable(StopOp.stopHappenedName),
+                clockLastValue  = lastClockSymbol,
                 dataStore       = dataStore
               )
               addAssigner(stopOp)
@@ -763,26 +781,37 @@ class ExpressionCompiler(
               throw new TreadleException(s"Could not find symbol for Stop $stop")
           }
 
-        case print @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
+        case printf @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
 
-          symbolTable.printToPrintInfo.get(print) match {
+          symbolTable.printToPrintInfo.get(printf) match {
             case Some(printInfo) =>
               val intClockExpression = processExpression(clockExpression) match {
                 case i : IntExpressionResult => i
                 case _ =>
-                  throw TreadleException(s"Error: printf $print has non integer clock")
+                  throw TreadleException(s"Error: printf $printf has non integer clock")
               }
+              val intExpression = processExpression(enableExpression) match {
+                case i : IntExpressionResult  => i
+                case l : LongExpressionResult => LongToInt(l.apply)
+                case b : BigExpressionResult  => ToInt(b.apply)
+                case _ =>
+                  throw TreadleException(s"Error: printf $printf has unknown condition type")
+              }
+
+              val lastClockSymbol = symbolTable(SymbolTable.makeLastValueName(printInfo.printSymbol))
+
               val printOp = PrintfOp(
                 printInfo.printSymbol,
                 info, stringLiteral,
                 argExpressions.map { expression => processExpression(expression) },
-                processExpression(enableExpression),
+                intExpression,
                 intClockExpression,
+                lastClockSymbol,
                 dataStore
               )
               addAssigner(printOp)
             case _ =>
-              throw new TreadleException(s"Could not find symbol for Print $print")
+              throw new TreadleException(s"Could not find symbol for Print $printf")
           }
 
         case EmptyStmt =>

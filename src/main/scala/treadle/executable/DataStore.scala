@@ -193,6 +193,15 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
   }
 
+  def getRegisterLastValueIndex(symbol: Symbol): Int = {
+    executionEngineOption match {
+      case Some(executionEngine) =>
+        executionEngine.symbolTable(SymbolTable.makeLastValueName(symbol)).index
+      case _ =>
+        throw TreadleException(s"Could not find clock last value index for $symbol")
+    }
+  }
+
   case class GetInt(index: Int) extends IntExpressionResult {
     def apply(): Int = currentIntArray(index)
   }
@@ -217,27 +226,27 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     var run: FuncUnit = runLean _
   }
 
-  case class PosEdgeAssignInt(symbol: Symbol, clockExpression: FuncInt, expression: FuncInt) extends Assigner {
-    val index: Int = symbol.index
+  case class PosEdgeAssignInt(
+    symbol: Symbol,
+    clockExpression: FuncInt,
+    lastValueSymbol : Symbol,
+    expression: FuncInt
+  ) extends Assigner {
 
-    var lastClockValue = clockExpression()
+    val index: Int          = symbol.index
+    val lastClockValueIndex = lastValueSymbol.index
 
     def runLean(): Unit = {
+      val lastClockValue = currentIntArray(lastClockValueIndex)
       val clockValue = clockExpression()
       if(clockValue > 0 && lastClockValue == 0) {
         currentIntArray(index) = expression()
       }
-      lastClockValue = clockValue
+      currentIntArray(lastClockValueIndex) = clockValue
     }
 
     def runFull(): Unit = {
-      val value = expression()
-      val clockValue = clockExpression()
-      if(clockValue > 0 && lastClockValue == 0) {
-        currentIntArray(index) = expression()
-      }
-      lastClockValue = clockValue
-
+      runLean()
       runPlugins(symbol)
     }
 
@@ -274,28 +283,27 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     var run: FuncUnit = runLean _
   }
 
-  case class PosEdgeAssignLong(symbol: Symbol, clockExpression: FuncInt, expression: FuncLong) extends Assigner {
-    val index: Int = symbol.index
+  case class PosEdgeAssignLong(
+    symbol: Symbol,
+    clockExpression: FuncInt,
+    lastValueSymbol : Symbol,
+    expression: FuncLong
+  ) extends Assigner {
 
-    var lastClockValue = clockExpression()
+    val index: Int = symbol .index
+    val lastClockValueIndex = lastValueSymbol.index
 
     def runLean(): Unit = {
+      val lastClockValue = currentIntArray(lastClockValueIndex)
       val clockValue = clockExpression()
-
       if(clockValue > 0 && lastClockValue == 0) {
         currentLongArray(index) = expression()
       }
-      lastClockValue = clockValue
+      currentIntArray(lastClockValueIndex) = clockValue
     }
 
     def runFull(): Unit = {
-      val value = expression()
-      val clockValue = clockExpression()
-
-      if(clockValue > 0 && lastClockValue == 0) {
-        currentLongArray(index) = value
-      }
-      lastClockValue = clockValue
+      runLean()
       runPlugins(symbol)
     }
 
@@ -328,27 +336,27 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     var run: FuncUnit = runLean _
   }
 
-  case class PosEdgeAssignBig(symbol: Symbol, clockExpression: FuncInt, expression: FuncBig) extends Assigner {
-    val index: Int = symbol.index
+  case class PosEdgeAssignBig(
+    symbol: Symbol,
+    clockExpression: FuncInt,
+    lastValueSymbol : Symbol,
+    expression: FuncBig
+  ) extends Assigner {
 
-    var lastClockValue = clockExpression()
+    val index: Int          = symbol.index
+    val lastClockValueIndex = lastValueSymbol.index
 
     def runLean(): Unit = {
+      val lastClockValue = currentIntArray(lastClockValueIndex)
       val clockValue = clockExpression()
       if(clockValue > 0 && lastClockValue == 0) {
         currentBigArray(index) = expression()
       }
-      lastClockValue = clockValue
+      currentIntArray(lastClockValueIndex) = clockValue
     }
 
     def runFull(): Unit = {
-      val value = expression()
-      val clockValue = clockExpression()
-      if(clockValue > 0 && lastClockValue == 0) {
-        currentBigArray(index) = value
-      }
-      lastClockValue = clockValue
-
+      runLean()
       runPlugins(symbol)
     }
 

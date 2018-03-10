@@ -6,25 +6,24 @@ import firrtl.WireKind
 import firrtl.ir._
 
 case class PrintfOp(
-    symbol          : Symbol,
-    info            : Info,
-    string          : StringLit,
-    args            : Seq[ExpressionResult],
-    condition       : ExpressionResult,
-    clockExpression : IntExpressionResult,
-    dataStore       : DataStore
+  symbol          : Symbol,
+  info            : Info,
+  string          : StringLit,
+  args            : Seq[ExpressionResult],
+  condition       : IntExpressionResult,
+  clockExpression : IntExpressionResult,
+  clockLastValue  : Symbol,
+  dataStore       : DataStore
 ) extends Assigner {
 
-  var lastClockValue = clockExpression()
+  private val lastClockValueIndex = clockLastValue.index
 
   def run: FuncUnit = {
     val clockValue = clockExpression()
+    val lastClockValue = dataStore.currentIntArray(lastClockValueIndex)
+
     if(clockValue > 0 && lastClockValue == 0) {
-      val conditionValue = condition match {
-        case e: IntExpressionResult => e.apply() > 0
-        case e: LongExpressionResult => e.apply() > 0L
-        case e: BigExpressionResult => e.apply() > Big(0)
-      }
+      val conditionValue = condition.apply() > 0
       if (conditionValue) {
         val currentArgValues = args.map {
           case e: IntExpressionResult => e.apply()
@@ -36,6 +35,9 @@ case class PrintfOp(
         print(instantiatedString.drop(1).dropRight(1))
       }
     }
+
+    dataStore.currentIntArray(lastClockValueIndex) = clockValue
+
     () => Unit
   }
 
