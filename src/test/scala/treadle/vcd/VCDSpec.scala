@@ -87,6 +87,17 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     s.toString().contains("7 => b0111") should be (true)
   }
 
+  it should "serialize 1 bit numbers correctly" in {
+    val c0 = Change(Wire("test1", "%", 1), 0)
+    c0.serialize should be ("0%")
+
+    val c1 = Change(Wire("test1", "%", 1), 1)
+    c1.serialize should be ("1%")
+
+    val c2 = Change(Wire("test1", "%", 1), -1)
+    c2.serialize should be ("1%")
+  }
+
   behavior of "VCD reader"
 
   it should "be able to read a file" in {

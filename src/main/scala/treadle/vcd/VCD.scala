@@ -711,7 +711,7 @@ case class Wire(name: String, id: String, width: Int, path: Array[String] = Arra
 case class Change(wire: Wire, value: BigInt) {
   def serialize: String = {
     if(wire.width == 1) {
-      s"b$value ${wire.id}"
+      s"${if(value == 0) 0 else 1}${wire.id}"
     }
     else {
       "b" +
