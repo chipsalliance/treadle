@@ -3,7 +3,7 @@
 package treadle.blackboxes
 
 import firrtl.ir.Type
-import treadle.{BlackBoxFactory, BlackBoxImplementation, InterpreterOptionsManager, TreadleTester}
+import treadle.{BlackBoxFactory, BlackBoxImplementation, TreadleOptionsManager, TreadleTester}
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.{PositiveEdge, Transition}
 
@@ -34,7 +34,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val manager = new InterpreterOptionsManager {
+    val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
         symbolsToWatch = Seq("io_data"),

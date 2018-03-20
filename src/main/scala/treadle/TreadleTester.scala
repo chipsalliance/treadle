@@ -19,7 +19,7 @@ import treadle.executable.{ClockInfo, ExpressionViewRenderer}
   * @param input              a firrtl program contained in a string
   * @param optionsManager     collection of options for the engine
   */
-class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager) {
+class TreadleTester(input: String, optionsManager: HasTreadleSuite = new TreadleOptionsManager) {
   var expectationsMet = 0
 
   treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
@@ -232,6 +232,10 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
     }
   }
 
+  def singleClockStep(n: Int = 1): Unit = {
+
+  }
+
   /**
     * Pokes value to the named memory at offset
     *
@@ -315,7 +319,7 @@ class TreadleTester(input: String, optionsManager: HasInterpreterSuite = new Int
 }
 
 object TreadleTester {
-  def apply(input : String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): TreadleTester = {
+  def apply(input : String, optionsManager: HasTreadleSuite = new TreadleOptionsManager): TreadleTester = {
     new TreadleTester(input, optionsManager)
   }
 }

@@ -251,5 +251,5 @@
 //    .text("number of events to run")
 //}
 //
-//class VcdReplayTesterOptions extends InterpreterOptionsManager with HasVcdReplayOptions
+//class VcdReplayTesterOptions extends TreadleOptionsManager with HasVcdReplayOptions
 //

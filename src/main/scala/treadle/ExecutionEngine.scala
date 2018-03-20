@@ -10,7 +10,7 @@ import treadle.vcd.VCD
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
     val ast: Circuit,
-    val optionsManager: HasInterpreterSuite,
+    val optionsManager: HasTreadleSuite,
     val symbolTable: SymbolTable,
     val dataStore: DataStore,
     val scheduler: Scheduler,
@@ -400,7 +400,7 @@ object ExecutionEngine {
     * @param optionsManager  options that control configuration and behavior
     * @return                the constructed engine
     */
-  def apply(input: String, optionsManager: HasInterpreterSuite = new InterpreterOptionsManager): ExecutionEngine = {
+  def apply(input: String, optionsManager: HasTreadleSuite = new TreadleOptionsManager): ExecutionEngine = {
     val t0 = System.nanoTime()
 
     val interpreterOptions: TreadleOptions = optionsManager.treadleOptions

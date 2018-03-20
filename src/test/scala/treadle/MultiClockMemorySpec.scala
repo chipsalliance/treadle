@@ -103,7 +103,7 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
         vcdShowUnderscored = false,

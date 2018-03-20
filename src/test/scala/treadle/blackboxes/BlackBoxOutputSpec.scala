@@ -109,7 +109,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
       val factory = new FanOutAdderFactory
 
-      val optionsManager = new InterpreterOptionsManager {
+      val optionsManager = new TreadleOptionsManager {
         treadleOptions = treadleOptions.copy(
           setVerbose = false,
           blackBoxFactories = Seq(factory),
@@ -153,7 +153,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
       val factory = new BlackBoxCounterFactory
 
-      val optionsManager = new InterpreterOptionsManager {
+      val optionsManager = new TreadleOptionsManager {
         treadleOptions = treadleOptions.copy(
           setVerbose = false,
           blackBoxFactories = Seq(factory),

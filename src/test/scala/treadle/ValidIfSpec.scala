@@ -18,7 +18,7 @@ import org.scalatest.{FreeSpec, Matchers}
 //        |    out1 <= validif(enable, in1)
 //      """.stripMargin
 //
-//    val options = new InterpreterOptionsManager {
+//    val options = new TreadleOptionsManager {
 //      treadleOptions = treadleOptions.copy(validIfIsRandom = false)
 //    }
 //    val tester = new TreadleTester(input, options)
@@ -36,7 +36,7 @@ import org.scalatest.{FreeSpec, Matchers}
 //        |    out1 <= validif(enable, in1)
 //      """.stripMargin
 //
-//    val options = new InterpreterOptionsManager {
+//    val options = new TreadleOptionsManager {
 //      treadleOptions = treadleOptions.copy(
 //        validIfIsRandom = true,
 //        randomSeed = 0L
