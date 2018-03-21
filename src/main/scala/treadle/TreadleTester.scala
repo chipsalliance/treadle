@@ -232,10 +232,6 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     }
   }
 
-  def singleClockStep(n: Int = 1): Unit = {
-
-  }
-
   /**
     * Pokes value to the named memory at offset
     *
