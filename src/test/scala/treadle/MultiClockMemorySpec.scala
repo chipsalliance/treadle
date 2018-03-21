@@ -7,7 +7,7 @@ import org.scalatest.{FreeSpec, Matchers}
 
 // scalastyle:off magic.number
 class MultiClockMemorySpec extends FreeSpec with Matchers {
-  "MultiClockMemorySpec should pass a basic test" in {
+  "MultiClockMemorySpec should pass a basic test" ignore {
     val input =
       """
         |circuit MultiClockMemTest :
@@ -103,7 +103,7 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
         vcdShowUnderscored = false,

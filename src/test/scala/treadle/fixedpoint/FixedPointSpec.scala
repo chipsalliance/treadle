@@ -17,7 +17,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    output c : Fixed
         |    c <= mul(a, b)""".stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(setVerbose = false)
     }
     val tester = new TreadleTester(input, optionsManager)
@@ -57,7 +57,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    io_out <= io_in
       """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(setVerbose = false)
     }
     val tester = new TreadleTester(input, optionsManager)
@@ -81,7 +81,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    io.out <= T_2
       """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(setVerbose = false)
     }
 

@@ -36,7 +36,7 @@ case class TreadleOptions(
   }
 }
 
-trait HasInterpreterOptions {
+trait HasTreadleOptions {
   self: ExecutionOptionsManager =>
 
   var treadleOptions = TreadleOptions()
@@ -154,13 +154,13 @@ trait HasInterpreterOptions {
 
 object Driver {
 
-  def execute(firrtlInput: String, optionsManager: InterpreterOptionsManager): Option[TreadleTester] = {
+  def execute(firrtlInput: String, optionsManager: TreadleOptionsManager): Option[TreadleTester] = {
     val tester = new TreadleTester(firrtlInput, optionsManager)
     Some(tester)
   }
 
   def execute(args: Array[String], firrtlInput: String): Option[TreadleTester] = {
-    val optionsManager = new InterpreterOptionsManager
+    val optionsManager = new TreadleOptionsManager
 
     if (optionsManager.parser.parse(args)) {
       execute(firrtlInput, optionsManager)
@@ -170,8 +170,8 @@ object Driver {
   }
 }
 
-class InterpreterOptionsManager extends ExecutionOptionsManager("engine") with HasInterpreterSuite
+class TreadleOptionsManager extends ExecutionOptionsManager("engine") with HasTreadleSuite
 
-trait HasInterpreterSuite extends ExecutionOptionsManager with HasFirrtlOptions with HasInterpreterOptions {
+trait HasTreadleSuite extends ExecutionOptionsManager with HasFirrtlOptions with HasTreadleOptions {
   self : ExecutionOptionsManager =>
 }

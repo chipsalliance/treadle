@@ -29,7 +29,7 @@ abstract class Command(val name: String) {
   }
 }
 
-class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConfig) {
+class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) {
   val replConfig: ReplConfig = optionsManager.replConfig
   def treadleOptions: TreadleOptions = optionsManager.treadleOptions
 
@@ -1253,13 +1253,13 @@ class TreadleRepl(val optionsManager: InterpreterOptionsManager with HasReplConf
 }
 
 object TreadleRepl {
-  def execute(optionsManager: InterpreterOptionsManager with HasReplConfig): Unit = {
+  def execute(optionsManager: TreadleOptionsManager with HasReplConfig): Unit = {
     val repl = new TreadleRepl(optionsManager)
     repl.run()
   }
 
   def main(args: Array[String]): Unit = {
-    val optionsManager = new InterpreterOptionsManager with HasReplConfig
+    val optionsManager = new TreadleOptionsManager with HasReplConfig
 
     if(optionsManager.parse(args)) {
       Logger.makeScope(optionsManager) {

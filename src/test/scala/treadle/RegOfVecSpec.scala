@@ -90,7 +90,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = false,
         setVerbose = false,
@@ -137,7 +137,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |    stop(clock, and(and(and(UInt<1>("h1"), done), _T_18), UInt<1>("h1")), 0) @[Reg.scala 61:9]
       """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
         vcdShowUnderscored = true,

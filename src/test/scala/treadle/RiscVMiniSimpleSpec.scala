@@ -9,7 +9,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
 
     val input = io.Source.fromFile("samples/core-simple.lo.fir").getLines().mkString("\n")
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = false,
         vcdShowUnderscored = false,

@@ -2,7 +2,7 @@
 
 package treadle.vcd
 
-import treadle.{InterpreterOptionsManager, TreadleTester}
+import treadle.{TreadleOptionsManager, TreadleTester}
 import firrtl.CommonOptions
 import firrtl.util.BackendCompilationUtilities
 import java.io.File
@@ -125,7 +125,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
         |    c <= add(a, b)
       """.stripMargin
 
-    val manager = new InterpreterOptionsManager {
+    val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
@@ -155,7 +155,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val stream = getClass.getResourceAsStream("/VcdAdder.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val manager = new InterpreterOptionsManager {
+    val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
@@ -206,7 +206,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     // logger.Logger.setLevel(LogLevel.Debug)
 
-    val manager = new InterpreterOptionsManager {
+    val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir/vcd_register_delay")
     }

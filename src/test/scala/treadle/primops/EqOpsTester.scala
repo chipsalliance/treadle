@@ -5,7 +5,7 @@ package treadle.primops
 import firrtl.ir
 import firrtl.ir.Type
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.{BlackBoxFactory, BlackBoxImplementation, InterpreterOptionsManager, TreadleTester}
+import treadle.{BlackBoxFactory, BlackBoxImplementation, TreadleOptionsManager, TreadleTester}
 
 class BlackBoxTypeParam_1(val name: String) extends BlackBoxImplementation {
   var returnValue: BigInt = 0
@@ -55,7 +55,7 @@ class EqOpsTester extends FreeSpec with Matchers {
         |    out <= eq(blackBoxTypeParamWord.out, UInt<32>("hdeadbeef"))
       """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
         noDefaultReset = true,
@@ -85,7 +85,7 @@ class EqOpsTester extends FreeSpec with Matchers {
         |
           """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = false,
         vcdShowUnderscored = false,

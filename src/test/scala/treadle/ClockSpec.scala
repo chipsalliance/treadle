@@ -41,7 +41,7 @@ class ClockSpec extends FreeSpec with Matchers {
         |      stop(clock, UInt(1), 0) ; Done!
         |
       """.stripMargin
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
         vcdShowUnderscored = true,

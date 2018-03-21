@@ -37,7 +37,7 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
 
     "addition should work expand instances as found" in {
 
-      val optionsManager = new InterpreterOptionsManager {
+      val optionsManager = new TreadleOptionsManager {
         treadleOptions = treadleOptions.copy(
           setVerbose = false,
           blackBoxFactories = Seq(new DspRealFactory),
@@ -73,7 +73,7 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
         |    BBFIntPart_1.in <= io_a_node
       """.stripMargin
 
-    val optionsManager = new InterpreterOptionsManager {
+    val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
         blackBoxFactories = Seq(new DspRealFactory),
