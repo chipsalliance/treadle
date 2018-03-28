@@ -112,7 +112,7 @@ trait HasTreadleOptions {
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(noDefaultReset = true)
     }
-    .text("this prevents the tester fromdoing reset on it's own at startup")
+    .text("this prevents the tester from doing reset on it's own at startup")
 
   parser.opt[Int]("fint-rollback-buffers")
     .abbr("firb")

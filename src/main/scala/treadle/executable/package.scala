@@ -29,7 +29,7 @@ package object executable {
     }
 
     private var renderAssign: Boolean = false
-    def doRender: Boolean = renderAssign
+    def getRenderMode: Boolean = renderAssign
     def setRender(value: Boolean): Unit = {
       renderAssign = value
     }

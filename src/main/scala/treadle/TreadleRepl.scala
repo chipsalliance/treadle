@@ -778,6 +778,36 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           }
         }
       },
+      new Command("radix") {
+        def usage: (String, String) = ("reset [b|d|x|h]",
+          "Set the output radix to binary, decimal, or hex")
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentEngineOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({
+                "radix"
+              }),
+              new StringsCompleter(jlist(Seq("b", "d", "h", "x")))
+            ))
+          }
+        }
+        def run(args: Array[String]): Unit = {
+          getOneArg("radix [b|d|h|x]", Some("d")) match {
+            case Some(radix) =>
+              if(Seq("b", "d", "h", "x").contains(radix.toLowerCase())) {
+                outputFormat = radix
+              }
+              else {
+                console.println(s"Unknown output radix $radix")
+              }
+
+            case _ =>
+          }
+        }
+      },
       new Command("step") {
         def usage: (String, String) = ("step [numberOfSteps]",
           "cycle the clock numberOfSteps (default 1) times, and show state")

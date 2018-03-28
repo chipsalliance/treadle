@@ -226,12 +226,6 @@ class ExecutionEngine(
       dataStore.setValueAtIndex(symbol.dataSize, symbol.index + offset, value)
     }
 
-    if(! symbolTable.isTopLevelInput(name)) {
-      val sensitiveSignals = symbolTable.childrenOf.reachableFrom(symbolTable(name)).toSeq
-      val sensitiveAssigners = symbolTable.getAssigners(sensitiveSignals)
-      scheduler.executeAssigners(sensitiveAssigners)
-    }
-
     value
   }
 

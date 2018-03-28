@@ -63,7 +63,7 @@ case class Symbol(
         }
       case UnsignedInt =>
         if(bigInt < 0) {
-          val (lo, hi) = extremaOfUIntOfWidth(bitWidth)
+          val (_, hi) = extremaOfUIntOfWidth(bitWidth)
           (hi + 1) - (bigInt.abs & masks.allBitsMask) & masks.allBitsMask
         }
         else {

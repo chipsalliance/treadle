@@ -214,16 +214,12 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       val value = expression()
       currentIntArray(index) = value
-      runPlugins(symbol)
-//      vcdUpdate(symbol, value)
-//      if(isVerbose) showAssignment(symbol)
-//      if(doRender) renderAssignment(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if(isLean) runLean else runFull
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
   case class PosEdgeAssignInt(
@@ -233,8 +229,8 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     expression: FuncInt
   ) extends Assigner {
 
-    val index: Int          = symbol.index
-    val lastClockValueIndex = lastValueSymbol.index
+    val index              : Int          = symbol.index
+    val lastClockValueIndex: Int = lastValueSymbol.index
 
     def runLean(): Unit = {
       val lastClockValue = currentIntArray(lastClockValueIndex)
@@ -249,11 +245,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       runLean()
       runPlugins(symbol)
     }
-
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if(isLean) runLean else runFull
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
   case class GetLong(index: Int) extends LongExpressionResult {
@@ -275,12 +270,12 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) {
-        runLean _
+        runLean
       } else {
-        runFull _
+        runFull
       }
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
   case class PosEdgeAssignLong(
@@ -290,8 +285,8 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     expression: FuncLong
   ) extends Assigner {
 
-    val index: Int = symbol .index
-    val lastClockValueIndex = lastValueSymbol.index
+    val index              : Int = symbol .index
+    val lastClockValueIndex: Int = lastValueSymbol.index
 
     def runLean(): Unit = {
       val lastClockValue = currentIntArray(lastClockValueIndex)
@@ -308,9 +303,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if(isLean) runLean else runFull
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
 
@@ -331,9 +326,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if(isLean) runLean else runFull
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
   case class PosEdgeAssignBig(
@@ -343,8 +338,8 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     expression: FuncBig
   ) extends Assigner {
 
-    val index: Int          = symbol.index
-    val lastClockValueIndex = lastValueSymbol.index
+    val index              : Int = symbol.index
+    val lastClockValueIndex: Int = lastValueSymbol.index
 
     def runLean(): Unit = {
       val lastClockValue = currentIntArray(lastClockValueIndex)
@@ -361,9 +356,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if(isLean) runLean else runFull
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
 
@@ -426,9 +421,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if(isLean) runLean else runFull
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
   case class AssignLongIndirect(
@@ -456,9 +451,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if(isLean) runLean else runFull
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
   case class AssignBigIndirect(
@@ -486,9 +481,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if(isLean) runLean else runFull
     }
-    var run: FuncUnit = runLean _
+    var run: FuncUnit = runLean
   }
 
   case class BlackBoxShim(
@@ -568,15 +563,15 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     val nextForData = Seq(IntSize, LongSize, BigSize).map { size => size.toString -> nextIndexFor(size) }.toMap
 
     val intDataRows = intData.zipWithIndex.map { case (row, index) =>
-      s"row$index" -> JArray(intData(index).toList.map { a ⇒ val v: JValue = a; v })
+      s"row$index" -> JArray(row.toList.map { a ⇒ val v: JValue = a; v })
     }
 
     val longDataRows = longData.zipWithIndex.map { case (row, index) =>
-      s"row$index" -> JArray(longData(index).toList.map { a ⇒ val v: JValue = a; v })
+      s"row$index" -> JArray(row.toList.map { a ⇒ val v: JValue = a; v })
     }
 
     val bigDataRows = bigData.zipWithIndex.map { case (row, index) =>
-      s"row$index" -> JArray(bigData(index).toList.map { a ⇒ val v: JValue = a; v })
+      s"row$index" -> JArray(row.toList.map { a ⇒ val v: JValue = a; v })
     }
 
     val intDataPacket = {

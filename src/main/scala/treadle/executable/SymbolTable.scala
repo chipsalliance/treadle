@@ -191,7 +191,6 @@ object SymbolTable extends LazyLogging {
     val inputPorts    = new mutable.HashSet[String]
     val outputPorts   = new mutable.HashSet[String]
 
-    val clockSignals      = new mutable.HashMap[Symbol, Symbol]
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
 

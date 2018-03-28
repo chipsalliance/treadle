@@ -270,16 +270,17 @@ class ReplVcdController(val repl: TreadleRepl, val interpreter: ExecutionEngine,
   }
   //scalastyle:on cyclomatic.complexity
 
+  //TODO: (chick) this function does nothing right now
   def checkCurrentValueOfOutputs(): Unit = {
-    if (currentTimeIndex >= 0 && currentTimeIndex < timeStamps.length) {
-      console.println(s"Testing outputs $now ${"=" * 20}")
-      def show(mismatch: Boolean, message: String): Unit = {
-        val prefix = if (mismatch) Console.RED else ""
-        val suffix = if (mismatch) Console.RESET else ""
-        console.println(prefix + message + suffix)
-      }
-
-    }
+//    if (currentTimeIndex >= 0 && currentTimeIndex < timeStamps.length) {
+//      console.println(s"Testing outputs $now ${"=" * 20}")
+//      def show(mismatch: Boolean, message: String): Unit = {
+//        val prefix = if (mismatch) Console.RED else ""
+//        val suffix = if (mismatch) Console.RESET else ""
+//        console.println(prefix + message + suffix)
+//      }
+//
+//    }
   }
 
   def test(parameters: Array[String]): Unit = {

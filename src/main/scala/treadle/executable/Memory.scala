@@ -269,7 +269,7 @@ object Memory {
       * compile the necessary assignments to complete a latency chain
       * If latency is zero, this basically returns the root memorySymbol.
       * @param clockSymbol   used to create execution based on this trigger.
-      * @param rootSymbol    the head element of the pipeline, this is one of the memort ports
+      * @param rootSymbol    the head element of the pipeline, this is one of the mem ports
       * @param writerString  name of the writer
       * @param pipelineName  string representing the name of the root port
       * @return
