@@ -18,9 +18,11 @@ abstract class DataStorePlugin {
         /* do nothing */
     }
     if(dataStore.activePlugins.nonEmpty && dataStore.leanMode) {
+      dataStore.leanMode = false
       dataStore.allAssigners.foreach { assigner => assigner.setLeanMode(false)}
     }
     else if(dataStore.activePlugins.isEmpty && ! dataStore.leanMode) {
+      dataStore.leanMode = true
       dataStore.allAssigners.foreach { assigner => assigner.setLeanMode(true)}
     }
   }
