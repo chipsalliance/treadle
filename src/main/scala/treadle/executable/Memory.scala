@@ -85,7 +85,7 @@ object Memory {
       sensitivityGraphBuilder.addSensitivity(clk, data)
 
       val pipelineDataSymbols = (0 until memory.readLatency).flatMap { n =>
-        buildRegisterTriple(s"$expandedName.$readerString.pipeline_", n, dataType)
+        buildRegisterTriple(s"$expandedName.$readerString.pipeline_data_", n, dataType)
       }
 
       buildPipelineDependencies(addr, pipelineDataSymbols, Some(data))
