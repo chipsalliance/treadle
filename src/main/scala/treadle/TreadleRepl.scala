@@ -3,6 +3,7 @@ package treadle
 
 import java.io.{File, PrintWriter}
 
+import firrtl.graph.CyclicException
 import treadle.vcd.VCD
 import logger.Logger
 import treadle.chronometry.UTC
@@ -16,7 +17,6 @@ import scala.tools.jline.console.completer._
 import collection.JavaConverters._
 import scala.io.Source
 import scala.util.matching.Regex
-
 import treadle.executable.Symbol
 
 abstract class Command(val name: String) {
@@ -1204,21 +1204,30 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 
   //scalastyle:off method.length
   def run(): Unit = {
-    if(replConfig.firrtlSource.nonEmpty) {
-      loadSource(replConfig.firrtlSource)
+    console.setPrompt("treadle>> ")
+
+    try {
+      if (replConfig.firrtlSource.nonEmpty) {
+        loadSource(replConfig.firrtlSource)
+      }
+      else if (replConfig.firrtlSourceName.nonEmpty) {
+        loadFile(replConfig.firrtlSourceName)
+      }
+      if (replConfig.scriptName.nonEmpty) {
+        loadScript(replConfig.scriptName)
+      }
+      if (replConfig.useVcdScript) {
+        loadVcdScript(optionsManager.getVcdFileName)
+      }
     }
-    else if(replConfig.firrtlSourceName.nonEmpty) {
-      loadFile(replConfig.firrtlSourceName)
-    }
-    if(replConfig.scriptName.nonEmpty) {
-      loadScript(replConfig.scriptName)
-    }
-    if(replConfig.useVcdScript) {
-      loadVcdScript(optionsManager.getVcdFileName)
+    catch {
+      case t: TreadleException =>
+        console.println(s"Startup: Treadle Exception ${t.getMessage}")
+      case c: CyclicException =>
+      case e: Throwable =>
+        throw e
     }
     buildCompletions()
-
-    console.setPrompt("treadle>> ")
 
     if(replConfig.runScriptAtStart) {
       currentScript match {
@@ -1255,6 +1264,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         case ie: TreadleException =>
           console.println(s"Interpreter Exception occurred: ${ie.getMessage}")
           ie.printStackTrace()
+        case _: CyclicException =>
         case e: NullPointerException =>
           error(s"Null pointer exception, please file an issue\n ${e.getMessage}")
           e.printStackTrace()

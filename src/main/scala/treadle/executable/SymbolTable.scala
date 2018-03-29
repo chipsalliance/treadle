@@ -475,10 +475,23 @@ object SymbolTable extends LazyLogging {
     }
     catch {
       case e: firrtl.graph.CyclicException =>
+        val badNode = e.node.asInstanceOf[Symbol]
+        println(s"Combinational loop detected at $badNode")
         if(allowCycles) {
           symbolTable.symbols.toSeq
         }
         else {
+          symbolTable.getChildren(Seq(badNode)).exists { node =>
+            try {
+              val path = symbolTable.childrenOf.path(node, badNode)
+              println(s"Problem path:\n  ${badNode.name}\n  ${path.map(_.name).mkString("\n  ")}")
+              true
+            }
+            catch {
+              case _: Throwable =>
+                false
+            }
+          }
           throw e
         }
     }
