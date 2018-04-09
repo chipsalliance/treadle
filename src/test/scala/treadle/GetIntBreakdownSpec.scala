@@ -53,7 +53,7 @@ class GetIntBreakdownSpec extends FreeSpec with Matchers {
     }
     true
   }
-  "GetIntBreakdownSpec should pass a basic test" in {
+  "GetIntBreakdownSpec should pass a basic test" ignore {
     getIntBreakDown(1000) should be(true)
   }
 }

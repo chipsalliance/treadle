@@ -4,6 +4,7 @@ package treadle
 
 import firrtl.PortKind
 import firrtl.ir.Circuit
+import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle.executable._
 import treadle.vcd.VCD
 
@@ -405,6 +406,11 @@ object ExecutionEngine {
     val timer = new Timer
 
     val loweredAst: Circuit = if(interpreterOptions.lowCompileAtLoad) {
+      if(interpreterOptions.allowCycles) {
+        optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+          annotations = optionsManager.firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation
+        )
+      }
       ToLoFirrtl.lower(ast, optionsManager)
     } else {
       ast

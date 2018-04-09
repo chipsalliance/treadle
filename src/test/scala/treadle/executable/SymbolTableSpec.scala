@@ -3,6 +3,8 @@
 package treadle.executable
 
 import firrtl.CommonOptions
+import firrtl.graph.CyclicException
+import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -216,5 +218,57 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     tester.step()
     tester.expect("io_out1", 75)
     tester.report()
+  }
+
+  """Should report combinational loop""" in {
+    val simpleFirrtl: String =
+      s"""
+          |circuit HasLoop :
+          |  module SubModule :
+          |    input in1 : UInt<1>
+          |    input in2 : UInt<16>
+          |    input in3 : UInt<16>
+          |    output out1 : UInt<16>
+          |
+          |    out1 <= mux(in1, in2, in3)
+          |
+          |  module HasLoop :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    input io_in1 : UInt<16>
+          |    input io_in2 : UInt<16>
+          |    output io_out1 : UInt<17>
+          |
+          |    reg b3 : UInt<16>, clock with :
+          |      reset => (UInt<1>("h0"), b3)
+          |
+          |    node a1 = io_in1
+          |    node a2 = io_in2
+          |    b3 <= a2
+          |
+          |    inst sub of SubModule
+          |
+          |    sub.in1 <= io_in1
+          |    sub.in2 <= io_out1
+          |    sub.in3 <= b3
+          |
+          |    io_out1 <= sub.out1
+       """
+              .stripMargin
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(setVerbose = false)
+      firrtlOptions = firrtlOptions.copy(annotations = firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation)
+      commonOptions = CommonOptions(targetDirName = "test_run_dir")
+    }
+
+    try {
+      val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    }
+    catch {
+      case c: CyclicException =>
+        c.node.asInstanceOf[Symbol].name should be ("sub.out1")
+
+    }
   }
 }
