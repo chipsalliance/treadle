@@ -4,7 +4,7 @@ package treadle
 import java.io.PrintWriter
 
 import treadle.chronometry.UTC
-import treadle.executable.{ClockInfo, ExpressionViewRenderer}
+import treadle.executable._
 
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
@@ -89,6 +89,12 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
 
     }
   }
+  private val clockStepper: ClockStepper = if(clockInfoList.isEmpty) {
+    new NoClockStepper
+  }
+  else {
+    new MultiClockStepper(engine = this.engine, clockName = clockInfoList.head.name, wallTime)
+  }
 
   if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {
     clockInfoList.headOption.foreach { clockInfo =>
@@ -100,12 +106,20 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     engine.setValue(resetName, 1)
     engine.inputsChanged = true
 
-    wallTime.addOneTimeTask(wallTime.currentTime + timeRaised) { () =>
-      engine.setValue(resetName, 0)
-      if(engine.verbose) {
-        println(s"reset dropped at ${wallTime.currentTime}")
-      }
-      engine.inputsChanged = true
+    clockStepper match {
+      case _: NoClockStepper =>
+        engine.setValue(resetName, 1)
+        engine.evaluateCircuit()
+        wallTime.incrementTime(timeRaised)
+        engine.setValue(resetName, 1)
+      case _ =>
+        clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
+          engine.setValue(resetName, 0)
+          if(engine.verbose) {
+            println(s"reset dropped at ${wallTime.currentTime}")
+          }
+          engine.inputsChanged = true
+        }
     }
   }
 
@@ -210,26 +224,9 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     *
     * @param n cycles to perform
     */
-  def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = clockInfoList.headOption): Unit = {
+  def step(n: Int = 1): Unit = {
     if(engine.verbose) println(s"In step at ${wallTime.currentTime}")
-    if(clockInfoOpt.isDefined) {
-      for (_ <- 0 until n) {
-        if(engine.inputsChanged) {
-          engine.evaluateCircuit()
-        }
-
-        cycleCount += 1
-        if (engine.verbose) println(s"step $cycleCount at ${wallTime.currentTime}")
-        val clockName = clockInfoOpt.get.name
-        wallTime.runToTask(s"$clockName/up")
-        wallTime.runUntil(wallTime.currentTime)
-        if (engine.verbose) println(s"clock raised at ${wallTime.currentTime}")
-        engine.evaluateCircuit()
-        wallTime.runToTask(s"$clockName/down")
-        wallTime.runUntil(wallTime.currentTime)
-        if (engine.verbose) println(s"Step finished step at ${wallTime.currentTime}")
-      }
-    }
+    clockStepper.run(n)
   }
 
   /**
