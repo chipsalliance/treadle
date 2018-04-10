@@ -7,7 +7,8 @@ import org.scalatest.{FreeSpec, Matchers}
 class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
   "riscv-mini simple core test should run then stop" in {
 
-    val input = io.Source.fromFile("samples/core-simple.lo.fir").getLines().mkString("\n")
+    val stream = getClass.getResourceAsStream("/core-simple.lo.fir")
+    val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
