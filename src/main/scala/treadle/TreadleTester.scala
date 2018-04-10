@@ -69,31 +69,47 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     treadleOptions.clockInfo
   }
 
-  clockInfoList.foreach { clockInfo =>
-    engine.symbolTable.get(clockInfo.name) match {
-      case Some(clockSymbol) =>
-        val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
+  private val clockStepper: ClockStepper = clockInfoList.length match {
+    case 0 =>
+      new NoClockStepper
 
-        wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, taskName = s"${clockInfo.name}/up") { () =>
-          engine.makeUpToggler(clockSymbol).run()
-          engine.inputsChanged = true
+    case 1 =>
+      new SimpleSingleClockStepper(
+        engine,
+        engine.dataStore,
+        engine.symbolTable(clockInfoList.head.name),
+        engine.symbolTable.get(resetName),
+        clockInfoList.head.period,
+        wallTime
+      )
+    case _ =>
+      clockInfoList.foreach { clockInfo =>
+        engine.symbolTable.get(clockInfo.name) match {
+          case Some(clockSymbol) =>
+            val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
+
+            wallTime.addRecurringTask(
+              clockInfo.period,
+              clockInfo.initialOffset,
+              taskName = s"${clockInfo.name}/up"
+            ) { () =>
+
+              engine.makeUpToggler(clockSymbol).run()
+              engine.inputsChanged = true
+            }
+
+            wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
+              engine.makeDownToggler(clockSymbol).run()
+              engine.inputsChanged = true
+            }
+
+          case _ =>
+            throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
+
         }
+      }
 
-        wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
-          engine.makeDownToggler(clockSymbol).run()
-          engine.inputsChanged = true
-        }
-
-      case _ =>
-        throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
-
-    }
-  }
-  private val clockStepper: ClockStepper = if(clockInfoList.isEmpty) {
-    new NoClockStepper
-  }
-  else {
-    new MultiClockStepper(engine = this.engine, clockName = clockInfoList.head.name, wallTime)
+      new MultiClockStepper(engine = this.engine, clockName = clockInfoList.head.name, wallTime)
   }
 
   if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {
@@ -103,23 +119,25 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   }
 
   def reset(timeRaised: Long): Unit = {
-    engine.setValue(resetName, 1)
-    engine.inputsChanged = true
+    engine.symbolTable.get(resetName).foreach { _ =>
+      engine.setValue(resetName, 1)
+      engine.inputsChanged = true
 
-    clockStepper match {
-      case _: NoClockStepper =>
-        engine.setValue(resetName, 1)
-        engine.evaluateCircuit()
-        wallTime.incrementTime(timeRaised)
-        engine.setValue(resetName, 1)
-      case _ =>
-        clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
-          engine.setValue(resetName, 0)
-          if(engine.verbose) {
-            println(s"reset dropped at ${wallTime.currentTime}")
+      clockStepper match {
+        case _: NoClockStepper =>
+          engine.setValue(resetName, 1)
+          engine.evaluateCircuit()
+          wallTime.incrementTime(timeRaised)
+          engine.setValue(resetName, 1)
+        case _ =>
+          clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
+            engine.setValue(resetName, 0)
+            if (engine.verbose) {
+              println(s"reset dropped at ${wallTime.currentTime}")
+            }
+            engine.inputsChanged = true
           }
-          engine.inputsChanged = true
-        }
+      }
     }
   }
 
@@ -216,7 +234,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     expectationsMet += 1
   }
 
-  var cycleCount: Long = 0L
+  def cycleCount: Long = clockStepper.cycleCount
 
   /**
     * Cycles the circuit n steps (with a default of one)

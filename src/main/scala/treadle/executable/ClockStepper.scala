@@ -20,6 +20,60 @@ class NoClockStepper extends ClockStepper {
   }
 }
 
+class SimpleSingleClockStepper(
+  engine: ExecutionEngine,
+  dataStore: DataStore,
+  clockSymbol: Symbol,
+  resetSymbolOpt: Option[Symbol],
+  clockPeriod: Long,
+  wallTime: UTC
+) extends ClockStepper {
+
+  var clockIsHigh: Boolean = false
+  def clockIsLow: Boolean = ! clockIsHigh
+
+  private val upPeriod = clockPeriod / 2
+  private val downPeriod = clockPeriod - upPeriod
+
+  var resetTaskTime: Long = -1L
+
+  override def run(steps: Int): Unit = {
+
+    for(_ <- 0 until steps) {
+      if (engine.inputsChanged) {
+        engine.evaluateCircuit()
+      }
+
+      cycleCount += 1
+      wallTime.incrementTime(downPeriod)
+      if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
+        resetSymbolOpt.foreach { resetSymbol =>
+          engine.setValue(resetSymbol.name, 0)
+        }
+        resetTaskTime = -1L
+      }
+      engine.setValue(clockSymbol.name, 1)
+      engine.evaluateCircuit()
+
+      wallTime.incrementTime(upPeriod)
+      if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
+        resetSymbolOpt.foreach { resetSymbol =>
+          engine.setValue(resetSymbol.name, 0)
+        }
+        resetTaskTime = -1L
+      }
+      engine.setValue(clockSymbol.name, 0)
+    }
+  }
+
+  override def addTask(taskTime: Long)(task: () => Unit): Unit = {
+    if(resetTaskTime >= 0) {
+      throw TreadleException(s"Timed add second reset task to single clock")
+    }
+    resetTaskTime = taskTime
+  }
+}
+
 class MultiClockStepper(engine: ExecutionEngine, clockName: String, wallTime: UTC) extends ClockStepper {
   override def run(steps: Int): Unit = {
     for (_ <- 0 until steps) {
