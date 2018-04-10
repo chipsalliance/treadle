@@ -71,13 +71,12 @@ class RegisterSpec extends FlatSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = false,
+        setVerbose = true,
         noDefaultReset = true
       )
     }
     val tester = TreadleTester(input, optionsManager)
 
-    // tester.setVerbose(true)
     tester.poke("reset1", 1)
     tester.poke("reset2", 0)
     tester.step()

@@ -4,7 +4,7 @@ package treadle
 import java.io.PrintWriter
 
 import treadle.chronometry.UTC
-import treadle.executable.{ClockInfo, ExpressionViewRenderer}
+import treadle.executable._
 
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
@@ -69,25 +69,47 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     treadleOptions.clockInfo
   }
 
-  clockInfoList.foreach { clockInfo =>
-    engine.symbolTable.get(clockInfo.name) match {
-      case Some(clockSymbol) =>
-        val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
+  private val clockStepper: ClockStepper = clockInfoList.length match {
+    case 0 =>
+      new NoClockStepper
 
-        wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, taskName = s"${clockInfo.name}/up") { () =>
-          engine.makeUpToggler(clockSymbol).run()
-          engine.inputsChanged = true
+    case 1 =>
+      new SimpleSingleClockStepper(
+        engine,
+        engine.dataStore,
+        engine.symbolTable(clockInfoList.head.name),
+        engine.symbolTable.get(resetName),
+        clockInfoList.head.period,
+        wallTime
+      )
+    case _ =>
+      clockInfoList.foreach { clockInfo =>
+        engine.symbolTable.get(clockInfo.name) match {
+          case Some(clockSymbol) =>
+            val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
+
+            wallTime.addRecurringTask(
+              clockInfo.period,
+              clockInfo.initialOffset,
+              taskName = s"${clockInfo.name}/up"
+            ) { () =>
+
+              engine.makeUpToggler(clockSymbol).run()
+              engine.inputsChanged = true
+            }
+
+            wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
+              engine.makeDownToggler(clockSymbol).run()
+              engine.inputsChanged = true
+            }
+
+          case _ =>
+            throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
+
         }
+      }
 
-        wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
-          engine.makeDownToggler(clockSymbol).run()
-          engine.inputsChanged = true
-        }
-
-      case _ =>
-        throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
-
-    }
+      new MultiClockStepper(engine = this.engine, clockName = clockInfoList.head.name, wallTime)
   }
 
   if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {
@@ -97,15 +119,25 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   }
 
   def reset(timeRaised: Long): Unit = {
-    engine.setValue(resetName, 1)
-    engine.inputsChanged = true
-
-    wallTime.addOneTimeTask(wallTime.currentTime + timeRaised) { () =>
-      engine.setValue(resetName, 0)
-      if(engine.verbose) {
-        println(s"reset dropped at ${wallTime.currentTime}")
-      }
+    engine.symbolTable.get(resetName).foreach { _ =>
+      engine.setValue(resetName, 1)
       engine.inputsChanged = true
+
+      clockStepper match {
+        case _: NoClockStepper =>
+          engine.setValue(resetName, 1)
+          engine.evaluateCircuit()
+          wallTime.incrementTime(timeRaised)
+          engine.setValue(resetName, 1)
+        case _ =>
+          clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
+            engine.setValue(resetName, 0)
+            if (engine.verbose) {
+              println(s"reset dropped at ${wallTime.currentTime}")
+            }
+            engine.inputsChanged = true
+          }
+      }
     }
   }
 
@@ -202,7 +234,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     expectationsMet += 1
   }
 
-  var cycleCount: Long = 0L
+  def cycleCount: Long = clockStepper.cycleCount
 
   /**
     * Cycles the circuit n steps (with a default of one)
@@ -210,26 +242,9 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     *
     * @param n cycles to perform
     */
-  def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = clockInfoList.headOption): Unit = {
+  def step(n: Int = 1): Unit = {
     if(engine.verbose) println(s"In step at ${wallTime.currentTime}")
-    if(clockInfoOpt.isDefined) {
-      for (_ <- 0 until n) {
-        if(engine.inputsChanged) {
-          engine.evaluateCircuit()
-        }
-
-        cycleCount += 1
-        if (engine.verbose) println(s"step $cycleCount at ${wallTime.currentTime}")
-        val clockName = clockInfoOpt.get.name
-        wallTime.runToTask(s"$clockName/up")
-        wallTime.runUntil(wallTime.currentTime)
-        if (engine.verbose) println(s"clock raised at ${wallTime.currentTime}")
-        engine.evaluateCircuit()
-        wallTime.runToTask(s"$clockName/down")
-        wallTime.runUntil(wallTime.currentTime)
-        if (engine.verbose) println(s"Step finished step at ${wallTime.currentTime}")
-      }
-    }
+    clockStepper.run(n)
   }
 
   /**
