@@ -11,23 +11,12 @@ import logger.LazyLogging
 import scala.collection.immutable.Set
 import scala.collection.mutable
 
-class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
+class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
 
   var childrenOf: DiGraph[Symbol] = DiGraph[Symbol](Map.empty[Symbol, Set[Symbol]])
   var parentsOf:  DiGraph[Symbol] = DiGraph[Symbol](Map.empty[Symbol, Set[Symbol]])
 
   var orphans: Seq[Symbol] = Seq.empty
-
-  private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
-  def addAssigner(symbol: Symbol, assigner: Assigner): Unit = {
-    if(toAssigner.contains(symbol)) {
-      throw new TreadleException(s"Assigner already exists for $symbol")
-    }
-    toAssigner(symbol) = assigner
-  }
-  def hasAssigner(symbol: Symbol): Boolean = {
-    toAssigner.contains(symbol)
-  }
 
   private val toBlackBoxImplementation: mutable.HashMap[Symbol, BlackBoxImplementation] = new mutable.HashMap()
   def addBlackBoxImplementation(symbol: Symbol, blackBoxImplementation: BlackBoxImplementation): Unit = {
@@ -70,6 +59,22 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
     }
   }
 
+  def findHighestClock(symbol: Symbol): Option[Symbol] = {
+    parentsOf.getEdges(symbol).toList match {
+      case Nil =>
+        Some(symbol)
+      case parent :: Nil =>
+        if(parent.firrtlType == ClockType) {
+          findHighestClock(parent)
+        }
+        else {
+          Some(symbol)
+        }
+      case list =>
+        throw TreadleException(s"cannot find parent symbol for $symbol")
+    }
+  }
+
   /**
     * Find all the sources of symbol that are not non-clock inputs.
     * Sinks are used here because we are working with the parents of graph
@@ -98,22 +103,6 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
     symbols.flatMap { symbol =>
       childrenOf.reachableFrom(symbol)
     }.toSet
-  }
-
-  def allAssigners(): Seq[Assigner] = {
-    toAssigner.values.toSeq
-  }
-
-  def inputChildrenAssigners(): Seq[Assigner] = {
-    val assigners = getChildren(inputPortsNames.map(nameToSymbol(_)).toSeq)
-      .flatMap { symbol => toAssigner.get(symbol)}
-      .toSeq
-    assigners
-  }
-
-  def getAssigners(symbols: Seq[Symbol]): Seq[Assigner] = {
-    val assigners = symbols.flatMap { symbol => toAssigner.get(symbol) }
-    assigners
   }
 
   def getBlackboxImplementation(symbol: Symbol): Option[BlackBoxImplementation] = {

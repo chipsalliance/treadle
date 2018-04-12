@@ -3,18 +3,59 @@
 package treadle.executable
 
 import logger.LazyLogging
+import treadle.TreadleException
 
 import scala.collection.mutable
 
 class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends LazyLogging {
-  var activeAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-  val orphanedAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  var clockedAssigns       : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val orphanedAssigns      : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+
+  private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
+
+  def addAssigner(symbol: Symbol, assigner: Assigner): Unit = {
+    if(toAssigner.contains(symbol)) {
+      throw new TreadleException(s"Assigner already exists for $symbol")
+    }
+    toAssigner(symbol) = assigner
+  }
+
+  def hasAssigner(symbol: Symbol): Boolean = {
+    toAssigner.contains(symbol)
+  }
+
+  def allAssigners(): Seq[Assigner] = {
+    toAssigner.values.toSeq
+  }
+
+  def inputChildrenAssigners(): Seq[Assigner] = {
+    val assigners = {
+      symbolTable.getChildren(symbolTable.inputPortsNames.map(symbolTable.nameToSymbol(_)).toSeq)
+              .flatMap { symbol => toAssigner.get(symbol)}
+              .toSeq
+    }
+    assigners
+  }
+
+  def getAssigners(symbols: Seq[Symbol]): Seq[Assigner] = {
+    val assigners = symbols.flatMap { symbol => toAssigner.get(symbol) }
+    assigners
+  }
+
+  def organizeAssigners(): Unit = {
+    val orphansAndSensitives = symbolTable.orphans ++ symbolTable.getChildren(symbolTable.orphans)
+
+    setOrphanedAssigners(getAssigners(orphansAndSensitives))
+    combinationalAssigns ++= allAssigners()
+    sortInputSensitiveAssigns()
+  }
 
   def setVerboseAssign(isVerbose: Boolean): Unit = {
     def setMode(assigner: Assigner): Unit = {
       assigner.setVerbose(isVerbose)
     }
-    activeAssigns.foreach { setMode }
+    combinationalAssigns.foreach { setMode }
     orphanedAssigns.foreach { setMode }
   }
 
@@ -22,7 +63,7 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
     def setMode(assigner: Assigner): Unit = {
       assigner.setLeanMode(setLean)
     }
-    activeAssigns.foreach { setMode }
+    combinationalAssigns.foreach { setMode }
     orphanedAssigns.foreach { setMode }
   }
 
@@ -38,25 +79,21 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
       assigners(index).run()
       index += 1
     }
-    //  val t1 = System.nanoTime()
-    //  val isLean = assigners.forall(x => !x.verboseAssign)
-    //  println(s"$index assigners in ${t1 - t0} ns, ${index.toDouble * 1000000000 / (t1 - t0)} nodes/sec" +
-    //          s" ${1000000000 / (t1 - t0)} Hz  isLean $isLean")
   }
 
   /**
     *  updates signals that depend on inputs
     */
   def executeActiveAssigns(): Unit = {
-    executeAssigners(activeAssigns)
+    executeAssigners(combinationalAssigns)
   }
 
   /**
     * de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
-    val deduplicatedAssigns = activeAssigns.distinct
-    activeAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
+    val deduplicatedAssigns = combinationalAssigns.distinct
+    combinationalAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
       assigner.symbol.cardinalNumber
     }
   }
@@ -64,6 +101,10 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
   def setOrphanedAssigners(assigners: Seq[Assigner]): Unit = {
     orphanedAssigns.clear()
     orphanedAssigns ++= assigners
+  }
+
+  def addAssigner(assigner: Assigner, triggerOption: Option[Symbol] = None): Unit = {
+    combinationalAssigns += assigner
   }
 
   /**
@@ -75,8 +116,8 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
       orphanedAssigns.map { assigner =>
         assigner.symbol.render
       }.mkString("\n") + "\n\n" +
-    s"Active assigns (${activeAssigns.size})\n" +
-    activeAssigns.map { assigner =>
+    s"Active assigns (${combinationalAssigns.size})\n" +
+    combinationalAssigns.map { assigner =>
       assigner.symbol.render
     }.mkString("\n") + "\n\n"
   }

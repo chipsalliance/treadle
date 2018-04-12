@@ -41,7 +41,7 @@ class ExecutionEngine(
     enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
   )
 
-  dataStore.allAssigners ++= scheduler.activeAssigns ++ scheduler.orphanedAssigns
+  dataStore.allAssigners ++= scheduler.combinationalAssigns ++ scheduler.orphanedAssigns
 
   def setLeanMode(): Unit = {
     val canBeLean = ! (verbose || vcdOption.isDefined)
@@ -449,15 +449,7 @@ object ExecutionEngine {
       interpreterOptions.validIfIsRandom,
       loweredAst, blackBoxFactories)
 
-    val orphansAndSensitives = symbolTable.orphans ++ symbolTable.getChildren(symbolTable.orphans)
-
-    scheduler.setOrphanedAssigners(symbolTable.getAssigners(orphansAndSensitives))
-
-    // println(s"Scheduler before sort ${scheduler.renderHeader}")
-//    scheduler.activeAssigns ++= symbolTable.inputChildrenAssigners()
-    scheduler.activeAssigns ++= symbolTable.allAssigners()
-    scheduler.sortInputSensitiveAssigns()
-
+    scheduler.organizeAssigners()
     if(verbose) {
       println(s"\n${scheduler.render}")
     }
@@ -468,7 +460,7 @@ object ExecutionEngine {
     val t1 = System.nanoTime()
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
     println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
-      s"${scheduler.activeAssigns.size} statements")
+      s"${scheduler.combinationalAssigns.size} statements")
 
     executionEngine
   }

@@ -76,7 +76,7 @@ class ExpressionCompiler(
   }
 
   //scalastyle:off cyclomatic.complexity
-  def makeAssigner(symbol: Symbol, expressionResult: ExpressionResult): Unit = {
+  def makeAssigner(symbol: Symbol, expressionResult: ExpressionResult, triggerOption: Option[Symbol] = None): Unit = {
     val assigner = (symbol.dataSize, expressionResult) match {
       case (IntSize,  result: IntExpressionResult)  => dataStore.AssignInt(symbol,  result.apply)
       case (IntSize,  result: LongExpressionResult) => dataStore.AssignInt(symbol,  ToInt(result.apply).apply)
@@ -139,9 +139,9 @@ class ExpressionCompiler(
     addAssigner(assigner)
   }
 
-  def addAssigner(assigner: Assigner): Unit = {
+  def addAssigner(assigner: Assigner, triggerOption: Option[Symbol] = None): Unit = {
     val symbol = assigner.symbol
-    symbolTable.addAssigner(symbol, assigner)
+    scheduler.addAssigner(symbol, assigner)
   }
 
   def makeIndirectAssigner(
@@ -687,7 +687,7 @@ class ExpressionCompiler(
                   if (port.tpe == ClockType) {
                     val clockSymbol = symbolTable(expand(instanceName + "." + port.name))
                     val blackBoxCycler = BlackBoxCycler(instanceSymbol, implementation, clockSymbol, dataStore)
-                    symbolTable.addAssigner(instanceSymbol, blackBoxCycler)
+                    scheduler.addAssigner(instanceSymbol, blackBoxCycler)
                   }
                 }
               case _ =>
@@ -716,6 +716,19 @@ class ExpressionCompiler(
         val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(registerOut.name))
         val clockExpressionResult = processExpression(clockExpression)
 
+        val drivingClockOption = clockExpression match {
+          case WRef(clockName, _, _, _) =>
+            for {
+              clockSym <- symbolTable.get(expand(clockName))
+              topClock <- symbolTable.findHighestClock(clockSym)
+            } yield {
+              topClock
+            }
+          case _ =>
+            None
+        }
+
+        // makeAssigner(registerOut, makeGet(registerIn), drivingClockOption)
         clockExpressionResult match {
           case intClockExpression : IntExpressionResult =>
             makeClockedAssigner(
@@ -811,7 +824,6 @@ class ExpressionCompiler(
   }
   // scalastyle:on
 
-  // scalastyle:off
   def processModule(modulePrefix: String, myModule: DefModule, circuit: Circuit): Unit = {
     def expand(name: String): String = if(modulePrefix.isEmpty) name else modulePrefix + "." + name
 
@@ -835,5 +847,7 @@ class ExpressionCompiler(
     }
 
     processModule("", module, circuit)
+
+    scheduler.sortInputSensitiveAssigns()
   }
 }

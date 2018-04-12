@@ -79,7 +79,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       }
 
       val verbose = executionEngineOption.get.verbose
-      executionEngine.scheduler.activeAssigns.foreach { assigner =>
+      executionEngine.scheduler.combinationalAssigns.foreach { assigner =>
         val render = watchList.contains(assigner.symbol)
         assigner.setLeanMode(!verbose && !render)
         assigner.setVerbose(verbose)
