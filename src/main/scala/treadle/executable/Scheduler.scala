@@ -6,19 +6,34 @@ import logger.LazyLogging
 import treadle.TreadleException
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends LazyLogging {
+
   var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-  var clockedAssigns       : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+
+  var clockedAssigns       : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
+    new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
+      override def default(key: Symbol): ArrayBuffer[Assigner] = {
+        this(key) = new mutable.ArrayBuffer[Assigner]()
+        this(key)
+      }
+    }
+
   val orphanedAssigns      : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
 
-  def addAssigner(symbol: Symbol, assigner: Assigner): Unit = {
-    if(toAssigner.contains(symbol)) {
-      throw new TreadleException(s"Assigner already exists for $symbol")
+  def addAssigner(symbol: Symbol, assigner: Assigner, triggerOption: Option[Symbol] = None): Unit = {
+    triggerOption match {
+      case Some(triggerSignal) =>
+        clockedAssigns(triggerSignal) += assigner
+      case _ =>
+        if(toAssigner.contains(symbol)) {
+          throw new TreadleException(s"Assigner already exists for $symbol")
+        }
+        toAssigner(symbol) = assigner
     }
-    toAssigner(symbol) = assigner
   }
 
   def hasAssigner(symbol: Symbol): Boolean = {
@@ -103,23 +118,22 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
     orphanedAssigns ++= assigners
   }
 
-  def addAssigner(assigner: Assigner, triggerOption: Option[Symbol] = None): Unit = {
-    combinationalAssigns += assigner
-  }
-
   /**
     * Render the assigners managed by this scheduler
     * @return
     */
   def render: String = {
+    def renderAssigner(assigner: Assigner): String = assigner.symbol.name
+
     s"Static assigns (${orphanedAssigns.size})\n" +
-      orphanedAssigns.map { assigner =>
-        assigner.symbol.render
-      }.mkString("\n") + "\n\n" +
+      orphanedAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
     s"Active assigns (${combinationalAssigns.size})\n" +
-    combinationalAssigns.map { assigner =>
-      assigner.symbol.render
-    }.mkString("\n") + "\n\n"
+    combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
+    clockedAssigns.map { case (symbol, assigners) =>
+      s"Assigners triggered by ${symbol.name} (${assigners.length})\n" +
+      assigners.map(renderAssigner).mkString("\n")
+    }.mkString("\n") +
+    "\n\n"
   }
 }
 

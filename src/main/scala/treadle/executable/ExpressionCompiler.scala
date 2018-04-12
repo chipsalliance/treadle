@@ -97,7 +97,7 @@ class ExpressionCompiler(
         throw TreadleException(
           s"Error:assignment size mismatch ($size)${symbol.name} <= ($expressionSize)$expressionResult")
     }
-    addAssigner(assigner)
+    addAssigner(assigner, triggerOption)
   }
 
   def makeClockedAssigner(
@@ -141,7 +141,7 @@ class ExpressionCompiler(
 
   def addAssigner(assigner: Assigner, triggerOption: Option[Symbol] = None): Unit = {
     val symbol = assigner.symbol
-    scheduler.addAssigner(symbol, assigner)
+    scheduler.addAssigner(symbol, assigner, triggerOption)
   }
 
   def makeIndirectAssigner(
@@ -728,7 +728,7 @@ class ExpressionCompiler(
             None
         }
 
-        // makeAssigner(registerOut, makeGet(registerIn), drivingClockOption)
+        makeAssigner(registerOut, makeGet(registerIn), drivingClockOption)
         clockExpressionResult match {
           case intClockExpression : IntExpressionResult =>
             makeClockedAssigner(
