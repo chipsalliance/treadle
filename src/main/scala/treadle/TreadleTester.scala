@@ -27,17 +27,6 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager)
   val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
 
-  setVerbose(treadleOptions.setVerbose)
-
-  if(treadleOptions.writeVCD) {
-    optionsManager.setTopNameIfNotSet(engine.ast.main)
-    optionsManager.makeTargetDir()
-    engine.makeVCDLogger(
-      treadleOptions.vcdOutputFileName(optionsManager),
-      treadleOptions.vcdShowUnderscored
-    )
-  }
-
   val resetName: String = treadleOptions.resetName
 
   val combinationalDelay: Long = 10
@@ -74,7 +63,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       new NoClockStepper
 
     case 1 =>
-      new SimpleSingleClockStepper(
+      SimpleSingleClockStepper(
         engine,
         engine.dataStore,
         engine.symbolTable(clockInfoList.head.name),
@@ -110,6 +99,17 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       }
 
       new MultiClockStepper(engine = this.engine, clockName = clockInfoList.head.name, wallTime)
+  }
+
+  setVerbose(treadleOptions.setVerbose)
+
+  if(treadleOptions.writeVCD) {
+    optionsManager.setTopNameIfNotSet(engine.ast.main)
+    optionsManager.makeTargetDir()
+    engine.makeVCDLogger(
+      treadleOptions.vcdOutputFileName(optionsManager),
+      treadleOptions.vcdShowUnderscored
+    )
   }
 
   if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {

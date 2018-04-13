@@ -12,7 +12,7 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
 
   var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
-  var clockedAssigns       : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
+  val triggeredAssigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
     new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
       override def default(key: Symbol): ArrayBuffer[Assigner] = {
         this(key) = new mutable.ArrayBuffer[Assigner]()
@@ -20,19 +20,29 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
       }
     }
 
-  val orphanedAssigns      : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val orphanedAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
 
-  def addAssigner(symbol: Symbol, assigner: Assigner, triggerOption: Option[Symbol] = None): Unit = {
+  def addAssigner(
+    symbol: Symbol,
+    assigner: Assigner,
+    triggerOption: Option[Symbol] = None,
+    excludeFromCombinational: Boolean = false
+  ): Unit = {
+
     triggerOption match {
       case Some(triggerSignal) =>
-        clockedAssigns(triggerSignal) += assigner
+        toAssigner(symbol) = assigner
+        triggeredAssigns(triggerSignal) += assigner
       case _ =>
         if(toAssigner.contains(symbol)) {
           throw new TreadleException(s"Assigner already exists for $symbol")
         }
         toAssigner(symbol) = assigner
+        if(! excludeFromCombinational) {
+          combinationalAssigns += assigner
+        }
     }
   }
 
@@ -40,7 +50,7 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
     toAssigner.contains(symbol)
   }
 
-  def allAssigners(): Seq[Assigner] = {
+  def getAllAssigners: Seq[Assigner] = {
     toAssigner.values.toSeq
   }
 
@@ -62,7 +72,6 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
     val orphansAndSensitives = symbolTable.orphans ++ symbolTable.getChildren(symbolTable.orphans)
 
     setOrphanedAssigners(getAssigners(orphansAndSensitives))
-    combinationalAssigns ++= allAssigners()
     sortInputSensitiveAssigns()
   }
 
@@ -70,26 +79,24 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
     def setMode(assigner: Assigner): Unit = {
       assigner.setVerbose(isVerbose)
     }
-    combinationalAssigns.foreach { setMode }
-    orphanedAssigns.foreach { setMode }
+    getAllAssigners.foreach { setMode }
   }
 
   def setLeanMode(setLean: Boolean): Unit = {
     def setMode(assigner: Assigner): Unit = {
       assigner.setLeanMode(setLean)
     }
-    combinationalAssigns.foreach { setMode }
-    orphanedAssigns.foreach { setMode }
+    getAllAssigners.foreach { setMode }
   }
 
   /**
     * Execute the seq of assigners
     * @param assigners list of assigners
     */
-  def executeAssigners(assigners: Seq[Assigner]): Unit = {
+  private def executeAssigners(assigners: Seq[Assigner]): Unit = {
     var index = 0
     val lastIndex = assigners.length
-    // val t0 = System.nanoTime()
+
     while(index < lastIndex) {
       assigners(index).run()
       index += 1
@@ -99,8 +106,22 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
   /**
     *  updates signals that depend on inputs
     */
-  def executeActiveAssigns(): Unit = {
+  def executeCombinationalAssigns(): Unit = {
     executeAssigners(combinationalAssigns)
+  }
+
+  /**
+    *  updates signals that depend on inputs
+    */
+  def executeOrphanedAssigns(): Unit = {
+    executeAssigners(orphanedAssigns)
+  }
+
+  /**
+    *  updates signals that depend on inputs
+    */
+  def executeTriggeredAssigns(trigger: Symbol): Unit = {
+    executeAssigners(triggeredAssigns(trigger))
   }
 
   /**
@@ -129,7 +150,7 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
       orphanedAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
     s"Active assigns (${combinationalAssigns.size})\n" +
     combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
-    clockedAssigns.map { case (symbol, assigners) =>
+    triggeredAssigns.map { case (symbol, assigners) =>
       s"Assigners triggered by ${symbol.name} (${assigners.length})\n" +
       assigners.map(renderAssigner).mkString("\n")
     }.mkString("\n") +

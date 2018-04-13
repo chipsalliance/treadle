@@ -71,7 +71,7 @@ class ExecutionEngine(
       println(s"No static assignments")
     }
   }
-  scheduler.executeAssigners(scheduler.orphanedAssigns)
+  scheduler.executeOrphanedAssigns()
   if(verbose) {
     if(scheduler.orphanedAssigns.nonEmpty) {
       println(s"Finished executing static assignments")
@@ -129,7 +129,7 @@ class ExecutionEngine(
 
   private def runAssigns(): Unit = {
     try {
-      scheduler.executeActiveAssigns()
+      scheduler.executeCombinationalAssigns()
       if(lastStopResult.isDefined) {
         val stopKind = if(lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
         throw StopException(s"$stopKind: result ${lastStopResult.get}")
@@ -452,6 +452,7 @@ object ExecutionEngine {
     scheduler.organizeAssigners()
     if(verbose) {
       println(s"\n${scheduler.render}")
+      scheduler.setVerboseAssign(verbose)
     }
 
     val executionEngine = new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)

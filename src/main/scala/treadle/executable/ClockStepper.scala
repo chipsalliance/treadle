@@ -20,7 +20,7 @@ class NoClockStepper extends ClockStepper {
   }
 }
 
-class SimpleSingleClockStepper(
+case class SimpleSingleClockStepper(
   engine: ExecutionEngine,
   dataStore: DataStore,
   clockSymbol: Symbol,
@@ -37,9 +37,15 @@ class SimpleSingleClockStepper(
 
   var resetTaskTime: Long = -1L
 
+  val clockAssigner = dataStore.TriggerAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1)
+  engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
+
   override def run(steps: Int): Unit = {
 
     for(_ <- 0 until steps) {
+      if(engine.verbose) {
+        println(s"step: ${cycleCount + 1} started")
+      }
       if (engine.inputsChanged) {
         engine.evaluateCircuit()
       }
@@ -52,17 +58,24 @@ class SimpleSingleClockStepper(
         }
         resetTaskTime = -1L
       }
-      engine.setValue(clockSymbol.name, 1)
-      engine.evaluateCircuit()
 
+      clockAssigner.value = 1
+      clockAssigner.run()
+      engine.inputsChanged = true
+      engine.evaluateCircuit()
       wallTime.incrementTime(upPeriod)
+
       if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
         resetSymbolOpt.foreach { resetSymbol =>
           engine.setValue(resetSymbol.name, 0)
         }
         resetTaskTime = -1L
       }
-      engine.setValue(clockSymbol.name, 0)
+      clockAssigner.value = 0
+      clockAssigner.run()
+      if(engine.verbose) {
+        println(s"step: $cycleCount started")
+      }
     }
   }
 

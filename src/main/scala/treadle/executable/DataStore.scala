@@ -2,7 +2,6 @@
 
 package treadle.executable
 
-import treadle.vcd.VCD
 import treadle.{BlackBoxImplementation, ExecutionEngine, TreadleException}
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -214,6 +213,34 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       val value = expression()
       currentIntArray(index) = value
+      runPlugins(symbol)
+    }
+
+    override def setLeanMode(isLean: Boolean): Unit = {
+      run = if(isLean) runLean else runFull
+    }
+    var run: FuncUnit = runLean
+  }
+
+  case class TriggerAssigner(symbol: Symbol, scheduler: Scheduler, triggerOnValue: Int = -1) extends Assigner {
+
+    val index: Int = symbol.index
+
+    var value: Int = 0
+
+    def runLean(): Unit = {
+      currentIntArray(index) = value
+      if(value == triggerOnValue) {
+        scheduler.executeTriggeredAssigns(symbol)
+      }
+    }
+
+    def runFull(): Unit = {
+      currentIntArray(index) = value
+      runPlugins(symbol)
+      if(value == triggerOnValue) {
+        scheduler.executeTriggeredAssigns(symbol)
+      }
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {

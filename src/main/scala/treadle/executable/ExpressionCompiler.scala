@@ -729,17 +729,6 @@ class ExpressionCompiler(
         }
 
         makeAssigner(registerOut, makeGet(registerIn), drivingClockOption)
-        clockExpressionResult match {
-          case intClockExpression : IntExpressionResult =>
-            makeClockedAssigner(
-              registerOut,
-              intClockExpression,
-              symbolTable(SymbolTable.makeLastValueName(registerOut)),
-              makeGet(registerIn)
-            )
-          case _ =>
-            throw TreadleException(s"Error: register ${registerOut.name} has non integer clock")
-        }
 
       case defMemory: DefMemory =>
         val expandedName = expand(defMemory.name)
