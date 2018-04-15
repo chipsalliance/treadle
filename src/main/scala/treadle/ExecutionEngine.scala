@@ -458,6 +458,8 @@ object ExecutionEngine {
     val executionEngine = new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
     executionEngine.dataStore.setExecutionEngine(executionEngine)
 
+    executionEngine.inputsChanged = true
+
     val t1 = System.nanoTime()
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
     println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +

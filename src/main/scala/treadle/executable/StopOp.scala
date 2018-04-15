@@ -21,7 +21,6 @@ case class StopOp(
     val clockValue = clockExpression()
     val lastClockValue = dataStore.currentIntArray(lastClockValueIndex)
 
-    if(clockValue > 0 && lastClockValue == 0) {
       val conditionValue = condition.apply() > 0
       if (conditionValue) {
         if (isVerbose) {
@@ -29,8 +28,6 @@ case class StopOp(
         }
         dataStore(hasStopped) = returnValue + 1
       }
-    }
-    dataStore.currentIntArray(lastClockValueIndex) = clockValue
 
     () => Unit
   }

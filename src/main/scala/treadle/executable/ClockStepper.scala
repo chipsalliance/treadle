@@ -74,7 +74,7 @@ case class SimpleSingleClockStepper(
       clockAssigner.value = 0
       clockAssigner.run()
       if(engine.verbose) {
-        println(s"step: $cycleCount started")
+        println(s"step: $cycleCount finished")
       }
     }
   }

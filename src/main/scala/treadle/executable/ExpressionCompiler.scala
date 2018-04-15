@@ -188,6 +188,21 @@ class ExpressionCompiler(
   def processStatements(modulePrefix: String, circuit: Circuit, statement: firrtl.ir.Statement): Unit = {
     def expand(name: String): String = if(modulePrefix.isEmpty) name else modulePrefix + "." + name
 
+    def getDrivingClock(clockExpression: Expression): Option[Symbol] = {
+
+      clockExpression match {
+        case WRef(clockName, _, _, _) =>
+          for {
+            clockSym <- symbolTable.get(expand(clockName))
+            topClock <- symbolTable.findHighestClock(clockSym)
+          } yield {
+            topClock
+          }
+        case _ =>
+          None
+      }
+    }
+
     def binaryOps(opCode: PrimOp, args: Seq[Expression], tpe: Type): ExpressionResult = {
 
       def getParameters(e: Expression) = (processExpression(e), getSigned(e), getWidth(e))
@@ -687,7 +702,10 @@ class ExpressionCompiler(
                   if (port.tpe == ClockType) {
                     val clockSymbol = symbolTable(expand(instanceName + "." + port.name))
                     val blackBoxCycler = BlackBoxCycler(instanceSymbol, implementation, clockSymbol, dataStore)
-                    scheduler.addAssigner(instanceSymbol, blackBoxCycler)
+
+                    val drivingClockOption = symbolTable.findHighestClock(clockSymbol)
+
+                    scheduler.addAssigner(instanceSymbol, blackBoxCycler, triggerOption = drivingClockOption)
                   }
                 }
               case _ =>
@@ -714,19 +732,8 @@ class ExpressionCompiler(
 
         val registerOut = symbolTable(expand(name))
         val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(registerOut.name))
-        val clockExpressionResult = processExpression(clockExpression)
 
-        val drivingClockOption = clockExpression match {
-          case WRef(clockName, _, _, _) =>
-            for {
-              clockSym <- symbolTable.get(expand(clockName))
-              topClock <- symbolTable.findHighestClock(clockSym)
-            } yield {
-              topClock
-            }
-          case _ =>
-            None
-        }
+        val drivingClockOption = getDrivingClock(clockExpression)
 
         makeAssigner(registerOut, makeGet(registerIn), drivingClockOption)
 
@@ -764,7 +771,8 @@ class ExpressionCompiler(
               clockLastValue  = lastClockSymbol,
               dataStore       = dataStore
             )
-            addAssigner(stopOp)
+            val drivingClockOption = getDrivingClock(clockExpression)
+            addAssigner(stopOp, triggerOption = drivingClockOption)
           case _ =>
             throw new TreadleException(s"Could not find symbol for Stop $stop")
         }
@@ -797,7 +805,9 @@ class ExpressionCompiler(
               lastClockSymbol,
               dataStore
             )
-            addAssigner(printOp)
+            val drivingClockOption = getDrivingClock(clockExpression)
+            addAssigner(printOp, triggerOption = drivingClockOption)
+
           case _ =>
             throw new TreadleException(s"Could not find symbol for Print $printf")
         }

@@ -22,7 +22,7 @@ case class PrintfOp(
     val clockValue = clockExpression()
     val lastClockValue = dataStore.currentIntArray(lastClockValueIndex)
 
-    if(clockValue > 0 && lastClockValue == 0) {
+//    if(clockValue > 0 && lastClockValue == 0) {
       val conditionValue = condition.apply() > 0
       if (conditionValue) {
         val currentArgValues = args.map {
@@ -34,9 +34,9 @@ case class PrintfOp(
         val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
         print(instantiatedString.drop(1).dropRight(1))
       }
-    }
+//    }
 
-    dataStore.currentIntArray(lastClockValueIndex) = clockValue
+//    dataStore.currentIntArray(lastClockValueIndex) = clockValue
 
     () => Unit
   }

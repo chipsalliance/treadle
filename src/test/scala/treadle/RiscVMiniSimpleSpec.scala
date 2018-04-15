@@ -14,7 +14,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         writeVCD = false,
         vcdShowUnderscored = false,
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = false,
         rollbackBuffers = 0,
         symbolsToWatch = Seq() // Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")

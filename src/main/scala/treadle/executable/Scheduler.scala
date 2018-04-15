@@ -3,7 +3,7 @@
 package treadle.executable
 
 import logger.LazyLogging
-import treadle.TreadleException
+import treadle.{BlackBoxCycler, TreadleException}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -69,9 +69,16 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
   }
 
   def organizeAssigners(): Unit = {
-    val orphansAndSensitives = symbolTable.orphans ++ symbolTable.getChildren(symbolTable.orphans)
+//    val orphansAndSensitives = (symbolTable.orphans ++ symbolTable.getChildren(symbolTable.orphans)).flatMap {
+      // Originally this was as above, not sure why downstream would matter
+    val orphansAndSensitives = symbolTable.orphans.map(toAssigner).flatMap {
+      case _: BlackBoxCycler => None
+      case _: StopOp         => None
+      case _: PrintfOp       => None
+      case assigner          => Some(assigner)
+    }
 
-    setOrphanedAssigners(getAssigners(orphansAndSensitives))
+    setOrphanedAssigners(orphansAndSensitives)
     sortInputSensitiveAssigns()
   }
 

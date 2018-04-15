@@ -22,7 +22,7 @@ class ModuleInLineSpec extends FlatSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = true,
+        setVerbose = false,
         noDefaultReset = false
       )
     }
