@@ -9,25 +9,18 @@ case class StopOp(
   info               : Info,
   returnValue        : Int,
   condition          : IntExpressionResult,
-  clockExpression    : IntExpressionResult,
   hasStopped         : Symbol,
-  clockLastValue     : Symbol,
   dataStore          : DataStore
 ) extends Assigner {
 
-  private val lastClockValueIndex = clockLastValue.index
-
   def run: FuncUnit = {
-    val clockValue = clockExpression()
-    val lastClockValue = dataStore.currentIntArray(lastClockValueIndex)
-
-      val conditionValue = condition.apply() > 0
-      if (conditionValue) {
-        if (isVerbose) {
-          println(s"clock ${symbol.name} has fired")
-        }
-        dataStore(hasStopped) = returnValue + 1
+    val conditionValue = condition.apply() > 0
+    if (conditionValue) {
+      if (isVerbose) {
+        println(s"clock ${symbol.name} has fired")
       }
+      dataStore(hasStopped) = returnValue + 1
+    }
 
     () => Unit
   }

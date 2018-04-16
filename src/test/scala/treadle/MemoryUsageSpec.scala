@@ -116,7 +116,14 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
         |    c <= a
       """.stripMargin
 
-    val tester = new TreadleTester(input) {
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = true,
+        showFirrtlAtLoad = true,
+        noDefaultReset = true
+      )
+    }
+    val tester = new TreadleTester(input, optionsManager) {
       poke("a", 1)
       poke("b", 0)
       poke("select", 0)

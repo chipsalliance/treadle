@@ -41,7 +41,7 @@ class ExecutionEngine(
     enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
   )
 
-  dataStore.allAssigners ++= scheduler.combinationalAssigns ++ scheduler.orphanedAssigns
+  dataStore.allAssigners ++= scheduler.getAllAssigners
 
   def setLeanMode(): Unit = {
     val canBeLean = ! (verbose || vcdOption.isDefined)

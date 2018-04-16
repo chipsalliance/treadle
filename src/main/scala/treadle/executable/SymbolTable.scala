@@ -70,7 +70,7 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
         else {
           Some(symbol)
         }
-      case list =>
+      case _ =>
         throw TreadleException(s"cannot find parent symbol for $symbol")
     }
   }
@@ -300,14 +300,12 @@ object SymbolTable extends LazyLogging {
 
           val registerIn = Symbol(SymbolTable.makeRegisterInputName(expandedName), tpe, RegKind, info = info)
           val registerOut = Symbol(expandedName, tpe, RegKind, info = info)
-          val clockLastValue = Symbol(SymbolTable.makeLastValueName(registerOut), UIntType(IntWidth(1)))
 
           registerNames += registerOut.name
           addSymbol(registerIn)
           addSymbol(registerOut)
-          addSymbol(clockLastValue)
 
-          addDependency(registerOut, expressionToReferences(clockExpression))
+//          addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
           addDependency(registerIn, Set(registerOut))
 
@@ -325,10 +323,8 @@ object SymbolTable extends LazyLogging {
               val stopSymbolName = makeStopName()
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(stopSymbol)
-              val lastClockSymbol = SymbolTable.makeLastValueSymbol(stopSymbol)
-              addSymbol(lastClockSymbol)
               stopToStopInfo(stop) = StopInfo(stopSymbol)
-              addDependency(stopSymbol, Set(clockSymbol))
+
               if(! nameToSymbol.contains(StopOp.stopHappenedName)) {
                 addSymbol(
                   Symbol(StopOp.stopHappenedName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(31)), NoInfo)
@@ -347,11 +343,7 @@ object SymbolTable extends LazyLogging {
                 printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(printSymbol)
 
-              val lastClockSymbol = SymbolTable.makeLastValueSymbol(printSymbol)
-              addSymbol(lastClockSymbol)
-
               printToPrintInfo(print) = PrintInfo(printSymbol)
-              addDependency(printSymbol, Set(clockSymbol))
 
             case _ =>
               throw new TreadleException(s"Can't find clock for $print")

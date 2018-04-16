@@ -495,6 +495,7 @@ case class VCD(
       this(key)
     }
   }
+  val wiresToIgnore = new mutable.HashSet[String]
 
   def info: String = {
     val infoLines = Seq(
@@ -594,7 +595,14 @@ case class VCD(
     * @return         false if the value is not different
     */
   def wireChanged(wireName: String, value: BigInt, width: Int = 1): Boolean = {
-    if(ignoreUnderscoredNames && (wireName.startsWith("_") || wireName.contains("/"))) return false
+    if(wiresToIgnore.contains(wireName)) return false
+    if(ignoreUnderscoredNames) {
+      if(wireName.split("""\.""").exists(s => s.startsWith("_"))) {
+        wiresToIgnore += wireName
+        return false
+      }
+    }
+    if(wireName.contains("/")) return false
 
     def updateInfo(): Unit = {
       val wire = wires(wireName)
