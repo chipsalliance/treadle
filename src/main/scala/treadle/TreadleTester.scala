@@ -63,12 +63,15 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       new NoClockStepper
 
     case 1 =>
+      val clockInfo = clockInfoList.head
+      wallTime.setTime(clockInfo.initialOffset)
+
       SimpleSingleClockStepper(
         engine,
         engine.dataStore,
-        engine.symbolTable(clockInfoList.head.name),
+        engine.symbolTable(clockInfo.name),
         engine.symbolTable.get(resetName),
-        clockInfoList.head.period,
+        clockInfo.period,
         wallTime
       )
     case _ =>

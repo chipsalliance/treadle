@@ -48,7 +48,7 @@ object VCD extends LazyLogging {
 
   def apply(
       moduleName: String,
-      timeScale: String = "1ps",
+      timeScale: String = "1ns",
       comment: String = "",
       showUnderscoredNames: Boolean = false
   ): VCD = {

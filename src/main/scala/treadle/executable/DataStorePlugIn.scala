@@ -2,9 +2,11 @@
 
 package treadle.executable
 
+import treadle.ExecutionEngine
 import treadle.vcd.VCD
 
 abstract class DataStorePlugin {
+  def executionEngine: ExecutionEngine
   def dataStore: DataStore
   var isEnabled: Boolean = false
   def setEnabled(enabled: Boolean): Unit = {
@@ -19,18 +21,19 @@ abstract class DataStorePlugin {
     }
     if(dataStore.activePlugins.nonEmpty && dataStore.leanMode) {
       dataStore.leanMode = false
-      dataStore.allAssigners.foreach { assigner => assigner.setLeanMode(false)}
+      executionEngine.scheduler.getAllAssigners.foreach { assigner => assigner.setLeanMode(false)}
     }
     else if(dataStore.activePlugins.isEmpty && ! dataStore.leanMode) {
       dataStore.leanMode = true
-      dataStore.allAssigners.foreach { assigner => assigner.setLeanMode(true)}
+      executionEngine.scheduler.getAllAssigners.foreach { assigner => assigner.setLeanMode(true)}
     }
   }
 
   def run(symbol: Symbol, offset: Int = -1): Unit
 }
 
-class ReportAssignments(val dataStore: DataStore) extends DataStorePlugin {
+class ReportAssignments(val executionEngine: ExecutionEngine) extends DataStorePlugin {
+  val dataStore: DataStore = executionEngine.dataStore
 
   def run(symbol: Symbol, offset: Int = -1): Unit = {
     if(offset == -1) {
@@ -44,7 +47,8 @@ class ReportAssignments(val dataStore: DataStore) extends DataStorePlugin {
   }
 }
 
-class RenderComputations(val dataStore: DataStore) extends DataStorePlugin {
+class RenderComputations(val executionEngine: ExecutionEngine) extends DataStorePlugin {
+  val dataStore: DataStore = executionEngine.dataStore
 
   def run(symbol: Symbol, offset: Int = -1): Unit = {
     dataStore.executionEngineOption.foreach { executionEngine =>
@@ -53,7 +57,8 @@ class RenderComputations(val dataStore: DataStore) extends DataStorePlugin {
   }
 }
 
-class VcdHook(val dataStore: DataStore, val vcd: VCD) extends DataStorePlugin {
+class VcdHook(val executionEngine: ExecutionEngine, val vcd: VCD) extends DataStorePlugin {
+  val dataStore: DataStore = executionEngine.dataStore
 
   override def run(symbol: Symbol, offset: Int = -1): Unit = {
     if(offset == -1) {

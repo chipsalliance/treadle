@@ -9,7 +9,10 @@ case class ClockInfo(
 )
 
 object ClockInfo {
+  /*
+  These are the following settings that seem to parallel the default verilator settings.
+   */
   val DefaultName: String = "clock"
-  val DefaultPeriod: Long = 1000L
-  val DefaultOffset: Long = 500L
+  val DefaultPeriod: Long = 10L
+  val DefaultOffset: Long = -4L
 }

@@ -33,11 +33,11 @@ class ExecutionEngine(
   /* Default dataStore plugins */
 
   dataStore.addPlugin(
-    "show-assigns", new ReportAssignments(dataStore), enable = optionsManager.treadleOptions.setVerbose)
+    "show-assigns", new ReportAssignments(this), enable = optionsManager.treadleOptions.setVerbose)
 
   dataStore.addPlugin(
     "show-computation",
-    new RenderComputations(dataStore),
+    new RenderComputations(this),
     enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
   )
 
@@ -94,8 +94,8 @@ class ExecutionEngine(
     vcdOption = Some(vcd)
     vcdFileName = fileName
 
-    val vcdPluIn = new VcdHook(dataStore, vcd)
-    dataStore.addPlugin(ExecutionEngine.VCDHookName, vcdPluIn, enable = true)
+    val vcdPlugIn = new VcdHook(this, vcd)
+    dataStore.addPlugin(ExecutionEngine.VCDHookName, vcdPlugIn, enable = true)
   }
 
   def disableVCD(): Unit = {
