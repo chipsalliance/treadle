@@ -316,7 +316,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     }
     s"test ${engine.ast.main} " +
       s"$status $expectationsMet tests passed " +
-      f"in $cycleCount cycles in $elapsedSeconds%.6f seconds"
+      f"in $cycleCount cycles in $elapsedSeconds%.6f seconds ${cycleCount / elapsedSeconds}%.2f Hz"
   }
   /**
     * A simplistic report of the number of expects that passed

@@ -21,10 +21,12 @@ object Memory {
     * @return
     */
   def buildSymbols(
-                    memory: DefMemory,
-                    expandedName: String,
-                    sensitivityGraphBuilder: SensitivityGraphBuilder
+    memory: DefMemory,
+    expandedName: String,
+    sensitivityGraphBuilder: SensitivityGraphBuilder,
+    registerNames: mutable.HashSet[String]
   ): Seq[Symbol] = {
+
     val memorySymbol = Symbol(expandedName, memory.dataType, MemKind, memory.depth)
     val addrWidth    = IntWidth(requiredBitsForUInt(memory.depth - 1))
     val addrType     = firrtl.ir.UIntType(addrWidth)
@@ -36,6 +38,7 @@ object Memory {
     def buildRegisterTriple(baseName: String, index: Int, dataType: firrtl.ir.Type): Seq[Symbol] = {
 
       val register = Symbol(s"$baseName$index", dataType, WireKind)
+      registerNames += register.name
       val registerIn = SymbolTable.makeRegisterInputSymbol(register)
       val lastClockValue = SymbolTable.makeLastValueSymbol(register)
       lastValueSymbols += lastClockValue
@@ -84,13 +87,13 @@ object Memory {
 
       sensitivityGraphBuilder.addSensitivity(clk, data)
 
-      val pipelineDataSymbols = (0 until memory.readLatency).flatMap { n =>
-        buildRegisterTriple(s"$expandedName.$readerString.pipeline_data_", n, dataType)
+      val pipelineAddrSymbols = (0 until memory.readLatency).flatMap { n =>
+        buildRegisterTriple(s"$expandedName.$readerString.pipeline_addr_", n, dataType)
       }
 
-      buildPipelineDependencies(addr, pipelineDataSymbols, Some(data))
+      buildPipelineDependencies(addr, pipelineAddrSymbols, Some(data))
 
-      readerInterfaceSymbols ++ pipelineDataSymbols
+      readerInterfaceSymbols ++ pipelineAddrSymbols
     }
 
     val writerSymbols = memory.writers.flatMap { writerString =>
@@ -241,9 +244,10 @@ object Memory {
       compiler.makeAssigner(chain.head, compiler.makeGetIndirect(memorySymbol, data, enable, addr))
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
+      val drivingClock = symbolTable.findHighestClock(clock)
       chain.grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>
-          compiler.makeAssigner(target, compiler.makeGet(source))
+          compiler.makeAssigner(target, compiler.makeGet(source), drivingClock)
         case _ =>
       }
 
@@ -262,7 +266,7 @@ object Memory {
       val addr   = symbolTable(s"$readerName.addr")
       val data   = symbolTable(s"$readerName.data")
 
-      buildReadPipelineAssigners(clock, readerName, "data", data, addr, enable)
+      buildReadPipelineAssigners(clock, readerName, "addr", data, addr, enable)
     }
 
     /*
@@ -284,9 +288,10 @@ object Memory {
       val chain = Seq(rootSymbol) ++ pipelineSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
+      val drivingClock = symbolTable.findHighestClock(clockSymbol)
       chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>
-          compiler.makeAssigner(target, compiler.makeGet(source))
+          compiler.makeAssigner(target, compiler.makeGet(source), drivingClock)
         case _ =>
       }
 

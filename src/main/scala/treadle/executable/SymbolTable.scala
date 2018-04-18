@@ -70,8 +70,8 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
         else {
           Some(symbol)
         }
-      case _ =>
-        throw TreadleException(s"cannot find parent symbol for $symbol")
+      case x =>
+        Some(symbol)
     }
   }
 
@@ -305,15 +305,15 @@ object SymbolTable extends LazyLogging {
           addSymbol(registerIn)
           addSymbol(registerOut)
 
-//          addDependency(registerOut, expressionToReferences(clockExpression))
+          addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
-          addDependency(registerIn, Set(registerOut))
+          // addDependency(registerIn, Set(registerOut))
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)
           logger.debug(s"declaration:DefMemory:${defMemory.name} becomes $expandedName")
 
-          Memory.buildSymbols(defMemory, expandedName, sensitivityGraphBuilder).foreach { symbol =>
+          Memory.buildSymbols(defMemory, expandedName, sensitivityGraphBuilder, registerNames).foreach { symbol =>
             addSymbol(symbol)
           }
 

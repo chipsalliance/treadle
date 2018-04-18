@@ -662,16 +662,27 @@ class ExpressionCompiler(
         // if it's a register we use the name of its input side
 
         val expandedName = expand(con.loc.serialize)
-        if(!symbolTable.isRegister(expandedName)) {
-          val assignedSymbol = symbolTable(expandedName)
-          makeAssigner(assignedSymbol, processExpression(con.expr))
-        }
-        else {
+        if(symbolTable.isRegister(expandedName)) {
           val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(expandedName))
 
           val processedExpression = processExpression(con.expr)
 
           makeAssigner(registerIn, processedExpression)
+        }
+        else {
+          val assignedSymbol = symbolTable(expandedName)
+          if(assignedSymbol.firrtlType == ClockType) {
+            getDrivingClock(con.expr).foreach { drivingClock =>
+              val clockDown = symbolTable(drivingClock.name)
+              makeAssigner(assignedSymbol, makeGet(drivingClock))
+              val downAssigner = dataStore.AssignInt(
+                assignedSymbol, makeGet(drivingClock).asInstanceOf[IntExpressionResult].apply)
+              scheduler.addUnassigner(drivingClock, downAssigner)
+            }
+          }
+          else {
+            makeAssigner(assignedSymbol, processExpression(con.expr))
+          }
         }
 
       case WDefInstance(_, instanceName, moduleName, _) =>

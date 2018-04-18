@@ -41,8 +41,6 @@ class ExecutionEngine(
     enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
   )
 
-  dataStore.allAssigners ++= scheduler.getAllAssigners
-
   def setLeanMode(): Unit = {
     val canBeLean = ! (verbose || vcdOption.isDefined)
     scheduler.setLeanMode(canBeLean)
@@ -436,7 +434,7 @@ object ExecutionEngine {
       println(s"Symbol table:\n${symbolTable.render}")
     }
 
-    val scheduler = new Scheduler(dataStore, symbolTable)
+    val scheduler = new Scheduler(symbolTable)
 
     val compiler = new ExpressionCompiler(symbolTable, dataStore, scheduler, interpreterOptions, blackBoxFactories)
 

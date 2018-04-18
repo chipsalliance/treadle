@@ -8,7 +8,17 @@ import treadle.{BlackBoxCycler, TreadleException}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends LazyLogging {
+/**
+  * The scheduler holds the assignment statements of the entire circuit.
+  * Clocks introduce a level of complexity, in that when they flip registers
+  * who use those clocks must copy there inputs to their outputs.
+  * Also since registers are triggered by the derived highest level clock
+  * that can be found, child clocks must be separately driven.  This is
+  * what the triggeredUnassigns are for.
+  *
+  * @param symbolTable symbol table is used to find orphans
+  */
+class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
@@ -20,7 +30,16 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
       }
     }
 
+  val triggeredUnassigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
+    new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
+      override def default(key: Symbol): ArrayBuffer[Assigner] = {
+        this(key) = new mutable.ArrayBuffer[Assigner]()
+        this(key)
+      }
+    }
+
   val orphanedAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val allUnassigners    : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
 
@@ -51,7 +70,7 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
   }
 
   def getAllAssigners: Seq[Assigner] = {
-    toAssigner.values.toSeq
+    toAssigner.values.toSeq ++ allUnassigners
   }
 
   def inputChildrenAssigners(): Seq[Assigner] = {
@@ -66,6 +85,11 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
   def getAssigners(symbols: Seq[Symbol]): Seq[Assigner] = {
     val assigners = symbols.flatMap { symbol => toAssigner.get(symbol) }
     assigners
+  }
+
+  def addUnassigner(symbol: Symbol, assigner: Assigner): Unit = {
+    triggeredUnassigns(symbol) += assigner
+    allUnassigners += assigner
   }
 
   def organizeAssigners(): Unit = {
@@ -130,6 +154,14 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
   }
 
   /**
+    *  this is like executeTriggeredAssigns but is a hack
+    *  to propagate clock down signals to child clocks
+    */
+  def executeTriggeredUnassigns(trigger: Symbol): Unit = {
+    executeAssigners(triggeredUnassigns(trigger))
+  }
+
+  /**
     * de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
@@ -164,5 +196,5 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
 }
 
 object Scheduler {
-  def apply(dataStore: DataStore, symbolTable: SymbolTable): Scheduler = new Scheduler(dataStore, symbolTable)
+  def apply(symbolTable: SymbolTable): Scheduler = new Scheduler(symbolTable)
 }

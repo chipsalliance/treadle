@@ -26,8 +26,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   nextIndexFor(LongSize) = 0
   nextIndexFor(BigSize)  = 0
 
-  val allAssigners  : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer()
-
   var leanMode      : Boolean = true
   val plugins       : mutable.HashMap[String, DataStorePlugin] = new mutable.HashMap()
   val activePlugins : mutable.ArrayBuffer[DataStorePlugin]     = new mutable.ArrayBuffer()
@@ -233,6 +231,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       if(value == triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
       }
+      else {
+        scheduler.executeTriggeredUnassigns(symbol)
+      }
     }
 
     def runFull(): Unit = {
@@ -240,6 +241,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       runPlugins(symbol)
       if(value == triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
+      }
+      else {
+        scheduler.executeTriggeredUnassigns(symbol)
       }
     }
 

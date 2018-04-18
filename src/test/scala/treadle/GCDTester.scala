@@ -63,8 +63,8 @@ class GCDTester extends FlatSpec with Matchers {
     }
 
     val values =
-      for {x <- 1 to 1000
-           y <- 1 to 100
+      for {x <- 10 to 1000
+           y <- 10 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
     val tester = new TreadleTester(gcdFirrtl, manager)
@@ -73,9 +73,9 @@ class GCDTester extends FlatSpec with Matchers {
     // engine.setVerbose()
     tester.poke("clock", 1)
 
-    List((344, 17, 1)).foreach { case (x, y, z) =>
+//    List((344, 17, 1)).foreach { case (x, y, z) =>
       //    List((1, 1, 1), (34, 17, 17), (8, 12, 4)).foreach { case (x, y, z) =>
-      //    for((x, y, z) <- values) {
+          for((x, y, z) <- values) {
       tester.step()
       tester.poke("io_a", x)
       tester.poke("io_b", y)
@@ -91,17 +91,7 @@ class GCDTester extends FlatSpec with Matchers {
         tester.step()
       }
 
-      val right = tester.peek("io_z") == BigInt(z)
-      if(right) {
-        println(s"GOT io_z ${tester.peek("io_z")} io_v ${tester.peek("io_v")}")
-      }
-      else {
-        println(s"${Console.RED}GOT io_z ${tester.peek("io_z")} NOT $z  io_v ${tester.peek("io_v")}${Console.RESET}")
-      }
-        tester.expect("io_z", BigInt(z))
-
-
-      //      tester.expect("io_z", z)
+      tester.expect("io_z", BigInt(z))
     }
     val endTime = System.nanoTime()
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
