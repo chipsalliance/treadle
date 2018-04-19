@@ -37,7 +37,7 @@ case class SimpleSingleClockStepper(
 
   var resetTaskTime: Long = -1L
 
-  val clockAssigner = dataStore.TriggerAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1)
+  val clockAssigner = dataStore.TriggerConstantAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1)
   engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
 
   override def run(steps: Int): Unit = {

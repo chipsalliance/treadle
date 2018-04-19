@@ -12,7 +12,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = true,
+        writeVCD = false,
         vcdShowUnderscored = false,
         setVerbose = false,
         showFirrtlAtLoad = false,
@@ -23,9 +23,9 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
 
     val tester = new TreadleTester(input, optionsManager)
 
-//    intercept[StopException] {
+    intercept[StopException] {
       tester.step(300)
-//    }
+    }
     tester.report()
     tester.engine.writeVCD()
     tester.engine.lastStopResult should be (Some(0))

@@ -78,9 +78,27 @@ class ExpressionCompiler(
   //scalastyle:off cyclomatic.complexity
   def makeAssigner(symbol: Symbol, expressionResult: ExpressionResult, triggerOption: Option[Symbol] = None): Unit = {
     val assigner = (symbol.dataSize, expressionResult) match {
-      case (IntSize,  result: IntExpressionResult)  => dataStore.AssignInt(symbol,  result.apply)
-      case (IntSize,  result: LongExpressionResult) => dataStore.AssignInt(symbol,  ToInt(result.apply).apply)
-      case (IntSize,  result: BigExpressionResult)  => dataStore.AssignInt(symbol,  ToInt(result.apply).apply)
+      case (IntSize,  result: IntExpressionResult)  =>
+        if(scheduler.triggeredAssigns.contains(symbol)) {
+          dataStore.TriggerExpressionAssigner(symbol, scheduler, result.apply, triggerOnValue = 1)
+        }
+        else {
+          dataStore.AssignInt(symbol, result.apply)
+        }
+      case (IntSize,  result: LongExpressionResult) =>
+        if(scheduler.triggeredAssigns.contains(symbol)) {
+          dataStore.TriggerExpressionAssigner(symbol, scheduler, ToInt(result.apply).apply, triggerOnValue = 1)
+        }
+        else {
+          dataStore.AssignInt(symbol,  ToInt(result.apply).apply)
+        }
+      case (IntSize,  result: BigExpressionResult)  =>
+        if(scheduler.triggeredAssigns.contains(symbol)) {
+          dataStore.TriggerExpressionAssigner(symbol, scheduler, ToInt(result.apply).apply, triggerOnValue = 1)
+        }
+        else {
+          dataStore.AssignInt(symbol,  ToInt(result.apply).apply)
+        }
       case (LongSize, result: IntExpressionResult)  => dataStore.AssignLong(symbol, ToLong(result.apply).apply)
       case (LongSize, result: LongExpressionResult) => dataStore.AssignLong(symbol, result.apply)
       case (LongSize, result: BigExpressionResult)  => dataStore.AssignLong(symbol, BigToLong(result.apply).apply)
@@ -98,45 +116,6 @@ class ExpressionCompiler(
           s"Error:assignment size mismatch ($size)${symbol.name} <= ($expressionSize)$expressionResult")
     }
     addAssigner(assigner, triggerOption)
-  }
-
-  def makeClockedAssigner(
-    symbol           : Symbol,
-    clockSymbol      : IntExpressionResult,
-    lastValueSymbol  : Symbol,
-    expressionResult : ExpressionResult
-  ): Unit = {
-
-    val assigner = (symbol.dataSize, expressionResult) match {
-      case (IntSize,  result: IntExpressionResult)  =>
-        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, lastValueSymbol, result.apply)
-      case (IntSize,  result: LongExpressionResult) =>
-        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, lastValueSymbol, ToInt(result.apply).apply)
-      case (IntSize,  result: BigExpressionResult)  =>
-        dataStore.PosEdgeAssignInt(symbol,  clockSymbol.apply, lastValueSymbol, ToInt(result.apply).apply)
-      case (LongSize, result: IntExpressionResult)  =>
-        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, lastValueSymbol, ToLong(result.apply).apply)
-      case (LongSize, result: LongExpressionResult) =>
-        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, lastValueSymbol, result.apply)
-      case (LongSize, result: BigExpressionResult)  =>
-        dataStore.PosEdgeAssignLong(symbol, clockSymbol.apply, lastValueSymbol, BigToLong(result.apply).apply)
-      case (BigSize,  result: IntExpressionResult)  =>
-        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, lastValueSymbol, ToBig(result.apply).apply)
-      case (BigSize,  result: LongExpressionResult) =>
-        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, lastValueSymbol, LongToBig(result.apply).apply)
-      case (BigSize,  result: BigExpressionResult)  =>
-        dataStore.PosEdgeAssignBig(symbol,  clockSymbol.apply, lastValueSymbol, result.apply)
-      case (size, result) =>
-        val expressionSize = result match {
-          case _: IntExpressionResult => "Int"
-          case _: LongExpressionResult => "Long"
-          case _: BigExpressionResult => "Big"
-        }
-
-        throw TreadleException(
-          s"Error:assignment size mismatch ($size)${symbol.name} <= ($expressionSize)$expressionResult")
-    }
-    addAssigner(assigner)
   }
 
   def addAssigner(assigner: Assigner, triggerOption: Option[Symbol] = None): Unit = {
@@ -671,18 +650,7 @@ class ExpressionCompiler(
         }
         else {
           val assignedSymbol = symbolTable(expandedName)
-          if(assignedSymbol.firrtlType == ClockType) {
-            getDrivingClock(con.expr).foreach { drivingClock =>
-              val clockDown = symbolTable(drivingClock.name)
-              makeAssigner(assignedSymbol, makeGet(drivingClock))
-              val downAssigner = dataStore.AssignInt(
-                assignedSymbol, makeGet(drivingClock).asInstanceOf[IntExpressionResult].apply)
-              scheduler.addUnassigner(drivingClock, downAssigner)
-            }
-          }
-          else {
-            makeAssigner(assignedSymbol, processExpression(con.expr))
-          }
+          makeAssigner(assignedSymbol, processExpression(con.expr))
         }
 
       case WDefInstance(_, instanceName, moduleName, _) =>

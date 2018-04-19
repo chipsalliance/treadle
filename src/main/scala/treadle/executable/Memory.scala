@@ -4,7 +4,7 @@ package treadle.executable
 
 import treadle._
 import firrtl.{MemKind, WireKind}
-import firrtl.ir.{DefMemory, IntWidth, UIntType}
+import firrtl.ir.{ClockType, DefMemory, IntWidth}
 
 import scala.collection.mutable
 
@@ -79,7 +79,7 @@ object Memory {
       val readerName = s"$expandedName.$readerString"
 
       val en   = Symbol(s"$readerName.en",   booleanType, WireKind)
-      val clk  = Symbol(s"$readerName.clk",  booleanType, WireKind)
+      val clk  = Symbol(s"$readerName.clk",  ClockType, WireKind)
       val addr = Symbol(s"$readerName.addr", addrType, WireKind)
       val data = Symbol(s"$readerName.data", dataType, WireKind)
 
@@ -102,7 +102,7 @@ object Memory {
       val portSymbol = Symbol(writerName, dataType, WireKind)
 
       val en    = Symbol(s"$writerName.en", booleanType, WireKind)
-      val clk   = Symbol(s"$writerName.clk", booleanType, WireKind)
+      val clk   = Symbol(s"$writerName.clk", ClockType, WireKind)
       val addr  = Symbol(s"$writerName.addr", addrType, WireKind)
       val mask  = Symbol(s"$writerName.mask", booleanType, WireKind)
       val data  = Symbol(s"$writerName.data", dataType, WireKind)
@@ -138,7 +138,7 @@ object Memory {
       val portSymbol = Symbol(writerName, dataType, WireKind)
 
       val en    =  Symbol(s"$writerName.en", booleanType, WireKind)
-      val clk   =  Symbol(s"$writerName.clk", booleanType, WireKind)
+      val clk   =  Symbol(s"$writerName.clk", ClockType, WireKind)
       val addr  =  Symbol(s"$writerName.addr", addrType, WireKind)
       val rdata =  Symbol(s"$writerName.rdata", dataType, WireKind)
       val mode  =  Symbol(s"$writerName.wmode", booleanType, WireKind)
