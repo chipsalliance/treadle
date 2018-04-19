@@ -131,7 +131,12 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
           engine.setValue(resetName, 1)
           engine.evaluateCircuit()
           wallTime.incrementTime(timeRaised)
+          engine.setValue(resetName, 0)
+        case _: SimpleSingleClockStepper =>
           engine.setValue(resetName, 1)
+          engine.evaluateCircuit()
+          wallTime.incrementTime(timeRaised)
+          engine.setValue(resetName, 0)
         case _ =>
           clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
             engine.setValue(resetName, 0)

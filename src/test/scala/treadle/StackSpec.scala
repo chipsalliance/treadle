@@ -84,7 +84,7 @@ class StackSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         writeVCD = true,
         vcdShowUnderscored = false,
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = true,
         rollbackBuffers = 0,
         symbolsToWatch = Seq() // Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")
@@ -98,26 +98,28 @@ class StackSpec extends FreeSpec with Matchers {
     tester.poke("io_dataIn", 11)
     tester.poke("io_pop", 0)
 
+    println(s"======== first push done sp ${tester.peek("sp")}")
+
     tester.step()
+
+    println(s"======== first push done sp ${tester.peek("sp")}")
 
     tester.expect("sp", 1)
 
-    tester.poke("io_push", 0)
-    tester.step()
-
-    tester.expect("io_dataOut", 11)
 
     tester.poke("io_dataIn", 22)
     tester.step()
 
-    tester.expect("io_dataOut", 22)
+    tester.expect("io_dataOut", 11)
+
     tester.expect("sp", 2)
 
     tester.poke("io_dataIn", 33)
     tester.step()
-
+    tester.expect("io_dataOut", 22)
+    tester.step()
     tester.expect("io_dataOut", 33)
-    tester.expect("sp", 3)
+    tester.expect("sp", 4)
 
     tester.report()
   }
