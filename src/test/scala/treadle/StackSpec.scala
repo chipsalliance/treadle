@@ -100,23 +100,24 @@ class StackSpec extends FreeSpec with Matchers {
 
     tester.step()
 
-    tester.expectMemory("io_dataOut", 1, 11)
-    tester.expectMemory("sp", 0, 0)
-    tester.expectMemory("sp", 1, 1)
+    tester.expect("sp", 1)
+
+    tester.poke("io_push", 0)
+    tester.step()
+
+    tester.expect("io_dataOut", 11)
 
     tester.poke("io_dataIn", 22)
     tester.step()
 
-    tester.expectMemory("io_dataOut", 1, 22)
-    tester.expectMemory("sp", 0, 0)
-    tester.expectMemory("sp", 1, 1)
+    tester.expect("io_dataOut", 22)
+    tester.expect("sp", 2)
 
     tester.poke("io_dataIn", 33)
     tester.step()
 
-    tester.expectMemory("io_dataOut", 1, 33)
-    tester.expectMemory("sp", 0, 1)
-    tester.expectMemory("sp", 1, 1)
+    tester.expect("io_dataOut", 33)
+    tester.expect("sp", 3)
 
     tester.report()
   }
