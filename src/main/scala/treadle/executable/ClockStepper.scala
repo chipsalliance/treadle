@@ -32,8 +32,8 @@ case class SimpleSingleClockStepper(
   var clockIsHigh: Boolean = false
   def clockIsLow: Boolean = ! clockIsHigh
 
-  private val upPeriod = clockPeriod / 2
-  private val downPeriod = clockPeriod - upPeriod
+  val upPeriod   : Long = clockPeriod / 2
+  val downPeriod : Long = clockPeriod - upPeriod
 
   var resetTaskTime: Long = -1L
 
@@ -55,6 +55,8 @@ case class SimpleSingleClockStepper(
       if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
         resetSymbolOpt.foreach { resetSymbol =>
           engine.setValue(resetSymbol.name, 0)
+          engine.inputsChanged = true
+          engine.evaluateCircuit()
         }
         resetTaskTime = -1L
       }
@@ -68,6 +70,8 @@ case class SimpleSingleClockStepper(
       if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
         resetSymbolOpt.foreach { resetSymbol =>
           engine.setValue(resetSymbol.name, 0)
+          engine.inputsChanged = true
+          engine.evaluateCircuit()
         }
         resetTaskTime = -1L
       }

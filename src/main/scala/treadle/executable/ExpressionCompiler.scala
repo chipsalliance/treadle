@@ -651,6 +651,15 @@ class ExpressionCompiler(
         else {
           val assignedSymbol = symbolTable(expandedName)
           makeAssigner(assignedSymbol, processExpression(con.expr))
+
+          if(assignedSymbol.firrtlType == ClockType) {
+            getDrivingClock(con.expr).foreach { drivingClock =>
+              val clockDown = symbolTable(drivingClock.name)
+              val downAssigner = dataStore.AssignInt(
+                assignedSymbol, makeGet(drivingClock).asInstanceOf[IntExpressionResult].apply)
+              scheduler.addUnassigner(drivingClock, downAssigner)
+            }
+          }
         }
 
       case WDefInstance(_, instanceName, moduleName, _) =>
