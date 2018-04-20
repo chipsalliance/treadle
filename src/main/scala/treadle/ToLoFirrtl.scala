@@ -14,6 +14,7 @@ object ToLoFirrtl {
     val annotations = optionsManager.firrtlOptions.annotations
     val compileResult = compiler.compileAndEmit(firrtl.CircuitState(c, ChirrtlForm, annotations))
 
+//    println("compileResult\n" + compileResult.circuit.serialize)
 //    VerilogMemDelays.run(compileResult.circuit)
     compileResult.circuit
   }

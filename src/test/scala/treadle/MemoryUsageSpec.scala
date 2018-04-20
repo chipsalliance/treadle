@@ -357,15 +357,32 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     tester.expect("m.write.pipeline_data_3", 11)
     tester.expectMemory("m", 3, 11)
 
+    // we filled this queue with 3 earlier, this kind of clears it
+    tester.poke("addr", 0)
+    tester.poke("write_en", 0)
+
+    tester.step()
+
     tester.poke("addr", 3)
     tester.poke("write_en", 0)
 
     tester.step()
 
-    tester.expect("m.read.pipeline_addr_0", 3)
-    tester.expect("m.read.pipeline_addr_1", 0)
-    tester.expect("m.read.pipeline_addr_2", 0)
-    tester.expect("data", 0)
+    tester.expect("m.read.pipeline_raddr_0", 3)
+    tester.expect("m.read.pipeline_raddr_1", 0)
+    tester.step()
+
+    tester.expect("m.read.pipeline_raddr_0", 3)
+    tester.expect("m.read.pipeline_raddr_1", 3)
+    tester.expect("m.read.pipeline_raddr_2", 0)
+    tester.expect("out1", 0)
+    tester.step()
+
+    tester.expect("m.read.pipeline_raddr_0", 3)
+    tester.expect("m.read.pipeline_raddr_1", 3)
+    tester.expect("m.read.pipeline_raddr_2", 3)
+    tester.expect("out1", 11)
+
 
     tester.report()
   }
@@ -432,9 +449,9 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
   "basic memory with varying latencies" in {
     for {
       readLatency <- 0 to 2
-      writeLatency <- 1 to 8
+      writeLatency <- 1 to 4
     } {
-      println(s"${"X" * 100}\nReadLatency $readLatency WriteLatency $writeLatency")
+      println(s"ReadLatency $readLatency WriteLatency $writeLatency")
       val input =
         s"""circuit Test :
           |  module Test :
@@ -466,8 +483,8 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
 
       val optionsManager = new TreadleOptionsManager {
         treadleOptions = treadleOptions.copy(
-          setVerbose = true,
-          showFirrtlAtLoad = true,
+          setVerbose = false,
+          showFirrtlAtLoad = false,
           noDefaultReset = true
         )
       }
@@ -483,7 +500,6 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
       tester.poke("addr", 2)
       tester.poke("write_en", 0)
       tester.step()
-      tester.expect("m.read.data", 0)
 
       tester.poke("write_en", 0)
       tester.poke("addr", 3)
