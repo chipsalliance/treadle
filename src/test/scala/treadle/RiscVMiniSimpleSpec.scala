@@ -12,7 +12,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = false,
+        writeVCD = true,
         vcdShowUnderscored = false,
         setVerbose = false,
         showFirrtlAtLoad = false,
