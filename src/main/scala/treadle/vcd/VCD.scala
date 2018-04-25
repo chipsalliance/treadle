@@ -48,7 +48,7 @@ object VCD extends LazyLogging {
 
   def apply(
       moduleName: String,
-      timeScale: String = "1ps",
+      timeScale: String = "1ns",
       comment: String = "",
       showUnderscoredNames: Boolean = false
   ): VCD = {
@@ -496,6 +496,8 @@ case class VCD(
     }
   }
 
+  val wiresToIgnore = new mutable.HashSet[String]
+
   def info: String = {
     val infoLines = Seq(
       "vcd" -> version,
@@ -586,6 +588,10 @@ case class VCD(
     }
   }
 
+  def isTempWire(wireName: String): Boolean = {
+    wireName.split("""\.""").last.startsWith("_T_") || wireName.contains("/")
+  }
+
   /**
     * Change wire value if it is different that its the last recorded value
     * @param wireName name of wire
@@ -594,7 +600,11 @@ case class VCD(
     * @return         false if the value is not different
     */
   def wireChanged(wireName: String, value: BigInt, width: Int = 1): Boolean = {
-    if(ignoreUnderscoredNames && (wireName.startsWith("_") || wireName.contains("/"))) return false
+    if(wiresToIgnore.contains(wireName)) return false
+    if(ignoreUnderscoredNames && isTempWire(wireName)) {
+      wiresToIgnore += wireName
+      return false
+    }
 
     def updateInfo(): Unit = {
       val wire = wires(wireName)

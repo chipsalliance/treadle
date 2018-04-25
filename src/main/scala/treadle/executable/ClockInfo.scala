@@ -10,6 +10,6 @@ case class ClockInfo(
 
 object ClockInfo {
   val DefaultName: String = "clock"
-  val DefaultPeriod: Long = 1000L
-  val DefaultOffset: Long = 500L
+  val DefaultPeriod: Long = 10L
+  val DefaultOffset: Long = 1L
 }

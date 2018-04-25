@@ -214,6 +214,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       val value = expression()
       currentIntArray(index) = value
+      runPlugins(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
