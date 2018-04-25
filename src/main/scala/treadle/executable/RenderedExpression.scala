@@ -27,7 +27,11 @@ object SymbolAtDepth {
 
 
 /**
-  * This class answers the question why does the given symbol have a particular value
+  * This class answers the question why does the given symbol have a particular value,
+  * it shows all arguments of PrimOPs and should only show any symbols value once.
+  * Muxes only show the expanded derivation of the branch taken
+  * Display goes from top to bottom since it is usually the top value one wants
+  * to see rendered last.
   *
   * @param dataStore        current state
   * @param symbolTable      the symbol table
@@ -62,14 +66,18 @@ class ExpressionViewRenderer(
       val sc = view.sc
       val args = view.args
 
-      /* If the current view is a mux only descend the branch taken based on the mux condition */
+      /**
+        * If the current view is a Mux it would ordinarily show the derivation of all of
+        * its arguments, to compact things we will mark the symbols associated with the
+        * mux branch NOT taken as having been seen, so we won't pursue them
+        */
       def checkForMux(): Unit = {
         if(sc.parts.head == "Mux(") {
           args.head match {
             case ev: ExpressionView =>
               ev.args.head match {
                 case ms: Symbol =>
-                  val arg = args.drop(if(dataStore(ms) > 0) 1 else 2).head  //TODO: (CHICK) is this right?
+                  val arg = args.drop(if(dataStore(ms) > 0) 2 else 1).head
                   arg match {
                     case ev2: ExpressionView =>
                       ev2.args.head match {
@@ -80,7 +88,7 @@ class ExpressionViewRenderer(
                     case _ =>
                   }
                 case value: Big =>
-                  val arg = args.drop(if(value > 0) 1 else 2).head
+                  val arg = args.drop(if(value > 0) 2 else 1).head
                   arg match {
                     case ev2: ExpressionView =>
                       ev2.args.head match {
@@ -94,7 +102,7 @@ class ExpressionViewRenderer(
                   x.toString
               }
             case ms: Symbol =>
-              val arg = args.drop(if(dataStore(ms) > 0) 1 else 2).head  //TODO: (CHICK) is this right?
+              val arg = args.drop(if(dataStore(ms) > 0) 2 else 1).head
               arg match {
                 case ev2: ExpressionView =>
                   ev2.args.head match {
@@ -105,7 +113,7 @@ class ExpressionViewRenderer(
                 case _ =>
               }
             case x =>
-                x.toString
+              x.toString
 
           }
         }
@@ -117,21 +125,19 @@ class ExpressionViewRenderer(
       val argStrings = args.map {
         case symbol: Symbol =>
           if(! (
-            symbolTable.isRegister(symbol.name) ||
-              symbolTable.inputPortsNames.contains(symbol.name) ||
-              symbolsSeen.contains(symbol)
-            )) {
+                  symbolTable.isRegister(symbol.name) ||
+                          symbolTable.inputPortsNames.contains(symbol.name) ||
+                          symbolsSeen.contains(symbol)
+                  )) {
             symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, lookBackDepth))
           }
-
-          symbolsSeen += symbol
 
           val value = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
 
           val string = s"${symbol.name} <= " +
-              (if(lookBackDepth > 0) Console.RED else "") +
-              s"${formatOutput(value)}" +
-              (if(lookBackDepth > 0) Console.RESET else "")
+                  (if(lookBackDepth > 0) Console.RED else "") +
+                  s"${formatOutput(value)}" +
+                  (if(lookBackDepth > 0) Console.RESET else "")
           string
 
         case subView: ExpressionView =>
@@ -150,30 +156,36 @@ class ExpressionViewRenderer(
     while (symbolsToDo.nonEmpty) {
       val symbolAtDepth = symbolsToDo.dequeue()
       val symbol = symbolAtDepth.symbol
-      val lookBackDepth = symbolAtDepth.lookBackDepth
-      val currentValue = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
-      val adjustedLookBackDepth = lookBackDepth + (if(symbolTable.isRegister(symbol.name)) 1 else 0)
 
-      expressionViews.get(symbol).foreach { view =>
-        builder ++= "  " * symbolAtDepth.displayDepth
-        builder ++= s"${symbol.name} <= "
-        if(lookBackDepth > 0) {
-          builder ++= Console.RED
+      if(! symbolsSeen.contains(symbol)) {
+        symbolsSeen += symbol
+        val lookBackDepth = symbolAtDepth.lookBackDepth
+        val currentValue = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
+        val adjustedLookBackDepth = lookBackDepth + (if (symbolTable.isRegister(symbol.name)) 1 else 0)
+
+        expressionViews.get(symbol).foreach { view =>
+          builder ++= "  " * symbolAtDepth.displayDepth
+          builder ++= s"${symbol.name} <= "
+          if (lookBackDepth > 0) {
+            builder ++= Console.RED
+          }
+          builder ++= s"${formatOutput(currentValue)} : "
+          if (lookBackDepth > 0) {
+            builder ++= Console.RESET
+          }
+          builder ++= renderView(view, symbolAtDepth.displayDepth, adjustedLookBackDepth)
+          if (adjustedLookBackDepth > lookBackDepth) {
+            builder ++= s" :  Values in red are from $adjustedLookBackDepth cycle"
+            builder ++= (if (adjustedLookBackDepth > 1) "s before" else " before")
+          }
+          builder ++= "\n"
         }
-        builder ++= s"${formatOutput(currentValue)} : "
-        if(lookBackDepth > 0) {
-          builder ++= Console.RESET
-        }
-        builder ++= renderView(view, symbolAtDepth.displayDepth, adjustedLookBackDepth)
-        if(adjustedLookBackDepth > lookBackDepth) {
-          builder ++= s" :  Values in red are from $adjustedLookBackDepth cycle"
-          builder ++= (if(adjustedLookBackDepth > 1) "s before" else " before")
-        }
-        builder ++= "\n"
       }
     }
 
-    val result = builder.toString()
+    // This reverses the top to bottom display order, leaves selected rendered symbol and end of output
+    // making it easiser to see in repl mode
+    val result = builder.toString().split("""\n""").reverse.mkString("\n")
     result
   }
 
