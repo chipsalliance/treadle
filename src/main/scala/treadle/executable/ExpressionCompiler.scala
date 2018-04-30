@@ -706,8 +706,9 @@ class ExpressionCompiler(
         }
 
       case DefNode(_, name, expression) =>
-        logger.debug(s"declaration:DefNode:$name:${expression.serialize}")
-        makeAssigner(symbolTable(expand(name)), processExpression(expression))
+        val symbol = symbolTable(expand(name))
+        logger.debug(s"declaration:DefNode:${symbol.name}:${expression.serialize}")
+        makeAssigner(symbol, processExpression(expression))
 
       case DefWire(_, name, _) =>
         logger.debug(s"declaration:DefWire:$name")

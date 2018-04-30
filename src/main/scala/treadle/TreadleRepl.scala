@@ -133,8 +133,6 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 
   val resetName: String = treadleOptions.resetName
 
-  val combinationalDelay: Long = 10
-
   val wallTime = UTC()
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
@@ -181,6 +179,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       }
     }
   }
+
+  val combinationalDelay: Long = 10
 
   def reset(timeRaised: Long): Unit = {
     engine.setValue(resetName, 1)

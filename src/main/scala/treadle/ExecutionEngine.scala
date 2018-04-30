@@ -142,7 +142,7 @@ class ExecutionEngine(
 
   def getValue(name: String, offset: Int = 0): BigInt = {
     assert(symbolTable.contains(name),
-      s"Error: getValue($name) is not an element of this circuit")
+      s"""Error: getValue("$name") : argument is not an element of this circuit""")
 
     if(inputsChanged) {
       if(verbose) {

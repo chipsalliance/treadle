@@ -258,6 +258,9 @@ case class IsPosEdge(symbol: Symbol, symbolPreviousValue: Symbol, dataStore: Dat
 
 case class UndefinedInts(width: Int) {
   val maxValue: Int = 1 << width
-  def apply(): Int = treadle.random.nextInt(maxValue)
+  def apply(): Int = {
+    //TODO: (chick) parameterize to random|0|current
+    treadle.random.nextInt(maxValue)
+  }
 }
 

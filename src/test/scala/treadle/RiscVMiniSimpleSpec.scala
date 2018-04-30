@@ -3,6 +3,7 @@
 package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.executable.ClockInfo
 
 class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
   "riscv-mini simple core test should run then stop" in {
@@ -12,11 +13,12 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = true,
+        writeVCD = false,
         vcdShowUnderscored = false,
         setVerbose = false,
         showFirrtlAtLoad = false,
         rollbackBuffers = 0,
+        clockInfo = Seq(ClockInfo("clock", period = 10, -4)),
         symbolsToWatch = Seq() // Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")
       )
     }

@@ -29,8 +29,6 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
 
   val resetName: String = treadleOptions.resetName
 
-  val combinationalDelay: Long = 10
-
   val wallTime = UTC()
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
@@ -104,6 +102,24 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       new MultiClockStepper(engine = this.engine, clockName = clockInfoList.head.name, wallTime)
   }
 
+  /*
+  The Idea here is that combinational delay will be used when a peek follows a poke without a step
+  This should allow VCD output to show the events as if they had taken place in a small
+  interval of the clock cycle. There is some DANGER here that an unusual test will poke then peek
+  over 100 times before calling step, which will create a weird looking clock trace
+   */
+  val combinationalDelay: Long = {
+    clockStepper match {
+      case s: SimpleSingleClockStepper =>
+        s.clockPeriod / 100
+      case m: MultiClockStepper =>
+        // TODO (chick) Make this more meaningful
+        0
+      case _ =>
+        0
+    }
+  }
+
   setVerbose(treadleOptions.setVerbose)
 
   if(treadleOptions.writeVCD) {
@@ -118,6 +134,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
+//      reset(clockInfo.period + clockInfo.initialOffset - (clockInfo.period / 2))
     }
   }
 

@@ -14,17 +14,20 @@ class RegisterSpec extends FlatSpec with Matchers {
         |  module RegInc :
         |    input clock : Clock
         |    input reset1 : UInt<1>
+        |    output out1 : UInt<16>
         |
         |    reg reg1 : UInt<16>, clock with : (reset => (reset1, UInt(3)))
         |
         |    reg1 <= mux(reset1, UInt<16>("h03"), add(reg1, UInt(1)))
+        |    out1 <= reg1
         |
       """.stripMargin
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
-        noDefaultReset = true
+        noDefaultReset = true,
+        showFirrtlAtLoad = true
       )
     }
     val tester = TreadleTester(input, optionsManager)
@@ -60,12 +63,19 @@ class RegisterSpec extends FlatSpec with Matchers {
         |    input clk : Clock
         |    input reset1 : UInt<1>
         |    input reset2 : UInt<1>
+        |    output out1 : UInt<16>
+        |    output out2 : UInt<16>
+        |
         |
         |    reg reg1 : UInt<16>, clk with : (reset => (reset1, UInt<16>(0)))
         |    reg reg2 : UInt<16>, clk with : (reset => (reset2, reg1))
         |
         |    reg1 <= add(reg1, UInt(1))
         |    reg2 <= add(reg2, UInt(3))
+        |
+        |    out1 <= reg1
+        |    out2 <= reg2
+        |
         |
       """.stripMargin
 
@@ -135,10 +145,13 @@ class RegisterSpec extends FlatSpec with Matchers {
         |  module RegInc :
         |    input clock : Clock
         |    input reset : UInt<1>
+        |    output out1 : UInt<16>
+        |
         |
         |    reg reg1 : UInt<16>, clock with : (reset => (reset, UInt(3)))  @[RegisterSpec.scala 131:20]
         |
         |    reg1 <= add(reg1, UInt(1))
+        |    out1 <= reg1
         |
       """.stripMargin
 
@@ -162,10 +175,13 @@ class RegisterSpec extends FlatSpec with Matchers {
         |  module RegInc :
         |    input clock : Clock
         |    input reset1 : UInt<1>
+        |    output out1 : UInt<16>
         |
         |    reg reg1 : UInt<16>, clock with : (reset => (reset1, UInt(3)))  @[RegisterSpec.scala 131:20]
         |
         |    reg1 <= add(reg1, UInt(1))
+        |    out1 <= reg1
+        |
         |
       """.stripMargin
 
@@ -252,9 +268,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.poke("in", 8)
     tester.poke("reg1", 42)
     tester.peek("reg1") should be (42)
-    tester.peek("T_1") should be (42)
     tester.step()
-    tester.peek("T_2") should be (42)
     tester.peek("reg2") should be (42)
     tester.peek("reg1") should be (8)
   }

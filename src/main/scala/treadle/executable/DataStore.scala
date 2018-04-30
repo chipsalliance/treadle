@@ -238,7 +238,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     def runFull(): Unit = {
       currentIntArray(index) = value
-      runPlugins(symbol)
       if(value == triggerOnValue) {
         if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
         scheduler.executeTriggeredAssigns(symbol)
@@ -249,6 +248,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         scheduler.executeTriggeredUnassigns(symbol)
         if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
       }
+      runPlugins(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -280,7 +280,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     def runFull(): Unit = {
       val value = expression()
       currentIntArray(index) = value
-      runPlugins(symbol)
       if(value == triggerOnValue) {
         if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
         scheduler.executeTriggeredAssigns(symbol)
@@ -291,6 +290,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         scheduler.executeTriggeredUnassigns(symbol)
         if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
       }
+      runPlugins(symbol)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {

@@ -587,6 +587,10 @@ case class VCD(
     }
   }
 
+  def isTempWire(wireName: String): Boolean = {
+    wireName.split("""\.""").last.startsWith("_T_") || wireName.contains("/")
+  }
+
   /**
     * Change wire value if it is different that its the last recorded value
     * @param wireName name of wire
@@ -596,13 +600,10 @@ case class VCD(
     */
   def wireChanged(wireName: String, value: BigInt, width: Int = 1): Boolean = {
     if(wiresToIgnore.contains(wireName)) return false
-    if(ignoreUnderscoredNames) {
-      if(wireName.split("""\.""").exists(s => s.startsWith("_"))) {
-        wiresToIgnore += wireName
-        return false
-      }
+    if(ignoreUnderscoredNames && isTempWire(wireName)) {
+      wiresToIgnore += wireName
+      return false
     }
-    if(wireName.contains("/")) return false
 
     def updateInfo(): Unit = {
       val wire = wires(wireName)

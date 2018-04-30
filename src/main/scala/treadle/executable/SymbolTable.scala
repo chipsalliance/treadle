@@ -203,7 +203,8 @@ object SymbolTable extends LazyLogging {
               expressionToReferences(falseExpression)
 
           case _: WRef | _: WSubField | _: WSubIndex =>
-            Set(nameToSymbol(expand(expression.serialize)))
+            val name = expand(expression.serialize)
+            Set(nameToSymbol(name))
 
           case ValidIf(condition, value, _) =>
             expressionToReferences(condition) ++ expressionToReferences(value)
