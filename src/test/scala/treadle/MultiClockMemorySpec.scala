@@ -2,8 +2,8 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class MultiClockMemorySpec extends FreeSpec with Matchers {
@@ -103,18 +103,12 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = true,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 4,
-        symbolsToWatch = Seq()
-      )
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--firrtl-source", input)) with HasTreadleSuite
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = new TreadleTester(optionsManager)
 
     tester.step(100)
     tester.report()

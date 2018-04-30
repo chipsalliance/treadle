@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 package treadle
 
-import firrtl.CommonOptions
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FlatSpec, Matchers}
 
 class LifeCellSpec extends FlatSpec with Matchers {
@@ -47,12 +47,13 @@ class LifeCellSpec extends FlatSpec with Matchers {
         |    io.is_alive <= T_36
         |      """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--firrtl-source", input,
+            "--target-dir", "test_run_dir")) with HasTreadleSuite
 
-    new TreadleTester(input, optionsManager) {
+    new TreadleTester(optionsManager) {
       // setVerbose()
       step()
 

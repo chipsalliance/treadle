@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
 
 //scalastyle:off magic.number
@@ -149,18 +150,13 @@ class SimpleVendingMachineSpec extends FreeSpec with Matchers{
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = true,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq("dut.state", "dut.state/in")
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--fint-rollback-buffers", "0",
+            "--symbols-to-watch", "dut.state,dut.state/in",
+            "--firrtl-source", input)) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
 
     intercept[StopException] {
       tester.step(80)

@@ -3,8 +3,8 @@
 package treadle.real
 
 import treadle._
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
-
 
 class BlackBoxRealSpec extends FreeSpec with Matchers {
   "this tests black box implmentation of real numbers" - {
@@ -37,14 +37,12 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
 
     "addition should work expand instances as found" in {
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(new DspRealFactory),
-          randomSeed = 0L
-        )
-      }
-      val tester = new TreadleTester(adderInput, optionsManager)
+      val optionsManager = new ExecutionOptionsManager(
+        "test",
+        Array("--fint-random-seed", "0",
+              "--blackbox-factory", "treadle.real.DspRealFactory",
+              "--firrtl-source", adderInput)) with HasTreadleSuite
+      val tester = new TreadleTester(optionsManager)
 
       tester.poke("io_a1_node", doubleToBigIntBits(1.5))
       tester.poke("io_a2_node", doubleToBigIntBits(3.25))
@@ -73,14 +71,12 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
         |    BBFIntPart_1.in <= io_a_node
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        blackBoxFactories = Seq(new DspRealFactory),
-        randomSeed = 0L
-      )
-    }
-    val tester = new TreadleTester(input, optionsManager)
+      val optionsManager = new ExecutionOptionsManager(
+        "test",
+        Array("--fint-random-seed", "0",
+              "--blackbox-factory", "treadle.real.DspRealFactory",
+              "--firrtl-source", input)) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
 
     tester.poke("io_a_node", doubleToBigIntBits(3.14159))
 

@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -67,10 +68,11 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
         |    waddr <= bits(GEN_18, 3, 0)
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false, setVerbose = false)
-    }
-    val tester = new TreadleTester(chirrtlMemInput, optionsManager) {
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--firrtl-source", chirrtlMemInput)) with HasTreadleSuite
+
+    val tester = new TreadleTester(optionsManager) {
       poke("reset", 1)
       step()
       poke("reset", 0)
@@ -116,7 +118,11 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
         |    c <= a
       """.stripMargin
 
-    val tester = new TreadleTester(input) {
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--firrtl-source", input)) with HasTreadleSuite
+
+    val tester = new TreadleTester(optionsManager) {
       poke("a", 1)
       poke("b", 0)
       poke("select", 0)
@@ -166,7 +172,11 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
         |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
-    val tester = new TreadleTester(input) {
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--firrtl-source", input)) with HasTreadleSuite
+
+    val tester = new TreadleTester(optionsManager) {
       // setVerbose(true)
 
       poke("do_write", 1)
@@ -241,10 +251,11 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
         |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false, setVerbose = false)
-    }
-    val tester = new TreadleTester(input, optionsManager) {
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--firrtl-source", input)) with HasTreadleSuite
+
+    val tester = new TreadleTester(optionsManager) {
       // setVerbose(true)
 
       poke("outer_write_en", 1)

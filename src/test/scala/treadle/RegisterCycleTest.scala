@@ -39,7 +39,7 @@ class RegisterCycleTest extends FreeSpec with Matchers {
       for(i <- 0 to 10) {
         println(s"experiment $i")
         scala.util.Random.setSeed(i.toLong)
-        val tester = new TreadleTester(input)
+        val tester = TreadleTester(input)
 //        tester.setVerbose(true)
 
         tester.poke("reset", 1)
@@ -83,7 +83,7 @@ class RegisterCycleTest extends FreeSpec with Matchers {
         """.stripMargin
 
 
-      val tester = new TreadleTester(input)
+      val tester = TreadleTester(input)
       // tester.setVerbose()
 
       tester.poke("io_In", 1)

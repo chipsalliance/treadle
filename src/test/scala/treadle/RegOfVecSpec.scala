@@ -2,8 +2,8 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class RegOfVecSpec extends FreeSpec with Matchers {
@@ -90,15 +90,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input)
 
     tester.poke("reset", 1)
     tester.step(3)
@@ -137,16 +129,14 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |    stop(clock, and(and(and(UInt<1>("h1"), done), _T_18), UInt<1>("h1")), 0) @[Reg.scala 61:9]
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = true,
-        vcdShowUnderscored = true,
-        setVerbose = false,
-        showFirrtlAtLoad = true
-      )
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--fint-vcd-show-underscored-vars",
+            "--show-firrtl-at-load",
+            "--firrtl-source", input)) with HasTreadleSuite
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = new TreadleTester(optionsManager)
 
     def show(): Unit = {
       tester.step()

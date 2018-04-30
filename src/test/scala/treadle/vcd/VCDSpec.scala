@@ -2,8 +2,8 @@
 
 package treadle.vcd
 
-import treadle.{TreadleOptionsManager, TreadleTester}
-import firrtl.CommonOptions
+import treadle.{TreadleOptionsManager, TreadleTester, HasTreadleSuite}
+import firrtl.ExecutionOptionsManager
 import firrtl.util.BackendCompilationUtilities
 import java.io.File
 
@@ -125,11 +125,12 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
         |    c <= add(a, b)
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
-    val engine = new TreadleTester(input, manager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--target-dir", "test_run_dir",
+            "--firrtl-source", input)) with HasTreadleSuite
+    val engine = new TreadleTester(optionsManager)
     engine.poke("a", -1)
     engine.peek("a") should be (BigInt(-1))
     engine.poke("b", -7)
@@ -155,12 +156,13 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val stream = getClass.getResourceAsStream("/VcdAdder.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--target-dir", "test_run_dir",
+            "--firrtl-source", input)) with HasTreadleSuite
 
-    val engine = new TreadleTester(input, manager)
+    val engine = new TreadleTester(optionsManager)
     engine.step()
     engine.poke("io_a", 3)
     engine.poke("io_b", 5)
@@ -206,20 +208,20 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     // logger.Logger.setLevel(LogLevel.Debug)
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir/vcd_register_delay")
-    }
-    {
-      val engine = new TreadleTester(input, manager)
-      engine.setVerbose()
-      engine.poke("reset", 0)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--target-dir", "test_run_dir/vcd_register_delay",
+            "--firrtl-source", input)) with HasTreadleSuite
 
-      engine.step(50)
+    val engine = new TreadleTester(optionsManager)
+    engine.setVerbose()
+    engine.poke("reset", 0)
 
-      engine.report()
-      engine.finish
-    }
+    engine.step(50)
+
+    engine.report()
+    engine.finish
 
 //    Thread.sleep(3000)
 

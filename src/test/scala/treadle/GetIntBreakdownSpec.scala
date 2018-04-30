@@ -2,8 +2,8 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class GetIntBreakdownSpec extends FreeSpec with Matchers {
@@ -35,15 +35,12 @@ class GetIntBreakdownSpec extends FreeSpec with Matchers {
 
 //    println(firrtlString.split("\n").zipWithIndex.map { case (l,n) => f"$n%5d $l"}.mkString("\n"))
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = false,
-        //        setVerbose = true,
-        rollbackBuffers = 0
-      )
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-rollback-buffers", "0",
+            "--firrtl-source", input)) with HasTreadleSuite
 
-    val tester = new TreadleTester(firrtlString, manager)
+    val tester = new TreadleTester(optionsManager)
 
     for(i <- 0 to 1000) {
       tester.poke("io_in", 4)

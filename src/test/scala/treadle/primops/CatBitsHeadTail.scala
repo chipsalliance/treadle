@@ -3,10 +3,9 @@
 package treadle.primops
 
 import treadle._
-import treadle.BitTwiddlingUtils
 import treadle.executable._
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class CatBitsHeadTail extends FreeSpec with Matchers {
@@ -91,18 +90,12 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
             |
           """.stripMargin
 
-        val optionsManager = new TreadleOptionsManager {
-          treadleOptions = treadleOptions.copy(
-            writeVCD = false,
-            vcdShowUnderscored = false,
-            setVerbose = false,
-            showFirrtlAtLoad = true,
-            rollbackBuffers = 0,
-            symbolsToWatch = Seq()
-          )
-        }
-
-        val tester = new TreadleTester(input, optionsManager)
+        val optionsManager = new ExecutionOptionsManager(
+          "test",
+          Array("--show-firrtl-at-load",
+                "--fint-rollback-buffers", "0",
+                "--firrtl-source", input)) with HasTreadleSuite
+        val tester = new TreadleTester(optionsManager)
         println(s"peek out 0x${tester.peek("out").toString(16)}")
         tester.report()
       }

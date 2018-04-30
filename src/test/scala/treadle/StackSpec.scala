@@ -4,7 +4,6 @@ package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
 
-
 // scalastyle:off magic.number
 class StackSpec extends FreeSpec with Matchers {
   "StackSpec should pass a basic test" in {
@@ -80,7 +79,7 @@ class StackSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = new TreadleTester(input)
+    val tester = TreadleTester(input)
 
     tester.poke("io_en", 1)
     tester.poke("io_push", 1)

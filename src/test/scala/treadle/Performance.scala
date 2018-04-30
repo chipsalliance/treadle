@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
 
 class Performance extends FreeSpec with Matchers {
@@ -30,12 +31,12 @@ class Performance extends FreeSpec with Matchers {
     """
               .stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-rollback-buffers", "0",
+            "--firrtl-source", junkFirrtl)) with HasTreadleSuite
 
-    val tester = new TreadleTester(junkFirrtl, manager)
+    val tester = new TreadleTester(optionsManager)
 
     val startTime = System.nanoTime()
 

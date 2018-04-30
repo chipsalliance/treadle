@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -53,7 +54,11 @@ class DynamicMemorySearch extends FlatSpec with Matchers {
     val n = 8
     val w = 4
 
-    new TreadleTester(input) {
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--firrtl-source", input)) with HasTreadleSuite
+
+    new TreadleTester(optionsManager) {
 //      engine.setVerbose(true)
 //      engine.sourceState.memories("list").setVerbose()
 

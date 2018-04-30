@@ -4,6 +4,7 @@ package treadle
 import java.io.{File, PrintWriter}
 
 import firrtl.graph.CyclicException
+import firrtl.FirrtlExecutionOptions
 import treadle.vcd.VCD
 import logger.Logger
 import treadle.chronometry.UTC
@@ -32,6 +33,7 @@ abstract class Command(val name: String) {
 class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) {
   val replConfig: ReplConfig = optionsManager.replConfig
   def treadleOptions: TreadleOptions = optionsManager.treadleOptions
+  def firrtlOptions: FirrtlExecutionOptions = optionsManager.firrtlOptions
 
   treadle.random.setSeed(treadleOptions.randomSeed)
 
@@ -75,7 +77,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   }
 
   def loadSource(input: String): Unit = {
-    currentEngineOpt = Some(ExecutionEngine(input, optionsManager))
+    currentEngineOpt = Some(ExecutionEngine(optionsManager))
     currentEngineOpt.foreach { _ =>
       engine.setVerbose(treadleOptions.setVerbose)
     }
@@ -106,8 +108,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 
   def loadVcdScript(fileName: String): Unit = {
     val dutName = currentEngineOpt match {
-      case Some(interpreter) => interpreter.ast.main
-      case None => ""
+      case Some(interpreter) => Some(interpreter.ast.main)
+      case None => None
     }
     try {
       currentVcdScript = Some(VCD.read(fileName, dutName))
@@ -1207,14 +1209,14 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
     console.setPrompt("treadle>> ")
 
     try {
-      if (replConfig.firrtlSource.nonEmpty) {
-        loadSource(replConfig.firrtlSource)
+      if (firrtlOptions.firrtlSource.nonEmpty) {
+        loadSource(firrtlOptions.firrtlSource.get)
       }
-      else if (replConfig.firrtlSourceName.nonEmpty) {
-        loadFile(replConfig.firrtlSourceName)
+      else if (firrtlOptions.inputFileNameOverride.nonEmpty) {
+        loadFile(firrtlOptions.inputFileNameOverride.get)
       }
       if (replConfig.scriptName.nonEmpty) {
-        loadScript(replConfig.scriptName)
+        loadScript(replConfig.scriptName.get)
       }
       if (replConfig.useVcdScript) {
         loadVcdScript(optionsManager.getVcdFileName)
@@ -1299,13 +1301,11 @@ object TreadleRepl {
   }
 
   def main(args: Array[String]): Unit = {
-    val optionsManager = new TreadleOptionsManager with HasReplConfig
+    val optionsManager = new TreadleOptionsManager(args) with HasReplConfig
 
-    if(optionsManager.parse(args)) {
-      Logger.makeScope(optionsManager) {
-        val repl = new TreadleRepl(optionsManager)
-        repl.run()
-      }
+    Logger.makeScope(optionsManager) {
+      val repl = new TreadleRepl(optionsManager)
+      repl.run()
     }
   }
 }

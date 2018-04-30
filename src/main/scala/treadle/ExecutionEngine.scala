@@ -2,7 +2,7 @@
 
 package treadle
 
-import firrtl.PortKind
+import firrtl.{PortKind, ExecutionOptionsManager}
 import firrtl.ir.Circuit
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle.executable._
@@ -391,27 +391,32 @@ object ExecutionEngine {
   //scalastyle:off method.length
   /**
     * Construct a Firrtl Execution engine
-    * @param input           a Firrtl text file
     * @param optionsManager  options that control configuration and behavior
     * @return                the constructed engine
     */
-  def apply(input: String, optionsManager: HasTreadleSuite = new TreadleOptionsManager): ExecutionEngine = {
+  def apply(optionsManager: HasTreadleSuite): ExecutionEngine = {
     val t0 = System.nanoTime()
 
     val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
 
-    val ast = firrtl.Parser.parse(input.split("\n").toIterator)
+    val src = optionsManager.firrtlOptions.firrtlSource.getOrElse(
+      throw new TreadleException("No --firrtl-source specified"))
+
+    val ast = firrtl.Parser.parse(src.split("\n").toIterator)
     val verbose: Boolean = interpreterOptions.setVerbose
     val blackBoxFactories: Seq[BlackBoxFactory] = interpreterOptions.blackBoxFactories
     val timer = new Timer
 
     val loweredAst: Circuit = if(interpreterOptions.lowCompileAtLoad) {
-      if(interpreterOptions.allowCycles) {
-        optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-          annotations = optionsManager.firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation
-        )
+      val optsx = if(interpreterOptions.allowCycles) {
+        new ExecutionOptionsManager(
+          applicationName=optionsManager.applicationName,
+          args=Array.empty,
+          annotations=optionsManager.options :+ DontCheckCombLoopsAnnotation) with HasTreadleSuite
+      } else {
+        optionsManager
       }
-      ToLoFirrtl.lower(ast, optionsManager)
+      ToLoFirrtl.lower(ast, optsx)
     } else {
       ast
     }
@@ -471,5 +476,13 @@ object ExecutionEngine {
       s"${scheduler.activeAssigns.size} statements")
 
     executionEngine
+  }
+
+  def apply(input: String, optionsManager: HasTreadleSuite): ExecutionEngine = {
+    val optsx = new ExecutionOptionsManager(
+      applicationName=optionsManager.applicationName,
+      args=Array("--firrtl-source", input),
+      annotations=optionsManager.options :+ DontCheckCombLoopsAnnotation) with HasTreadleSuite
+    ExecutionEngine(optsx)
   }
 }

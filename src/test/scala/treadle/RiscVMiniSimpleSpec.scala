@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
 
 class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
@@ -10,18 +11,12 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
     val stream = getClass.getResourceAsStream("/core-simple.lo.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = true,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq() // Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--fint-rollback-buffers", "0",
+            "--firrtl-source", input)) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
 
     intercept[StopException] {
       tester.step(300)
@@ -30,4 +25,3 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
     tester.engine.lastStopResult should be (Some(0))
   }
 }
-

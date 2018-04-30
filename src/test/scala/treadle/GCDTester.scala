@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FlatSpec, Matchers}
 
 // scalastyle:off magic.number
@@ -57,17 +58,18 @@ class GCDTester extends FlatSpec with Matchers {
     """
         .stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-rollback-buffers", "0",
+            "--firrtl-source", gcdFirrtl)
+    ) with HasTreadleSuite
 
     val values =
       for {x <- 1 to 1000
            y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = new TreadleTester(gcdFirrtl, manager)
+    val tester = new TreadleTester(optionsManager)
 
     val startTime = System.nanoTime()
     // engine.setVerbose()
@@ -148,20 +150,18 @@ class GCDTester extends FlatSpec with Matchers {
     """
         .stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = false,
-        setVerbose = false,
-        rollbackBuffers = 0
-      )
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-rollback-buffers", "0",
+            "--firrtl-source", gcdFirrtl)
+    ) with HasTreadleSuite
 
     val values =
       for {x <- 10 to 1000
            y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = new TreadleTester(gcdFirrtl, manager)
+    val tester = new TreadleTester(optionsManager)
 
     val startTime = System.nanoTime()
     tester.poke("clock", 1)

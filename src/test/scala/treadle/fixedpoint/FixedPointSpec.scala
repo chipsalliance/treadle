@@ -17,10 +17,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    output c : Fixed
         |    c <= mul(a, b)""".stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
-    }
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input)
 
     tester.poke("a", BigInt("10", 2))
     tester.poke("b", BigInt("100", 2))
@@ -57,10 +54,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    io_out <= io_in
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
-    }
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input)
 
     tester.poke("io_in", BigInt("11", 2))
     println(s"got ${tester.peek("io_out")}")
@@ -81,11 +75,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    io.out <= T_2
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input)
 
     tester.poke("io_in", BigInt("1011", 2))
     println(s"got ${tester.peek("io_out")}")

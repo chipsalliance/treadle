@@ -2,6 +2,7 @@
 
 package treadle.blackboxes
 
+import firrtl.ExecutionOptionsManager
 import firrtl.ir.Type
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
@@ -107,15 +108,13 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
     "each output should hold a different values" in {
 
-      val factory = new FanOutAdderFactory
+      val optionsManager = new ExecutionOptionsManager(
+        "test",
+        Array("--fint-random-seed", "0",
+              "--blackbox-factory", "treadle.blackboxes.FanOutAdderFactory",
+              "--firrtl-source", adderInput)) with HasTreadleSuite
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(factory),
-          randomSeed = 0L)
-      }
-      val tester = new TreadleTester(adderInput, optionsManager)
+      val tester = new TreadleTester(optionsManager)
 
       for(i <- 0 until 10) {
         tester.poke("in", i)
@@ -153,13 +152,13 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
       val factory = new BlackBoxCounterFactory
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(factory),
-          randomSeed = 0L)
-      }
-      val tester = new TreadleTester(input, optionsManager)
+      val optionsManager = new ExecutionOptionsManager(
+        "test",
+        Array("--fint-random-seed", "0",
+              "--blackbox-factory", "treadle.blackboxes.BlackBoxCounterFactory",
+              "--firrtl-source", input)) with HasTreadleSuite
+
+      val tester = new TreadleTester(optionsManager)
 
       tester.poke("clear", 1)
       tester.step()

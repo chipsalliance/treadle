@@ -2,10 +2,11 @@
 
 package treadle.primops
 
+import firrtl.ExecutionOptionsManager
 import firrtl.ir
 import firrtl.ir.Type
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.{BlackBoxFactory, BlackBoxImplementation, TreadleOptionsManager, TreadleTester}
+import treadle.{BlackBoxFactory, BlackBoxImplementation, TreadleTester, HasTreadleSuite}
 
 class BlackBoxTypeParam_1(val name: String) extends BlackBoxImplementation {
   var returnValue: BigInt = 0
@@ -28,15 +29,16 @@ class BlackBoxTypeParam_1(val name: String) extends BlackBoxImplementation {
     outputName: String): Seq[String] = Seq()
 }
 
-// scalastyle:off magic.number
-class EqOpsTester extends FreeSpec with Matchers {
-  private val factory = new BlackBoxFactory {
-    override def createInstance(instanceName: String, blackBoxName : String): Option[BlackBoxImplementation] = {
-      blackBoxName match {
-        case "BlackBoxTypeParam" => Some(add(new BlackBoxTypeParam_1(instanceName)))
-      }
+class BlackBoxTypeParamFactory extends BlackBoxFactory {
+  override def createInstance(instanceName: String, blackBoxName : String): Option[BlackBoxImplementation] = {
+    blackBoxName match {
+      case "BlackBoxTypeParam" => Some(add(new BlackBoxTypeParam_1(instanceName)))
     }
   }
+}
+
+// scalastyle:off magic.number
+class EqOpsTester extends FreeSpec with Matchers {
   "EqOpsTester should pass a basic test" in {
     val input =
       """
@@ -55,15 +57,13 @@ class EqOpsTester extends FreeSpec with Matchers {
         |    out <= eq(blackBoxTypeParamWord.out, UInt<32>("hdeadbeef"))
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        noDefaultReset = true,
-        showFirrtlAtLoad = true,
-        blackBoxFactories = Seq(factory)
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--no-default-reset",
+            "--blackbox-factory", "treadle.primops.BlackBoxTypeParamFactory",
+            "--show-firrtl-at-load",
+            "--firrtl-source", input)) with HasTreadleSuite
+    val tester = TreadleTester(optionsManager)
 
     tester.peek("out") should be (1)
   }
@@ -85,18 +85,12 @@ class EqOpsTester extends FreeSpec with Matchers {
         |
           """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = true,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--show-firrtl-at-load",
+            "--fint-rollback-buffers", "0",
+            "--firrtl-source", input)) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
     tester.peek("out") should be (BigInt(0))
     println(s"peek out ${tester.peek("out") != BigInt(0)}")
     tester.report()

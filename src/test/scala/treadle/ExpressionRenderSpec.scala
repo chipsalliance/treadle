@@ -2,8 +2,8 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class ExpressionRenderSpec extends FreeSpec with Matchers {
@@ -32,18 +32,17 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
         |    out <= node0
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = true,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--fint-vcd-show-underscored-vars",
+            "--fint-verbose",
+            "--show-firrtl-at-load",
+            "--fint-rollback-buffers", "0",
+            "--firrtl-source", input)
+    ) with HasTreadleSuite
 
-    val t = new TreadleTester(input, optionsManager)
+    val t = new TreadleTester(optionsManager)
     t.poke("in0", 10)
     t.poke("in1", 11)
     t.poke("in2", 12)

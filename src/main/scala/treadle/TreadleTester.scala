@@ -3,6 +3,7 @@ package treadle
 
 import java.io.PrintWriter
 
+import firrtl.{ExecutionOptionsManager, FirrtlSourceAnnotation}
 import treadle.chronometry.UTC
 import treadle.executable._
 
@@ -19,18 +20,17 @@ import treadle.executable._
   * @param input              a firrtl program contained in a string
   * @param optionsManager     collection of options for the engine
   */
-class TreadleTester(input: String, optionsManager: HasTreadleSuite = new TreadleOptionsManager) {
+class TreadleTester(optionsManager: HasTreadleSuite) {
   var expectationsMet = 0
 
   treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
 
-  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager)
+  val engine         : ExecutionEngine  = ExecutionEngine(optionsManager)
   val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
 
   setVerbose(treadleOptions.setVerbose)
 
   if(treadleOptions.writeVCD) {
-    optionsManager.setTopNameIfNotSet(engine.ast.main)
     optionsManager.makeTargetDir()
     engine.makeVCDLogger(
       treadleOptions.vcdOutputFileName(optionsManager),
@@ -330,7 +330,19 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
 }
 
 object TreadleTester {
-  def apply(input : String, optionsManager: HasTreadleSuite = new TreadleOptionsManager): TreadleTester = {
-    new TreadleTester(input, optionsManager)
+  @deprecated("Use TreadleTester(optionsManager: ExecutionOptionsManager with HasTreadleSuite", "1.0.0")
+  def apply(input: String, optionsManager: TreadleOptionsManager): TreadleTester = {
+    val optionsManagerx = new ExecutionOptionsManager(
+      applicationName=optionsManager.applicationName,
+      args=Array.empty,
+      annotations=optionsManager.options :+ FirrtlSourceAnnotation(input)) with HasTreadleSuite
+
+    new TreadleTester(optionsManagerx)
   }
+
+  def apply(optionsManager: HasTreadleSuite) = new TreadleTester(optionsManager)
+
+  def apply(input: String) = new TreadleTester(new ExecutionOptionsManager(
+                                                 applicationName="test",
+                                                 args=Array("--firrtl-source", input)) with HasTreadleSuite)
 }

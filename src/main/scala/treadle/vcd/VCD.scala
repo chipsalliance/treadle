@@ -2,6 +2,9 @@
 
 package treadle.vcd
 
+import treadle.TreadleException
+import firrtl.FIRRTLException
+
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
 
@@ -118,10 +121,10 @@ object VCD extends LazyLogging {
     */
   def read(
       vcdFile: String,
-      startScope: String = "",
-      renameStartScope: String = "",
-      varPrefix: String = "",
-      newVarPrefix: String = ""): VCD = {
+      startScope: Option[String] = None,
+      renameStartScope: Option[String] = None,
+      varPrefix: Option[String] = None,
+      newVarPrefix: Option[String] = None): VCD = {
     val words = new WordIterator(vcdFile)
 
     val dateHeader = new StringBuilder
@@ -168,7 +171,7 @@ object VCD extends LazyLogging {
           scope.subScopes += currentScope.get
         case  _ =>
           if(startScope.isEmpty || name == startScope) {
-            val newName = if(renameStartScope.isEmpty) name else renameStartScope
+            val newName = renameStartScope.getOrElse(name)
             scopeRoot = Some(Scope(newName))
             currentScope = scopeRoot
             desiredScopeFound = true
@@ -242,9 +245,9 @@ object VCD extends LazyLogging {
       else if(name == VCD.ResetName) {
         Some(name)
       }
-      else if(name.startsWith(varPrefix)) {
+      else if (varPrefix.isEmpty || name.startsWith(varPrefix.get)) {
         if(newVarPrefix.nonEmpty) {
-          Some(newVarPrefix + name.drop(varPrefix.length))
+          Some(newVarPrefix + name.drop(varPrefix.get.length))
         }
         else {
           Some(name)
@@ -436,13 +439,14 @@ object VCD extends LazyLogging {
     * @param args command lines strings use --help to see what they are
     */
   def main(args: Array[String]) {
-    val manager = new VCDOptionsManager
+    val manager = new VCDOptionsManager(args)
 
-    if(manager.parse(args)) {
+    try {
       val config = manager.vcdConfig
 
+      config.vcdSourceName.getOrElse(throw new TreadleException("VCD generation requires a VCD file"))
       val vcd = read(
-        vcdFile = config.vcdSourceName,
+        vcdFile = config.vcdSourceName.get,
         startScope = config.startScope,
         renameStartScope = config.renameStartScope,
         varPrefix = config.varPrefix,
@@ -451,11 +455,9 @@ object VCD extends LazyLogging {
 
       println(s"${vcd.info}")
 
-      if(config.vcdTargetName.nonEmpty) {
-        vcd.write(config.vcdTargetName) }
-    }
-    else {
-      manager.parser.showUsageAsError()
+      if(config.vcdTargetName.nonEmpty) { vcd.write(config.vcdTargetName.get) }
+    } catch {
+      case e@ (_: FIRRTLException | _: TreadleException) => manager.parser.showUsageAsError()
     }
 
   }

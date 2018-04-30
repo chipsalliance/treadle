@@ -2,8 +2,8 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class ClockSpec extends FreeSpec with Matchers {
@@ -41,15 +41,13 @@ class ClockSpec extends FreeSpec with Matchers {
         |      stop(clock, UInt(1), 0) ; Done!
         |
       """.stripMargin
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        vcdShowUnderscored = true,
-        writeVCD = true
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-vcd-show-underscored-vars",
+            "--fint-write-vcd",
+            "--firrtl-source", input)
+    ) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
 
     intercept[StopException] {
       tester.step(100)

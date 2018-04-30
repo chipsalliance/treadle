@@ -2,8 +2,8 @@
 
 package treadle
 
+import firrtl.ExecutionOptionsManager
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class ShiftRegisterSpec extends FreeSpec with Matchers {
@@ -34,18 +34,11 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = true,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 4,
-        symbolsToWatch = Seq() // Seq("sr", "sr/in")
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--fint-write-vcd",
+            "--firrtl-source", input)) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
 
     intercept[StopException] {
       tester.step(8)

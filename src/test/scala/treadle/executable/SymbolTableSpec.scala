@@ -2,7 +2,7 @@
 
 package treadle.executable
 
-import firrtl.CommonOptions
+import firrtl.ExecutionOptionsManager
 import firrtl.graph.CyclicException
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
@@ -37,8 +37,10 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     """
         .stripMargin
 
-    val optionsManager = new TreadleOptionsManager
-    val simulator = ExecutionEngine(simpleFirrtl, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--firrtl-source", simpleFirrtl)) with HasTreadleSuite
+    val simulator = ExecutionEngine(optionsManager)
 
     val symbolTable = simulator.symbolTable
 
@@ -77,8 +79,10 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new TreadleOptionsManager
-    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--firrtl-source", simpleFirrtl)) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -123,8 +127,10 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new TreadleOptionsManager
-    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--firrtl-source", simpleFirrtl)) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -177,11 +183,11 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
-    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--target-dir", "test_run_dir",
+            "--firrtl-source", simpleFirrtl)) with HasTreadleSuite
+    val tester = new TreadleTester(optionsManager)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -256,14 +262,14 @@ class SymbolTableSpec extends FreeSpec with Matchers {
        """
               .stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
-      firrtlOptions = firrtlOptions.copy(annotations = firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "test",
+      Array("--target-dir", "test_run_dir",
+            "--firrtl-source", simpleFirrtl),
+      Seq(DontCheckCombLoopsAnnotation)) with HasTreadleSuite
 
     try {
-      val tester = new TreadleTester(simpleFirrtl, optionsManager)
+      val tester = new TreadleTester(optionsManager)
     }
     catch {
       case c: CyclicException =>
