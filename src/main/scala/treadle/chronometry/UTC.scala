@@ -8,6 +8,7 @@ class UTC private (scaleName: String = "picoseconds") {
   private var internalTime: Long = 0L
   def currentTime:  Long = internalTime
   def setTime(time: Long): Unit = {
+    assert(time >= internalTime, s"increment time going backwards new time $time was $internalTime")
     internalTime = time
     onTimeChange()
   }
@@ -30,19 +31,25 @@ class UTC private (scaleName: String = "picoseconds") {
     eventQueue.nonEmpty
   }
 
-  def runNextTask(): Unit = {
+  def runNextTask(): Option[Task] = {
     if(hasNextTask) {
       eventQueue.dequeue() match {
         case recurringTask: RecurringTask =>
           setTime(recurringTask.time)
           recurringTask.run()
           eventQueue.enqueue(recurringTask.copy(time = internalTime + recurringTask.period))
+          Some(recurringTask)
         case oneTimeTask: OneTimeTask =>
           setTime(oneTimeTask.time)
           oneTimeTask.run()
+          Some(oneTimeTask)
         case _ =>
           // do nothing
+          None
       }
+    }
+    else {
+      None
     }
   }
 

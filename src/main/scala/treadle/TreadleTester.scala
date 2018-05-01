@@ -74,33 +74,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
         wallTime
       )
     case _ =>
-      clockInfoList.foreach { clockInfo =>
-        engine.symbolTable.get(clockInfo.name) match {
-          case Some(clockSymbol) =>
-            val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
-
-            wallTime.addRecurringTask(
-              clockInfo.period,
-              clockInfo.initialOffset,
-              taskName = s"${clockInfo.name}/up"
-            ) { () =>
-
-              engine.makeUpToggler(clockSymbol).run()
-              engine.inputsChanged = true
-            }
-
-            wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
-              engine.makeDownToggler(clockSymbol).run()
-              engine.inputsChanged = true
-            }
-
-          case _ =>
-            throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
-
-        }
-      }
-
-      new MultiClockStepper(engine = this.engine, clockName = clockInfoList.head.name, wallTime)
+      new MultiClockStepper(engine = this.engine, clockInfoList, wallTime)
   }
 
   /*

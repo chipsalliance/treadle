@@ -91,22 +91,72 @@ case class SimpleSingleClockStepper(
   }
 }
 
-class MultiClockStepper(engine: ExecutionEngine, clockName: String, wallTime: UTC) extends ClockStepper {
+class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], wallTime: UTC) extends ClockStepper {
+  val dataStore: DataStore = engine.dataStore
+  val scheduler: Scheduler = engine.scheduler
+
+  clockInfoList.foreach { clockInfo =>
+    val clockSymbol = engine.symbolTable(clockInfo.name)
+
+    val clockUpAssigner = dataStore.TriggerExpressionAssigner(
+      clockSymbol, scheduler, GetIntConstant(1).apply, triggerOnValue = 1)
+
+    val clockDownAssigner = dataStore.TriggerExpressionAssigner(
+      clockSymbol, scheduler, GetIntConstant(0).apply, triggerOnValue = -1)
+
+    scheduler.clockAssigners += clockUpAssigner
+    scheduler.clockAssigners += clockDownAssigner
+
+    // this sets clock high and will call register updates
+    wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, s"${clockInfo.name}/up") { () =>
+      clockUpAssigner.run()
+      engine.inputsChanged = true
+    }
+
+    // this task sets clocks low
+    wallTime.addRecurringTask(
+      clockInfo.period,
+      clockInfo.initialOffset + clockInfo.upPeriod,
+      s"${clockInfo.name}/down"
+    ) { () =>
+      clockDownAssigner.run()
+    }
+  }
+
+  /**
+    * One step is defined here as the running until the next up clock transition
+    * @param steps the number of up clocks to find and execute
+    */
   override def run(steps: Int): Unit = {
+
     for (_ <- 0 until steps) {
       if (engine.inputsChanged) {
         engine.evaluateCircuit()
       }
 
-      cycleCount += 1
-      if (engine.verbose) println(s"step $cycleCount at ${wallTime.currentTime}")
-      wallTime.runToTask(s"$clockName/up")
-      wallTime.runUntil(wallTime.currentTime)
-      if (engine.verbose) println(s"clock raised at ${wallTime.currentTime}")
-      engine.evaluateCircuit()
-      wallTime.runToTask(s"$clockName/down")
-      wallTime.runUntil(wallTime.currentTime)
-      if (engine.verbose) println(s"Step finished step at ${wallTime.currentTime}")
+      var upTransitionProcessed = false
+
+      def runHeadTask(): Unit = {
+        wallTime.runNextTask().foreach { taskRun =>
+          if (taskRun.taskName.endsWith("/up")) {
+            val clockName = taskRun.taskName.split("/").head
+            cycleCount += 1
+            upTransitionProcessed = true
+          }
+        }
+      }
+
+      while(! upTransitionProcessed) {
+        runHeadTask()
+      }
+
+      /*
+      there could be multiple clocks temporarily set to run at this
+      same time, let them all run
+       */
+      while(wallTime.eventQueue.head.time == wallTime.currentTime) {
+        runHeadTask()
+      }
     }
   }
 

@@ -40,6 +40,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   val orphanedAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
   val allUnassigners    : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val clockAssigners    : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
 
@@ -55,11 +56,11 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
         toAssigner(symbol) = assigner
         triggeredAssigns(triggerSignal) += assigner
       case _ =>
+        if(! excludeFromCombinational) {
         if(toAssigner.contains(symbol)) {
           throw new TreadleException(s"Assigner already exists for $symbol")
         }
         toAssigner(symbol) = assigner
-        if(! excludeFromCombinational) {
           combinationalAssigns += assigner
         }
     }
@@ -70,7 +71,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
   }
 
   def getAllAssigners: Seq[Assigner] = {
-    toAssigner.values.toSeq ++ allUnassigners
+    toAssigner.values.toSeq ++ allUnassigners ++ clockAssigners
   }
 
   def inputChildrenAssigners(): Seq[Assigner] = {

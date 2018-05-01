@@ -6,7 +6,10 @@ case class ClockInfo(
   name          : String = ClockInfo.DefaultName,
   period        : Long   = ClockInfo.DefaultPeriod,
   initialOffset : Long   = ClockInfo.DefaultOffset
-)
+) {
+  val upPeriod   : Long = period / 2
+  val downPeriod : Long = period - upPeriod
+}
 
 object ClockInfo {
   /*
