@@ -19,7 +19,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
         showFirrtlAtLoad = false,
         rollbackBuffers = 0,
         clockInfo = Seq(ClockInfo("clock", period = 10, -4)),
-        symbolsToWatch = Seq() // Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")
+        symbolsToWatch = Seq()
       )
     }
 

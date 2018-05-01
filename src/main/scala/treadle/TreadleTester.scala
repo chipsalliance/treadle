@@ -140,7 +140,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   }
 
   def reset(timeRaised: Long): Unit = {
-    engine.symbolTable.get(resetName).foreach { _ =>
+    engine.symbolTable.get(resetName).foreach { resetSymbol =>
       engine.setValue(resetName, 1)
       engine.inputsChanged = true
 
@@ -159,7 +159,9 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
             engine.inputsChanged = true
             engine.evaluateCircuit()
           }
-          // stepper.run(1)
+          do {
+            stepper.run(1)
+          } while(engine.dataStore(resetSymbol) != Big0)
         case _ =>
           clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
             engine.setValue(resetName, 0)
@@ -197,6 +199,8 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     * @param msg optional message to be printed
     */
   def fail(ex: Throwable, msg: Option[String ] = None): Nothing = {
+    engine.writeVCD()
+
     msg match {
       case Some(s) => println(s)
       case _ =>

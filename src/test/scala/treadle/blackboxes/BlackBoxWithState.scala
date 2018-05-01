@@ -16,6 +16,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         |circuit AccumBlackBoxWrapper : @[:@2.0]
         |  extmodule AccumBlackBox : @[:@3.2]
         |    input clock : Clock @[:@4.4]
+        |    input reset : UInt<1> @[:@4.4]
         |    output data : UInt<16> @[:@5.4]
         |
         |    defname = AccumBlackBox
@@ -31,12 +32,14 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         |    node _T_6 = eq(_T_4, UInt<1>("h0")) @[AccumBlackBoxSpec.scala 96:9:@21.4]
         |    io_data <= m.data
         |    m.clock <= clock
+        |    m.reset <= reset
         |
       """.stripMargin
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = false,
+        setVerbose = true,
+        writeVCD = true,
         symbolsToWatch = Seq("io_data"),
         blackBoxFactories = Seq(new AccumBlackBoxFactory)
       )
@@ -45,9 +48,6 @@ class BlackBoxWithState extends FreeSpec with Matchers {
 
     val initialValue = tester.peek("io_data")
     println(s"Initial value is $initialValue")
-    tester.step()
-    tester.expect("io_data", initialValue)
-    println(s"m.data ${tester.peek("m.data")}")
     tester.step()
     tester.expect("io_data", initialValue + 1)
     println(s"m.data ${tester.peek("m.data")}")
@@ -68,10 +68,11 @@ class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImpleme
 
   var ns : BigInt = 0
   var ps : BigInt = 0
+  var isInReset: Boolean = false
 
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
-      case "data" => Seq("clock")
+      case "data" => Seq("clock", "reset")
       case _      => Seq.empty
     }
   }
@@ -79,8 +80,10 @@ class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImpleme
   override def cycle(transition: Transition): Unit = {
     transition match {
       case PositiveEdge =>
-        ps = ns
-        ns = ps + 1
+        if(! isInReset) {
+          ps = ns
+          ns = ps + 1
+        }
         // println(s"blackbox:$name ps $ps ns $ns")
       case _ =>
         // println(s"not positive edge, not action for cycle in $name")
@@ -88,6 +91,7 @@ class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImpleme
   }
 
   def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+    isInReset = inputValues.last != BigInt(0)
     ps
   }
 }

@@ -87,7 +87,7 @@ class StackSpec extends FreeSpec with Matchers {
         setVerbose = false,
         showFirrtlAtLoad = true,
         rollbackBuffers = 0,
-        symbolsToWatch = Seq() // Seq("dut.io_host_tohost", "dut.dpath.csr.mtohost")
+        symbolsToWatch = Seq()
       )
     }
 
@@ -103,6 +103,7 @@ class StackSpec extends FreeSpec with Matchers {
     tester.step()
 
     println(s"======== first push done sp ${tester.peek("sp")}")
+
 
     tester.expect("sp", 1)
 
