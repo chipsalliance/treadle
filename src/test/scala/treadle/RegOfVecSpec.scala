@@ -90,7 +90,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     tester.poke("reset", 1)
     tester.step(3)
@@ -129,14 +129,10 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |    stop(clock, and(and(and(UInt<1>("h1"), done), _T_18), UInt<1>("h1")), 0) @[Reg.scala 61:9]
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-write-vcd",
-            "--fint-vcd-show-underscored-vars",
-            "--show-firrtl-at-load",
-            "--firrtl-source", input)) with HasTreadleSuite
-
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--fint-write-vcd",
+                                     "--fint-vcd-show-underscored-vars",
+                                     "--show-firrtl-at-load",
+                                     "--firrtl-source", input))
 
     def show(): Unit = {
       tester.step()

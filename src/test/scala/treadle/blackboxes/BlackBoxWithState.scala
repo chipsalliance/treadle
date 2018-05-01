@@ -34,12 +34,9 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--symbols-to-watch", "io_data",
-            "--blackbox-factory", "treadle.blackboxes.AccumBlackBoxFactory",
-            "--firrtl-source", input)) with HasTreadleSuite
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--symbols-to-watch", "io_data",
+                                     "--blackbox-factory", "treadle.blackboxes.AccumBlackBoxFactory",
+                                     "--firrtl-source", input))
 
     val initialValue = tester.peek("io_data")
     println(s"Initial value is $initialValue")

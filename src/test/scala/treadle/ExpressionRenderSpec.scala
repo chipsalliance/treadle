@@ -32,17 +32,12 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
         |    out <= node0
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-write-vcd",
-            "--fint-vcd-show-underscored-vars",
-            "--fint-verbose",
-            "--show-firrtl-at-load",
-            "--fint-rollback-buffers", "0",
-            "--firrtl-source", input)
-    ) with HasTreadleSuite
-
-    val t = new TreadleTester(optionsManager)
+    val t = TreadleTester(Array("--fint-write-vcd",
+                                "--fint-vcd-show-underscored-vars",
+                                "--fint-verbose",
+                                "--show-firrtl-at-load",
+                                "--fint-rollback-buffers", "0",
+                                "--firrtl-source", input))
     t.poke("in0", 10)
     t.poke("in1", 11)
     t.poke("in2", 12)

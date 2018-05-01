@@ -29,7 +29,7 @@ class VecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 //
 //    tester.poke("reset", 1)
 //    tester.step()
@@ -104,7 +104,7 @@ class VecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     tester.poke("reset", 1)
     tester.step()

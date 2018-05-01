@@ -58,18 +58,13 @@ class GCDTester extends FlatSpec with Matchers {
     """
         .stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-rollback-buffers", "0",
-            "--firrtl-source", gcdFirrtl)
-    ) with HasTreadleSuite
-
     val values =
       for {x <- 1 to 1000
            y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--fint-rollback-buffers", "0",
+                                     "--firrtl-source", gcdFirrtl))
 
     val startTime = System.nanoTime()
     // engine.setVerbose()
@@ -150,18 +145,13 @@ class GCDTester extends FlatSpec with Matchers {
     """
         .stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-rollback-buffers", "0",
-            "--firrtl-source", gcdFirrtl)
-    ) with HasTreadleSuite
-
     val values =
       for {x <- 10 to 1000
            y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--fint-rollback-buffers", "0",
+                                     "--firrtl-source", gcdFirrtl))
 
     val startTime = System.nanoTime()
     tester.poke("clock", 1)

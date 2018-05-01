@@ -50,7 +50,7 @@ class CarryOrChain3 extends FreeSpec with Matchers {
       bin.toList.map( "01".indexOf(_)).map( BigInt(_)).reverse.toArray
     }
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     val lst = List( (v("001"),v("111")))
     for ( (a,co) <- lst) {

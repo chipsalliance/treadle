@@ -156,7 +156,7 @@ class AndOrXor extends FreeSpec with Matchers {
         |
       """.stripMargin
     val bitWidth = 4
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
     val (lo, hi) = extremaOfSIntOfWidth(bitWidth)
     for {
       a <- lo to hi

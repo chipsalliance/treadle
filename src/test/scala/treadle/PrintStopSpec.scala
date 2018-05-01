@@ -18,7 +18,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     for (cycle_number <- 0 to 10) {
       tester.step(2)
@@ -36,7 +36,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     intercept[StopException] {
       tester.step(2)
@@ -55,7 +55,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     intercept[StopException] {
       tester.step(2)
@@ -79,7 +79,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |
       """.stripMargin
 
-      val tester = TreadleTester(input)
+      val tester = TreadleTester(Array("--firrtl-source", input))
 
       tester.step(2)
     }
@@ -101,7 +101,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |
       """.stripMargin
 
-      val tester = TreadleTester(input)
+      val tester = TreadleTester(Array("--firrtl-source", input))
 
       tester.step(2)
     }
@@ -125,7 +125,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |
         """.stripMargin
 
-      val tester = TreadleTester(input)
+      val tester = TreadleTester(Array("--firrtl-source", input))
 
       tester.step(2)
     }
@@ -155,7 +155,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
         """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
     tester.poke("enable", 0)
     tester.poke("in1", 1)
     println("before peek")

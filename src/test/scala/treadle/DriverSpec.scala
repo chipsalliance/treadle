@@ -15,8 +15,9 @@ class DriverSpec extends FreeSpec with Matchers {
           |    output y : UInt<1>
           |    y <= x
         """.stripMargin
-      //      val engine = Driver.execute(Array.empty[String], input)
-      val engine = Driver.execute(Array("--fint-verbose"), input)
+
+      val engine = Driver.execute(Array("--fint-verbose",
+                                        "--firrtl-source", input))
 
       engine should not be empty
 

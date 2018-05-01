@@ -11,12 +11,9 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
     val stream = getClass.getResourceAsStream("/core-simple.lo.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-write-vcd",
-            "--fint-rollback-buffers", "0",
-            "--firrtl-source", input)) with HasTreadleSuite
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--fint-write-vcd",
+                                     "--fint-rollback-buffers", "0",
+                                     "--firrtl-source", input))
 
     intercept[StopException] {
       tester.step(300)

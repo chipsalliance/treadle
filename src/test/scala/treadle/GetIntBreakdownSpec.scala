@@ -35,12 +35,8 @@ class GetIntBreakdownSpec extends FreeSpec with Matchers {
 
 //    println(firrtlString.split("\n").zipWithIndex.map { case (l,n) => f"$n%5d $l"}.mkString("\n"))
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-rollback-buffers", "0",
-            "--firrtl-source", input)) with HasTreadleSuite
-
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--fint-rollback-buffers", "0",
+                                     "--firrtl-source", input))
 
     for(i <- 0 to 1000) {
       tester.poke("io_in", 4)

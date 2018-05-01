@@ -46,7 +46,7 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "Stop should abort engine immediately" in {
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     tester.poke("reset", 0)
     tester.poke("io_wrData", (0 << 24) + (255 << 16))

@@ -330,7 +330,7 @@ class TreadleTester(optionsManager: HasTreadleSuite) {
 }
 
 object TreadleTester {
-  @deprecated("Use TreadleTester(optionsManager: ExecutionOptionsManager with HasTreadleSuite", "1.0.0")
+  @deprecated("Use TreadleTester(optionsManager: HasTreadleSuite", "1.0.0")
   def apply(input: String, optionsManager: TreadleOptionsManager): TreadleTester = {
     val optionsManagerx = new ExecutionOptionsManager(
       applicationName=optionsManager.applicationName,
@@ -340,9 +340,12 @@ object TreadleTester {
     new TreadleTester(optionsManagerx)
   }
 
-  def apply(optionsManager: HasTreadleSuite) = new TreadleTester(optionsManager)
+  def apply(optionsManager: HasTreadleSuite): TreadleTester = new TreadleTester(optionsManager)
 
-  def apply(input: String) = new TreadleTester(new ExecutionOptionsManager(
-                                                 applicationName="test",
-                                                 args=Array("--firrtl-source", input)) with HasTreadleSuite)
+  def apply(args: Array[String]): TreadleTester = {
+    val optionsManager = new ExecutionOptionsManager(
+      applicationName="Treadle Tester",
+      args=args) with HasTreadleSuite
+    new TreadleTester(optionsManager)
+  }
 }

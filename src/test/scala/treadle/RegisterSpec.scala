@@ -22,12 +22,8 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--no-default-reset",
-            "--firrtl-source", input)) with HasTreadleSuite
-
-    val tester = TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--no-default-reset",
+                                     "--firrtl-source", input))
 
     tester.poke("reset1", 1)
     tester.step()
@@ -69,12 +65,9 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-verbose",
-            "--no-default-reset",
-            "--firrtl-source", input)) with HasTreadleSuite
-    val tester = TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--fint-verbose",
+                                     "--no-default-reset",
+                                     "--firrtl-source", input))
 
     tester.poke("reset1", 1)
     tester.poke("reset2", 0)
@@ -141,12 +134,8 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-write-vcd",
-            "--firrtl-source", input)) with HasTreadleSuite
-
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--fint-write-vcd",
+                                     "--firrtl-source", input))
     tester.poke("reset", 1)
     tester.step()
     tester.poke("reset", 0)
@@ -170,12 +159,9 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--no-default-reset",
-            "--fint-write-vcd",
-            "--firrtl-source", input)) with HasTreadleSuite
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--no-default-reset",
+                                     "--fint-write-vcd",
+                                     "--firrtl-source", input))
 
     tester.poke("reset1", 1)
     tester.step()
@@ -232,12 +218,8 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--no-default-reset",
-            "--firrtl-source", input)) with HasTreadleSuite
-
-    val tester = TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--no-default-reset",
+                                     "--firrtl-source", input))
 
 
     tester.poke("in", 7)
@@ -297,12 +279,9 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--no-default-reset",
-            "--fint-rollback-buffers", "15",
-            "--firrtl-source", input)) with HasTreadleSuite
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--no-default-reset",
+                                     "--fint-rollback-buffers", "15",
+                                     "--firrtl-source", input))
 
     tester.poke("io_in", 77)
     tester.poke("io_en", 0)

@@ -9,7 +9,7 @@ class DeepExecutionSpec extends FreeSpec with Matchers {
   "DeepExecutionSpec should pass a basic test" in {
     val stream = getClass.getResourceAsStream("/DeepExecution.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     tester.step(100)
     tester.report()

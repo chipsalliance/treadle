@@ -478,11 +478,19 @@ object ExecutionEngine {
     executionEngine
   }
 
+  @deprecated("Use ExecutionEngine(optionsManager: HasTreadleSuite)", "1.0.0")
   def apply(input: String, optionsManager: HasTreadleSuite): ExecutionEngine = {
     val optsx = new ExecutionOptionsManager(
       applicationName=optionsManager.applicationName,
       args=Array("--firrtl-source", input),
       annotations=optionsManager.options :+ DontCheckCombLoopsAnnotation) with HasTreadleSuite
     ExecutionEngine(optsx)
+  }
+
+  def apply(args: Array[String]): ExecutionEngine = {
+    val opts = new ExecutionOptionsManager(
+      applicationName="engine",
+      args=args) with HasTreadleSuite
+    ExecutionEngine(opts)
   }
 }

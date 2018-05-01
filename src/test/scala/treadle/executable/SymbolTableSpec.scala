@@ -37,10 +37,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     """
         .stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--firrtl-source", simpleFirrtl)) with HasTreadleSuite
-    val simulator = ExecutionEngine(optionsManager)
+    val simulator = ExecutionEngine(Array("--firrtl-source", simpleFirrtl))
 
     val symbolTable = simulator.symbolTable
 
@@ -79,10 +76,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--firrtl-source", simpleFirrtl)) with HasTreadleSuite
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--firrtl-source", simpleFirrtl))
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -127,10 +121,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--firrtl-source", simpleFirrtl)) with HasTreadleSuite
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--firrtl-source", simpleFirrtl))
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -183,11 +174,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--target-dir", "test_run_dir",
-            "--firrtl-source", simpleFirrtl)) with HasTreadleSuite
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--target-dir", "test_run_dir",
+                                     "--firrtl-source", simpleFirrtl))
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable

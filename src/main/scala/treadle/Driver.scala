@@ -195,11 +195,10 @@ object Driver {
   def execute(optionsManager: HasTreadleSuite): Option[TreadleTester] =
     Some(new TreadleTester(optionsManager))
 
-  def execute(args: Array[String], firrtlInput: String): Option[TreadleTester] = {
+  def execute(args: Array[String]): Option[TreadleTester] = {
     val opts = new ExecutionOptionsManager(
-      applicationName="engine",
-      args=args,
-      annotations=Seq(FirrtlSourceAnnotation(firrtlInput))) with HasTreadleSuite
+      applicationName="treadle",
+      args=args) with HasTreadleSuite
     execute(opts)
   }
 }

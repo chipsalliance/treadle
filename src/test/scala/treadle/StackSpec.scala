@@ -79,7 +79,7 @@ class StackSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Array("--firrtl-source", input))
 
     tester.poke("io_en", 1)
     tester.poke("io_push", 1)

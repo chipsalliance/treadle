@@ -34,11 +34,8 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-write-vcd",
-            "--firrtl-source", input)) with HasTreadleSuite
-    val tester = new TreadleTester(optionsManager)
+    val tester = TreadleTester(Array("--fint-write-vcd",
+                                     "--firrtl-source", input))
 
     intercept[StopException] {
       tester.step(8)

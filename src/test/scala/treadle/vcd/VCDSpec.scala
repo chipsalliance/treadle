@@ -125,12 +125,9 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
         |    c <= add(a, b)
       """.stripMargin
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-write-vcd",
-            "--target-dir", "test_run_dir",
-            "--firrtl-source", input)) with HasTreadleSuite
-    val engine = new TreadleTester(optionsManager)
+    val engine = TreadleTester(Array("--fint-write-vcd",
+                                     "--target-dir", "test_run_dir",
+                                     "--firrtl-source", input))
     engine.poke("a", -1)
     engine.peek("a") should be (BigInt(-1))
     engine.poke("b", -7)
@@ -156,13 +153,9 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val stream = getClass.getResourceAsStream("/VcdAdder.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-write-vcd",
-            "--target-dir", "test_run_dir",
-            "--firrtl-source", input)) with HasTreadleSuite
-
-    val engine = new TreadleTester(optionsManager)
+    val engine = TreadleTester(Array("--fint-write-vcd",
+                                     "--target-dir", "test_run_dir",
+                                     "--firrtl-source", input))
     engine.step()
     engine.poke("io_a", 3)
     engine.poke("io_b", 5)
@@ -208,13 +201,9 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     // logger.Logger.setLevel(LogLevel.Debug)
 
-    val optionsManager = new ExecutionOptionsManager(
-      "test",
-      Array("--fint-write-vcd",
-            "--target-dir", "test_run_dir/vcd_register_delay",
-            "--firrtl-source", input)) with HasTreadleSuite
-
-    val engine = new TreadleTester(optionsManager)
+    val engine = TreadleTester(Array("--fint-write-vcd",
+                                     "--target-dir", "test_run_dir/vcd_register_delay",
+                                     "--firrtl-source", input))
     engine.setVerbose()
     engine.poke("reset", 0)
 
