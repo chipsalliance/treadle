@@ -2,7 +2,6 @@
 
 package treadle
 
-import firrtl.passes.memlib.VerilogMemDelays
 import firrtl.transforms.BlackBoxSourceHelper
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.PrimOps.{Dshl, Shl}
@@ -10,12 +9,14 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 
+/**
+  * Use these lowering transforms to prepare circuit for compiling
+  */
 object ToLoFirrtl extends Compiler {
   override def emitter: Emitter = new LowFirrtlEmitter
   override def transforms: Seq[Transform] = {
     getLoweringTransforms(ChirrtlForm, LowForm) ++
             Seq(new LowFirrtlOptimization, new BlackBoxSourceHelper, new FixupOps)
-//    getLoweringTransforms(ChirrtlForm, LowForm) ++ Seq(new BlackBoxSourceHelper)
   }
 
   def lower(c: Circuit,
@@ -24,12 +25,13 @@ object ToLoFirrtl extends Compiler {
     val annotations = optionsManager.firrtlOptions.annotations
     val compileResult = compileAndEmit(firrtl.CircuitState(c, ChirrtlForm, annotations))
 
-//    VerilogMemDelays.run(compileResult.circuit)
     compileResult.circuit
   }
 }
 
-// Workaround for https://github.com/freechipsproject/firrtl/issues/498
+/**
+  *  Workaround for https://github.com/freechipsproject/firrtl/issues/498 from @jackkoenig
+  */
 class FixupOps extends Transform {
   def inputForm  : CircuitForm = LowForm
   def outputForm : CircuitForm = HighForm
