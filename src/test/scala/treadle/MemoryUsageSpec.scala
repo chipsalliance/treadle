@@ -115,7 +115,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = true,
         noDefaultReset = true
       )
@@ -299,7 +299,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = true,
         noDefaultReset = true
       )

@@ -129,6 +129,7 @@ class ExecutionEngine(
     try {
       scheduler.executeCombinationalAssigns()
       if(lastStopResult.isDefined) {
+        writeVCD()
         val stopKind = if(lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
         throw StopException(s"$stopKind: result ${lastStopResult.get}")
       }

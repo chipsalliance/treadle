@@ -38,7 +38,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = true,
+        setVerbose = false,
         writeVCD = true,
         symbolsToWatch = Seq("io_data"),
         blackBoxFactories = Seq(new AccumBlackBoxFactory)

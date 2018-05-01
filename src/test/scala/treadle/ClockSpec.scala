@@ -101,7 +101,7 @@ class ClockSpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = true,
+        setVerbose = false,
         vcdShowUnderscored = true,
         showFirrtlAtLoad = true,
         writeVCD = true,
