@@ -5,10 +5,14 @@ package treadle.blackboxes
 import firrtl.ir.Type
 import treadle.{BlackBoxFactory, BlackBoxImplementation, TreadleOptionsManager, TreadleTester}
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.executable.{PositiveEdge, Transition}
+import treadle.executable.{ClockInfo, PositiveEdge, Transition}
 
 
 // scalastyle:off magic.number
+/**
+  * This test is pretty sensitive to when the reset comes down.
+  * Hence the negative initialOffset
+  */
 class BlackBoxWithState extends FreeSpec with Matchers {
   "BlackBoxWithState should pass a basic test" in {
     val input =
@@ -39,9 +43,11 @@ class BlackBoxWithState extends FreeSpec with Matchers {
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
-        writeVCD = true,
+        writeVCD = false,
         symbolsToWatch = Seq("io_data"),
-        blackBoxFactories = Seq(new AccumBlackBoxFactory)
+        blackBoxFactories = Seq(new AccumBlackBoxFactory),
+        noDefaultReset = false,
+        clockInfo = Seq(ClockInfo("clock", 10, -2))
       )
     }
     val tester = new TreadleTester(input, manager)

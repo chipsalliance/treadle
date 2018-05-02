@@ -156,7 +156,7 @@ class RegisterSpec extends FlatSpec with Matchers {
       """.stripMargin
 
     val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false, writeVCD = true)
+      treadleOptions = treadleOptions.copy(setVerbose = false, writeVCD = false)
     }
     val tester = new TreadleTester(input, optionsManager)
     tester.poke("reset", 1)
@@ -189,7 +189,7 @@ class RegisterSpec extends FlatSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
         noDefaultReset = true,
-        writeVCD = true)
+        writeVCD = false)
     }
     val tester = TreadleTester(input, optionsManager)
 
@@ -253,7 +253,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         setVerbose = false,
         noDefaultReset = true,
         showFirrtlAtLoad = true,
-        writeVCD = true
+        writeVCD = false
       )
     }
     val tester = TreadleTester(input, optionsManager)
@@ -318,7 +318,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         showFirrtlAtLoad = true,
         setVerbose = false,
         noDefaultReset = true,
-        writeVCD = true,
+        writeVCD = false,
         rollbackBuffers = 15)
     }
     val tester = new TreadleTester(input, manager)

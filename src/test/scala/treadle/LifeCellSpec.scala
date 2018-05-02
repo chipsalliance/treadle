@@ -48,7 +48,7 @@ class LifeCellSpec extends FlatSpec with Matchers {
         |      """.stripMargin
 
     val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
+      treadleOptions = treadleOptions.copy(writeVCD = false)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
 

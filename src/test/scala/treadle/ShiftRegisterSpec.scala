@@ -36,7 +36,7 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = true,
+        writeVCD = false,
         vcdShowUnderscored = false,
         setVerbose = false,
         showFirrtlAtLoad = false,

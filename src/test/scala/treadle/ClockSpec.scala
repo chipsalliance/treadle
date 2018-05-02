@@ -46,7 +46,7 @@ class ClockSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
         vcdShowUnderscored = true,
-        writeVCD = true
+        writeVCD = false
       )
     }
 
@@ -104,7 +104,7 @@ class ClockSpec extends FreeSpec with Matchers {
         setVerbose = false,
         vcdShowUnderscored = true,
         showFirrtlAtLoad = true,
-        writeVCD = true,
+        writeVCD = false,
         validIfIsRandom = false
       )
     }

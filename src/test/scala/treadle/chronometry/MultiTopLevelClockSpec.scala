@@ -39,7 +39,7 @@ class MultiTopLevelClockSpec extends FreeSpec with Matchers {
         clockInfo = Seq(ClockInfo("clock1", period = 17, 1000), ClockInfo("clock2", period = 19, initialOffset = 1017)),
         showFirrtlAtLoad = true,
         noDefaultReset = true,
-        writeVCD = true
+        writeVCD = false
       )
     }
     val tester = TreadleTester(input, optionsManager)
