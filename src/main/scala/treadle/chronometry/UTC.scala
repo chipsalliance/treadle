@@ -8,7 +8,6 @@ class UTC private (scaleName: String = "picoseconds") {
   private var internalTime: Long = 0L
   def currentTime:  Long = internalTime
   def setTime(time: Long): Unit = {
-    assert(time >= internalTime, s"increment time going backwards new time $time was $internalTime")
     internalTime = time
     onTimeChange()
   }
