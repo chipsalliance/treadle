@@ -3,6 +3,7 @@
 package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.executable.ClockInfo
 
 
 // scalastyle:off magic.number
@@ -57,4 +58,79 @@ class ClockSpec extends FreeSpec with Matchers {
     tester.engine.lastStopResult should be (Some(0))
     tester.report()
   }
+
+  "clocks must behave properly behind validif" in {
+    val input =
+      """
+        |circuit ClockedValidIf :
+        |  module ClockedValidIf :
+        |    input clock  : Clock
+        |    input reset  : UInt<1>
+        |    input in1    : UInt<16>
+        |    input valid1 : UInt<1>
+        |    input valid2 : UInt<1>
+        |    input addr     : UInt<8>
+        |    input data     : UInt<16>
+        |    input write_en : UInt<1>
+        |    output out1  : UInt<16>
+        |
+        |    reg reg1 : UInt<16>, clock with : (reset => (reset, UInt<8>("h07")))
+        |    reg1 <= add(in1, UInt<16>(1))
+        |
+        |    node clock2 = validif(valid1, clock)
+        |
+        |    mem m :
+        |      data-type => UInt<16>
+        |      depth => 8
+        |      read-latency => 0
+        |      write-latency => 1
+        |      reader => read
+        |      writer => write
+        |
+        |    m.read.clk <= clock2
+        |    m.read.en <= eq(write_en, UInt<1>(0))
+        |    m.read.addr <= addr
+        |
+        |    m.write.clk <= clock2
+        |    m.write.en <= eq(write_en, UInt<1>(1))
+        |    m.write.mask <= UInt<8>("hff")
+        |    m.write.addr <= addr
+        |    m.write.data <= in1
+        |    out1 <= m.read.data
+      """.stripMargin
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = true,
+        vcdShowUnderscored = true,
+        showFirrtlAtLoad = true,
+        writeVCD = true,
+        clockInfo = Seq(ClockInfo("clock", 10, 0))
+      )
+    }
+
+    val tester = new TreadleTester(input, optionsManager)
+
+    // load memory
+    tester.poke("write_en", 1)
+    for(i <- 0 until 8) {
+      tester.poke("addr", i)
+      tester.poke("data", i * 10 + i)
+      tester.step()
+    }
+
+    // read phase
+    tester.poke("write_en", 1)
+    for(i <- 0 until 8) {
+      tester.poke("addr", i)
+      tester.poke("data", i * 10 + i)
+      tester.expect("data", i * 10 + i)
+
+      println(s"mem($i) ${tester.peek("data")}")
+      tester.step()
+    }
+
+    tester.report()
+  }
+
 }

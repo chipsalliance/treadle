@@ -40,7 +40,8 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
 
   val resetName: String = treadleOptions.resetName
 
-  val combinationalDelay: Long = 10
+  // TODO: compute this somehow
+  val combinationalDelay: Long = 0
 
   val wallTime = UTC()
   wallTime.onTimeChange = () => {
