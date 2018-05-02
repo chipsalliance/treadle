@@ -3,7 +3,6 @@
 package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.executable.ClockInfo
 
 
 // scalastyle:off magic.number
@@ -42,11 +41,12 @@ class ClockSpec extends FreeSpec with Matchers {
         |      stop(clock, UInt(1), 0) ; Done!
         |
       """.stripMargin
+
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
         vcdShowUnderscored = true,
-        writeVCD = true
+        writeVCD = false
       )
     }
 
@@ -64,15 +64,14 @@ class ClockSpec extends FreeSpec with Matchers {
       """
         |circuit ClockedValidIf :
         |  module ClockedValidIf :
-        |    input clock  : Clock
-        |    input reset  : UInt<1>
-        |    input in1    : UInt<16>
-        |    input valid1 : UInt<1>
-        |    input valid2 : UInt<1>
+        |    input clock    : Clock
+        |    input reset    : UInt<1>
+        |    input in1      : UInt<16>
+        |    input valid1   : UInt<1>
+        |    input valid2   : UInt<1>
         |    input addr     : UInt<8>
-        |    input data     : UInt<16>
         |    input write_en : UInt<1>
-        |    output out1  : UInt<16>
+        |    output out1    : UInt<16>
         |
         |    reg reg1 : UInt<16>, clock with : (reset => (reset, UInt<8>("h07")))
         |    reg1 <= add(in1, UInt<16>(1))
@@ -96,16 +95,17 @@ class ClockSpec extends FreeSpec with Matchers {
         |    m.write.mask <= UInt<8>("hff")
         |    m.write.addr <= addr
         |    m.write.data <= in1
+        |
         |    out1 <= m.read.data
       """.stripMargin
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = true,
+        setVerbose = false,
         vcdShowUnderscored = true,
         showFirrtlAtLoad = true,
-        writeVCD = true,
-        clockInfo = Seq(ClockInfo("clock", 10, 0))
+        writeVCD = false,
+        validIfIsRandom = false
       )
     }
 
@@ -115,22 +115,23 @@ class ClockSpec extends FreeSpec with Matchers {
     tester.poke("write_en", 1)
     for(i <- 0 until 8) {
       tester.poke("addr", i)
-      tester.poke("data", i * 10 + i)
+      tester.poke("in1", i * 10 + i)
       tester.step()
     }
 
+    for(i <- 0 until 8) {
+      println(s"memory($i) = ${tester.peekMemory("m", i)}")
+    }
     // read phase
     tester.poke("write_en", 1)
     for(i <- 0 until 8) {
       tester.poke("addr", i)
-      tester.poke("data", i * 10 + i)
-      tester.expect("data", i * 10 + i)
+      tester.expect("out1", i * 10 + i)
 
-      println(s"mem($i) ${tester.peek("data")}")
+      println(s"mem($i) ${tester.peekMemory("m", i)}")
       tester.step()
     }
 
     tester.report()
   }
-
 }

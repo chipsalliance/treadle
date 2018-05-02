@@ -1,4 +1,5 @@
 // See LICENSE for license details.
+
 package treadle
 
 import java.io.{File, PrintWriter}
@@ -37,7 +38,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 
   val terminal: Terminal = TerminalFactory.create()
   val console = new ConsoleReader
-  private val historyPath = "~/.firrtl_repl_history".replaceFirst("^~",System.getProperty("user.home"))
+  private val historyPath = "~/.treadle_repl_history".replaceFirst("^~",System.getProperty("user.home"))
   val historyFile = new File(historyPath)
   if(! historyFile.exists()) {
     println(s"creating ${historyFile.getName}")
@@ -48,9 +49,11 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   history.load(historyFile)
   console.setHistory(history)
 
-  var currentEngineOpt: Option[ExecutionEngine] = None
+  var currentTreadleTesterOpt: Option[TreadleTester] = None
+  def currentTreadleTester: TreadleTester = currentTreadleTesterOpt.get
 
-  def engine: ExecutionEngine = currentEngineOpt.get
+  def engine: ExecutionEngine = currentTreadleTesterOpt.get.engine
+
   var args = Array.empty[String]
   var done = false
 
@@ -75,8 +78,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   }
 
   def loadSource(input: String): Unit = {
-    currentEngineOpt = Some(ExecutionEngine(input, optionsManager))
-    currentEngineOpt.foreach { _ =>
+    currentTreadleTesterOpt = Some(TreadleTester(input, optionsManager))
+    currentTreadleTesterOpt.foreach { _ =>
       engine.setVerbose(treadleOptions.setVerbose)
     }
     buildCompletions()
@@ -105,8 +108,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   }
 
   def loadVcdScript(fileName: String): Unit = {
-    val dutName = currentEngineOpt match {
-      case Some(interpreter) => interpreter.ast.main
+    val dutName = currentTreadleTesterOpt match {
+      case Some(tester) => tester.engine.ast.main
       case None => ""
     }
     try {
@@ -132,8 +135,6 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   }
 
   val resetName: String = treadleOptions.resetName
-
-  val combinationalDelay: Long = 10
 
   val wallTime = UTC()
   wallTime.onTimeChange = () => {
@@ -182,6 +183,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
     }
   }
 
+  val combinationalDelay: Long = 10
+
   def reset(timeRaised: Long): Unit = {
     engine.setValue(resetName, 1)
     engine.inputsChanged = true
@@ -203,28 +206,9 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
     *
     * @param n cycles to perform
     */
-  def step(n: Int = 1, clockInfoOpt: Option[ClockInfo] = clockInfoList.headOption): Unit = {
-    if(engine.verbose) println(s"In step at ${wallTime.currentTime}")
-    if(clockInfoOpt.isDefined) {
-      for (_ <- 0 until n) {
-        if(engine.inputsChanged) {
-          engine.evaluateCircuit()
-        }
-
-        cycleCount += 1
-        if (engine.verbose) println(s"step $cycleCount at ${wallTime.currentTime}")
-        val clockName = clockInfoOpt.get.name
-        wallTime.runToTask(s"$clockName/up")
-        wallTime.runUntil(wallTime.currentTime)
-        if (engine.verbose) println(s"clock raised at ${wallTime.currentTime}")
-        engine.evaluateCircuit()
-        wallTime.runToTask(s"$clockName/down")
-        wallTime.runUntil(wallTime.currentTime)
-        if (engine.verbose) println(s"Step finished step at ${wallTime.currentTime}")
-      }
-    }
+  def step(n: Int = 1): Unit = {
+    currentTreadleTester.step(n)
   }
-
 
   // scalastyle:off number.of.methods
   object Commands {
@@ -443,7 +427,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def usage: (String, String) = ("symbol regex", "show symbol information")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -496,7 +480,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       new Command("poke") {
         def usage: (String, String) = ("poke inputPortName value", "set an input port to the given integer value")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -531,7 +515,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
         def usage: (String, String) = ("rpoke regex value", "poke value into ports that match regex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -579,7 +563,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           ("peek componentName [offset]", "show the current value of the signal")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -626,7 +610,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         private def peekableThings = engine.validNames.toSeq
         def usage: (String, String) = ("rpeek regex", "show the current value of signals matching the regex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -744,7 +728,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def usage: (String, String) = ("reset [numberOfSteps]",
           "assert reset (if present) for numberOfSteps (default 1)")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -782,7 +766,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def usage: (String, String) = ("reset [b|d|x|h]",
           "Set the output radix to binary, decimal, or hex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -877,7 +861,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           "show dependency relationship to signal or between to signal")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -924,7 +908,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       new Command("show") {
         def usage: (String, String) = ("show [state|input|lofirrtl]", "show useful things")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -949,7 +933,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       new Command("display") {
         def usage: (String, String) = ("how signal[, signal, ...]", "show computation of symbols")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -963,7 +947,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def run(args: Array[String]): Unit = {
           getOneArg("", Some("state")) match {
             case Some(symbolList) =>
-              if(currentEngineOpt.isDefined) {
+              if(currentTreadleTesterOpt.isDefined) {
                 console.println(engine.renderComputation(symbolList, outputFormat))
               }
             case _ =>
@@ -980,7 +964,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 //      new Command("timing") {
 //        def usage: (String, String) = ("timing [clear|bin]", "show the current timing state")
 //        override def completer: Option[ArgumentCompleter] = {
-//          if(currentEngineOpt.isEmpty) {
+//          if(currentTreadleTesterOpt.isEmpty) {
 //            None
 //          }
 //          else {
@@ -1039,7 +1023,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def usage: (String, String) = ("verbose [true|false|toggle]",
           "set evaluator verbose mode (default toggle) during dependency evaluation")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -1063,7 +1047,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def usage: (String, String) = ("snapshot",
           "save state of engine")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -1088,7 +1072,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def usage: (String, String) = ("restore",
           "save state of engine")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentEngineOpt.isEmpty) {
+          if(currentTreadleTesterOpt.isEmpty) {
             None
           }
           else {
@@ -1111,7 +1095,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 //        def usage: (String, String) = ("allow-cycles [true|false|toggle]",
 //          "set evaluator allow combinational loops (could cause correctness problems")
 //        override def completer: Option[ArgumentCompleter] = {
-//          if(currentEngineOpt.isEmpty) {
+//          if(currentTreadleTesterOpt.isEmpty) {
 //            None
 //          }
 //          else {
@@ -1223,7 +1207,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
     catch {
       case t: TreadleException =>
         console.println(s"Startup: Treadle Exception ${t.getMessage}")
-      case c: CyclicException =>
+      case _: CyclicException =>
       case e: Throwable =>
         throw e
     }

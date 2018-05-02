@@ -11,32 +11,21 @@ case class PrintfOp(
   string          : StringLit,
   args            : Seq[ExpressionResult],
   condition       : IntExpressionResult,
-  clockExpression : IntExpressionResult,
-  clockLastValue  : Symbol,
   dataStore       : DataStore
 ) extends Assigner {
 
-  private val lastClockValueIndex = clockLastValue.index
-
   def run: FuncUnit = {
-    val clockValue = clockExpression()
-    val lastClockValue = dataStore.currentIntArray(lastClockValueIndex)
-
-    if(clockValue > 0 && lastClockValue == 0) {
-      val conditionValue = condition.apply() > 0
-      if (conditionValue) {
-        val currentArgValues = args.map {
-          case e: IntExpressionResult => e.apply()
-          case e: LongExpressionResult => e.apply()
-          case e: BigExpressionResult => e.apply()
-        }
-        val formatString = string.escape
-        val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
-        print(instantiatedString.drop(1).dropRight(1))
+    val conditionValue = condition.apply() > 0
+    if (conditionValue) {
+      val currentArgValues = args.map {
+        case e: IntExpressionResult => e.apply()
+        case e: LongExpressionResult => e.apply()
+        case e: BigExpressionResult => e.apply()
       }
+      val formatString = string.escape
+      val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
+      print(instantiatedString.drop(1).dropRight(1))
     }
-
-    dataStore.currentIntArray(lastClockValueIndex) = clockValue
 
     () => Unit
   }

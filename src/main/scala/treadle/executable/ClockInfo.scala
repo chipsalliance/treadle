@@ -19,7 +19,10 @@ case class ClockInfo(
   name          : String = ClockInfo.DefaultName,
   period        : Long   = ClockInfo.DefaultPeriod,
   initialOffset : Long   = ClockInfo.DefaultOffset
-)
+) {
+  val upPeriod   : Long = period / 2
+  val downPeriod : Long = period - upPeriod
+}
 
 /**
   * The default settings for a single clock are here.  Units are in arbitrary ticks

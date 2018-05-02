@@ -30,19 +30,25 @@ class UTC private (scaleName: String = "picoseconds") {
     eventQueue.nonEmpty
   }
 
-  def runNextTask(): Unit = {
+  def runNextTask(): Option[Task] = {
     if(hasNextTask) {
       eventQueue.dequeue() match {
         case recurringTask: RecurringTask =>
           setTime(recurringTask.time)
           recurringTask.run()
           eventQueue.enqueue(recurringTask.copy(time = internalTime + recurringTask.period))
+          Some(recurringTask)
         case oneTimeTask: OneTimeTask =>
           setTime(oneTimeTask.time)
           oneTimeTask.run()
+          Some(oneTimeTask)
         case _ =>
           // do nothing
+          None
       }
+    }
+    else {
+      None
     }
   }
 

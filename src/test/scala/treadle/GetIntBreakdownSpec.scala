@@ -38,7 +38,7 @@ class GetIntBreakdownSpec extends FreeSpec with Matchers {
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         showFirrtlAtLoad = false,
-        //        setVerbose = true,
+        setVerbose = false,
         rollbackBuffers = 0
       )
     }

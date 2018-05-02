@@ -125,19 +125,19 @@ class ExpressionViewRenderer(
       val argStrings = args.map {
         case symbol: Symbol =>
           if(! (
-                  symbolTable.isRegister(symbol.name) ||
-                          symbolTable.inputPortsNames.contains(symbol.name) ||
-                          symbolsSeen.contains(symbol)
-                  )) {
+            symbolTable.isRegister(symbol.name) ||
+              symbolTable.inputPortsNames.contains(symbol.name) ||
+              symbolsSeen.contains(symbol)
+            )) {
             symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, lookBackDepth))
           }
 
           val value = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
 
           val string = s"${symbol.name} <= " +
-                  (if(lookBackDepth > 0) Console.RED else "") +
-                  s"${formatOutput(value)}" +
-                  (if(lookBackDepth > 0) Console.RESET else "")
+              (if(lookBackDepth > 0) Console.RED else "") +
+              s"${formatOutput(value)}" +
+              (if(lookBackDepth > 0) Console.RESET else "")
           string
 
         case subView: ExpressionView =>

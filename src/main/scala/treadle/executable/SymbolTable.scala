@@ -11,23 +11,12 @@ import logger.LazyLogging
 import scala.collection.immutable.Set
 import scala.collection.mutable
 
-class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
+class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
 
   var childrenOf: DiGraph[Symbol] = DiGraph[Symbol](Map.empty[Symbol, Set[Symbol]])
   var parentsOf:  DiGraph[Symbol] = DiGraph[Symbol](Map.empty[Symbol, Set[Symbol]])
 
   var orphans: Seq[Symbol] = Seq.empty
-
-  private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
-  def addAssigner(symbol: Symbol, assigner: Assigner): Unit = {
-    if(toAssigner.contains(symbol)) {
-      throw new TreadleException(s"Assigner already exists for $symbol")
-    }
-    toAssigner(symbol) = assigner
-  }
-  def hasAssigner(symbol: Symbol): Boolean = {
-    toAssigner.contains(symbol)
-  }
 
   private val toBlackBoxImplementation: mutable.HashMap[Symbol, BlackBoxImplementation] = new mutable.HashMap()
   def addBlackBoxImplementation(symbol: Symbol, blackBoxImplementation: BlackBoxImplementation): Unit = {
@@ -70,6 +59,22 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
     }
   }
 
+  def findHighestClock(symbol: Symbol): Option[Symbol] = {
+    parentsOf.getEdges(symbol).toList match {
+      case Nil =>
+        Some(symbol)
+      case parent :: Nil =>
+        if(parent.firrtlType == ClockType) {
+          findHighestClock(parent)
+        }
+        else {
+          Some(symbol)
+        }
+      case x =>
+        Some(symbol)
+    }
+  }
+
   /**
     * Find all the sources of symbol that are not non-clock inputs.
     * Sinks are used here because we are working with the parents of graph
@@ -98,22 +103,6 @@ class SymbolTable(nameToSymbol: mutable.HashMap[String, Symbol]) {
     symbols.flatMap { symbol =>
       childrenOf.reachableFrom(symbol)
     }.toSet
-  }
-
-  def allAssigners(): Seq[Assigner] = {
-    toAssigner.values.toSeq
-  }
-
-  def inputChildrenAssigners(): Seq[Assigner] = {
-    val assigners = getChildren(inputPortsNames.map(nameToSymbol(_)).toSeq)
-      .flatMap { symbol => toAssigner.get(symbol)}
-      .toSeq
-    assigners
-  }
-
-  def getAssigners(symbols: Seq[Symbol]): Seq[Assigner] = {
-    val assigners = symbols.flatMap { symbol => toAssigner.get(symbol) }
-    assigners
   }
 
   def getBlackboxImplementation(symbol: Symbol): Option[BlackBoxImplementation] = {
@@ -214,7 +203,8 @@ object SymbolTable extends LazyLogging {
               expressionToReferences(falseExpression)
 
           case _: WRef | _: WSubField | _: WSubIndex =>
-            Set(nameToSymbol(expand(expression.serialize)))
+            val name = expand(expression.serialize)
+            Set(nameToSymbol(name))
 
           case ValidIf(condition, value, _) =>
             expressionToReferences(condition) ++ expressionToReferences(value)
@@ -311,22 +301,20 @@ object SymbolTable extends LazyLogging {
 
           val registerIn = Symbol(SymbolTable.makeRegisterInputName(expandedName), tpe, RegKind, info = info)
           val registerOut = Symbol(expandedName, tpe, RegKind, info = info)
-          val clockLastValue = Symbol(SymbolTable.makeLastValueName(registerOut), UIntType(IntWidth(1)))
 
           registerNames += registerOut.name
           addSymbol(registerIn)
           addSymbol(registerOut)
-          addSymbol(clockLastValue)
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
-          addDependency(registerIn, Set(registerOut))
+          // addDependency(registerIn, Set(registerOut))
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)
           logger.debug(s"declaration:DefMemory:${defMemory.name} becomes $expandedName")
 
-          Memory.buildSymbols(defMemory, expandedName, sensitivityGraphBuilder).foreach { symbol =>
+          Memory.buildSymbols(defMemory, expandedName, sensitivityGraphBuilder, registerNames).foreach { symbol =>
             addSymbol(symbol)
           }
 
@@ -336,10 +324,8 @@ object SymbolTable extends LazyLogging {
               val stopSymbolName = makeStopName()
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(stopSymbol)
-              val lastClockSymbol = SymbolTable.makeLastValueSymbol(stopSymbol)
-              addSymbol(lastClockSymbol)
               stopToStopInfo(stop) = StopInfo(stopSymbol)
-              addDependency(stopSymbol, Set(clockSymbol))
+
               if(! nameToSymbol.contains(StopOp.stopHappenedName)) {
                 addSymbol(
                   Symbol(StopOp.stopHappenedName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(31)), NoInfo)
@@ -358,11 +344,7 @@ object SymbolTable extends LazyLogging {
                 printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(printSymbol)
 
-              val lastClockSymbol = SymbolTable.makeLastValueSymbol(printSymbol)
-              addSymbol(lastClockSymbol)
-
               printToPrintInfo(print) = PrintInfo(printSymbol)
-              addDependency(printSymbol, Set(clockSymbol))
 
             case _ =>
               throw new TreadleException(s"Can't find clock for $print")

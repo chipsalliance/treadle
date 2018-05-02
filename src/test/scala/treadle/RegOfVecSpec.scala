@@ -139,10 +139,11 @@ class RegOfVecSpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = true,
+        writeVCD = false,
         vcdShowUnderscored = true,
         setVerbose = false,
-        showFirrtlAtLoad = true
+        showFirrtlAtLoad = true,
+        noDefaultReset = true
       )
     }
 

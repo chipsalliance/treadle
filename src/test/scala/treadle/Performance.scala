@@ -4,8 +4,12 @@ package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
 
+/**
+  * This needs work, we should be running through different kinds of ops
+  * muxes etc, and coming up with some sort of performance formula
+  */
 class Performance extends FreeSpec with Matchers {
-  "how fast is this" in {
+  "how fast is this" ignore {
     val width = 32
 
     val junkFirrtl: String =
@@ -39,9 +43,10 @@ class Performance extends FreeSpec with Matchers {
 
     val startTime = System.nanoTime()
 
+    tester.poke("io_a", 1)
+    tester.poke("io_b", 2)
+
     for(i <- 0 to 30) {
-      tester.poke("io_a", 1)
-      tester.poke("io_b", 2)
       tester.step(1000000)
       println(s"trial $i got ${tester.peek("io_z")}")
     }

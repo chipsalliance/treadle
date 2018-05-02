@@ -79,7 +79,13 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |
       """.stripMargin
 
-      val tester = TreadleTester(input)
+      val manager = new TreadleOptionsManager {
+        treadleOptions = treadleOptions.copy(
+          showFirrtlAtLoad = false,
+          setVerbose = false
+        )
+      }
+      val tester = TreadleTester(input, manager)
 
       tester.step(2)
     }

@@ -3,60 +3,171 @@
 package treadle.executable
 
 import logger.LazyLogging
+import treadle.{BlackBoxCycler, TreadleException}
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
-class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends LazyLogging {
-  var activeAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-  val orphanedAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+/**
+  * The scheduler holds the assignment statements of the entire circuit.
+  * Clocks introduce a level of complexity, in that when they flip registers
+  * who use those clocks must copy there inputs to their outputs.
+  * Also since registers are triggered by the derived highest level clock
+  * that can be found, child clocks must be separately driven.  This is
+  * what the triggeredUnassigns are for.
+  *
+  * @param symbolTable symbol table is used to find orphans
+  */
+class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
+
+  var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+
+  val triggeredAssigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
+    new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
+      override def default(key: Symbol): ArrayBuffer[Assigner] = {
+        this(key) = new mutable.ArrayBuffer[Assigner]()
+        this(key)
+      }
+    }
+
+  val triggeredUnassigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
+    new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
+      override def default(key: Symbol): ArrayBuffer[Assigner] = {
+        this(key) = new mutable.ArrayBuffer[Assigner]()
+        this(key)
+      }
+    }
+
+  val orphanedAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val allUnassigners    : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val clockAssigners    : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+
+  private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
+
+  def addAssigner(
+    symbol: Symbol,
+    assigner: Assigner,
+    triggerOption: Option[Symbol] = None,
+    excludeFromCombinational: Boolean = false
+  ): Unit = {
+
+    triggerOption match {
+      case Some(triggerSignal) =>
+        toAssigner(symbol) = assigner
+        triggeredAssigns(triggerSignal) += assigner
+      case _ =>
+        if(! excludeFromCombinational) {
+        if(toAssigner.contains(symbol)) {
+          throw new TreadleException(s"Assigner already exists for $symbol")
+        }
+        toAssigner(symbol) = assigner
+          combinationalAssigns += assigner
+        }
+    }
+  }
+
+  def hasAssigner(symbol: Symbol): Boolean = {
+    toAssigner.contains(symbol)
+  }
+
+  def getAllAssigners: Seq[Assigner] = {
+    toAssigner.values.toSeq ++ allUnassigners ++ clockAssigners
+  }
+
+  def inputChildrenAssigners(): Seq[Assigner] = {
+    val assigners = {
+      symbolTable.getChildren(symbolTable.inputPortsNames.map(symbolTable.nameToSymbol(_)).toSeq)
+              .flatMap { symbol => toAssigner.get(symbol)}
+              .toSeq
+    }
+    assigners
+  }
+
+  def getAssigners(symbols: Seq[Symbol]): Seq[Assigner] = {
+    val assigners = symbols.flatMap { symbol => toAssigner.get(symbol) }
+    assigners
+  }
+
+  def addUnassigner(symbol: Symbol, assigner: Assigner): Unit = {
+    triggeredUnassigns(symbol) += assigner
+    allUnassigners += assigner
+  }
+
+  def organizeAssigners(): Unit = {
+    val orphansAndSensitives = symbolTable.orphans.flatMap(s => toAssigner.get(s)).flatMap {
+      case _: BlackBoxCycler => None
+      case _: StopOp         => None
+      case _: PrintfOp       => None
+      case assigner          => Some(assigner)
+    }
+
+    setOrphanedAssigners(orphansAndSensitives)
+    sortInputSensitiveAssigns()
+  }
 
   def setVerboseAssign(isVerbose: Boolean): Unit = {
     def setMode(assigner: Assigner): Unit = {
       assigner.setVerbose(isVerbose)
     }
-    activeAssigns.foreach { setMode }
-    orphanedAssigns.foreach { setMode }
+    getAllAssigners.foreach { setMode }
   }
 
   def setLeanMode(setLean: Boolean): Unit = {
     def setMode(assigner: Assigner): Unit = {
       assigner.setLeanMode(setLean)
     }
-    activeAssigns.foreach { setMode }
-    orphanedAssigns.foreach { setMode }
+    getAllAssigners.foreach { setMode }
   }
 
   /**
     * Execute the seq of assigners
     * @param assigners list of assigners
     */
-  def executeAssigners(assigners: Seq[Assigner]): Unit = {
+  private def executeAssigners(assigners: Seq[Assigner]): Unit = {
     var index = 0
     val lastIndex = assigners.length
-    // val t0 = System.nanoTime()
+
     while(index < lastIndex) {
       assigners(index).run()
       index += 1
     }
-    //  val t1 = System.nanoTime()
-    //  val isLean = assigners.forall(x => !x.verboseAssign)
-    //  println(s"$index assigners in ${t1 - t0} ns, ${index.toDouble * 1000000000 / (t1 - t0)} nodes/sec" +
-    //          s" ${1000000000 / (t1 - t0)} Hz  isLean $isLean")
   }
 
   /**
     *  updates signals that depend on inputs
     */
-  def executeActiveAssigns(): Unit = {
-    executeAssigners(activeAssigns)
+  def executeCombinationalAssigns(): Unit = {
+    executeAssigners(combinationalAssigns)
+  }
+
+  /**
+    *  updates signals that depend on inputs
+    */
+  def executeOrphanedAssigns(): Unit = {
+    executeAssigners(orphanedAssigns)
+  }
+
+  /**
+    *  updates signals that depend on inputs
+    */
+  def executeTriggeredAssigns(trigger: Symbol): Unit = {
+    executeAssigners(triggeredAssigns(trigger))
+  }
+
+  /**
+    *  this is like executeTriggeredAssigns but is a hack
+    *  to propagate clock down signals to child clocks
+    */
+  def executeTriggeredUnassigns(trigger: Symbol): Unit = {
+    executeAssigners(triggeredUnassigns(trigger))
   }
 
   /**
     * de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
-    val deduplicatedAssigns = activeAssigns.distinct
-    activeAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
+    val deduplicatedAssigns = combinationalAssigns.distinct
+    combinationalAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
       assigner.symbol.cardinalNumber
     }
   }
@@ -71,17 +182,20 @@ class Scheduler(val dataStore: DataStore, val symbolTable: SymbolTable) extends 
     * @return
     */
   def render: String = {
+    def renderAssigner(assigner: Assigner): String = assigner.symbol.name
+
     s"Static assigns (${orphanedAssigns.size})\n" +
-      orphanedAssigns.map { assigner =>
-        assigner.symbol.render
-      }.mkString("\n") + "\n\n" +
-    s"Active assigns (${activeAssigns.size})\n" +
-    activeAssigns.map { assigner =>
-      assigner.symbol.render
-    }.mkString("\n") + "\n\n"
+      orphanedAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
+    s"Active assigns (${combinationalAssigns.size})\n" +
+    combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
+    triggeredAssigns.map { case (symbol, assigners) =>
+      s"Assigners triggered by ${symbol.name} (${assigners.length})\n" +
+      assigners.map(renderAssigner).mkString("\n")
+    }.mkString("\n") +
+    "\n\n"
   }
 }
 
 object Scheduler {
-  def apply(dataStore: DataStore, symbolTable: SymbolTable): Scheduler = new Scheduler(dataStore, symbolTable)
+  def apply(symbolTable: SymbolTable): Scheduler = new Scheduler(symbolTable)
 }

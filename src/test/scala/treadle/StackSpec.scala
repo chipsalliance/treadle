@@ -80,32 +80,47 @@ class StackSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = new TreadleTester(input)
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        writeVCD = false,
+        vcdShowUnderscored = false,
+        setVerbose = false,
+        showFirrtlAtLoad = true,
+        rollbackBuffers = 0,
+        symbolsToWatch = Seq()
+      )
+    }
+
+    val tester = new TreadleTester(input, optionsManager)
 
     tester.poke("io_en", 1)
     tester.poke("io_push", 1)
     tester.poke("io_dataIn", 11)
     tester.poke("io_pop", 0)
 
+    println(s"======== first push done sp ${tester.peek("sp")}")
+
     tester.step()
 
-    tester.expectMemory("io_dataOut", 1, 11)
-    tester.expectMemory("sp", 0, 0)
-    tester.expectMemory("sp", 1, 1)
+    println(s"======== first push done sp ${tester.peek("sp")}")
+
+
+    tester.expect("sp", 1)
+
 
     tester.poke("io_dataIn", 22)
     tester.step()
 
-    tester.expectMemory("io_dataOut", 1, 22)
-    tester.expectMemory("sp", 0, 0)
-    tester.expectMemory("sp", 1, 1)
+    tester.expect("io_dataOut", 11)
+
+    tester.expect("sp", 2)
 
     tester.poke("io_dataIn", 33)
     tester.step()
-
-    tester.expectMemory("io_dataOut", 1, 33)
-    tester.expectMemory("sp", 0, 1)
-    tester.expectMemory("sp", 1, 1)
+    tester.expect("io_dataOut", 22)
+    tester.step()
+    tester.expect("io_dataOut", 33)
+    tester.expect("sp", 4)
 
     tester.report()
   }

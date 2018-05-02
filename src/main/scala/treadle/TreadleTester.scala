@@ -1,4 +1,5 @@
 // See LICENSE for license details.
+
 package treadle
 
 import java.io.PrintWriter
@@ -27,21 +28,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager)
   val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
 
-  setVerbose(treadleOptions.setVerbose)
-
-  if(treadleOptions.writeVCD) {
-    optionsManager.setTopNameIfNotSet(engine.ast.main)
-    optionsManager.makeTargetDir()
-    engine.makeVCDLogger(
-      treadleOptions.vcdOutputFileName(optionsManager),
-      treadleOptions.vcdShowUnderscored
-    )
-  }
-
   val resetName: String = treadleOptions.resetName
-
-  // TODO: compute this somehow
-  val combinationalDelay: Long = 0
 
   val wallTime = UTC()
   wallTime.onTimeChange = () => {
@@ -75,52 +62,59 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       new NoClockStepper
 
     case 1 =>
-      new SimpleSingleClockStepper(
+      val clockInfo = clockInfoList.head
+      wallTime.setTime(clockInfo.initialOffset)
+
+      SimpleSingleClockStepper(
         engine,
         engine.dataStore,
-        engine.symbolTable(clockInfoList.head.name),
+        engine.symbolTable(clockInfo.name),
         engine.symbolTable.get(resetName),
-        clockInfoList.head.period,
+        clockInfo.period,
         wallTime
       )
     case _ =>
-      clockInfoList.foreach { clockInfo =>
-        engine.symbolTable.get(clockInfo.name) match {
-          case Some(clockSymbol) =>
-            val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
+      new MultiClockStepper(engine = this.engine, clockInfoList, wallTime)
+  }
 
-            wallTime.addRecurringTask(
-              clockInfo.period,
-              clockInfo.initialOffset,
-              taskName = s"${clockInfo.name}/up"
-            ) { () =>
+  /*
+  The Idea here is that combinational delay will be used when a peek follows a poke without a step
+  This should allow VCD output to show the events as if they had taken place in a small
+  interval of the clock cycle. There is some DANGER here that an unusual test will poke then peek
+  over 100 times before calling step, which will create a weird looking clock trace
+   */
+  val combinationalDelay: Long = {
+    clockStepper match {
+      case s: SimpleSingleClockStepper =>
+        s.clockPeriod / 100
+      case m: MultiClockStepper =>
+        // TODO (chick) Make this more meaningful
+        0
+      case _ =>
+        0
+    }
+  }
 
-              engine.makeUpToggler(clockSymbol).run()
-              engine.inputsChanged = true
-            }
+  setVerbose(treadleOptions.setVerbose)
 
-            wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
-              engine.makeDownToggler(clockSymbol).run()
-              engine.inputsChanged = true
-            }
-
-          case _ =>
-            throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
-
-        }
-      }
-
-      new MultiClockStepper(engine = this.engine, clockName = clockInfoList.head.name, wallTime)
+  if(treadleOptions.writeVCD) {
+    optionsManager.setTopNameIfNotSet(engine.ast.main)
+    optionsManager.makeTargetDir()
+    engine.makeVCDLogger(
+      treadleOptions.vcdOutputFileName(optionsManager),
+      treadleOptions.vcdShowUnderscored
+    )
   }
 
   if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
+//      reset(clockInfo.period + clockInfo.initialOffset - (clockInfo.period / 2))
     }
   }
 
   def reset(timeRaised: Long): Unit = {
-    engine.symbolTable.get(resetName).foreach { _ =>
+    engine.symbolTable.get(resetName).foreach { resetSymbol =>
       engine.setValue(resetName, 1)
       engine.inputsChanged = true
 
@@ -129,7 +123,19 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
           engine.setValue(resetName, 1)
           engine.evaluateCircuit()
           wallTime.incrementTime(timeRaised)
-          engine.setValue(resetName, 1)
+          engine.setValue(resetName, 0)
+        case stepper: SimpleSingleClockStepper =>
+          clockStepper.addTask(wallTime.currentTime + timeRaised + stepper.downPeriod) { () =>
+            engine.setValue(resetName, 0)
+            if (engine.verbose) {
+              println(s"reset dropped at ${wallTime.currentTime}")
+            }
+            engine.inputsChanged = true
+            engine.evaluateCircuit()
+          }
+          do {
+            stepper.run(1)
+          } while(engine.dataStore(resetSymbol) != Big0)
         case _ =>
           clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
             engine.setValue(resetName, 0)
@@ -167,6 +173,8 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     * @param msg optional message to be printed
     */
   def fail(ex: Throwable, msg: Option[String ] = None): Nothing = {
+    engine.writeVCD()
+
     msg match {
       case Some(s) => println(s)
       case _ =>
@@ -314,7 +322,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     }
     s"test ${engine.ast.main} " +
       s"$status $expectationsMet tests passed " +
-      f"in $cycleCount cycles in $elapsedSeconds%.6f seconds"
+      f"in $cycleCount cycles in $elapsedSeconds%.6f seconds ${cycleCount / elapsedSeconds}%.2f Hz"
   }
   /**
     * A simplistic report of the number of expects that passed

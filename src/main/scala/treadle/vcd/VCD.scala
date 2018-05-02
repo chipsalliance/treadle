@@ -495,7 +495,6 @@ case class VCD(
       this(key)
     }
   }
-
   val wiresToIgnore = new mutable.HashSet[String]
 
   def info: String = {

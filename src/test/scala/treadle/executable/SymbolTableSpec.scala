@@ -44,7 +44,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val keyToDependent = symbolTable.childrenOf
 
-    keyToDependent.reachableFrom(symbolTable("clock")).size should be (4)
+    keyToDependent.reachableFrom(symbolTable("clock")).size should be (2)
 
     symbolTable.registerNames.toList.sorted.foreach { key =>
       val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
@@ -131,7 +131,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (2)
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
 
@@ -188,7 +188,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (4)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be (2)
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
     childrenOf.reachableFrom(symbolTable("io_in2")) should not contain symbolTable("io_out1")
@@ -263,7 +263,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     }
 
     try {
-      val tester = new TreadleTester(simpleFirrtl, optionsManager)
+      new TreadleTester(simpleFirrtl, optionsManager)
     }
     catch {
       case c: CyclicException =>

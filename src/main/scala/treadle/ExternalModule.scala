@@ -102,16 +102,10 @@ case class BlackBoxCycler(
     dataStore: DataStore
 ) extends Assigner {
 
-  var lastClockValue = dataStore.currentIntArray(clockSymbol.index)
-
   override def run: FuncUnit = {
-    val clockValue = dataStore.currentIntArray(clockSymbol.index)
-    val transition = if(clockValue > 0 && lastClockValue == 0) PositiveEdge else NoTransition
-    lastClockValue = clockValue
-
-    blackBox.cycle(transition)
+    blackBox.cycle(PositiveEdge)
     if(isVerbose) {
-      println(s"${symbol.name} : black box cycle($transition)")
+      println(s"${symbol.name} : black box cycle($PositiveEdge)")
     }
     () => Unit
   }

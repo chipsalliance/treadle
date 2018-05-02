@@ -33,15 +33,13 @@ class ExecutionEngine(
   /* Default dataStore plugins */
 
   dataStore.addPlugin(
-    "show-assigns", new ReportAssignments(dataStore), enable = optionsManager.treadleOptions.setVerbose)
+    "show-assigns", new ReportAssignments(this), enable = optionsManager.treadleOptions.setVerbose)
 
   dataStore.addPlugin(
     "show-computation",
-    new RenderComputations(dataStore),
+    new RenderComputations(this),
     enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
   )
-
-  dataStore.allAssigners ++= scheduler.activeAssigns ++ scheduler.orphanedAssigns
 
   def setLeanMode(): Unit = {
     val canBeLean = ! (verbose || vcdOption.isDefined)
@@ -71,7 +69,7 @@ class ExecutionEngine(
       println(s"No static assignments")
     }
   }
-  scheduler.executeAssigners(scheduler.orphanedAssigns)
+  scheduler.executeOrphanedAssigns()
   if(verbose) {
     if(scheduler.orphanedAssigns.nonEmpty) {
       println(s"Finished executing static assignments")
@@ -94,8 +92,8 @@ class ExecutionEngine(
     vcdOption = Some(vcd)
     vcdFileName = fileName
 
-    val vcdPluIn = new VcdHook(dataStore, vcd)
-    dataStore.addPlugin(ExecutionEngine.VCDHookName, vcdPluIn, enable = true)
+    val vcdPlugIn = new VcdHook(this, vcd)
+    dataStore.addPlugin(ExecutionEngine.VCDHookName, vcdPlugIn, enable = true)
   }
 
   def disableVCD(): Unit = {
@@ -129,8 +127,9 @@ class ExecutionEngine(
 
   private def runAssigns(): Unit = {
     try {
-      scheduler.executeActiveAssigns()
+      scheduler.executeCombinationalAssigns()
       if(lastStopResult.isDefined) {
+        writeVCD()
         val stopKind = if(lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
         throw StopException(s"$stopKind: result ${lastStopResult.get}")
       }
@@ -144,7 +143,7 @@ class ExecutionEngine(
 
   def getValue(name: String, offset: Int = 0): BigInt = {
     assert(symbolTable.contains(name),
-      s"Error: getValue($name) is not an element of this circuit")
+      s"""Error: getValue("$name") : argument is not an element of this circuit""")
 
     if(inputsChanged) {
       if(verbose) {
@@ -436,7 +435,7 @@ object ExecutionEngine {
       println(s"Symbol table:\n${symbolTable.render}")
     }
 
-    val scheduler = new Scheduler(dataStore, symbolTable)
+    val scheduler = new Scheduler(symbolTable)
 
     val compiler = new ExpressionCompiler(symbolTable, dataStore, scheduler, interpreterOptions, blackBoxFactories)
 
@@ -449,26 +448,21 @@ object ExecutionEngine {
       interpreterOptions.validIfIsRandom,
       loweredAst, blackBoxFactories)
 
-    val orphansAndSensitives = symbolTable.orphans ++ symbolTable.getChildren(symbolTable.orphans)
-
-    scheduler.setOrphanedAssigners(symbolTable.getAssigners(orphansAndSensitives))
-
-    // println(s"Scheduler before sort ${scheduler.renderHeader}")
-//    scheduler.activeAssigns ++= symbolTable.inputChildrenAssigners()
-    scheduler.activeAssigns ++= symbolTable.allAssigners()
-    scheduler.sortInputSensitiveAssigns()
-
+    scheduler.organizeAssigners()
     if(verbose) {
       println(s"\n${scheduler.render}")
+      scheduler.setVerboseAssign(verbose)
     }
 
     val executionEngine = new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
     executionEngine.dataStore.setExecutionEngine(executionEngine)
 
+    executionEngine.inputsChanged = true
+
     val t1 = System.nanoTime()
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
     println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
-      s"${scheduler.activeAssigns.size} statements")
+      s"${scheduler.combinationalAssigns.size} statements")
 
     executionEngine
   }

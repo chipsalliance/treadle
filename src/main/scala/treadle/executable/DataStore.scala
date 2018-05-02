@@ -2,7 +2,6 @@
 
 package treadle.executable
 
-import treadle.vcd.VCD
 import treadle.{BlackBoxImplementation, ExecutionEngine, TreadleException}
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -26,8 +25,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   nextIndexFor(IntSize)  = 0
   nextIndexFor(LongSize) = 0
   nextIndexFor(BigSize)  = 0
-
-  val allAssigners  : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer()
 
   var leanMode      : Boolean = true
   val plugins       : mutable.HashMap[String, DataStorePlugin] = new mutable.HashMap()
@@ -79,7 +76,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       }
 
       val verbose = executionEngineOption.get.verbose
-      executionEngine.scheduler.activeAssigns.foreach { assigner =>
+      executionEngine.scheduler.combinationalAssigns.foreach { assigner =>
         val render = watchList.contains(assigner.symbol)
         assigner.setLeanMode(!verbose && !render)
         assigner.setVerbose(verbose)
@@ -223,29 +220,79 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     var run: FuncUnit = runLean
   }
 
-  case class PosEdgeAssignInt(
-    symbol: Symbol,
-    clockExpression: FuncInt,
-    lastValueSymbol : Symbol,
-    expression: FuncInt
-  ) extends Assigner {
+  case class TriggerConstantAssigner(symbol: Symbol, scheduler: Scheduler, triggerOnValue: Int = -1) extends Assigner {
 
-    val index              : Int          = symbol.index
-    val lastClockValueIndex: Int = lastValueSymbol.index
+    val index: Int = symbol.index
+
+    var value: Int = 0
 
     def runLean(): Unit = {
-      val lastClockValue = currentIntArray(lastClockValueIndex)
-      val clockValue = clockExpression()
-      if(clockValue > 0 && lastClockValue == 0) {
-        currentIntArray(index) = expression()
+      currentIntArray(index) = value
+      if(value == triggerOnValue) {
+        scheduler.executeTriggeredAssigns(symbol)
       }
-      currentIntArray(lastClockValueIndex) = clockValue
+      else {
+        scheduler.executeTriggeredUnassigns(symbol)
+      }
     }
 
     def runFull(): Unit = {
-      runLean()
+      currentIntArray(index) = value
+      if(value == triggerOnValue) {
+        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
+        scheduler.executeTriggeredAssigns(symbol)
+        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
+      }
+      else {
+        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
+        scheduler.executeTriggeredUnassigns(symbol)
+        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
+      }
       runPlugins(symbol)
     }
+
+    override def setLeanMode(isLean: Boolean): Unit = {
+      run = if(isLean) runLean else runFull
+    }
+    var run: FuncUnit = runLean
+  }
+
+  case class TriggerExpressionAssigner(
+    symbol: Symbol,
+    scheduler: Scheduler,
+    expression: FuncInt,
+    triggerOnValue: Int = -1
+  ) extends Assigner {
+
+    val index: Int = symbol.index
+
+    def runLean(): Unit = {
+      val value = expression()
+      currentIntArray(index) = value
+      if(value == triggerOnValue) {
+        scheduler.executeTriggeredAssigns(symbol)
+      }
+      else {
+        scheduler.executeTriggeredUnassigns(symbol)
+      }
+    }
+
+    def runFull(): Unit = {
+      val value = expression()
+      currentIntArray(index) = value
+      if(value == triggerOnValue) {
+        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
+        scheduler.executeTriggeredAssigns(symbol)
+        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
+      }
+      else {
+        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
+        scheduler.executeTriggeredUnassigns(symbol)
+        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
+      }
+      runPlugins(symbol)
+    }
+
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) runLean else runFull
     }
@@ -279,37 +326,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     var run: FuncUnit = runLean
   }
 
-  case class PosEdgeAssignLong(
-    symbol: Symbol,
-    clockExpression: FuncInt,
-    lastValueSymbol : Symbol,
-    expression: FuncLong
-  ) extends Assigner {
-
-    val index              : Int = symbol .index
-    val lastClockValueIndex: Int = lastValueSymbol.index
-
-    def runLean(): Unit = {
-      val lastClockValue = currentIntArray(lastClockValueIndex)
-      val clockValue = clockExpression()
-      if(clockValue > 0 && lastClockValue == 0) {
-        currentLongArray(index) = expression()
-      }
-      currentIntArray(lastClockValueIndex) = clockValue
-    }
-
-    def runFull(): Unit = {
-      runLean()
-      runPlugins(symbol)
-    }
-
-    override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
-    }
-    var run: FuncUnit = runLean
-  }
-
-
   case class GetBig(index: Int) extends BigExpressionResult {
     def apply(): Big = currentBigArray(index)
   }
@@ -331,37 +347,6 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
     var run: FuncUnit = runLean
   }
-
-  case class PosEdgeAssignBig(
-    symbol: Symbol,
-    clockExpression: FuncInt,
-    lastValueSymbol : Symbol,
-    expression: FuncBig
-  ) extends Assigner {
-
-    val index              : Int = symbol.index
-    val lastClockValueIndex: Int = lastValueSymbol.index
-
-    def runLean(): Unit = {
-      val lastClockValue = currentIntArray(lastClockValueIndex)
-      val clockValue = clockExpression()
-      if(clockValue > 0 && lastClockValue == 0) {
-        currentBigArray(index) = expression()
-      }
-      currentIntArray(lastClockValueIndex) = clockValue
-    }
-
-    def runFull(): Unit = {
-      runLean()
-      runPlugins(symbol)
-    }
-
-    override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
-    }
-    var run: FuncUnit = runLean
-  }
-
 
   /** for memory implementations */
   case class GetIntIndirect(
@@ -417,7 +402,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
         currentIntArray(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(symbol, memoryIndex)
+        runPlugins(memorySymbol, memoryIndex)
       }
     }
 
@@ -447,7 +432,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
         currentLongArray(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(symbol, memoryIndex)
+        runPlugins(memorySymbol, memoryIndex)
       }
     }
 
@@ -477,7 +462,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
         currentBigArray(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(symbol, memoryIndex)
+        runPlugins(memorySymbol, memoryIndex)
       }
     }
 

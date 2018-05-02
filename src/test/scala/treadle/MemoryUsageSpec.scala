@@ -1,16 +1,15 @@
 // See LICENSE for license details.
 package treadle
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{FreeSpec, Matchers}
 
 /**
   * Created by chick on 4/30/16.
   */
-class MemoryUsageSpec extends FlatSpec with Matchers {
+//scalastyle:off magic.number
+class MemoryUsageSpec extends FreeSpec with Matchers {
 
-  behavior of "chirrtl mems"
-
-  it should "parse and run ok" in {
+  "chirrtl mems should parse and run ok" in {
     val chirrtlMemInput =
       """
         |circuit ChirrtlMems :
@@ -79,9 +78,7 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
     tester.report()
   }
 
-  behavior of "memory primitives"
-
-  it should "run this circuit" in {
+  "memory primitives should run this circuit" in {
     val input =
       """circuit Test :
         |  module Test :
@@ -116,7 +113,14 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
         |    c <= a
       """.stripMargin
 
-    val tester = new TreadleTester(input) {
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = false,
+        showFirrtlAtLoad = true,
+        noDefaultReset = true
+      )
+    }
+    val tester = new TreadleTester(input, optionsManager) {
       poke("a", 1)
       poke("b", 0)
       poke("select", 0)
@@ -133,9 +137,7 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
     tester.report()
   }
 
-  behavior of "read-write memory"
-
-  it should "work with a simple example" in {
+  "read-write memory should work with this simple example" in {
     val depth = 2
     val input =
       s"""
@@ -187,7 +189,7 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
     tester.report()
   }
 
-  it should "run this more complex circuit" in {
+  "this is a a more complex circuit" in {
     val input =
       """
         |circuit target_memory :
@@ -263,5 +265,128 @@ class MemoryUsageSpec extends FlatSpec with Matchers {
       }
     }
     tester.report()
+  }
+
+  "basic memory latency read 0 write 1" in {
+    val input =
+      """circuit Test :
+        |  module Test :
+        |    input clock    : Clock
+        |    input in1      : UInt<8>
+        |    input addr     : UInt<8>
+        |    input write_en : UInt<1>
+        |    output out1    : UInt<8>
+        |    mem m :
+        |      data-type => UInt<8>
+        |      depth => 32
+        |      read-latency => 0
+        |      write-latency => 1
+        |      reader => read
+        |      writer => write
+        |
+        |    m.read.clk <= clock
+        |    m.read.en <= eq(write_en, UInt<1>(0))
+        |    m.read.addr <= addr
+        |
+        |    m.write.clk <= clock
+        |    m.write.en <= eq(write_en, UInt<1>(1))
+        |    m.write.mask <= UInt<8>("hff")
+        |    m.write.addr <= addr
+        |    m.write.data <= in1
+        |
+        |    out1 <= m.read.data
+      """.stripMargin
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = false,
+        showFirrtlAtLoad = true,
+        noDefaultReset = true
+      )
+    }
+    val tester = new TreadleTester(input, optionsManager)
+    tester.poke("in1", 11)
+    tester.poke("addr", 3)
+    tester.poke("write_en", 1)
+    tester.expectMemory("m", 3, 0)
+
+    tester.step()
+
+    tester.expectMemory("m", 3, 11)
+
+    tester.poke("addr", 2)
+    tester.poke("write_en", 0)
+    tester.step()
+    tester.expect("m.read.data", 0)
+
+    tester.poke("write_en", 0)
+    tester.poke("addr", 3)
+    tester.expect("m.read.data", 11)
+
+    tester.report()
+  }
+
+  "basic memory with varying latencies" in {
+    for {
+      readLatency <- 0 to 2
+      writeLatency <- 1 to 4
+    } {
+      println(s"ReadLatency $readLatency WriteLatency $writeLatency")
+      val input =
+        s"""circuit Test :
+          |  module Test :
+          |    input clock    : Clock
+          |    input in1      : UInt<8>
+          |    input addr     : UInt<8>
+          |    input write_en : UInt<1>
+          |    output out1    : UInt<8>
+          |    mem m :
+          |      data-type => UInt<8>
+          |      depth => 32
+          |      read-latency => $readLatency
+          |      write-latency => $writeLatency
+          |      reader => read
+          |      writer => write
+          |
+          |    m.read.clk <= clock
+          |    m.read.en <= eq(write_en, UInt<1>(0))
+          |    m.read.addr <= addr
+          |
+          |    m.write.clk <= clock
+          |    m.write.en <= eq(write_en, UInt<1>(1))
+          |    m.write.mask <= UInt<8>("hff")
+          |    m.write.addr <= addr
+          |    m.write.data <= in1
+          |
+          |    out1 <= m.read.data
+        """.stripMargin
+
+      val optionsManager = new TreadleOptionsManager {
+        treadleOptions = treadleOptions.copy(
+          setVerbose = false,
+          showFirrtlAtLoad = false,
+          noDefaultReset = true
+        )
+      }
+      val tester = new TreadleTester(input, optionsManager)
+      tester.poke("in1", 11)
+      tester.poke("addr", 3)
+      tester.poke("write_en", 1)
+
+      tester.step(writeLatency)
+
+      tester.expectMemory("m", 3, 11)
+
+      tester.poke("addr", 2)
+      tester.poke("write_en", 0)
+      tester.step()
+
+      tester.poke("write_en", 0)
+      tester.poke("addr", 3)
+      tester.step(readLatency)
+      tester.expect("m.read.data", 11)
+
+      tester.report()
+    }
   }
 }
