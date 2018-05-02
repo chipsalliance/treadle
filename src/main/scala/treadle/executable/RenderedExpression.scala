@@ -27,7 +27,11 @@ object SymbolAtDepth {
 
 
 /**
-  * This class answers the question why does the given symbol have a particular value
+  * This class answers the question why does the given symbol have a particular value,
+  * it shows all arguments of PrimOPs and should only show any symbols value once.
+  * Muxes only show the expanded derivation of the branch taken
+  * Display goes from top to bottom since it is usually the top value one wants
+  * to see rendered last.
   *
   * @param dataStore        current state
   * @param symbolTable      the symbol table
@@ -109,7 +113,7 @@ class ExpressionViewRenderer(
                 case _ =>
               }
             case x =>
-                x.toString
+              x.toString
 
           }
         }
@@ -179,6 +183,8 @@ class ExpressionViewRenderer(
       }
     }
 
+    // This reverses the top to bottom display order, leaves selected rendered symbol and end of output
+    // making it easiser to see in repl mode
     val result = builder.toString().split("""\n""").reverse.mkString("\n")
     result
   }

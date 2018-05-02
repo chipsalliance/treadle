@@ -497,6 +497,8 @@ case class VCD(
   }
   val wiresToIgnore = new mutable.HashSet[String]
 
+  val wiresToIgnore = new mutable.HashSet[String]
+
   def info: String = {
     val infoLines = Seq(
       "vcd" -> version,
