@@ -5,6 +5,7 @@ package treadle.executable
 import treadle._
 import firrtl.{MemKind, WireKind}
 import firrtl.ir.{ClockType, DefMemory, IntWidth}
+import RenderHelper.ExpressionHelper
 
 import scala.collection.mutable
 
@@ -196,6 +197,186 @@ object Memory {
     Seq(memorySymbol) ++ readerSymbols ++ writerSymbols ++ readerWriterSymbols
   }
 
+  /**
+    * Construct views for all the memory elements
+    * @param memory       current memory
+    * @param expandedName full path name
+    * @param scheduler    handle to execution components
+    * @param expressionViews   where to store the generated views
+    */
+  def buildMemoryExpressions(
+    memory       : DefMemory,
+    expandedName : String,
+    scheduler    : Scheduler,
+//    compiler     : ExpressionCompiler,
+    expressionViews: mutable.HashMap[Symbol, ExpressionView]
+  ): Unit = {
+
+    val symbolTable  = scheduler.symbolTable
+    val memorySymbol = symbolTable(expandedName)
+
+    /*
+      * construct a pipeline of registers based on the latency
+      * @param portString   reader or writer port name
+      * @param pipelineName name of data being pipelined
+      * @param latency      length of pipeline
+      * @return
+      */
+    def buildPipeLine(portString: String, pipelineName: String, latency: Int): Seq[Symbol] = {
+      (0 until latency).flatMap { n =>
+        Seq(
+          symbolTable(s"$portString.pipeline_${pipelineName}_$n/in"),
+          symbolTable(s"$portString.pipeline_${pipelineName}_$n")
+        )
+      }
+    }
+
+    /*
+      * Makes a read chain of pipeline registers.  These must be ordered reg0/in, reg0, reg1/in ... regN/in, regN
+      * This will advance the registers on the specified clock,
+      * and combinationally pass the register value to the next register's input down the chain
+      * Data flows from low indexed pipeline elements to high ones
+
+      * @param clock          trigger
+      * @param portName       port name
+      * @param pipelineName   element being pipelined
+      * @param data           data where memory data will go
+      * @param addr           address of data in memory
+      * @param enable         memory enabled
+      */
+    def buildReadPipelineAssigners(
+                                    clock:        Symbol,
+                                    portName:     String,
+                                    pipelineName: String,
+                                    data:         Symbol,
+                                    addr:         Symbol,
+                                    enable:       Symbol
+                                  ): Symbol = {
+
+      val pipelineReadSymbols = buildPipeLine(portName, pipelineName, memory.readLatency)
+      val chain = Seq(addr) ++ pipelineReadSymbols
+
+      // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
+      val drivingClock = symbolTable.findHighestClock(clock)
+      chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
+        case source :: target :: Nil =>
+          expressionViews(target) = expression"$source"
+        case _ =>
+      }
+
+      // This produces reg0/in <= root, reg1/in <= reg0 etc.
+      chain.grouped(2).withFilter(_.length == 2).toList.foreach {
+        case source :: target :: Nil =>
+          expressionViews(target) = expression"$source"
+        case _ =>
+      }
+
+      chain.last
+    }
+
+    memory.readers.foreach { readerString =>
+      val readerName = s"$expandedName.$readerString"
+      val enable = symbolTable(s"$readerName.en")
+      val clock  = symbolTable(s"$readerName.clk")
+      val addr   = symbolTable(s"$readerName.addr")
+      val data   = symbolTable(s"$readerName.data")
+
+      val endOfAddrPipeline = buildReadPipelineAssigners(clock, readerName, "raddr", data, addr, enable)
+      val endOfEnablePipeline = buildReadPipelineAssigners(clock, readerName, "ren", data, addr, enable)
+
+      expressionViews(data) = expression"$memorySymbol($endOfAddrPipeline) enable=$endOfEnablePipeline"
+    }
+
+    /*
+      * compile the necessary assignments to complete a latency chain
+      * If latency is zero, this basically returns the root memorySymbol.
+      * @param clockSymbol   used to create execution based on this trigger.
+      * @param rootSymbol    the head element of the pipeline, this is one of the mem ports
+      * @param writerString  name of the writer
+      * @param pipelineName  string representing the name of the root port
+      * @return
+      */
+    def buildWritePipelineAssigners(clockSymbol:     Symbol,
+                                    rootSymbol:      Symbol,
+                                    writerString:    String,
+                                    pipelineName:    String
+                                   ): Symbol = {
+
+      val pipelineSymbols = buildPipeLine(writerString, pipelineName, memory.writeLatency)
+      val chain = Seq(rootSymbol) ++ pipelineSymbols
+
+      // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
+      val drivingClock = symbolTable.findHighestClock(clockSymbol)
+      chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
+        case source :: target :: Nil =>
+          expressionViews(target) = expression"$source"
+        case _ =>
+      }
+
+      // This produces reg0/in <= root, reg1/in <= reg0 etc.
+      chain.grouped(2).withFilter(_.length == 2).toList.foreach {
+        case source :: target :: Nil =>
+          expressionViews(target) = expression"$source"
+        case _ =>
+      }
+
+      chain.last
+    }
+
+    memory.writers.foreach { writerString =>
+      val writerName = s"$expandedName.$writerString"
+
+      val portSymbol = symbolTable(writerName)
+
+      val enable = symbolTable(s"$writerName.en")
+      val clock  = symbolTable(s"$writerName.clk")
+      val addr   = symbolTable(s"$writerName.addr")
+      val mask   = symbolTable(s"$writerName.mask")
+      val data   = symbolTable(s"$writerName.data")
+      val valid  = symbolTable(s"$writerName.valid")
+
+      expressionViews(valid) = expression"and($enable)"
+
+      val endOfValidPipeline = buildWritePipelineAssigners(clock, valid, writerName, "valid")
+      val endOfAddrPipeline  = buildWritePipelineAssigners(clock, addr, writerName, "addr")
+      val endOfDataPipeline  = buildWritePipelineAssigners(clock, data, writerName, "data")
+
+      expressionViews(portSymbol) =
+              expression"[$endOfAddrPipeline] <= $endOfDataPipeline enable=$endOfValidPipeline"
+
+    }
+
+    memory.readwriters.foreach { readWriterString =>
+      val writerName = s"$expandedName.$readWriterString"
+
+      val portSymbol = symbolTable(writerName)
+
+      val enable = symbolTable(s"$writerName.en")
+      val clock  = symbolTable(s"$writerName.clk")
+      val addr   = symbolTable(s"$writerName.addr")
+      val rdata  = symbolTable(s"$writerName.rdata")
+      val mode   = symbolTable(s"$writerName.wmode")
+      val mask   = symbolTable(s"$writerName.wmask")
+      val wdata  = symbolTable(s"$writerName.wdata")
+      val valid  = symbolTable(s"$writerName.valid")
+
+      val endOfRaddrPipeline = buildReadPipelineAssigners(clock, writerName, "raddr", rdata, addr, enable)
+      val endOfEnablePipeline = buildReadPipelineAssigners(clock, writerName, "ren", rdata, addr, enable)
+
+      expressionViews(rdata) = expression"$memorySymbol($endOfRaddrPipeline) enable=$endOfEnablePipeline"
+
+      // compute a valid so we only have to carry a single boolean up the write queue
+      expressionViews(valid) = expression"and(and($enable, $mask), $mode)"
+
+      val endOfValidPipeline = buildWritePipelineAssigners(clock, valid, writerName, "valid")
+      val endOfAddrPipeline  = buildWritePipelineAssigners(clock, addr,  writerName, "addr")
+      val endOfDataPipeline  = buildWritePipelineAssigners(clock, wdata, writerName, "wdata")
+
+      expressionViews(portSymbol) =
+              expression"[$endOfAddrPipeline] <= $endOfDataPipeline enable=$endOfValidPipeline"
+
+    }
+  }
   /**
     * Construct the machinery to move data into and out of the memory stack
     * @param memory       current memory

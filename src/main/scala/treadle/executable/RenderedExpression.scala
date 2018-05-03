@@ -38,9 +38,10 @@ object SymbolAtDepth {
   * @param expressionViews  expression information
   */
 class ExpressionViewRenderer(
-    dataStore: DataStore,
-    symbolTable: SymbolTable,
-    expressionViews: Map[Symbol, ExpressionView]
+    dataStore       : DataStore,
+    symbolTable     : SymbolTable,
+    expressionViews : Map[Symbol, ExpressionView]
+
 ) {
 
   private def order(symbolAtDepth: SymbolAtDepth) = symbolAtDepth.displayDepth
@@ -49,7 +50,7 @@ class ExpressionViewRenderer(
   private val symbolsSeen = new mutable.HashSet[Symbol]()
 
   //scalastyle:off cyclomatic.complexity method.length
-  private def renderInternal(currentOutputFormat: String = "d"): String = {
+  private def renderInternal(currentOutputFormat: String = "d", showValues : Boolean = true): String = {
     val builder = new StringBuilder()
 
     def formatOutput(value: BigInt): String = {
@@ -129,15 +130,22 @@ class ExpressionViewRenderer(
               symbolTable.inputPortsNames.contains(symbol.name) ||
               symbolsSeen.contains(symbol)
             )) {
-            symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, lookBackDepth))
+            if(showValues) {
+              symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, lookBackDepth))
+            }
           }
 
           val value = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
 
-          val string = s"${symbol.name} <= " +
-              (if(lookBackDepth > 0) Console.RED else "") +
-              s"${formatOutput(value)}" +
-              (if(lookBackDepth > 0) Console.RESET else "")
+          val string = s"${symbol.name}" + (if(showValues) {
+             "<= " +
+                    (if(lookBackDepth > 0) Console.RED else "") +
+                    s"${formatOutput(value)}" +
+                    (if(lookBackDepth > 0) Console.RESET else "")
+          }
+          else {
+            ""
+          })
           string
 
         case subView: ExpressionView =>
@@ -165,18 +173,26 @@ class ExpressionViewRenderer(
 
         expressionViews.get(symbol).foreach { view =>
           builder ++= "  " * symbolAtDepth.displayDepth
-          builder ++= s"${symbol.name} <= "
-          if (lookBackDepth > 0) {
-            builder ++= Console.RED
+          builder ++= s"${symbol.name}"
+          if(showValues) {
+            builder ++= s" <= "
+            if (lookBackDepth > 0) {
+              builder ++= Console.RED
+            }
+            builder ++= s"${formatOutput(currentValue)} : "
+            if (lookBackDepth > 0) {
+              builder ++= Console.RESET
+            }
           }
-          builder ++= s"${formatOutput(currentValue)} : "
-          if (lookBackDepth > 0) {
-            builder ++= Console.RESET
+          else {
+            builder ++= " <= "
           }
           builder ++= renderView(view, symbolAtDepth.displayDepth, adjustedLookBackDepth)
-          if (adjustedLookBackDepth > lookBackDepth) {
-            builder ++= s" :  Values in red are from $adjustedLookBackDepth cycle"
-            builder ++= (if (adjustedLookBackDepth > 1) "s before" else " before")
+          if(showValues) {
+            if (adjustedLookBackDepth > lookBackDepth) {
+              builder ++= s" :  Values in red are from $adjustedLookBackDepth cycle"
+              builder ++= (if (adjustedLookBackDepth > 1) "s before" else " before")
+            }
           }
           builder ++= "\n"
         }
@@ -184,15 +200,21 @@ class ExpressionViewRenderer(
     }
 
     // This reverses the top to bottom display order, leaves selected rendered symbol and end of output
-    // making it easiser to see in repl mode
+    // making it easier to see in repl mode
     val result = builder.toString().split("""\n""").reverse.mkString("\n")
     result
   }
 
-  def render(symbol: Symbol, lookBackDepth: Int = 0, outputFormat: String = "d"): String = {
+  def render(
+    symbol        : Symbol,
+    lookBackDepth : Int = 0,
+    outputFormat  : String = "d",
+    showValues    : Boolean = true
+  ): String = {
+    symbolsSeen.clear()
     symbolsToDo.enqueue(SymbolAtDepth(symbol, 0, lookBackDepth))
 
-    renderInternal(outputFormat)
+    renderInternal(outputFormat, showValues)
   }
 }
 

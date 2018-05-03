@@ -25,6 +25,12 @@ class ExecutionEngine(
   var vcdOption: Option[VCD] = None
   var vcdFileName: String = ""
 
+  val expressionViewRenderer = new ExpressionViewRenderer(
+    dataStore,
+    symbolTable,
+    expressionViews
+  )
+
   var verbose: Boolean = false
   setVerbose(interpreterOptions.setVerbose)
 
@@ -449,13 +455,14 @@ object ExecutionEngine {
       loweredAst, blackBoxFactories)
 
     scheduler.organizeAssigners()
-    if(verbose) {
-      println(s"\n${scheduler.render}")
-      scheduler.setVerboseAssign(verbose)
-    }
 
     val executionEngine = new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
     executionEngine.dataStore.setExecutionEngine(executionEngine)
+
+    if(verbose) {
+      println(s"\n${scheduler.render(executionEngine)}")
+      scheduler.setVerboseAssign(verbose)
+    }
 
     executionEngine.inputsChanged = true
 

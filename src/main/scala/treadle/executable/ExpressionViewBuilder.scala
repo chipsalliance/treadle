@@ -8,7 +8,6 @@ import firrtl.ir._
 import treadle._
 import RenderHelper.ExpressionHelper
 
-
 import scala.collection.mutable
 
 //noinspection ScalaUnusedSymbol
@@ -209,7 +208,7 @@ class ExpressionViewBuilder(
             val processedExpression = processExpression(con.expr)
 
             expressionViews(registerIn) = processedExpression
-            expressionViews(registerOut) = expression"$registerOut"
+            expressionViews(registerOut) = expression"$registerIn"
           }
 
         case WDefInstance(info, instanceName, moduleName, _) =>
@@ -251,11 +250,17 @@ class ExpressionViewBuilder(
         case DefWire(info, name, tpe) =>
 
         case DefRegister(info, name, tpe, clockExpression, resetExpression, initValueExpression) =>
+          val registerName = expand(name)
+          val registerInputName = SymbolTable.makeRegisterInputName(registerName)
+          val registerInput = symbolTable(registerInputName)
+
+          expressionViews(symbolTable(registerName)) = expression"$registerInput"
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)
           logger.debug(s"declaration:DefMemory:${defMemory.name} becomes $expandedName")
 
+          Memory.buildMemoryExpressions(defMemory, expandedName, scheduler, expressionViews)
         case IsInvalid(info, expression) =>
 
         case stop @ Stop(info, ret, clockExpression, enableExpression) =>
