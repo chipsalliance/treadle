@@ -3,7 +3,7 @@
 package treadle.executable
 
 import logger.LazyLogging
-import treadle.{BlackBoxCycler, TreadleException}
+import treadle.{BlackBoxCycler, ExecutionEngine, TreadleException}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -166,7 +166,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     * de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
-    val deduplicatedAssigns = combinationalAssigns.distinct
+    val deduplicatedAssigns = (combinationalAssigns -- orphanedAssigns).distinct
     combinationalAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
       assigner.symbol.cardinalNumber
     }
@@ -181,8 +181,16 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     * Render the assigners managed by this scheduler
     * @return
     */
-  def render: String = {
-    def renderAssigner(assigner: Assigner): String = assigner.symbol.name
+  def render(engine: ExecutionEngine): String = {
+    def renderAssigner(assigner: Assigner): String = {
+      val expression = engine.expressionViewRenderer.render(assigner.symbol, showValues = false)
+      if(expression.isEmpty) {
+        s"${assigner.symbol.name} :::"
+      }
+      else {
+        s"${expression.toString}"
+      }
+    }
 
     s"Static assigns (${orphanedAssigns.size})\n" +
       orphanedAssigns.map(renderAssigner).mkString("\n") + "\n\n" +

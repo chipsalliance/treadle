@@ -5,6 +5,7 @@ package treadle
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
 
+//scalastyle:off magic.number
 class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
   "riscv-mini simple core test should run then stop" in {
 
