@@ -71,6 +71,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
         engine.symbolTable(clockInfo.name),
         engine.symbolTable.get(resetName),
         clockInfo.period,
+        clockInfo.initialOffset,
         wallTime
       )
     case _ =>
