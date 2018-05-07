@@ -106,7 +106,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     )
   }
 
-  if(! optionsManager.treadleOptions.noDefaultReset && engine.symbolTable.contains("reset")) {
+  if(optionsManager.treadleOptions.callResetAtStartUp && engine.symbolTable.contains(resetName)) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
 //      reset(clockInfo.period + clockInfo.initialOffset - (clockInfo.period / 2))
@@ -133,10 +133,11 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
             engine.inputsChanged = true
             engine.evaluateCircuit()
           }
-          do {
+          while(engine.dataStore(resetSymbol) != Big0) {
             stepper.run(1)
-          } while(engine.dataStore(resetSymbol) != Big0)
-        case _ =>
+          }
+
+        case multiStepper =>
           clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
             engine.setValue(resetName, 0)
             if (engine.verbose) {
@@ -144,6 +145,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
             }
             engine.inputsChanged = true
           }
+          wallTime.runUntil(wallTime.currentTime + timeRaised)
       }
     }
   }

@@ -12,17 +12,17 @@ case class TreadleOptions(
     setVerbose         : Boolean              = false,
     setOrderedExec     : Boolean              = false,
     allowCycles        : Boolean              = false,
-    randomSeed         : Long                 = System.currentTimeMillis(),
-    blackBoxFactories  : Seq[BlackBoxFactory] = Seq.empty,
-    maxExecutionDepth  : Long                 = Int.MaxValue,
-    showFirrtlAtLoad   : Boolean              = false,
-    lowCompileAtLoad   : Boolean              = true,
-    validIfIsRandom    : Boolean              = false,
-    rollbackBuffers    : Int                  = 4,
-    clockInfo          : Seq[ClockInfo]       = Seq.empty,
-    resetName          : String               = "reset",
-    noDefaultReset     : Boolean              = false,
-    symbolsToWatch     : Seq[String]          = Seq.empty
+    randomSeed        : Long                 = System.currentTimeMillis(),
+    blackBoxFactories : Seq[BlackBoxFactory] = Seq.empty,
+    maxExecutionDepth : Long                 = Int.MaxValue,
+    showFirrtlAtLoad  : Boolean              = false,
+    lowCompileAtLoad  : Boolean              = true,
+    validIfIsRandom   : Boolean              = false,
+    rollbackBuffers   : Int                  = 4,
+    clockInfo         : Seq[ClockInfo]       = Seq.empty,
+    resetName         : String               = "reset",
+    callResetAtStartUp: Boolean              = false,
+    symbolsToWatch    : Seq[String]          = Seq.empty
   )
   extends firrtl.ComposableOptions {
 
@@ -107,12 +107,12 @@ trait HasTreadleOptions {
     }
     .text("validIf returns random value when condition is false")
 
-  parser.opt[Unit]("no-default-reset")
-    .abbr("findr")
+  parser.opt[Unit]("call-reset-at-start")
+    .abbr("ficras")
     .foreach { _ =>
-      treadleOptions = treadleOptions.copy(noDefaultReset = true)
+      treadleOptions = treadleOptions.copy(callResetAtStartUp = true)
     }
-    .text("this prevents the tester from doing reset on it's own at startup")
+    .text("has the tester automatically do a reset on it's own at startup")
 
   parser.opt[Int]("fint-rollback-buffers")
     .abbr("firb")

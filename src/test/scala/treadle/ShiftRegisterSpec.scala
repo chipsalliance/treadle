@@ -41,7 +41,7 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
         setVerbose = false,
         showFirrtlAtLoad = false,
         rollbackBuffers = 4,
-        noDefaultReset = true,
+        callResetAtStartUp = true,
         symbolsToWatch = Seq() // Seq("sr", "sr/in")
       )
     }

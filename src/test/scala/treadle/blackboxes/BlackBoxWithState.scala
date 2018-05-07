@@ -46,7 +46,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         writeVCD = false,
         symbolsToWatch = Seq("io_data"),
         blackBoxFactories = Seq(new AccumBlackBoxFactory),
-        noDefaultReset = false,
+        callResetAtStartUp = true,
         clockInfo = Seq(ClockInfo("clock", 10, -2))
       )
     }
