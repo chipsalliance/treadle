@@ -26,6 +26,7 @@ case class SimpleSingleClockStepper(
   clockSymbol: Symbol,
   resetSymbolOpt: Option[Symbol],
   clockPeriod: Long,
+  clockInitialOffset: Long,
   wallTime: UTC
 ) extends ClockStepper {
 
@@ -52,7 +53,12 @@ case class SimpleSingleClockStepper(
       }
 
       cycleCount += 1
-      wallTime.incrementTime(downPeriod)
+
+      /*
+      This bit of code assumes any combinational delays occur after a down clock has happened.
+       */
+      val downIncrement = (wallTime.currentTime - clockInitialOffset) % clockPeriod
+      wallTime.incrementTime(downPeriod - downIncrement)
       if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
         resetSymbolOpt.foreach { resetSymbol =>
           engine.setValue(resetSymbol.name, 0)
