@@ -96,7 +96,7 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
             writeVCD = false,
             vcdShowUnderscored = false,
             setVerbose = false,
-            showFirrtlAtLoad = true,
+            showFirrtlAtLoad = false,
             rollbackBuffers = 0,
             symbolsToWatch = Seq()
           )

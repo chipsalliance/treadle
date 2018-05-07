@@ -26,8 +26,8 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
-        noDefaultReset = true,
-        showFirrtlAtLoad = true
+        callResetAtStartUp = true,
+        showFirrtlAtLoad = false
       )
     }
     val tester = TreadleTester(input, optionsManager)
@@ -82,7 +82,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
-        noDefaultReset = true
+        callResetAtStartUp = true
       )
     }
     val tester = TreadleTester(input, optionsManager)
@@ -188,7 +188,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
-        noDefaultReset = true,
+        callResetAtStartUp = true,
         writeVCD = false)
     }
     val tester = TreadleTester(input, optionsManager)
@@ -251,8 +251,8 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
-        noDefaultReset = true,
-        showFirrtlAtLoad = true,
+        callResetAtStartUp = true,
+        showFirrtlAtLoad = false,
         writeVCD = false
       )
     }
@@ -315,9 +315,9 @@ class RegisterSpec extends FlatSpec with Matchers {
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = true,
+        showFirrtlAtLoad = false,
         setVerbose = false,
-        noDefaultReset = true,
+        callResetAtStartUp = true,
         writeVCD = false,
         rollbackBuffers = 15)
     }

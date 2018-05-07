@@ -58,8 +58,8 @@ class EqOpsTester extends FreeSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
-        noDefaultReset = true,
-        showFirrtlAtLoad = true,
+        callResetAtStartUp = true,
+        showFirrtlAtLoad = false,
         blackBoxFactories = Seq(factory)
       )
     }
@@ -90,7 +90,7 @@ class EqOpsTester extends FreeSpec with Matchers {
         writeVCD = false,
         vcdShowUnderscored = false,
         setVerbose = false,
-        showFirrtlAtLoad = true,
+        showFirrtlAtLoad = false,
         rollbackBuffers = 0,
         symbolsToWatch = Seq()
       )

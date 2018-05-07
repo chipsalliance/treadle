@@ -142,8 +142,8 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         writeVCD = false,
         vcdShowUnderscored = true,
         setVerbose = false,
-        showFirrtlAtLoad = true,
-        noDefaultReset = true
+        showFirrtlAtLoad = false,
+        callResetAtStartUp = true
       )
     }
 

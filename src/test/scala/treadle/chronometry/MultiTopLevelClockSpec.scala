@@ -37,8 +37,8 @@ class MultiTopLevelClockSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         setVerbose = false,
         clockInfo = Seq(ClockInfo("clock1", period = 17, 1000), ClockInfo("clock2", period = 19, initialOffset = 1017)),
-        showFirrtlAtLoad = true,
-        noDefaultReset = true,
+        showFirrtlAtLoad = false,
+        callResetAtStartUp = true,
         writeVCD = false
       )
     }
