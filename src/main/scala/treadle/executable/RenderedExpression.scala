@@ -138,7 +138,7 @@ class ExpressionViewRenderer(
           val value = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
 
           val string = s"${symbol.name}" + (if(showValues) {
-             "<= " +
+             " <= " +
                     (if(lookBackDepth > 0) Console.RED else "") +
                     s"${formatOutput(value)}" +
                     (if(lookBackDepth > 0) Console.RESET else "")
