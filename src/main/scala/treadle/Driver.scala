@@ -143,6 +143,14 @@ trait HasTreadleOptions {
     }
     .text("clock-name[:period[:initial-offset]]")
 
+  parser.opt[Seq[String]]("fint-symbols-to-watch")
+    .abbr("fistw")
+    .valueName("symbols]")
+    .foreach { x =>
+    treadleOptions = treadleOptions.copy(symbolsToWatch = x)
+    }
+    .text("symbol[,symbol[...]")
+
   parser.opt[String]("fint-reset-name")
     .abbr("firn")
     .valueName("<string>")

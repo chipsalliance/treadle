@@ -43,12 +43,12 @@ class ExecutionEngine(
 
   dataStore.addPlugin(
     "show-computation",
-    new RenderComputations(this),
+    new RenderComputations(this, optionsManager.treadleOptions.symbolsToWatch),
     enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
   )
 
   def setLeanMode(): Unit = {
-    val canBeLean = ! (verbose || vcdOption.isDefined)
+    val canBeLean = ! (verbose || dataStore.hasEnabledPlugins)
     scheduler.setLeanMode(canBeLean)
     scheduler.setVerboseAssign(verbose)
   }
@@ -114,8 +114,6 @@ class ExecutionEngine(
       vcd.write(vcdFileName)
     }
   }
-
-  setVerbose(interpreterOptions.setVerbose)
 
   def renderComputation(symbolNames: String, outputFormat: String = "d"): String = {
     val renderer = new ExpressionViewRenderer(dataStore, symbolTable, expressionViews)

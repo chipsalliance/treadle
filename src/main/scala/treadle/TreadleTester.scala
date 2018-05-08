@@ -89,8 +89,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       case s: SimpleSingleClockStepper =>
         s.clockPeriod / 100
       case m: MultiClockStepper =>
-        // TODO (chick) Make this more meaningful
-        0
+        m.shortestPeriod / 100
       case _ =>
         0
     }
@@ -138,7 +137,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
             stepper.run(1)
           }
 
-        case multiStepper =>
+        case _ =>
           clockStepper.addTask(wallTime.currentTime + timeRaised) { () =>
             engine.setValue(resetName, 0)
             if (engine.verbose) {
