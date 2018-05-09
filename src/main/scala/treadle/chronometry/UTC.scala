@@ -4,7 +4,7 @@ package treadle.chronometry
 
 import scala.collection.mutable
 
-class UTC private (scaleName: String = "picoseconds") {
+class UTC(scaleName: String = "picoseconds") {
   private var internalTime: Long = 0L
   def currentTime:  Long = internalTime
   def setTime(time: Long): Unit = {

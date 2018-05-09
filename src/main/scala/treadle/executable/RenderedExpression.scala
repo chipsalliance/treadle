@@ -17,11 +17,11 @@ object RenderHelper {
 
 class ExpressionView(val sc: StringContext, val args: Seq[Any])
 
-class SymbolAtDepth(val symbol: Symbol, val displayDepth: Int, val lookBackDepth: Int)
+class SymbolAtDepth(val symbol: Symbol, val displayDepth: Int, val dataTime: Long, val dataArrays: HasDataArrays)
 
 object SymbolAtDepth {
-  def apply(symbol: Symbol, displayDepth: Int, lookBackDepth: Int): SymbolAtDepth = {
-    new SymbolAtDepth(symbol, displayDepth, lookBackDepth)
+  def apply(symbol: Symbol, displayDepth: Int, dataTime: Long, dataArrays: HasDataArrays): SymbolAtDepth = {
+    new SymbolAtDepth(symbol, displayDepth, dataTime, dataArrays)
   }
 }
 
@@ -50,7 +50,12 @@ class ExpressionViewRenderer(
   private val symbolsSeen = new mutable.HashSet[Symbol]()
 
   //scalastyle:off cyclomatic.complexity method.length
-  private def renderInternal(currentOutputFormat: String = "d", showValues : Boolean = true): String = {
+  private def renderInternal(
+    currentOutputFormat : String = "d",
+    showValues          : Boolean = true,
+    startTime           : Long
+  ): String = {
+
     val builder = new StringBuilder()
 
     def formatOutput(value: BigInt): String = {
@@ -61,7 +66,7 @@ class ExpressionViewRenderer(
       }
     }
 
-    def renderView(view: ExpressionView, displayDepth: Int, lookBackDepth: Int): String = {
+    def renderView(view: ExpressionView, displayDepth: Int, dataTime: Long, dataArrays: HasDataArrays): String = {
       val builder = new StringBuilder()
 
       val sc = view.sc
@@ -131,17 +136,17 @@ class ExpressionViewRenderer(
               symbolsSeen.contains(symbol)
             )) {
             if(showValues) {
-              symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, lookBackDepth))
+              symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, dataTime, dataArrays))
             }
           }
 
-          val value = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
+          val value = symbol.normalize(dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))
 
           val string = s"${symbol.name}" + (if(showValues) {
              " <= " +
-                    (if(lookBackDepth > 0) Console.RED else "") +
+                    (if(dataTime < startTime) Console.RED else "") +
                     s"${formatOutput(value)}" +
-                    (if(lookBackDepth > 0) Console.RESET else "")
+                    (if(dataTime < startTime) Console.RESET else "")
           }
           else {
             ""
@@ -149,7 +154,7 @@ class ExpressionViewRenderer(
           string
 
         case subView: ExpressionView =>
-          renderView(subView, displayDepth + 1, lookBackDepth)
+          renderView(subView, displayDepth + 1, dataTime, dataArrays)
 
         case other => other.toString
       }
@@ -167,31 +172,44 @@ class ExpressionViewRenderer(
 
       if(! symbolsSeen.contains(symbol)) {
         symbolsSeen += symbol
-        val lookBackDepth = symbolAtDepth.lookBackDepth
-        val currentValue = symbol.normalize(dataStore.earlierValue(symbol, lookBackDepth))
-        val adjustedLookBackDepth = lookBackDepth + (if (symbolTable.isRegister(symbol.name)) 1 else 0)
+        val dataTime = symbolAtDepth.dataTime
 
         expressionViews.get(symbol).foreach { view =>
           builder ++= "  " * symbolAtDepth.displayDepth
           builder ++= s"${symbol.name}"
           if(showValues) {
             builder ++= s" <= "
-            if (lookBackDepth > 0) {
+            if (dataTime < startTime) {
               builder ++= Console.RED
             }
+            val currentValue = symbol.normalize(symbolAtDepth.dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))
             builder ++= s"${formatOutput(currentValue)} : "
-            if (lookBackDepth > 0) {
+            if (dataTime < startTime) {
               builder ++= Console.RESET
             }
           }
           else {
             builder ++= " <= "
           }
-          builder ++= renderView(view, symbolAtDepth.displayDepth, adjustedLookBackDepth)
+
+          if(symbolTable.isRegister(symbol.name)) {
+            val clockName = symbolTable.registerToClock(symbol).name
+
+            dataStore.rollBackBufferManager.findEarlierBuffer(clockName, dataTime) match {
+
+              case Some(buffer) =>
+                builder ++= renderView(view, symbolAtDepth.displayDepth, buffer.time, buffer)
+              case _ =>
+                builder ++= renderView(view, symbolAtDepth.displayDepth, dataTime, symbolAtDepth.dataArrays)
+            }
+          }
+          else {
+            builder ++= renderView(view, symbolAtDepth.displayDepth, dataTime, symbolAtDepth.dataArrays)
+          }
+
           if(showValues) {
-            if (adjustedLookBackDepth > lookBackDepth) {
-              builder ++= s" :  Values in red are from $adjustedLookBackDepth cycle"
-              builder ++= (if (adjustedLookBackDepth > 1) "s before" else " before")
+            if (dataTime < startTime) {
+              builder ++= s" :  Values in red are from previous cycle at time $dataTime"
             }
           }
           builder ++= "\n"
@@ -207,14 +225,14 @@ class ExpressionViewRenderer(
 
   def render(
     symbol        : Symbol,
-    lookBackDepth : Int = 0,
+    dataTime      : Long,
     outputFormat  : String = "d",
     showValues    : Boolean = true
   ): String = {
     symbolsSeen.clear()
-    symbolsToDo.enqueue(SymbolAtDepth(symbol, 0, lookBackDepth))
+    symbolsToDo.enqueue(SymbolAtDepth(symbol, 0, dataTime, dataStore))
 
-    renderInternal(outputFormat, showValues)
+    renderInternal(outputFormat, showValues, dataTime)
   }
 }
 

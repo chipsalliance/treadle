@@ -18,13 +18,9 @@ import scala.collection.mutable
   * @param numberOfBuffers Number of buffers
   */
 //scalastyle:off number.of.methods
-class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
-  assert(numberOfBuffers > 0, s"DataStore: numberOfBuffers $numberOfBuffers must be > 0")
-
-  private val nextIndexFor = new mutable.HashMap[DataSize, Int]
-  nextIndexFor(IntSize)  = 0
-  nextIndexFor(LongSize) = 0
-  nextIndexFor(BigSize)  = 0
+class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator)
+extends HasDataArrays {
+  assert(numberOfBuffers >= 0, s"DataStore: numberOfBuffers $numberOfBuffers must be >= 0")
 
   var leanMode      : Boolean = true
   val plugins       : mutable.HashMap[String, DataStorePlugin] = new mutable.HashMap()
@@ -103,87 +99,23 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
   }
 
-  def numberOfInts: Int  = nextIndexFor(IntSize)
-  def numberOfLongs: Int = nextIndexFor(LongSize)
-  def numberOfBigs: Int  = nextIndexFor(BigSize)
+  def numberOfInts: Int  = dataStoreAllocator.nextIndexFor(IntSize)
+  def numberOfLongs: Int = dataStoreAllocator.nextIndexFor(LongSize)
+  def numberOfBigs: Int  = dataStoreAllocator.nextIndexFor(BigSize)
 
   val watchList: mutable.HashSet[Symbol] = new mutable.HashSet()
-
-  def getSizes: (Int, Int, Int) = {
-    (nextIndexFor(IntSize), nextIndexFor(LongSize), nextIndexFor(BigSize))
-  }
-
-  def getIndex(dataSize: DataSize, slots: Int = 1): Int = {
-    val index = nextIndexFor(dataSize)
-    nextIndexFor(dataSize) += slots
-    index
-  }
-
-  var intData:  Array[Array[Int]]  = Array.fill(numberOfBuffers, numberOfInts)(0)
-  var longData: Array[Array[Long]] = Array.fill(numberOfBuffers, numberOfLongs)(0L)
-  var bigData:  Array[Array[Big]]  = Array.fill(numberOfBuffers, numberOfBigs)(Big(0))
 
   var currentBufferIndex:  Int = if(numberOfBuffers > 1) 1 else 0
   var previousBufferIndex: Int = 0
 
-  var currentIntArray:   Array[Int]  = intData(currentBufferIndex)
-  var currentLongArray:  Array[Long] = longData(currentBufferIndex)
-  var currentBigArray:   Array[Big]  = bigData(currentBufferIndex)
-  var previousIntArray:  Array[Int]  = intData(previousBufferIndex)
-  var previousLongArray: Array[Long] = longData(previousBufferIndex)
-  var previousBigArray:  Array[Big]  = bigData(previousBufferIndex)
+  val intData:   Array[Int]  = Array.fill(numberOfInts)(0)
+  val longData:  Array[Long] = Array.fill(numberOfLongs)(0L)
+  val bigData:   Array[Big]  = Array.fill(numberOfBigs)(Big(0))
 
-  def allocateBuffers(): Unit = {
-    intData  = Array.fill(numberOfBuffers, numberOfInts)(0)
-    longData = Array.fill(numberOfBuffers, numberOfLongs)(0L)
-    bigData  = Array.fill(numberOfBuffers, numberOfBigs)(Big(0))
-
-    currentIntArray  = intData(currentBufferIndex)
-    currentLongArray = longData(currentBufferIndex)
-    currentBigArray  = bigData(currentBufferIndex)
-    previousIntArray  = intData(previousBufferIndex)
-    previousLongArray = longData(previousBufferIndex)
-    previousBigArray  = bigData(previousBufferIndex)
-  }
-
-  /**
-    * Get the three source buffers
-    * @return
-    */
-  def sourceBuffers(): (Array[Int], Array[Long], Array[Big]) = {
-    (intData(previousBufferIndex), longData(previousBufferIndex), bigData(previousBufferIndex))
-  }
-
-  /**
-    * Get the three target buffers
-    * @return
-    */
-  def targetBuffers(): (Array[Int], Array[Long], Array[Big]) = {
-    (intData(currentBufferIndex), longData(currentBufferIndex), bigData(currentBufferIndex))
-  }
-
-  /**
-    * Advance the buffers if you are using more than 1.
-    * TODO: When the heck do you call this thing
-    */
-  def advanceBuffers(): Unit = {
-    if(numberOfBuffers > 1) {
-      previousBufferIndex = (previousBufferIndex + 1) % numberOfBuffers
-      currentBufferIndex = (currentBufferIndex + 1) % numberOfBuffers
-
-      currentIntArray  = intData(currentBufferIndex)
-      currentLongArray = longData(currentBufferIndex)
-      currentBigArray  = bigData(currentBufferIndex)
-
-      previousIntArray  = intData(previousBufferIndex)
-      previousLongArray = longData(previousBufferIndex)
-      previousBigArray  = bigData(previousBufferIndex)
-
-      for(i <- currentIntArray.indices)  { currentIntArray(i)  = previousIntArray(i) }
-      for(i <- currentLongArray.indices) { currentLongArray(i) = previousLongArray(i) }
-      for(i <- currentBigArray.indices)  { currentBigArray(i)  = previousBigArray(i) }
-
-      // println(s"dataStore:advanceBuffers:current $currentBufferIndex previous $previousBufferIndex")
+  val rollBackBufferManager = new RollBackBufferManager(this)
+  def saveData(clockName: String, time: Long): Unit = {
+    if(numberOfBuffers > 0) {
+      rollBackBufferManager.saveData(clockName, time)
     }
   }
 
@@ -218,17 +150,17 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   }
 
   case class GetInt(index: Int) extends IntExpressionResult {
-    def apply(): Int = currentIntArray(index)
+    def apply(): Int = intData(index)
   }
 
   case class AssignInt(symbol: Symbol, expression: FuncInt) extends Assigner {
     val index: Int = symbol.index
 
-    def runLean(): Unit = {currentIntArray(index) = expression() }
+    def runLean(): Unit = {intData(index) = expression() }
 
     def runFull(): Unit = {
       val value = expression()
-      currentIntArray(index) = value
+      intData(index) = value
       runPlugins(symbol)
     }
 
@@ -245,7 +177,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     var value: Int = 0
 
     def runLean(): Unit = {
-      currentIntArray(index) = value
+      intData(index) = value
       if(value == triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
       }
@@ -255,7 +187,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     }
 
     def runFull(): Unit = {
-      currentIntArray(index) = value
+      intData(index) = value
       if(value == triggerOnValue) {
         if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
         scheduler.executeTriggeredAssigns(symbol)
@@ -286,7 +218,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     def runLean(): Unit = {
       val value = expression()
-      currentIntArray(index) = value
+      intData(index) = value
       if(value == triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
       }
@@ -297,7 +229,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     def runFull(): Unit = {
       val value = expression()
-      currentIntArray(index) = value
+      intData(index) = value
       if(value == triggerOnValue) {
         if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
         scheduler.executeTriggeredAssigns(symbol)
@@ -318,19 +250,19 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   }
 
   case class GetLong(index: Int) extends LongExpressionResult {
-    def apply(): Long = currentLongArray(index)
+    def apply(): Long = longData(index)
   }
 
   case class AssignLong(symbol: Symbol, expression: FuncLong) extends Assigner {
     val index: Int = symbol.index
 
     def runLean(): Unit = {
-      currentLongArray(index) = expression()
+      longData(index) = expression()
     }
 
     def runFull(): Unit = {
       val value = expression()
-      currentLongArray(index) = value
+      longData(index) = value
       runPlugins(symbol)
     }
 
@@ -345,18 +277,18 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
   }
 
   case class GetBig(index: Int) extends BigExpressionResult {
-    def apply(): Big = currentBigArray(index)
+    def apply(): Big = bigData(index)
   }
 
   case class AssignBig(symbol: Symbol, expression: FuncBig) extends Assigner {
     val index: Int = symbol.index
 
     def runLean(): Unit = {
-      currentBigArray(index) = expression()
+      bigData(index) = expression()
     }
     def runFull(): Unit = {
       val value = expression()
-      currentBigArray(index) = value
+      bigData(index) = value
       runPlugins(symbol)
     }
 
@@ -374,7 +306,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
                            ) extends IntExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Int = {
-      currentIntArray(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
+      intData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
     }
   }
 
@@ -385,7 +317,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
                            ) extends LongExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Long = {
-      currentLongArray(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
+      longData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
     }
   }
 
@@ -396,7 +328,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
                            ) extends BigExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Big = {
-      currentBigArray(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
+      bigData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
     }
   }
 
@@ -411,7 +343,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     def runLean(): Unit = {
       if(enable() > 0) {
-        currentIntArray(index + getMemoryIndex.apply()) = expression()
+        intData(index + getMemoryIndex.apply()) = expression()
       }
     }
 
@@ -419,7 +351,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       if(enable() > 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
-        currentIntArray(index + (memoryIndex % memorySymbol.slots)) = value
+        intData(index + (memoryIndex % memorySymbol.slots)) = value
         runPlugins(memorySymbol, memoryIndex)
       }
     }
@@ -441,7 +373,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     def runLean(): Unit = {
       if(enable() > 0) {
-        currentLongArray(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
+        longData(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
       }
     }
 
@@ -449,7 +381,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       if(enable() > 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
-        currentLongArray(index + (memoryIndex % memorySymbol.slots)) = value
+        longData(index + (memoryIndex % memorySymbol.slots)) = value
         runPlugins(memorySymbol, memoryIndex)
       }
     }
@@ -471,7 +403,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
     def runLean(): Unit = {
       if(enable() > 0) {
-        currentBigArray(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
+        bigData(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
       }
     }
 
@@ -479,7 +411,7 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
       if(enable() > 0) {
         val value = expression()
         val memoryIndex = getMemoryIndex.apply()
-        currentBigArray(index + (memoryIndex % memorySymbol.slots)) = value
+        bigData(index + (memoryIndex % memorySymbol.slots)) = value
         runPlugins(memorySymbol, memoryIndex)
       }
     }
@@ -509,62 +441,35 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
 
   def apply(symbol: Symbol): Big = {
     symbol.dataSize match {
-      case IntSize  => currentIntArray(symbol.index)
-      case LongSize => currentLongArray(symbol.index)
-      case BigSize  => currentBigArray(symbol.index)
+      case IntSize  => intData(symbol.index)
+      case LongSize => longData(symbol.index)
+      case BigSize  => bigData(symbol.index)
     }
   }
 
   def apply(symbol: Symbol, offset: Int): Big = {
     symbol.dataSize match {
-      case IntSize  => currentIntArray(symbol.index + offset)
-      case LongSize => currentLongArray(symbol.index + offset)
-      case BigSize  => currentBigArray(symbol.index + offset)
-    }
-  }
-
-  def earlierBufferIndex(lookBack: Int): Int = {
-    ((currentBufferIndex + numberOfBuffers) - lookBack) % numberOfBuffers
-  }
-
-  def earlierValue(symbol: Symbol, lookBack: Int): Big = {
-    val lookBackIndex = earlierBufferIndex(lookBack)
-
-    symbol.dataSize match {
-      case IntSize  => intData(lookBackIndex)(symbol.index)
-      case LongSize => longData(lookBackIndex)(symbol.index)
-      case BigSize  => bigData(lookBackIndex)(symbol.index)
+      case IntSize  => intData(symbol.index + offset)
+      case LongSize => longData(symbol.index + offset)
+      case BigSize  => bigData(symbol.index + offset)
     }
   }
 
   def update(symbol: Symbol, value: Big): Unit = {
     symbol.dataSize match {
-      case IntSize  => currentIntArray(symbol.index) = value.toInt
-      case LongSize => currentLongArray(symbol.index) = value.toLong
-      case BigSize  => currentBigArray(symbol.index) = value
-    }
-  }
-
-  def setValueAtIndex(dataSize: DataSize, index: Int, value: Big): Unit = {
-    dataSize match {
-      case IntSize  => currentIntArray(index)  = value.toInt
-      case LongSize => currentLongArray(index) = value.toLong
-      case BigSize  => currentBigArray(index)  = value
-    }
-  }
-
-  def getValueAtIndex(dataSize: DataSize, index: Int): BigInt = {
-    dataSize match {
-      case IntSize  => currentIntArray(index)
-      case LongSize => currentLongArray(index)
-      case BigSize  => currentBigArray(index)
+      case IntSize  => intData(symbol.index) = value.toInt
+      case LongSize => longData(symbol.index) = value.toLong
+      case BigSize  => bigData(symbol.index) = value
     }
   }
 
   //scalastyle:off cyclomatic.complexity method.length
   def serialize: String = {
+/*
 
-    val nextForData = Seq(IntSize, LongSize, BigSize).map { size => size.toString -> nextIndexFor(size) }.toMap
+    val nextForData = Seq(IntSize, LongSize, BigSize).map { size =>
+      size.toString -> dataStoreAllocator.nextIndexFor(size)
+    }.toMap
 
     val intDataRows = intData.zipWithIndex.map { case (row, index) =>
       s"row$index" -> JArray(row.toList.map { a ⇒ val v: JValue = a; v })
@@ -613,10 +518,13 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
           ("bigData" -> bigDataPacket)
 
     pretty(render(json))
+*/
+    //TODO: (chick) needs to work from roll back buffers now
+    ""
   }
 
   def deserialize(jsonString: String): Unit = {
-
+/*
     val json2 = parse(jsonString)
 
     for {
@@ -644,9 +552,9 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
           } {
             val JInt(nextNumber) = value
             fieldName match {
-              case "Int"  => nextIndexFor(IntSize)  = nextNumber.toInt
-              case "Long" => nextIndexFor(LongSize) = nextNumber.toInt
-              case "Big"  => nextIndexFor(BigSize)  = nextNumber.toInt
+              case "Int"  => dataStoreAllocator.nextIndexFor(IntSize)  = nextNumber.toInt
+              case "Long" => dataStoreAllocator.nextIndexFor(LongSize) = nextNumber.toInt
+              case "Big"  => dataStoreAllocator.nextIndexFor(BigSize)  = nextNumber.toInt
             }
           }
         case "intData" =>
@@ -686,11 +594,58 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
           // println(s"$fieldName -> $value")
       }
     }
+*/
   }
 }
 
 object DataStore {
-  def apply(numberOfBuffers: Int, optimizationLevel: Int): DataStore = {
-    new DataStore(numberOfBuffers, optimizationLevel)
+  def apply(numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator): DataStore = {
+    new DataStore(numberOfBuffers, dataStoreAllocator)
+  }
+}
+
+trait HasDataArrays {
+  def intData  : Array[Int]
+  def longData : Array[Long]
+  def bigData  : Array[Big]
+
+  def setValueAtIndex(dataSize: DataSize, index: Int, value: Big): Unit = {
+    dataSize match {
+      case IntSize  => intData(index)  = value.toInt
+      case LongSize => longData(index) = value.toLong
+      case BigSize  => bigData(index)  = value
+    }
+  }
+
+  def getValueAtIndex(dataSize: DataSize, index: Int): BigInt = {
+    dataSize match {
+      case IntSize  => intData(index)
+      case LongSize => longData(index)
+      case BigSize  => bigData(index)
+    }
+  }
+}
+
+class DataStoreAllocator {
+  val nextIndexFor = new mutable.HashMap[DataSize, Int]
+
+  nextIndexFor(IntSize)  = 0
+  nextIndexFor(LongSize) = 0
+  nextIndexFor(BigSize)  = 0
+
+  def numberOfInts: Int  = nextIndexFor(IntSize)
+  def numberOfLongs: Int = nextIndexFor(LongSize)
+  def numberOfBigs: Int  = nextIndexFor(BigSize)
+
+  val watchList: mutable.HashSet[Symbol] = new mutable.HashSet()
+
+  def getSizes: (Int, Int, Int) = {
+    (nextIndexFor(IntSize), nextIndexFor(LongSize), nextIndexFor(BigSize))
+  }
+
+  def getIndex(dataSize: DataSize, slots: Int = 1): Int = {
+    val index = nextIndexFor(dataSize)
+    nextIndexFor(dataSize) += slots
+    index
   }
 }

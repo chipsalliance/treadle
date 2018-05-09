@@ -183,7 +183,9 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     */
   def render(engine: ExecutionEngine): String = {
     def renderAssigner(assigner: Assigner): String = {
-      val expression = engine.expressionViewRenderer.render(assigner.symbol, showValues = false)
+      val expression =
+        engine.expressionViewRenderer.render(assigner.symbol, engine.wallTime.currentTime, showValues = false)
+
       if(expression.isEmpty) {
         s"${assigner.symbol.name} :::"
       }

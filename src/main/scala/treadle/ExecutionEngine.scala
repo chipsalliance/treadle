@@ -5,17 +5,19 @@ package treadle
 import firrtl.PortKind
 import firrtl.ir.Circuit
 import firrtl.transforms.DontCheckCombLoopsAnnotation
+import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.vcd.VCD
 
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
-    val ast: Circuit,
-    val optionsManager: HasTreadleSuite,
-    val symbolTable: SymbolTable,
-    val dataStore: DataStore,
-    val scheduler: Scheduler,
-    val expressionViews: Map[Symbol, ExpressionView]
+    val ast             : Circuit,
+    val optionsManager  : HasTreadleSuite,
+    val symbolTable     : SymbolTable,
+    val dataStore       : DataStore,
+    val scheduler       : Scheduler,
+    val expressionViews : Map[Symbol, ExpressionView],
+    val wallTime        : UTC
 ) {
   private val interpreterOptions = optionsManager.treadleOptions
 
@@ -123,7 +125,7 @@ class ExecutionEngine(
     symbols.flatMap { symbol =>
       expressionViews.get(symbol) match {
         case Some(_) =>
-          Some(s"${renderer.render(symbol, outputFormat = outputFormat)}")
+          Some(s"${renderer.render(symbol, wallTime.currentTime, outputFormat = outputFormat)}")
         case _ => None
       }
     }.mkString("\n")
@@ -261,8 +263,6 @@ class ExecutionEngine(
   def symbols: Iterable[Symbol] = symbolTable.symbols
 
   def evaluateCircuit(): Unit = {
-    dataStore.advanceBuffers()
-
     if(inputsChanged) {
       inputsChanged = false
       if(verbose) {
@@ -340,16 +340,6 @@ class ExecutionEngine(
     val keys = symbolTable.keys.toArray.sorted
 
     ("-" * fieldsHeader.length) + "\n" +
-      (if(dataStore.numberOfBuffers > 1) {
-      f"${dataStore.previousBufferIndex}%2s  " +
-        keys.map { name =>
-          val symbol = symbolTable(name)
-          val value = symbol.normalize(dataStore.earlierValue(symbolTable(name), 1))
-          f" $value%9.9s" }.mkString("") + f"\n"
-      }
-      else {
-        ""
-      }) +
       f"${dataStore.currentBufferIndex}%2s  " +
         keys.map { name =>
           val symbol = symbolTable(name)
@@ -398,7 +388,12 @@ object ExecutionEngine {
     * @param optionsManager  options that control configuration and behavior
     * @return                the constructed engine
     */
-  def apply(input: String, optionsManager: HasTreadleSuite = new TreadleOptionsManager): ExecutionEngine = {
+  def apply(
+    input          : String,
+    optionsManager : HasTreadleSuite = new TreadleOptionsManager,
+    wallTime       : UTC
+  ): ExecutionEngine = {
+
     val t0 = System.nanoTime()
 
     val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
@@ -428,12 +423,11 @@ object ExecutionEngine {
       SymbolTable(loweredAst, blackBoxFactories, interpreterOptions.allowCycles)
     }
 
-    val dataStore = DataStore(
-      numberOfBuffers = interpreterOptions.rollbackBuffers + 1,
-      optimizationLevel = if (verbose) 0 else 1
-    )
+    val dataStoreAllocator = new DataStoreAllocator
 
-    symbolTable.allocateData(dataStore)
+    symbolTable.allocateData(dataStoreAllocator)
+
+    val dataStore = DataStore(interpreterOptions.rollbackBuffers, dataStoreAllocator)
 
     if(verbose) {
       println(s"Symbol table:\n${symbolTable.render}")
@@ -454,7 +448,9 @@ object ExecutionEngine {
 
     scheduler.organizeAssigners()
 
-    val executionEngine = new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews)
+    val executionEngine =
+      new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews, wallTime)
+
     executionEngine.dataStore.setExecutionEngine(executionEngine)
 
     if(verbose) {
