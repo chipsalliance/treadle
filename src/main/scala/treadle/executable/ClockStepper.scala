@@ -102,6 +102,8 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
   val dataStore: DataStore = engine.dataStore
   val scheduler: Scheduler = engine.scheduler
 
+  val shortestPeriod: Long = clockInfoList.map(_.period).min
+
   clockInfoList.foreach { clockInfo =>
     val clockSymbol = engine.symbolTable(clockInfo.name)
 

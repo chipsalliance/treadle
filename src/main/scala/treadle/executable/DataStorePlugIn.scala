@@ -9,6 +9,7 @@ abstract class DataStorePlugin {
   def executionEngine: ExecutionEngine
   def dataStore: DataStore
   var isEnabled: Boolean = false
+
   def setEnabled(enabled: Boolean): Unit = {
     isEnabled = enabled
     (isEnabled, dataStore.activePlugins.contains(this)) match {
@@ -47,11 +48,18 @@ class ReportAssignments(val executionEngine: ExecutionEngine) extends DataStoreP
   }
 }
 
-class RenderComputations(val executionEngine: ExecutionEngine) extends DataStorePlugin {
+class RenderComputations(
+  val executionEngine: ExecutionEngine,
+  symbolNamesToWatch: Seq[String]
+) extends DataStorePlugin {
+
   val dataStore: DataStore = executionEngine.dataStore
+  val symbolsToWatch: Set[Symbol] = symbolNamesToWatch.flatMap { name =>
+    executionEngine.symbolTable.get(name)
+  }.toSet
 
   def run(symbol: Symbol, offset: Int = -1): Unit = {
-    dataStore.executionEngineOption.foreach { executionEngine =>
+    if(symbolsToWatch.contains(symbol)) {
       println(executionEngine.renderComputation(symbol.name))
     }
   }

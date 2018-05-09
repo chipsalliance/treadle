@@ -2,8 +2,11 @@
 
 package treadle
 
-import org.scalatest.{Matchers, FreeSpec}
+import java.io.{ByteArrayOutputStream, PrintStream}
 
+import org.scalatest.{FreeSpec, Matchers}
+
+//scalastyle:off magic.number
 class RegisterCycleTest extends FreeSpec with Matchers {
   "cycle behavior test-only intepreter should not crash on various register init methods" - {
     "method 1" in {
@@ -82,13 +85,18 @@ class RegisterCycleTest extends FreeSpec with Matchers {
           |
         """.stripMargin
 
+      val output = new ByteArrayOutputStream()
+      Console.withOut(new PrintStream(output)) {
+        val optionsManager = new TreadleOptionsManager
+        optionsManager.parser.parse(Array("-fistw", "io_Out,mySubModule_1.io_Out"))
 
-      val tester = new TreadleTester(input)
-      // tester.setVerbose()
+        val tester = new TreadleTester(input, optionsManager)
+        tester.poke("io_In", 1)
+        tester.step(3)
+        tester.expect("io_Out", 1)
+      }
 
-      tester.poke("io_In", 1)
-      tester.step(3)
-      tester.expect("io_Out", 1)
+      output.toString.contains("io_Out <= 1") should be (true)
     }
   }
 

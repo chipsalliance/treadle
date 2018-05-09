@@ -38,6 +38,20 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     plugin.setEnabled(enable)
   }
 
+  def enablePlugin(name: String): Unit = {
+    if(plugins.contains(name)) {
+      println(s"Could not find plugin $name to remove it")
+    }
+    plugins(name).setEnabled(true)
+  }
+
+  def disablePlugin(name: String): Unit = {
+    if(plugins.contains(name)) {
+      println(s"Could not find plugin $name to remove it")
+    }
+    plugins(name).setEnabled(false)
+  }
+
   def removePlugin(name: String): Unit = {
     if(plugins.contains(name)) {
       println(s"Could not find plugin $name to remove it")
@@ -45,6 +59,10 @@ class DataStore(val numberOfBuffers: Int, optimizationLevel: Int = 0) {
     val plugin = plugins(name)
     plugin.setEnabled(false)  // remove from active and should return to lean mode if no other plugins are active
     plugins.remove(name)
+  }
+
+  def hasEnabledPlugins: Boolean = {
+    activePlugins.nonEmpty
   }
 
   var executionEngineOption: Option[ExecutionEngine] = None
