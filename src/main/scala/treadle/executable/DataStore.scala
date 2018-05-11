@@ -465,62 +465,53 @@ extends HasDataArrays {
 
   //scalastyle:off cyclomatic.complexity method.length
   def serialize: String = {
-/*
 
     val nextForData = Seq(IntSize, LongSize, BigSize).map { size =>
       size.toString -> dataStoreAllocator.nextIndexFor(size)
     }.toMap
 
-    val intDataRows = intData.zipWithIndex.map { case (row, index) =>
-      s"row$index" -> JArray(row.toList.map { a ⇒ val v: JValue = a; v })
-    }
+    def toIntJArray(array : Array[Int])  = JArray(array.toList.map { a ⇒ val v: JValue = a; v })
+    def toLongJArray(array: Array[Long]) = JArray(array.toList.map { a ⇒ val v: JValue = a; v })
+    def toBigJArray(array : Array[Big])  = JArray(array.toList.map { a ⇒ val v: JValue = a; v })
 
-    val longDataRows = longData.zipWithIndex.map { case (row, index) =>
-      s"row$index" -> JArray(row.toList.map { a ⇒ val v: JValue = a; v })
-    }
+    val intDataValues  = toIntJArray(intData)
+    val longDataValues = toLongJArray(longData)
+    val bigDataValues  = toBigJArray(bigData)
 
-    val bigDataRows = bigData.zipWithIndex.map { case (row, index) =>
-      s"row$index" -> JArray(row.toList.map { a ⇒ val v: JValue = a; v })
-    }
+    def packetizeRollbackBuffers = {
+      val packet = rollBackBufferManager.clockToBuffers.keys.toList.sorted.map { clockName =>
+        val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
 
-    val intDataPacket = {
-      var rowList = intDataRows.head ~ Nil
-      for (row <- intDataRows.tail) {
-        rowList = rowList ~ row
+        val intArray  = JArray(rollbackRing.ringBuffer.map { x => toIntJArray(x.intData)   }.toList)
+        val longArray = JArray(rollbackRing.ringBuffer.map { x => toLongJArray(x.longData) }.toList)
+        val bigArray  = JArray(rollbackRing.ringBuffer.map { x => toBigJArray(x.bigData)   }.toList)
+
+        ("clockName" -> clockName) ~
+                ("latestBufferIndex" -> rollbackRing.latestBufferIndex) ~
+                ("oldestBufferIndex" -> rollbackRing.oldestBufferIndex) ~
+                ("intBuffers"        -> intArray)
       }
-      rowList
-    }
 
-    val longDataPacket = {
-      var rowList = longDataRows.head ~ Nil
-      for (row <- longDataRows.tail) {
-        rowList = rowList ~ row
-      }
-      rowList
-    }
-
-    val bigDataPacket = {
-      var rowList = bigDataRows.head ~ Nil
-      for (row <- bigDataRows.tail) {
-        rowList = rowList ~ row
-      }
-      rowList
+      JArray(packet)
     }
 
     val json =
-      "header" ->
-        ("numberOfBuffers" -> numberOfBuffers) ~
+      (
+        "header" ->
+          ("numberOfBuffers" -> numberOfBuffers) ~
           ("currentBufferIndex" -> currentBufferIndex) ~
           ("previousBufferIndex" -> previousBufferIndex) ~
-          ("nextForData" -> nextForData) ~
-          ("intData" -> intDataPacket) ~
-          ("longData" -> longDataPacket) ~
-          ("bigData" -> bigDataPacket)
+          ("nextForData" -> nextForData)
+      ) ~
+      (
+        "body" ->
+          ("intData"  -> intDataValues) ~
+          ("longData" -> longDataValues) ~
+          ("bigData"  -> bigDataValues) ~
+          ("rollbackData" -> packetizeRollbackBuffers)
+      )
 
     pretty(render(json))
-*/
-    //TODO: (chick) needs to work from roll back buffers now
-    ""
   }
 
   def deserialize(jsonString: String): Unit = {
