@@ -16,13 +16,13 @@ class SnapshotSpec extends FreeSpec with Matchers {
         |    input reset : UInt<1>
         |    input in0 : UInt<16>
         |    output out0 : UInt<16>
-        |    output out1 : UInt<16>
-        |    output out2 : UInt<16>
-        |    output out3 : UInt<16>
+        |    output out1 : UInt<44>
+        |    output out2 : UInt<128>
+        |    output out3 : UInt<128>
         |
         |    reg r1 : UInt<16>, clock
-        |    reg r2 : UInt<16>, clock
-        |    reg r3 : UInt<16>, clock
+        |    reg r2 : UInt<44>, clock
+        |    reg r3 : UInt<128>, clock
         |
         |    r1 <= in0
         |    r2 <= r1
@@ -52,16 +52,28 @@ class SnapshotSpec extends FreeSpec with Matchers {
     t.poke("in0", 2)
     t.step()
     t.poke("in0", 3)
+
+    val snapshot0 = t.engine.dataStore.serialize
+
     t.step()
     t.poke("in0", 4)
     t.step()
     t.poke("in0", 5)
     t.step()
 
-    val jsonOut = t.engine.dataStore.serialize
-    jsonOut.contains(""""numberOfBuffers":4,""") should be (true)
-    jsonOut.contains(""""clockName":"clock",""") should be (true)
+    val snapshot1 = t.engine.dataStore.serialize
+    snapshot1.contains(""""numberOfBuffers":4,""") should be (true)
+    snapshot1.contains(""""clockName":"clock",""") should be (true)
 
-    println(s"datastore snapshot\n${t.engine.dataStore.serialize}")
+    println(s"snapshot0\n$snapshot0")
+    println(s"snapshot1\n$snapshot1")
+
+    t.engine.dataStore.deserialize(snapshot0)
+
+    val snapshot2 = t.engine.dataStore.serialize
+
+    snapshot2 should be (snapshot0)
+
+    println(s"snapshot2\n$snapshot2")
   }
 }

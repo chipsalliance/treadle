@@ -105,9 +105,6 @@ extends HasDataArrays {
 
   val watchList: mutable.HashSet[Symbol] = new mutable.HashSet()
 
-  var currentBufferIndex:  Int = if(numberOfBuffers > 1) 1 else 0
-  var previousBufferIndex: Int = 0
-
   val intData:   Array[Int]  = Array.fill(numberOfInts)(0)
   val longData:  Array[Long] = Array.fill(numberOfLongs)(0L)
   val bigData:   Array[Big]  = Array.fill(numberOfBigs)(Big(0))
@@ -478,7 +475,7 @@ extends HasDataArrays {
     val longDataValues = toLongJArray(longData)
     val bigDataValues  = toBigJArray(bigData)
 
-    def packetizeRollbackBuffers = {
+    def packageRollbackBuffers = {
       val packet = rollBackBufferManager.clockToBuffers.keys.toList.sorted.map { clockName =>
         val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
 
@@ -489,33 +486,26 @@ extends HasDataArrays {
         ("clockName" -> clockName) ~
                 ("latestBufferIndex" -> rollbackRing.latestBufferIndex) ~
                 ("oldestBufferIndex" -> rollbackRing.oldestBufferIndex) ~
-                ("intBuffers"        -> intArray)
+                ("intBuffers"        -> intArray) ~
+                ("longBuffers"       -> longArray) ~
+                ("bigBuffers"        -> bigArray)
       }
 
-      JArray(packet)
+      packet
     }
 
     val json =
-      (
-        "header" ->
           ("numberOfBuffers" -> numberOfBuffers) ~
-          ("currentBufferIndex" -> currentBufferIndex) ~
-          ("previousBufferIndex" -> previousBufferIndex) ~
-          ("nextForData" -> nextForData)
-      ) ~
-      (
-        "body" ->
-          ("intData"  -> intDataValues) ~
-          ("longData" -> longDataValues) ~
-          ("bigData"  -> bigDataValues) ~
-          ("rollbackData" -> packetizeRollbackBuffers)
-      )
+          ("nextForData"     -> nextForData) ~
+          ("intData"         -> intDataValues) ~
+          ("longData"        -> longDataValues) ~
+          ("bigData"         -> bigDataValues) ~
+          ("rollbackData"    -> packageRollbackBuffers)
 
     pretty(render(json))
   }
 
   def deserialize(jsonString: String): Unit = {
-/*
     val json2 = parse(jsonString)
 
     for {
@@ -528,14 +518,6 @@ extends HasDataArrays {
           if(numBuffs != numberOfBuffers) {
             println(s"WARNING: numberOfBuffers in snapshot $numBuffs does not match runtime $numberOfBuffers")
           }
-        case "currentBufferIndex" =>
-          val JInt(index) = value
-          currentBufferIndex = index.toInt
-          // println(s"setting currentBufferIndex to $currentBufferIndex")
-        case "previousBufferIndex" =>
-          val JInt(index) = value
-          previousBufferIndex = index.toInt
-          // println(s"setting previousBufferIndex to $previousBufferIndex")
         case "nextForData" =>
           for {
             JObject(child2) <- value
@@ -549,43 +531,96 @@ extends HasDataArrays {
             }
           }
         case "intData" =>
-          for {
-            JObject(child2) <- value
-            JField(arrayName, JArray(intValues)) <- child2
-          } {
-            val arrayNumber = arrayName.drop("row".length).toInt
-            intValues.zipWithIndex.foreach {
-              case (JInt(v), index) => intData(arrayNumber)(index) = v.toInt
-              case _ => None
-            }
+          value match  {
+            case JArray(elementValues) =>
+              elementValues.zipWithIndex.foreach {
+                case (JInt(v), index) => intData(index) = v.toInt
+                case _ => None
+              }
+            case _ =>
           }
         case "longData" =>
-          for {
-            JObject(child2) <- value
-            JField(arrayName, JArray(intValues)) <- child2
-          } {
-            val arrayNumber = arrayName.drop("row".length).toInt
-            intValues.zipWithIndex.foreach {
-              case (JInt(v), index) => longData(arrayNumber)(index) = v.toLong
-              case _ => None
-            }
+          value match  {
+            case JArray(elementValues) =>
+              elementValues.zipWithIndex.foreach {
+                case (JInt(v), index) => longData(index) = v.toLong
+                case _ => None
+              }
+            case _ =>
           }
         case "bigData" =>
-          for {
-            JObject(child2) <- value
-            JField(arrayName, JArray(intValues)) <- child2
-          } {
-            val arrayNumber = arrayName.drop("row".length).toInt
-            intValues.zipWithIndex.foreach {
-              case (JInt(v), index) => bigData(arrayNumber)(index) = v
-              case _ => None
-            }
+          value match  {
+            case JArray(elementValues) =>
+              elementValues.zipWithIndex.foreach {
+                case (JInt(v), index) => bigData(index) = v
+                case _ => None
+              }
+            case _ =>
           }
+        case "rollbackData" =>
+          var clockBuffer = rollBackBufferManager.clockToBuffers.values.head
+          value match {
+            case JArray(clockSections) =>
+              for {
+                JObject(child2) <- clockSections
+                JField(subFieldName, subValue) <- child2
+              } {
+                (subFieldName, subValue) match {
+                  case ("clockName", JString(clockName)) =>
+                    assert(rollBackBufferManager.clockToBuffers.contains(clockName))
+                    clockBuffer = rollBackBufferManager.clockToBuffers(clockName)
+
+                  case ("latestBufferIndex", JInt(latestBufferIndex)) =>
+                    clockBuffer.latestBufferIndex = latestBufferIndex.toInt
+
+                  case ("oldestBufferIndex", JInt(oldestBufferIndex)) =>
+                    clockBuffer.oldestBufferIndex = oldestBufferIndex.toInt
+
+                  case ("intBuffers", JArray(numArrays)) =>
+                    numArrays.zipWithIndex.foreach {
+                      case (JArray(elementValues), rollbackIndex) =>
+                        elementValues.zipWithIndex.foreach {
+                          case (JInt(v), index) =>
+                            clockBuffer.ringBuffer(rollbackIndex).intData(index) = v.toInt
+                          case _ => None
+                        }
+                      case _ =>
+                    }
+
+                  case ("longBuffers", JArray(numArrays)) =>
+                    numArrays.zipWithIndex.foreach {
+                      case (JArray(elementValues), rollbackIndex) =>
+                        elementValues.zipWithIndex.foreach {
+                          case (JInt(v), index) =>
+                            clockBuffer.ringBuffer(rollbackIndex).longData(index) = v.toLong
+                          case _ => None
+                        }
+                      case _ =>
+                    }
+
+                  case ("bigBuffers", JArray(numArrays)) =>
+                    numArrays.zipWithIndex.foreach {
+                      case (JArray(elementValues), rollbackIndex) =>
+                        elementValues.zipWithIndex.foreach {
+                          case (JInt(v), index) =>
+                            clockBuffer.ringBuffer(rollbackIndex).bigData(index) = v
+                          case _ => None
+                        }
+                      case _ =>
+                    }
+
+                  case (subSubFieldName, subSubValue) =>
+                    println(s"got an unhandled field in clock buffer section $subSubFieldName => $subSubValue")
+                }
+              }
+
+            case _ =>
+          }
+
         case _ =>
           // println(s"$fieldName -> $value")
       }
     }
-*/
   }
 }
 

@@ -340,7 +340,6 @@ class ExecutionEngine(
     val keys = symbolTable.keys.toArray.sorted
 
     ("-" * fieldsHeader.length) + "\n" +
-      f"${dataStore.currentBufferIndex}%2s  " +
         keys.map { name =>
           val symbol = symbolTable(name)
           val value = symbol.normalize(dataStore(symbolTable(name)))
