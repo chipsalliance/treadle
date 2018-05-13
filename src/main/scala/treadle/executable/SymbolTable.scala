@@ -26,11 +26,10 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
     toBlackBoxImplementation(symbol) = blackBoxImplementation
   }
 
-  def allocateData(dataStore: DataStore): Unit = {
+  def allocateData(dataStoreAllocator: DataStoreAllocator): Unit = {
     nameToSymbol.values.foreach { symbol =>
-      symbol.index = dataStore.getIndex(symbol.dataSize, symbol.slots)
+      symbol.index = dataStoreAllocator.getIndex(symbol.dataSize, symbol.slots)
     }
-    dataStore.allocateBuffers()
   }
 
   def size: Int = nameToSymbol.size
@@ -41,6 +40,8 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
   val registerNames:    mutable.HashSet[String] = new mutable.HashSet[String]
   val inputPortsNames:  mutable.HashSet[String] = new mutable.HashSet[String]
   val outputPortsNames: mutable.HashSet[String] = new mutable.HashSet[String]
+
+  val registerToClock:  mutable.HashMap[Symbol, Symbol] = new mutable.HashMap()
 
   val stopToStopInfo   : mutable.HashMap[Stop, StopInfo]   = new mutable.HashMap[Stop, StopInfo]
   val printToPrintInfo : mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
@@ -180,6 +181,7 @@ object SymbolTable extends LazyLogging {
     val inputPorts    = new mutable.HashSet[String]
     val outputPorts   = new mutable.HashSet[String]
 
+    val registerToClock   = new mutable.HashMap[Symbol, Symbol]
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
 
@@ -308,6 +310,8 @@ object SymbolTable extends LazyLogging {
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
+
+          registerToClock(registerOut) = expressionToReferences(clockExpression).head
           // addDependency(registerIn, Set(registerOut))
 
         case defMemory: DefMemory =>
@@ -446,6 +450,7 @@ object SymbolTable extends LazyLogging {
     symbolTable.inputPortsNames          ++= inputPorts
     symbolTable.outputPortsNames         ++= outputPorts
     symbolTable.toBlackBoxImplementation ++= blackBoxImplementations
+    symbolTable.registerToClock          ++= registerToClock
     symbolTable.stopToStopInfo           ++= stopToStopInfo
     symbolTable.printToPrintInfo         ++= printToPrintInfo
 

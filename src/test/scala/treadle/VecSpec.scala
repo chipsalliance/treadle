@@ -40,12 +40,9 @@ class VecSpec extends FreeSpec with Matchers {
     }
 
     val tester = new TreadleTester(input, optionsManager)
-//
-//    tester.poke("reset", 1)
-//    tester.step()
-//    tester.poke("reset", 0)
 
     def show(): Unit = {
+      println("")
       for(name <- Seq("shifter_3", "shifter_2", "shifter_1", "shifter_0")) {
         println(s"${tester.engine.renderComputation(name)}")
       }

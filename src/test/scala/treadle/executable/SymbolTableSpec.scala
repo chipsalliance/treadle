@@ -7,6 +7,7 @@ import firrtl.graph.CyclicException
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.chronometry.UTC
 
 //scalastyle:off magic.number
 class SymbolTableSpec extends FreeSpec with Matchers {
@@ -38,7 +39,8 @@ class SymbolTableSpec extends FreeSpec with Matchers {
         .stripMargin
 
     val optionsManager = new TreadleOptionsManager
-    val simulator = ExecutionEngine(simpleFirrtl, optionsManager)
+    val wallTime = new UTC()
+    val simulator = ExecutionEngine(simpleFirrtl, optionsManager, wallTime)
 
     val symbolTable = simulator.symbolTable
 

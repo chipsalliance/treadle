@@ -55,4 +55,61 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
     println(t.engine.renderComputation("out"))
   }
 
+  "ExpressionRenderSpec show register values from previous time" in {
+    val input =
+      """
+        |circuit DynamicMemorySearch :
+        |  module DynamicMemorySearch :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    input in0 : UInt<16>
+        |    output out0 : UInt<16>
+        |    output out1 : UInt<16>
+        |    output out2 : UInt<16>
+        |    output out3 : UInt<16>
+        |
+        |    reg r1 : UInt<16>, clock
+        |    reg r2 : UInt<16>, clock
+        |    reg r3 : UInt<16>, clock
+        |
+        |    r1 <= in0
+        |    r2 <= r1
+        |    r3 <= r2
+        |
+        |    out0 <= in0
+        |    out1 <= r1
+        |    out2 <= r2
+        |    out3 <= r3
+        |
+      """.stripMargin
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        writeVCD = false,
+        vcdShowUnderscored = false,
+        setVerbose = true,
+        showFirrtlAtLoad = false,
+        rollbackBuffers = 10,
+        symbolsToWatch = Seq()
+      )
+    }
+
+    val t = new TreadleTester(input, optionsManager)
+    t.poke("in0", 1)
+    t.step()
+    t.poke("in0", 2)
+    t.step()
+    t.poke("in0", 3)
+    t.step()
+    t.poke("in0", 4)
+    t.step()
+    t.poke("in0", 5)
+    t.step()
+
+    println(t.engine.renderComputation("out0"))
+    println(t.engine.renderComputation("r1"))
+    println(t.engine.renderComputation("r2"))
+    println(t.engine.renderComputation("r3"))
+  }
+
 }

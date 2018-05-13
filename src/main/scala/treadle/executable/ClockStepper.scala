@@ -38,6 +38,8 @@ case class SimpleSingleClockStepper(
 
   var resetTaskTime: Long = -1L
 
+  val hasRollBack: Boolean = engine.dataStore.numberOfBuffers > 0
+
   val clockAssigner = dataStore.TriggerConstantAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1)
   engine.scheduler.clockAssigners += clockAssigner
   engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
@@ -66,6 +68,11 @@ case class SimpleSingleClockStepper(
           engine.evaluateCircuit()
         }
         resetTaskTime = -1L
+      }
+
+      if(hasRollBack) {
+        // save data state under roll back buffers for this clock
+        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
       }
 
       clockAssigner.value = 1
@@ -101,6 +108,7 @@ case class SimpleSingleClockStepper(
 class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], wallTime: UTC) extends ClockStepper {
   val dataStore: DataStore = engine.dataStore
   val scheduler: Scheduler = engine.scheduler
+  val hasRollBack: Boolean = engine.dataStore.numberOfBuffers > 0
 
   val shortestPeriod: Long = clockInfoList.map(_.period).min
 
@@ -118,6 +126,10 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
 
     // this sets clock high and will call register updates
     wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, s"${clockInfo.name}/up") { () =>
+      if(hasRollBack) {
+        // save data state under roll back buffers for this clock
+        engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
+      }
       clockUpAssigner.run()
       engine.inputsChanged = true
     }

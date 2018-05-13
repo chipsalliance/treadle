@@ -25,17 +25,16 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
 
   treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
 
-  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager)
-  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
-
-  val resetName: String = treadleOptions.resetName
-
   val wallTime = UTC()
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
       vcd.setTime(wallTime.currentTime)}
   }
 
+  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager, wallTime)
+  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
+
+  val resetName: String = treadleOptions.resetName
   def setVerbose(value: Boolean = true): Unit = {
     engine.setVerbose(value)
   }
@@ -239,7 +238,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     if(value != expectedValue) {
       val renderer = new ExpressionViewRenderer(
         engine.dataStore, engine.symbolTable, engine.expressionViews)
-      val calculation = renderer.render(engine.symbolTable(name))
+      val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
       fail(new TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
     }
     expectationsMet += 1
@@ -294,7 +293,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     if(value != expectedValue) {
       val renderer = new ExpressionViewRenderer(
         engine.dataStore, engine.symbolTable, engine.expressionViews)
-      val calculation = renderer.render(engine.symbolTable(name))
+      val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
       fail(new TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
     }
     expectationsMet += 1
