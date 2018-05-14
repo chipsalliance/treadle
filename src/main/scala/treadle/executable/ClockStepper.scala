@@ -10,6 +10,7 @@ trait ClockStepper {
   def run(steps: Int): Unit
   def getCycleCount: Long = cycleCount
   def addTask(taskTime: Long)(task: () => Unit): Unit
+  def clockSymbols: Set[Symbol]
 }
 
 class NoClockStepper extends ClockStepper {
@@ -18,6 +19,8 @@ class NoClockStepper extends ClockStepper {
   override def addTask(taskTime: Long)(task: () => Unit): Unit = {
     throw TreadleException(s"Timed task cannot be added to circuits with no clock")
   }
+
+  val clockSymbols: Set[Symbol] = Set.empty
 }
 
 case class SimpleSingleClockStepper(
@@ -44,8 +47,9 @@ case class SimpleSingleClockStepper(
   engine.scheduler.clockAssigners += clockAssigner
   engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
 
-  override def run(steps: Int): Unit = {
+  val clockSymbols: Set[Symbol] = Set(clockSymbol)
 
+  override def run(steps: Int): Unit = {
     for(_ <- 0 until steps) {
       if(engine.verbose) {
         println(s"step: ${cycleCount + 1} started")
@@ -56,9 +60,7 @@ case class SimpleSingleClockStepper(
 
       cycleCount += 1
 
-      /*
-      This bit of code assumes any combinational delays occur after a down clock has happened.
-       */
+      /* This bit of code assumes any combinational delays occur after a down clock has happened. */
       val downIncrement = (wallTime.currentTime - clockInitialOffset) % clockPeriod
       wallTime.incrementTime(downPeriod - downIncrement)
       if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
@@ -112,6 +114,8 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
 
   val shortestPeriod: Long = clockInfoList.map(_.period).min
 
+  val clockSymbols: Set[Symbol] = clockInfoList.map(clockInfo => engine.symbolTable(clockInfo.name)).toSet
+
   clockInfoList.foreach { clockInfo =>
     val clockSymbol = engine.symbolTable(clockInfo.name)
 
@@ -160,7 +164,6 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
       def runHeadTask(): Unit = {
         wallTime.runNextTask().foreach { taskRun =>
           if (taskRun.taskName.endsWith("/up")) {
-            val clockName = taskRun.taskName.split("/").head
             cycleCount += 1
             upTransitionProcessed = true
           }
