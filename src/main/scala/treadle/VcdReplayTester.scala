@@ -8,6 +8,8 @@ import firrtl.ExecutionOptionsManager
 import treadle.vcd.{VCD, Wire}
 import logger.LazyLogging
 
+import scala.collection.mutable
+
 /**
   * This tester runs a VCD file against a circuit expressed in a firrtl file.  The VCD file should
   * have been produced by running a test harness against the circuit.  This test can be used to
@@ -37,26 +39,25 @@ class VcdReplayTester(
     io.Source.fromFile(file).mkString
   }
 
-  val vcdTesterOptions = optionsManager.goldenVcdOptions
-  val treadleOptions = optionsManager.treadleOptions
+  val vcdTesterOptions: VcdReplayOptions = optionsManager.goldenVcdOptions
+  val treadleOptions  : TreadleOptions   = optionsManager.treadleOptions
 
-  val tester = new TreadleTester(getInput(vcdTesterOptions.firrtlSourceName), optionsManager)
-  val engine = tester.engine
+  val tester: TreadleTester = new TreadleTester(getInput(vcdTesterOptions.firrtlSourceName), optionsManager)
+  val engine: ExecutionEngine = tester.engine
 
-  val dutName = engine.ast.main
+  val dutName: String = engine.ast.main
 
   val vcd: VCD = VCD.read(vcdTesterOptions.vcdSourceName, dutName)
-  val timeStamps = vcd.valuesAtTime.keys.toList.sorted.toArray
-  var runVerbose = false
+  val timeStamps: Array[Long] = vcd.valuesAtTime.keys.toList.sorted.toArray
+  var runVerbose: Boolean = false
 
   private var eventsRun = 0
   private var inputValuesSet = 0L
   private var valuesTested = 0L
   private var testSuccesses = 0L
   private var testFailures = 0L
-  private var clockCycles = 0L
 
-  val inputs = tester.engine.symbolTable.inputPortsNames
+  val inputs: mutable.HashSet[String] = tester.engine.symbolTable.inputPortsNames
 
   def hasName(symbolName: String): Boolean = {
     engine.symbolTable.contains(symbolName)
@@ -109,13 +110,14 @@ class VcdReplayTester(
         val fullName = change.wire.fullName
         if (inputs.contains(fullName)) {
           val inputSymbol = engine.symbolTable(fullName)
-          if(tester.clockStepper.clockSymbols.contains(inputSymbol)) {
-            tester.clockStepper.run(1)
+          if(tester.clockStepper.clockAssigners.contains(inputSymbol)) {
+            tester.clockStepper.bumpClock(inputSymbol, change.value)
           }
           else {
             setValue(wire, change.value)
           }
         }
+        tester.engine.inputsChanged = true
       }
     }
   }
@@ -125,26 +127,16 @@ class VcdReplayTester(
       if (vcdTesterOptions.testAliasedWires) {
         vcd.wiresFor(change).foreach { wire =>
           val fullName = change.wire.fullName
-          if (!(inputs.contains(fullName))) {
+          if ( ! inputs.contains(fullName) ) {
             checkValue(wire, change.value)
           }
         }
       }
       else {
         val fullName = change.wire.fullName
-        if (!(inputs.contains(fullName))) {
+        if ( ! inputs.contains(fullName) ) {
           checkValue(change.wire, change.value)
         }
-      }
-    }
-  }
-
-  def checkClock(timeIndex: Int): Unit = {
-    vcd.valuesAtTime(timeStamps(timeIndex)).foreach { change =>
-      vcd.wiresFor(change).exists { wire =>
-        val fullName = change.wire.fullName
-
-        true
       }
     }
   }
@@ -160,21 +152,22 @@ class VcdReplayTester(
       eventsRun += 1
       println(s"Time[$timeIndex]: ${timeStamps(timeIndex)}")
 
-      if(runVerbose) println(s"${vcd.valuesAtTime(timeStamps(timeIndex)).mkString("\n")}")
-
+      tester.wallTime.setTime(timeStamps(timeIndex))
+      tester.engine.evaluateCircuit()
       setInputs(timeIndex)
       testWires(timeIndex)
     }
     val endTime = System.currentTimeMillis()
 
+    tester.finish
 
     println(f"events run:       $eventsRun%10d")
     println(f"input values set: $inputValuesSet%10d")
     println(f"values tested:    $valuesTested%10d")
     println(f"test successes:   $testSuccesses%10d")
     println(f"test failures:    $testFailures%10d")
-    println(f"clock cycles:     $clockCycles%10d")
-    println(f"                  ${clockCycles / ((endTime - startTime) / 1000.0)}%10.2f Hz")
+    println(f"clock cycles:     ${tester.cycleCount}%10d")
+    println(f"                  ${tester.cycleCount / ((endTime - startTime) / 1000.0)}%10.2f Hz")
     println(f"run time:         ${(endTime - startTime) / 1000.0}%10.2f seconds")
   }
 }
@@ -183,11 +176,9 @@ object VcdReplayTester {
   def main(args: Array[String]) {
     val optionsManager = new VcdReplayTesterOptions
 
-    optionsManager.parse(args) match {
-      case true =>
-        val repl = new VcdReplayTester(optionsManager)
-        repl.run()
-      case _ =>
+    if (optionsManager.parse(args)) {
+      val repl = new VcdReplayTester(optionsManager)
+      repl.run()
     }
   }
 }
