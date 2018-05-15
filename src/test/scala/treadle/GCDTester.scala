@@ -59,7 +59,7 @@ class GCDTester extends FlatSpec with Matchers {
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = true)
+        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
     }
 
     val values =
