@@ -10,9 +10,11 @@ import treadle.vcd.{VCD, Wire}
   * @param vcd     the vcd values to use
   */
 class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
-  val events: Array[Long]     = vcd.events
-  val engine: ExecutionEngine = tester.engine
-  val inputs: Set[String]     = engine.symbolTable.inputPortsNames.toSet
+  val events : Array[Long]     = vcd.events
+  val engine : ExecutionEngine = tester.engine
+  val inputs : Set[String]     = engine.symbolTable.inputPortsNames.toSet
+  val outputs: Set[String]     = tester.engine.symbolTable.outputPortsNames.toSet
+
   val clockNames: Set[String] = tester.clockStepper.clockAssigners.keys.map(_.name).toSet
 
   var verbose         : Boolean = false
@@ -68,6 +70,35 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     }
   }
 
+  /**
+    * Zero all test results
+    */
+  def clearTestResults(): Unit = {
+    valuesTested  = 0
+    testSuccesses = 0
+    testFailures  = 0
+  }
+
+  /**
+    * One line string showing results of last (or cumulative) tests
+    * @return
+    */
+  def getTestResults: String = {
+    s"tested: $valuesTested, correct values $testSuccesses" + (
+      if(testFailures > 0) {
+        Console.RED + s", failures $testFailures" + Console.RESET
+      }
+      else {
+        ""
+      }
+    )
+  }
+
+  /**
+    * Test that a wire is set to the correct value, print if error or verbose
+    * @param wire      wire to check
+    * @param newValue  value it should be
+    */
   def checkValue(wire: Wire, newValue: BigInt): Unit = {
     val fullName = wire.fullName
 
@@ -84,12 +115,15 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
         testFailures += 1
         Console.RED + "bad" + Console.RESET
       }
-      if(verbose) {
+      if(verbose || result != "ok") {
         println(s"Testing $fullName: circuit $circuitValue, vcd $newValue $result")
       }
     }
   }
 
+  /**
+    * Set all initial values
+    */
   def setInitialValues(): Unit = {
     vcd.initialValues.foreach { change =>
       vcd.wiresFor(change).foreach { wire =>
@@ -102,12 +136,12 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     * poke the top level inputs, if the input is a clock
     * call the associated assigner so that dependent registers get flipped
     *
-    * @param timeIndex current time from VCS file.
+    * @param eventNumber current time from VCS file.
     */
-  def setInputs(timeIndex: Int): Unit = {
-    if(indexOutOfRange(timeIndex, "setInputs")) return
+  def setInputs(eventNumber: Int): Unit = {
+    if(indexOutOfRange(eventNumber, "setInputs")) return
 
-    vcd.valuesAtTime(events(timeIndex)).foreach { change =>
+    vcd.valuesAtTime(events(eventNumber)).foreach { change =>
       vcd.wiresFor(change).foreach { wire =>
         val fullName = wire.fullName
         if(inputs.contains(fullName)) {
@@ -122,22 +156,22 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
         }
       }
     }
-    tester.wallTime.setTime(events(timeIndex))
+    tester.wallTime.setTime(events(eventNumber))
     tester.engine.evaluateCircuit()
   }
 
   /**
     * poke every changed wire with it's new value
-    * @param timeIndex current time from VCS file.
+    * @param eventNumber current time from VCS file.
     */
-  def setAllWires(timeIndex: Int): Unit = {
-    if(indexOutOfRange(timeIndex, "setAllWires")) return
+  def setAllWires(eventNumber: Int): Unit = {
+    if(indexOutOfRange(eventNumber, "setAllWires")) return
 
-    if(timeIndex == 0) {
+    if(eventNumber == 0) {
       setInitialValues()
     }
 
-    vcd.valuesAtTime(events(timeIndex)).foreach { change =>
+    vcd.valuesAtTime(events(eventNumber)).foreach { change =>
       vcd.wiresFor(change).foreach { wire =>
         setValue(wire, change.value)
       }
@@ -145,23 +179,41 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     tester.engine.inputsChanged = false
   }
 
-  def testWires(timeIndex: Int): Unit = {
-    if(indexOutOfRange(timeIndex, "testWires")) return
+  /**
+    * Test wires at specified time index, args control just outputs or all non-input wires
+    * @param eventNumber    time index to test
+    * @param justOutputs  can verify outputs or all wires that are not top-level inputs
+    * @param clearResult  repl want this to clear all the time, but can override to accumulate stats
+    */
+  def testWires(eventNumber: Int, justOutputs: Boolean, clearResult: Boolean = true): Unit = {
+    if(clearResult) clearTestResults()
 
-    vcd.valuesAtTime(events(timeIndex)).foreach { change =>
+    if(indexOutOfRange(eventNumber, "testWires")) return
+
+    var (tested, failed, ok) = (0, 0, 0)
+
+    def testThisWire(name: String): Boolean = {
+      if(inputs.contains(name)) {
+        false
+      }
+      else if(justOutputs && ! outputs.contains(name)) {
+        false
+      }
+      else {
+        true
+      }
+    }
+
+    vcd.valuesAtTime(events(eventNumber)).foreach { change =>
       if(testAliasedWires) {
         vcd.wiresFor(change).foreach { wire =>
           val fullName = change.wire.fullName
-          if( ! inputs.contains(fullName) ) {
-            checkValue(wire, change.value)
-          }
+          if(testThisWire(fullName)) checkValue(wire, change.value)
         }
       }
       else {
         val fullName = change.wire.fullName
-        if( ! inputs.contains(fullName) ) {
-          checkValue(change.wire, change.value)
-        }
+        if(testThisWire(fullName)) checkValue(change.wire, change.value)
       }
     }
   }
@@ -180,17 +232,17 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
 
   /**
     * Show information about the event at the specified time index
-    * @param timeIndex  the event number
+    * @param eventNumber  the event number
     * @return
     */
-  def eventSummary(timeIndex: Int): String = {
-    if(indexOutOfRange(timeIndex, "eventSummary")) return ""
+  def eventSummary(eventNumber: Int): String = {
+    if(indexOutOfRange(eventNumber, "eventSummary")) return ""
 
     var inputsChanged: Int     = 0
     var totalChanges : Int     = 0
     var clockInfo    : String  = ""
 
-    vcd.valuesAtTime(events(timeIndex)).foreach { change =>
+    vcd.valuesAtTime(events(eventNumber)).foreach { change =>
       vcd.wiresFor(change).foreach { wire =>
         val fullName = wire.fullName
         if(clockNames.contains(fullName)) {
@@ -204,7 +256,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
       }
 
     }
-    f"$timeIndex%4d, time: ${events(timeIndex)}%5d, inputs $inputsChanged%6d total $totalChanges%6d$clockInfo"
+    f"$eventNumber%4d, time: ${events(eventNumber)}%5d, inputs $inputsChanged%6d total $totalChanges%6d$clockInfo"
   }
 
   /**
@@ -223,17 +275,21 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
       setAllWires(nextEvent)
     }
 
-    if(testAliasedWires) {
-      testWires(nextEvent)
-    }
-
     nextEvent += 1
   }
 
+  /**
+    * just like it says
+    * @param eventNumber event number
+    */
   def setNextEvent(eventNumber: Int): Unit = {
     nextEvent = eventNumber
   }
 
+  /**
+    * Short cut to set next event number and run
+    * @param eventNumber event number
+    */
   def executeEvent(eventNumber: Int): Unit = {
     nextEvent = eventNumber
     executeNextEvent()

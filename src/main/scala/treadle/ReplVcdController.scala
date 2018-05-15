@@ -11,7 +11,6 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
   val console: ConsoleReader = repl.console
 
   // The following three elements track state of running the vcd file
-  var currentTimeIndex: Int = 0
   val timeStamps: Array[Long] = vcd.valuesAtTime.keys.toList.sorted.toArray
 
   // The following control the current list state of the vcd file
@@ -24,21 +23,9 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
 
   val IntPattern: Regex = """(-?\d+)""".r
 
-  val inputs: Set[String] = {
-    vcd.scopeRoot.wires
-      .filter { wire =>
-        engine.isInputPort(wire.name)
-      }
-      .map(_.name).toSet
-  }
-
   val vcdRunner: VcdRunner = new VcdRunner(repl.currentTreadleTester, vcd)
 
-  val outputs: Set[Wire] = {
-    vcd.scopeRoot.wires.filter { wire =>
-      engine.isOutputPort(wire.name)
-    }.toSet
-  }
+  def currentTimeIndex: Int = vcdRunner.nextEvent
 
   def now: String = {
     showEvent(currentTimeIndex)
@@ -53,7 +40,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
     if(timeIndex == currentTimeIndex) console.print(Console.GREEN)
     console.println(now)
     vcd.valuesAtTime(timeStamps(timeIndex)).foreach { change =>
-      if(inputs.contains(change.wire.name)) {
+      if(vcdRunner.inputs.contains(change.wire.name)) {
         console.println(s"       ${change.wire.name} <= ${change.value}")
       }
     }
@@ -82,23 +69,10 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
     vcdRunner.executeNextEvent()
   }
 
-  def hasStep(timeIndex: Int): Boolean = {
-    if(currentTimeIndex < timeStamps.length) {
-      vcd.valuesAtTime(timeStamps(timeIndex)).foreach { change =>
-        if(inputs.contains(change.wire.name)) {
-          if(change.wire.name == "clock" && change.value == BigInt(0)) {
-            return true
-          }
-        }
-      }
-    }
-    false
-  }
-
   def runUsage: String = {
     """vcd run                    run one event
       |vcd run all                run all remaining
-      |vcd run to step            run event until a step occurs
+      |vcd run to step            run event until a step occurs (clock up transition)
       |vcd run to <event-number>  run up to given event-number
       |vcd run <number-of-events> run this many events, from current
       |vcd run set <event>        set next event to run
@@ -127,7 +101,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
             while (vcdRunner.nextEvent <= n & currentTimeIndex < timeStamps.length) {
               vcdRunner.executeNextEvent()
             }
-            if(testAfterRun) checkCurrentValueOfOutputs()
+            if(testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
           }
         case "step" :: _ =>
           var upClockFound = false
@@ -135,7 +109,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
             upClockFound = vcdRunner.nextEventHasClockUp
             vcdRunner.executeNextEvent()
           }
-          if(testAfterRun) checkCurrentValueOfOutputs()
+          if(testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
       }
       case "test" :: _ =>
         testAfterRun = true
@@ -159,9 +133,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
             for(_ <- 0 until nString.toInt.max(vcdRunner.events.length)) {
               vcdRunner.executeNextEvent()
             }
-            if(testAfterRun) {
-              vcdRunner.testWires(vcdRunner.previousEvent)
-            }
+            if(testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
           case _ =>
             console.println(s"Unknown run command ${parameters.mkString(" ")}")
             console.println(runUsage)
@@ -179,28 +151,17 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
   }
   //scalastyle:on cyclomatic.complexity
 
-  //TODO: (chick) this function does nothing right now
-  def checkCurrentValueOfOutputs(): Unit = {
-//    if (currentTimeIndex >= 0 && currentTimeIndex < timeStamps.length) {
-//      console.println(s"Testing outputs $now ${"=" * 20}")
-//      def show(mismatch: Boolean, message: String): Unit = {
-//        val prefix = if (mismatch) Console.RED else ""
-//        val suffix = if (mismatch) Console.RESET else ""
-//        console.println(prefix + message + suffix)
-//      }
-//
-//    }
-  }
-
   def test(parameters: Array[String]): Unit = {
     parameters.toList match {
       case "outputs" :: _ =>
-        if(currentTimeIndex > 0) {
-          checkCurrentValueOfOutputs()
-        }
-
+        vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
+        println(vcdRunner.getTestResults)
+      case "all" :: _ =>
+        vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = false)
+        println(vcdRunner.getTestResults)
       case _ =>
-        console.println(s"Unknown test command ${parameters.mkString(" ")}")
+        console.println(s"Unknown test command argument ${parameters.mkString(" ")}")
+        console.println(testUsage)
     }
   }
 
@@ -226,6 +187,12 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
     """.stripMargin
   }
 
+  def testUsage: String = {
+    """vcd test outputs
+      |vcd test all
+    """.stripMargin
+  }
+
   def list(parameters: Array[String]): Unit = {
     parameters.toList match {
       case Nil =>
@@ -247,7 +214,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
   }
 
   def usage: String = {
-    runUsage + listUsage
+    runUsage + listUsage + testUsage
   }
 
   def loadVcd(parameters: Array[String]): Unit = {
