@@ -22,7 +22,6 @@ class ExecutionEngine(
   private val interpreterOptions = optionsManager.treadleOptions
 
   val cycleTimeIncrement = 500
-  var cycleNumber: Long = 0
 
   var vcdOption: Option[VCD] = None
   var vcdFileName: String = ""

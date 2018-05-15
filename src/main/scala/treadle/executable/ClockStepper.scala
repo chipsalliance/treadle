@@ -71,6 +71,7 @@ case class SimpleSingleClockStepper(
         // save data state under roll back buffers for this clock
         engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
       }
+      cycleCount += 1
       1
     }
     else {
@@ -169,6 +170,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
         // save data state under roll back buffers for this clock
         engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
       }
+      cycleCount += 1
       clockUpAssigner.run()
       engine.inputsChanged = true
     }

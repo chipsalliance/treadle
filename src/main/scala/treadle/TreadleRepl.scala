@@ -442,7 +442,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def run(args: Array[String]): Unit = {
           var linesShown = 0
           getOneArg("symbol regex") match {
-            case Some((peekRegex)) =>
+            case Some(peekRegex) =>
               try {
                 val portRegex = peekRegex.r
                 val numberOfThingsPeeked = peekableThings.sorted.count { signal =>
@@ -625,7 +625,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         //scalastyle:off cyclomatic.complexity
         def run(args: Array[String]): Unit = {
           getOneArg("rpeek regex") match {
-            case Some((peekRegex)) =>
+            case Some(peekRegex) =>
               try {
                 val portRegex = peekRegex.r
                 val numberOfThingsPeeked = peekableThings.sorted.count { settableThing =>
@@ -669,61 +669,9 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                 console.println(s"Error randomize: setting ${symbol.name}, error ${e.getMessage}")
             }
           }
-//          for((component, value) <- engine.getRegisterNames) {
-//            try {
-//              val newValue = TypeInstanceFactory.makeRandomSimilar(value, poisoned = false)
-//              engine.circuitState.registers(component) = newValue
-//              val newNextValue = TypeInstanceFactory.makeRandomSimilar(value, poisoned = false)
-//              engine.circuitState.nextRegisters(component) = newNextValue
-//              console.println(s"setting $component to $newValue")
-//            }
-//            catch {
-//              case e: Exception =>
-//                console.println(s"Error randomize: setting $component to $value error ${e.getMessage}")
-//            }
-//          }
-//          for(memory <- engine.circuitState.memories.values) {
-//            for(memoryIndex <- 0 until memory.dataStore.length) {
-//              memory.dataStore.update(
-//                memoryIndex,
-//                TypeInstanceFactory.makeRandomSimilar(memory.dataStore.underlyingData.head, poisoned = false))
-//            }
-//          }
           console.println(engine.getPrettyString)
         }
       },
-//      new Command("poison") {
-//        def usage: (String, String) = ("poison",
-//          "poison everything)")
-//        def run(args: Array[String]): Unit = {
-//          for{
-//            (component, value) <- engine.circuitState.inputPorts ++
-//              engine.circuitState.outputPorts ++
-//              engine.circuitState.ephemera
-//          } {
-//            engine.setValue(component, TypeInstanceFactory.makeRandomSimilar(value, poisoned = true))
-//          }
-//          for((component, value) <- engine.circuitState.registers) {
-//            try {
-//              val newValue = TypeInstanceFactory.makeRandomSimilar(value, poisoned = true)
-//              engine.circuitState.registers(component) = newValue
-//              val newNextValue = TypeInstanceFactory.makeRandomSimilar(value, poisoned = true)
-//              engine.circuitState.nextRegisters(component) = newNextValue
-//              console.println(s"setting $component to $newValue")
-//            }
-//            catch {
-//              case e: Exception =>
-//                console.println(s"Error poison: setting $component to $value error ${e.getMessage}")
-//            }
-//          }
-//          for(memory <- engine.circuitState.memories.values) {
-//            for(memoryIndex <- 0 until memory.dataStore.length) {
-//              memory.dataStore.update(memoryIndex, TypeInstanceFactory(memory.dataType))
-//            }
-//          }
-//          console.println(engine.circuitState.prettyString())
-//        }
-//      },
       new Command("reset") {
         def usage: (String, String) = ("reset [numberOfSteps]",
           "assert reset (if present) for numberOfSteps (default 1)")

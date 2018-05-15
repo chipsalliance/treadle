@@ -18,15 +18,12 @@ import scala.collection.mutable
   * correct **golden** run of the circuit
   * For example use the main below to run the VcdAdder files contained in the src/test/resources directory
   * {{{
-  * sbt 'run-main treadle.VcdReplayTester -fs src/test/resources/VcdAdder.fir \
-  * -vcd src/test/resources/VcdAdder.vcd'
+  * sbt 'runMain treadle.VcdReplayTester -fs src/test/resources/VcdAdder.fir -vcd src/test/resources/VcdAdder.vcd'
   * }}}
   *
   * @param optionsManager Used to set various options
   */
-class VcdReplayTester(
-    optionsManager: VcdReplayTesterOptions)
-  extends LazyLogging {
+class VcdReplayTester(optionsManager: VcdReplayTesterOptions) extends LazyLogging {
 
   private def getInput(fileName: String): String = {
     var file = new File(fileName)
@@ -51,11 +48,11 @@ class VcdReplayTester(
   val timeStamps: Array[Long] = vcd.valuesAtTime.keys.toList.sorted.toArray
   var runVerbose: Boolean = false
 
-  private var eventsRun = 0
-  private var inputValuesSet = 0L
-  private var valuesTested = 0L
-  private var testSuccesses = 0L
-  private var testFailures = 0L
+  var eventsRun = 0
+  var inputValuesSet = 0L
+  var valuesTested = 0L
+  var testSuccesses = 0L
+  var testFailures = 0L
 
   val inputs: mutable.HashSet[String] = tester.engine.symbolTable.inputPortsNames
 

@@ -2,7 +2,7 @@
 
 package treadle.vcd
 
-import treadle.{TreadleOptionsManager, TreadleTester}
+import treadle.{TreadleOptionsManager, TreadleTester, VcdReplayTester, VcdReplayTesterOptions}
 import firrtl.CommonOptions
 import firrtl.util.BackendCompilationUtilities
 import java.io.File
@@ -183,7 +183,6 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
   behavior of "example from edysusanto"
 
-  //TODO: Fix problem where VCD only saved if verbose mode set before engine instantiated
   it should "align register updates with clock cycles" ignore {
     val input =
       """
@@ -241,5 +240,44 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
       getValue(timeStep, "testReg") should be (getValue(timeStep, "io_testReg"))
     }
+  }
+
+  behavior of "vcd replay spec"
+
+  it should "replay a script and the treadle engine should match the vcd" in {
+    val stream = getClass.getResourceAsStream("/VcdAdder.fir")
+    val input = io.Source.fromInputStream(stream).mkString
+
+    val manager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        writeVCD = true
+      )
+      commonOptions = CommonOptions(targetDirName = "test_run_dir/")
+    }
+
+    val tester = new TreadleTester(input, manager)
+
+    tester.poke("io_a", 3)
+    tester.poke("io_b", 5)
+
+    tester.step()
+
+    tester.expect("io_c", 8)
+
+    tester.report()
+    tester.finish
+
+    val replayManager = new VcdReplayTesterOptions() {
+
+      goldenVcdOptions = goldenVcdOptions.copy(
+        firrtlSourceName = "src/test/resources/VcdAdder.fir",
+        vcdSourceName = "test_run_dir/VcdAdder.vcd"
+      )
+    }
+    val replayTester = new VcdReplayTester(replayManager)
+    replayTester.run()
+
+    replayTester.testSuccesses should be (7)
+    replayTester.testFailures should be (0)
   }
 }
