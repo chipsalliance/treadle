@@ -5,11 +5,15 @@ package treadle.executable
 import treadle.{ExecutionEngine, TreadleException}
 import treadle.chronometry.UTC
 
+import scala.collection.mutable
+
 trait ClockStepper {
   var cycleCount: Long = 0L
   def run(steps: Int): Unit
   def getCycleCount: Long = cycleCount
   def addTask(taskTime: Long)(task: () => Unit): Unit
+  val clockAssigners: mutable.HashMap[Symbol, ClockAssigners] = new mutable.HashMap()
+  def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {}
 }
 
 class NoClockStepper extends ClockStepper {
@@ -18,7 +22,11 @@ class NoClockStepper extends ClockStepper {
   override def addTask(taskTime: Long)(task: () => Unit): Unit = {
     throw TreadleException(s"Timed task cannot be added to circuits with no clock")
   }
+
+  val clockSymbols: Set[Symbol] = Set.empty
 }
+
+case class ClockAssigners(upAssigner: Assigner, downAssigner: Assigner)
 
 case class SimpleSingleClockStepper(
   engine: ExecutionEngine,
@@ -44,8 +52,39 @@ case class SimpleSingleClockStepper(
   engine.scheduler.clockAssigners += clockAssigner
   engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
 
-  override def run(steps: Int): Unit = {
+  clockAssigners(clockSymbol) = ClockAssigners(clockAssigner, clockAssigner)
 
+  /**
+    * This function is (and should only) be used by the VcdReplayTester
+    * @param clockSymbol clock to bump
+    * @param value        new clock value should be zero or one, all non-zero values are treated as one
+    */
+  override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
+    if(hasRollBack) {
+      // save data state under roll back buffers for this clock
+      engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
+    }
+
+    val constantAssigner = clockAssigner
+    constantAssigner.value = if(value > Big(0)) {
+      if(hasRollBack) {
+        // save data state under roll back buffers for this clock
+        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
+      }
+      cycleCount += 1
+      1
+    }
+    else {
+      0
+    }
+    constantAssigner.run()
+  }
+
+  /**
+    * Execute specified number of clock cycles (steps)
+    * @param steps number of clock cycles to advance
+    */
+  override def run(steps: Int): Unit = {
     for(_ <- 0 until steps) {
       if(engine.verbose) {
         println(s"step: ${cycleCount + 1} started")
@@ -56,9 +95,7 @@ case class SimpleSingleClockStepper(
 
       cycleCount += 1
 
-      /*
-      This bit of code assumes any combinational delays occur after a down clock has happened.
-       */
+      /* This bit of code assumes any combinational delays occur after a down clock has happened. */
       val downIncrement = (wallTime.currentTime - clockInitialOffset) % clockPeriod
       wallTime.incrementTime(downPeriod - downIncrement)
       if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
@@ -121,6 +158,9 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
     val clockDownAssigner = dataStore.TriggerExpressionAssigner(
       clockSymbol, scheduler, GetIntConstant(0).apply, triggerOnValue = -1)
 
+    clockAssigners(clockSymbol) = ClockAssigners(clockUpAssigner, clockDownAssigner)
+
+
     scheduler.clockAssigners += clockUpAssigner
     scheduler.clockAssigners += clockDownAssigner
 
@@ -130,6 +170,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
         // save data state under roll back buffers for this clock
         engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
       }
+      cycleCount += 1
       clockUpAssigner.run()
       engine.inputsChanged = true
     }
@@ -141,6 +182,25 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
       s"${clockInfo.name}/down"
     ) { () =>
       clockDownAssigner.run()
+    }
+  }
+
+  /**
+    * This function is (and should only) be used by the VcdReplayTester
+    * @param clockSymbol clock to bump
+    * @param value        new clock value should be zero or one, all non-zero values are treated as one
+    */
+  override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
+    val assigner = clockAssigners(clockSymbol)
+    if(value > Big(0)) {
+      if(hasRollBack) {
+        // save data state under roll back buffers for this clock
+        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
+      }
+      assigner.upAssigner.run()
+    }
+    else {
+      assigner.downAssigner.run()
     }
   }
 
@@ -160,7 +220,6 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
       def runHeadTask(): Unit = {
         wallTime.runNextTask().foreach { taskRun =>
           if (taskRun.taskName.endsWith("/up")) {
-            val clockName = taskRun.taskName.split("/").head
             cycleCount += 1
             upTransitionProcessed = true
           }

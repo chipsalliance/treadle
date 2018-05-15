@@ -496,6 +496,7 @@ case class VCD(
     }
   }
   val wiresToIgnore = new mutable.HashSet[String]
+  def events: Array[Long] = valuesAtTime.keys.toArray.sorted
 
   def info: String = {
     val infoLines = Seq(

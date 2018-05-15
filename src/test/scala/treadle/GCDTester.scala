@@ -63,7 +63,7 @@ class GCDTester extends FlatSpec with Matchers {
     }
 
     val values =
-      for {x <- 100 to 1000
+      for {x <- 10 to 100
            y <- 10 to 100
       } yield (x, y, computeGcd(x, y)._1)
 

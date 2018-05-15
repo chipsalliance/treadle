@@ -56,7 +56,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     treadleOptions.clockInfo
   }
 
-  private val clockStepper: ClockStepper = clockInfoList.length match {
+  val clockStepper: ClockStepper = clockInfoList.length match {
     case 0 =>
       new NoClockStepper
 
