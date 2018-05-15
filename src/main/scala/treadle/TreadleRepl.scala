@@ -115,6 +115,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
     try {
       currentVcdScript = Some(VCD.read(fileName, dutName))
       replVcdController = Some(new ReplVcdController(this, this.engine, currentVcdScript.get))
+      println(s"vcd script $fileName loaded")
     }
     catch {
       case e: Exception =>
@@ -383,10 +384,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         override def completer: Option[ArgumentCompleter] = {
           Some(new ArgumentCompleter(
             new StringsCompleter({"vcd"}),
-            new ArgumentCompleter(
-              new ArgumentCompleter(
-                new StringsCompleter(jlist(Seq("run", "inputs", "list", "test")))
-              ),
+            new AggregateCompleter(
+              new StringsCompleter(jlist(Seq("run", "inputs", "list", "test"))),
               new ArgumentCompleter(
                 new StringsCompleter({"load"}),
                 new FileNameCompleter
@@ -395,9 +394,14 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           ))
         }
         def run(args: Array[String]): Unit = {
-          replVcdController match {
-            case Some(controller) => controller.processListCommand(args)
-            case _ => error(s"No current script")
+          args.toList match {
+            case "load" :: fileName :: tail =>
+              loadVcdScript(fileName)
+            case _ =>
+              replVcdController match {
+                case Some(controller) => controller.processListCommand(args)
+                case _ => error(s"No current script")
+              }
           }
         }
       },
