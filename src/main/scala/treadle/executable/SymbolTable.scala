@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.graph.DiGraph
 import firrtl.ir._
 import logger.LazyLogging
+import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
 import treadle.utils.FindModule
 
 import scala.collection.immutable.Set
@@ -18,8 +19,8 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
 
   var orphans: Seq[Symbol] = Seq.empty
 
-  private val toBlackBoxImplementation: mutable.HashMap[Symbol, BlackBoxImplementation] = new mutable.HashMap()
-  def addBlackBoxImplementation(symbol: Symbol, blackBoxImplementation: BlackBoxImplementation): Unit = {
+  private val toBlackBoxImplementation: mutable.HashMap[Symbol, ScalaBlackBox] = new mutable.HashMap()
+  def addBlackBoxImplementation(symbol: Symbol, blackBoxImplementation: ScalaBlackBox): Unit = {
     if(toBlackBoxImplementation.contains(symbol)) {
       throw TreadleException(s"Assigner already exists for $symbol")
     }
@@ -106,7 +107,7 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
     }.toSet
   }
 
-  def getBlackboxImplementation(symbol: Symbol): Option[BlackBoxImplementation] = {
+  def getBlackboxImplementation(symbol: Symbol): Option[ScalaBlackBox] = {
     toBlackBoxImplementation.get(symbol)
   }
 
@@ -145,9 +146,9 @@ object SymbolTable extends LazyLogging {
 
   //scalastyle:off cyclomatic.complexity method.length
   def apply(
-      circuit: Circuit,
-      blackBoxFactories: Seq[BlackBoxFactory] = Seq.empty,
-      allowCycles: Boolean = false
+             circuit: Circuit,
+             blackBoxFactories: Seq[ScalaBlackBoxFactory] = Seq.empty,
+             allowCycles: Boolean = false
   ): SymbolTable = {
 
     type SymbolSet = Set[Symbol]
@@ -185,7 +186,7 @@ object SymbolTable extends LazyLogging {
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
 
-    val blackBoxImplementations = new mutable.HashMap[Symbol, BlackBoxImplementation]()
+    val blackBoxImplementations = new mutable.HashMap[Symbol, ScalaBlackBox]()
 
     def addDependency(sensitiveSymbol: Symbol, drivingSymbols: Set[Symbol]): Unit = {
       drivingSymbols.foreach { drivingSymbol =>
@@ -369,7 +370,7 @@ object SymbolTable extends LazyLogging {
 
     def processExternalInstance(extModule: ExtModule,
                                 modulePrefix: String,
-                                instance: BlackBoxImplementation): Unit = {
+                                instance: ScalaBlackBox): Unit = {
       def expand(name: String): String = modulePrefix + "." + name
 
       val instanceSymbol = nameToSymbol(modulePrefix)

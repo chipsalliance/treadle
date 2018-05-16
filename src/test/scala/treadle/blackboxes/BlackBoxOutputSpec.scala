@@ -13,10 +13,10 @@ import treadle.executable._
   * Illustrate a black box that has multiple outputs
   * This one creates 3 outputs each with a different increment of the input
   */
-class FanOutAdder extends BlackBoxImplementation {
+class FanOutAdder extends ScalaBlackBox {
   override def name: String = "FanOutAdder"
 
-  override def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  override def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     val inc = outputName match {
       case "out1" => 1
       case "out2" => 2
@@ -37,18 +37,18 @@ class FanOutAdder extends BlackBoxImplementation {
   }
 }
 
-class FanOutAdderFactory extends BlackBoxFactory {
-  override def createInstance(instanceName: String, blackBoxName: String): Option[BlackBoxImplementation] = {
+class FanOutAdderFactory extends ScalaBlackBoxFactory {
+  override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
     Some(add(new FanOutAdder))
   }
 }
 
-class BlackBoxCounter extends BlackBoxImplementation {
+class BlackBoxCounter extends ScalaBlackBox {
   val name: String = "BlackBoxCounter"
   var counter = BigInt(0)
   var clearSet: Boolean = false
 
-  def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     if(inputValues.head == Big1) {
       clearSet = true
       counter = 0
@@ -70,8 +70,8 @@ class BlackBoxCounter extends BlackBoxImplementation {
   }
 }
 
-class BlackBoxCounterFactory extends BlackBoxFactory {
-  override def createInstance(instanceName: String, blackBoxName: String): Option[BlackBoxImplementation] = {
+class BlackBoxCounterFactory extends ScalaBlackBoxFactory {
+  override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
     Some(add(new BlackBoxCounter))
   }
 }

@@ -33,7 +33,7 @@ class TestUtilsSpec extends FlatSpec with Matchers {
     var count = 0
     for (i <- IntWidthTestValuesGenerator(-18, -12)) {
       print(s"$i")
-      if (count > 18) assert(false)
+      if (count > 18) assert(condition = false)
       count += 1
     }
     println()
@@ -46,8 +46,8 @@ class TestUtilsSpec extends FlatSpec with Matchers {
   }
 
   it should "never repeat a value" in {
-    for(i <- -TestUtils.MaxWidth to TestUtils.MaxWidth) {
-      for(j <- i to TestUtils.MaxWidth) {
+    for(i <- -TestUtils.MaxTestingWidth to TestUtils.MaxTestingWidth) {
+      for(j <- i to TestUtils.MaxTestingWidth) {
         val iterator = IntWidthTestValuesGenerator(i, j)
         var lastSeen = 0
         if(iterator.hasNext()) {
@@ -103,7 +103,7 @@ class TestUtilsSpec extends FlatSpec with Matchers {
     var count = 0
     for (i <- BigIntTestValuesGenerator(-18, -12)) {
 //      println(s"$i")
-      if (count > 18) assert(false)
+      if (count > 18) assert(condition = false)
       count += 1
 
     }
@@ -129,8 +129,8 @@ class TestUtilsSpec extends FlatSpec with Matchers {
 
     val stepSize = 8
     for {
-      startWidth <- -TestUtils.MaxWidth to TestUtils.MaxWidth by stepSize
-      finishWidth <- startWidth + stepSize to TestUtils.MaxWidth by stepSize
+      startWidth <- -TestUtils.MaxTestingWidth to TestUtils.MaxTestingWidth by stepSize
+      finishWidth <- startWidth + stepSize to TestUtils.MaxTestingWidth by stepSize
       if startWidth != 0
       if finishWidth != 0
     } {
@@ -140,8 +140,8 @@ class TestUtilsSpec extends FlatSpec with Matchers {
   }
 
   it should "never repeat a value" in {
-    for (i <- -TestUtils.MaxWidth to TestUtils.MaxWidth) {
-      for (j <- i to TestUtils.MaxWidth) {
+    for (i <- -TestUtils.MaxTestingWidth to TestUtils.MaxTestingWidth) {
+      for (j <- i to TestUtils.MaxTestingWidth) {
         val iterator = BigIntTestValuesGenerator.fromWidths(i, j)
         var lastSeen = Big0
         if (iterator.hasNext()) {

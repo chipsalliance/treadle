@@ -1,30 +1,31 @@
 // See LICENSE for license details.
 
-package treadle.executable
+package treadle
 
 import firrtl.ir.{Param, Type}
+import treadle.executable.Transition
 
 import scala.collection._
 
 /**
-  * This is the template for writing scala functions that implement the behaviour of a
+  * This is the template for writing Scala functions that implement the behaviour of a
   * black box.  Implementing classes should add internal
   * variables to hold any state information.
   */
-trait BlackBoxImplementation {
+trait ScalaBlackBox {
   def name: String
   def fullName(componentName: String): String = s"$name.$componentName"
 
   /**
-    * Execute is called to determine the value for the named output at the
+    * getOutput is called to determine the value for the named output at the
     * current state of the system.
-    * @param inputValues This is a list of concrete values that are in the same order
+    * @param inputValues This is a list of BigInt values that are in the same order
     *                    as the outputDependencies lists them
     * @param tpe         The concrete type of this output
     * @param outputName  The name of this output
     * @return            Computed current concrete value for the name output
     */
-  def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String = ""): BigInt
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String = ""): BigInt
 
   /**
     * Called whenever the cycle command of the engine is called.
@@ -33,7 +34,7 @@ trait BlackBoxImplementation {
 
   /**
     * returns a list of names of inputs that this output depends on.
-    * @note The order of this list will determine the order of the inputValues argument to the execute method
+    * @note The order of this list will determine the order of the inputValues argument to the getOutput method
     * @param outputName the output whose dependencies are being described
     * @return
     */
@@ -62,28 +63,12 @@ trait BlackBoxImplementation {
   *   }
   * }}}
   */
-abstract class BlackBoxFactory {
-  val boxes: mutable.HashMap[String, BlackBoxImplementation] = new mutable.HashMap[String, BlackBoxImplementation]
+abstract class ScalaBlackBoxFactory {
+  val boxes: mutable.HashMap[String, ScalaBlackBox] = new mutable.HashMap[String, ScalaBlackBox]
 
-  def add(blackBox: BlackBoxImplementation): BlackBoxImplementation = {
+  def add(blackBox: ScalaBlackBox): ScalaBlackBox = {
     boxes(blackBox.name) = blackBox
     blackBox
   }
-  def createInstance(instanceName: String, blackBoxName: String): Option[BlackBoxImplementation]
-}
-
-case class BlackBoxCycler(
-    symbol: Symbol,
-    blackBox: BlackBoxImplementation,
-    clockSymbol: Symbol,
-    dataStore: DataStore
-) extends Assigner {
-
-  override def run: FuncUnit = {
-    blackBox.cycle(PositiveEdge)
-    if(isVerbose) {
-      println(s"${symbol.name} : black box cycle($PositiveEdge)")
-    }
-    () => Unit
-  }
+  def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox]
 }

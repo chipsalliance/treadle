@@ -3,7 +3,7 @@ package treadle
 
 // scalastyle:off magic.number
 object TestUtils {
-  val MaxWidth = InterpreterMaxSupportedWidth
+  val MaxTestingWidth = 100
   val Big2 = BigInt(2)
   val Big4 = BigInt(4)
   val Big5 = BigInt(5)
@@ -82,18 +82,18 @@ import treadle.TestUtils._
   * @param minValue width to start generator at
   * @param maxValue width where generator will stop (inclusive)
   */
-class IntWidthTestValuesGenerator(minValue: Int = 0, maxValue: Int = TestUtils.MaxWidth) extends Iterator[Int] {
+class IntWidthTestValuesGenerator(minValue: Int = 0, maxValue: Int = TestUtils.MaxTestingWidth) extends Iterator[Int] {
   assert(maxValue >= minValue)
   //  println(s"IntGenerator($minValue, $maxValue)")
-  var nextValue = minValue
-  var nextPower = if(minValue < 0 ) {
+  private var nextValue = minValue
+  private var nextPower = if(minValue < 0 ) {
     -powerOfTwoLessThanOrEqualTo(minValue.abs)
   }
   else {
     powerOfTwoGreaterThan(minValue)
   }
 
-  var done = nextValue > maxValue
+  private var done = nextValue > maxValue
 
   def hasNext(): Boolean = ! done
 
@@ -134,19 +134,19 @@ class IntWidthTestValuesGenerator(minValue: Int = 0, maxValue: Int = TestUtils.M
     returnValue
   }
 }
-class BigIntTestValuesGenerator(minValue: BigInt = 0, maxValue: BigInt = MaxWidth) extends Iterator[BigInt] {
+class BigIntTestValuesGenerator(minValue: BigInt = 0, maxValue: BigInt = MaxTestingWidth) extends Iterator[BigInt] {
   assert(maxValue >= minValue)
 
   //  println(s"BigIntGenerator($minValue, $maxValue)")
-  var nextValue = minValue
-  var nextPower = if(minValue < 0 ) {
+  private var nextValue = minValue
+  private var nextPower = if(minValue < 0 ) {
     -bigIntPowerOfTwoLessThanOrEqualTo(minValue.abs)
   }
   else {
     bigIntPowerOfTwoGreaterThan(minValue)
   }
 
-  var done = nextValue > maxValue
+  private var done = nextValue > maxValue
 
   def hasNext(): Boolean = ! done
 
@@ -207,8 +207,8 @@ object BigIntTestValuesGenerator {
     gen
   }
   def fromWidths(widthOfStart: Int, widthOfFinish: Int): BigIntTestValuesGenerator = {
-    assert(-MaxWidth <= widthOfStart && widthOfStart <= MaxWidth)
-    assert(-MaxWidth <= widthOfFinish && widthOfFinish <= MaxWidth)
+    assert(-MaxTestingWidth <= widthOfStart && widthOfStart <= MaxTestingWidth)
+    assert(-MaxTestingWidth <= widthOfFinish && widthOfFinish <= MaxTestingWidth)
 
     BigIntTestValuesGenerator(TestUtils.powerOfTwoFrom(widthOfStart), TestUtils.powerOfTwoFrom(widthOfFinish))
   }

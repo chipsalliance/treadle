@@ -3,7 +3,7 @@
 package treadle.blackboxes
 
 import firrtl.ir.Type
-import treadle.{TreadleOptionsManager, TreadleTester}
+import treadle.{ScalaBlackBox, ScalaBlackBoxFactory, TreadleOptionsManager, TreadleTester}
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable._
 
@@ -70,7 +70,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
   * class will be placed into a black box factory so that it can be passed properly to the firrtl engine
   * @param name black box name
   */
-class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImplementation {
+class AccumulatorBlackBox(val name: String) extends ScalaBlackBox {
 
   var ns : BigInt = 0
   var ps : BigInt = 0
@@ -96,7 +96,7 @@ class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImpleme
     }
   }
 
-  def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     isInReset = inputValues.last != BigInt(0)
     ps
   }
@@ -105,11 +105,11 @@ class AccumFirrtlInterpreterBlackBox( val name : String) extends BlackBoxImpleme
 /**
   * The factor that will provide firrtl access to the implementations
   */
-class AccumBlackBoxFactory extends BlackBoxFactory {
+class AccumBlackBoxFactory extends ScalaBlackBoxFactory {
 
-  def createInstance(instanceName: String, blackBoxName: String): Option[BlackBoxImplementation] = {
+  def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
     blackBoxName match {
-      case "AccumBlackBox" => Some(add(new AccumFirrtlInterpreterBlackBox(instanceName)))
+      case "AccumBlackBox" => Some(add(new AccumulatorBlackBox(instanceName)))
       case _               => None
     }
   }

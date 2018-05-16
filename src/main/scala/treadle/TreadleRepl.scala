@@ -1198,7 +1198,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       }
       catch {
         case ie: TreadleException =>
-          console.println(s"Interpreter Exception occurred: ${ie.getMessage}")
+          console.println(s"Treadle Exception occurred: ${ie.getMessage}")
           ie.printStackTrace()
         case _: CyclicException =>
         case e: NullPointerException =>
