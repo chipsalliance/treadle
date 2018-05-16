@@ -2,7 +2,8 @@
 
 package treadle
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
+import treadle.chronometry.Timer
 
 // scalastyle:off magic.number
 class TimerSpec extends FlatSpec with Matchers {

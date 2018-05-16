@@ -1,8 +1,10 @@
 // See LICENSE for license details.
 
-package treadle
+package treadle.repl
 
 import java.io.File
+
+import treadle.TreadleRepl
 
 import scala.tools.jline.console.ConsoleReader
 

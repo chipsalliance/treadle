@@ -108,7 +108,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   if(optionsManager.treadleOptions.callResetAtStartUp && engine.symbolTable.contains(resetName)) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
-//      reset(clockInfo.period + clockInfo.initialOffset - (clockInfo.period / 2))
+//      reset(clockInfo.period + clockInfo.initialOffset - (clockInfo.period / 2)) // once found this to help on a test
     }
   }
 
@@ -239,7 +239,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       val renderer = new ExpressionViewRenderer(
         engine.dataStore, engine.symbolTable, engine.expressionViews)
       val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
-      fail(new TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+      fail(TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
     }
     expectationsMet += 1
   }
@@ -294,7 +294,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       val renderer = new ExpressionViewRenderer(
         engine.dataStore, engine.symbolTable, engine.expressionViews)
       val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
-      fail(new TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+      fail(TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
     }
     expectationsMet += 1
   }

@@ -3,7 +3,7 @@
 package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.executable.ClockInfo
+import treadle.executable.{ClockInfo, StopException}
 
 //scalastyle:off magic.number
 class RiscVMiniSimpleSpec extends FreeSpec with Matchers {

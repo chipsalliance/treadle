@@ -6,6 +6,7 @@ import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir._
 import treadle._
+import treadle.utils.FindModule
 
 class ExpressionCompiler(
     val symbolTable: SymbolTable,
@@ -19,7 +20,7 @@ class ExpressionCompiler(
   def getWidth(tpe: firrtl.ir.Type): Int = {
     tpe match {
       case GroundType(IntWidth(width)) => width.toInt
-      case _ => throw new TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
+      case _ => throw TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
     }
   }
 
@@ -27,7 +28,7 @@ class ExpressionCompiler(
     expression.tpe match {
       case GroundType(IntWidth(width)) => width.toInt
       case _ =>
-        throw new TreadleException(
+        throw TreadleException(
           s"Unresolved width found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -38,7 +39,7 @@ class ExpressionCompiler(
       case  _: SIntType    => true
       case  ClockType      => false
       case _ =>
-        throw new TreadleException(
+        throw TreadleException(
           s"Unsupported type found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -624,7 +625,7 @@ class ExpressionCompiler(
             case BigSize  => GetBigConstant(value)
           }
         case _ =>
-          throw new TreadleException(s"bad expression $expression")
+          throw TreadleException(s"bad expression $expression")
       }
       result
     }
@@ -754,7 +755,7 @@ class ExpressionCompiler(
             addAssigner(stopOp, triggerOption = drivingClockOption)
 
           case _ =>
-            throw new TreadleException(s"Could not find symbol for Stop $stop")
+            throw TreadleException(s"Could not find symbol for Stop $stop")
         }
 
       case printf @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
@@ -780,14 +781,14 @@ class ExpressionCompiler(
             addAssigner(printOp, triggerOption = drivingClockOption)
 
           case _ =>
-            throw new TreadleException(s"Could not find symbol for Print $printf")
+            throw TreadleException(s"Could not find symbol for Print $printf")
         }
 
       case EmptyStmt =>
 
       case conditionally: Conditionally =>
         // logger.debug(s"got a conditionally $conditionally")
-        throw new TreadleException(s"conditionally unsupported in engine $conditionally")
+        throw TreadleException(s"conditionally unsupported in engine $conditionally")
       case _ =>
         println(s"TODO: Unhandled statement $statement")
     }

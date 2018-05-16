@@ -1,8 +1,11 @@
 // See LICENSE for license details.
 
-package treadle
+package treadle.repl
 
-import treadle.vcd.{VCD, Wire}
+import treadle.executable.ExecutionEngine
+import treadle.vcd.VCD
+import treadle.TreadleRepl
+import treadle.utils.VcdRunner
 
 import scala.tools.jline.console.ConsoleReader
 import scala.util.matching.Regex

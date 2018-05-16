@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package treadle
+package treadle.chronometry
 
 import scala.collection.mutable
 

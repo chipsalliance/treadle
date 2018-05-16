@@ -3,7 +3,7 @@
 package treadle
 
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
-import treadle.executable.ClockInfo
+import treadle.executable.{BlackBoxFactory, ClockInfo, TreadleException}
 
 //scalastyle:off magic.number
 case class TreadleOptions(
@@ -131,7 +131,7 @@ trait HasTreadleOptions {
       case name :: period :: offset :: Nil =>
         ClockInfo(name, period.toLong, offset.toLong)
       case _ =>
-        throw new TreadleException(s"Bad clock info string $input, should be name[:period[:offset]]")
+        throw TreadleException(s"Bad clock info string $input, should be name[:period[:offset]]")
     }
   }
   parser.opt[String]("fint-clock-info")

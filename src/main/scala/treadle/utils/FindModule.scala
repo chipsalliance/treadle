@@ -1,8 +1,9 @@
 // See LICENSE for license details.
 
-package treadle
+package treadle.utils
 
 import firrtl.ir.{Circuit, DefModule, Module}
+import treadle.executable.TreadleException
 
 object FindModule {
   /**

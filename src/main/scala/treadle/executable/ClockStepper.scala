@@ -2,7 +2,6 @@
 
 package treadle.executable
 
-import treadle.{ExecutionEngine, TreadleException}
 import treadle.chronometry.UTC
 
 import scala.collection.mutable

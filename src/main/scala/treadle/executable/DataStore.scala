@@ -2,7 +2,6 @@
 
 package treadle.executable
 
-import treadle.{BlackBoxImplementation, ExecutionEngine, TreadleException}
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._

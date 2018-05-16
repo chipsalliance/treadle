@@ -3,6 +3,7 @@
 package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.executable.StopException
 
 
 // scalastyle:off magic.number

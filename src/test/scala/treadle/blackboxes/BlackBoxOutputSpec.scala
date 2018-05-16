@@ -5,7 +5,7 @@ package treadle.blackboxes
 import firrtl.ir.Type
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.executable.{PositiveEdge, Transition}
+import treadle.executable._
 
 //scalastyle:off magic.number
 

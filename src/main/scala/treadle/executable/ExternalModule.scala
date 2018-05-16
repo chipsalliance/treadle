@@ -1,33 +1,10 @@
 // See LICENSE for license details.
 
-package treadle
+package treadle.executable
 
-import firrtl.ir.{Expression, Param, Type, Width}
-import treadle.executable.{Assigner, DataStore, FuncUnit, NoTransition, PositiveEdge, Symbol, Transition}
+import firrtl.ir.{Param, Type}
 
 import scala.collection._
-
-/**
-  * During dependency graph processing one of these will be created for each output of
-  * each instantiated black box in the circuit
-  * @param name The name of the output without module name prefix
-  * @param implementation The implementation instance of the parent black box
-  * @param dependentInputs The names of the inputs that this output depends on
-  * @param tpe the concrete return type of this output
-  */
-case class BlackBoxOutput(name: String,
-                          implementation: BlackBoxImplementation,
-                          dependentInputs: Seq[String],
-                          tpe: Type
-                         ) extends Expression {
-  def mapExpr(f: Expression => Expression): Expression = f(this)
-  def mapType(f: Type => Type): Expression = this
-  def mapWidth(f: Width => Width): Expression = this
-  def execute(inputValues: Seq[BigInt]): BigInt = {
-    implementation.execute(inputValues, tpe: Type, name)
-  }
-  def serialize: String = s"BlackBoxOutput($name,$tpe)"
-}
 
 /**
   * This is the template for writing scala functions that implement the behaviour of a

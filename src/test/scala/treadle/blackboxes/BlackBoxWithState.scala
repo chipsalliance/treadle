@@ -3,9 +3,9 @@
 package treadle.blackboxes
 
 import firrtl.ir.Type
-import treadle.{BlackBoxFactory, BlackBoxImplementation, TreadleOptionsManager, TreadleTester}
+import treadle.{TreadleOptionsManager, TreadleTester}
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.executable.{ClockInfo, PositiveEdge, Transition}
+import treadle.executable._
 
 
 // scalastyle:off magic.number
