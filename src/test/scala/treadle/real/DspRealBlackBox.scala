@@ -4,7 +4,7 @@ package treadle.real
 
 import firrtl.ir.Type
 import treadle._
-import treadle.BlackBoxImplementation
+import treadle.executable.{BlackBoxFactory, BlackBoxImplementation}
 
 
 object DspReal {
@@ -21,7 +21,7 @@ abstract class DspRealTwoArgumentToDouble extends BlackBoxImplementation {
     */
   def twoOp(double1: Double, double2: Double): Double
 
-  def outputDependencies(outputName: String): Seq[(String)] = {
+  def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in1", "in2")
       case _ => Seq.empty
@@ -47,7 +47,7 @@ abstract class DspRealOneArgumentToDouble extends BlackBoxImplementation {
     */
   def oneOp(double1: Double): Double
 
-  def outputDependencies(outputName: String): Seq[(String)] = {
+  def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in")
       case _ => Seq.empty
@@ -73,7 +73,7 @@ abstract class DspRealTwoArgumentToBoolean extends BlackBoxImplementation {
     */
   def twoOp(double1: Double, double2: Double): Boolean
 
-  def outputDependencies(outputName: String): Seq[(String)] = {
+  def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in1", "in2")
       case _ => Seq.empty
@@ -138,7 +138,7 @@ class DspRealIntPart(val name: String) extends DspRealOneArgumentToDouble {
 }
 
 class DspRealToInt(val name: String) extends BlackBoxImplementation {
-  def outputDependencies(outputName: String): Seq[(String)] = {
+  def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in")
       case _ => Seq.empty
@@ -152,7 +152,7 @@ class DspRealToInt(val name: String) extends BlackBoxImplementation {
 }
 
 class DspRealFromInt(val name: String) extends BlackBoxImplementation {
-  def outputDependencies(outputName: String): Seq[(String)] = {
+  def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in")
       case _ => Seq.empty

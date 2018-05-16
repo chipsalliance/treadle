@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package treadle
+package treadle.executable
 
 /**
   * Created by chick on 4/21/16.

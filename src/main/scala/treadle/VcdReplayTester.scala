@@ -7,6 +7,7 @@ import java.io.File
 import firrtl.ExecutionOptionsManager
 import treadle.vcd.VCD
 import logger.LazyLogging
+import treadle.utils.VcdRunner
 
 /**
   * This tester runs a VCD file against a circuit expressed in a firrtl file.  The VCD file should

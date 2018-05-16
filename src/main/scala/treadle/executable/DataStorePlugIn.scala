@@ -2,7 +2,6 @@
 
 package treadle.executable
 
-import treadle.ExecutionEngine
 import treadle.vcd.VCD
 
 abstract class DataStorePlugin {

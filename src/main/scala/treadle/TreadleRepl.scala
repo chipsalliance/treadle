@@ -8,7 +8,8 @@ import firrtl.graph.CyclicException
 import treadle.vcd.VCD
 import logger.Logger
 import treadle.chronometry.UTC
-import treadle.executable.ClockInfo
+import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, TreadleException}
+import treadle.repl._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.tools.jline.console.ConsoleReader
@@ -18,7 +19,6 @@ import scala.tools.jline.console.completer._
 import collection.JavaConverters._
 import scala.io.Source
 import scala.util.matching.Regex
-import treadle.executable.Symbol
 
 abstract class Command(val name: String) {
   def run(args: Array[String]): Unit

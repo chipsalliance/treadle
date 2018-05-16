@@ -4,6 +4,7 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import org.scalatest.{FlatSpec, Matchers}
+import treadle.executable.StopException
 
 class PrintStopSpec extends FlatSpec with Matchers {
   behavior of "stop"

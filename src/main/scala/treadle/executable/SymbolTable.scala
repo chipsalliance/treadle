@@ -5,8 +5,8 @@ package treadle.executable
 import firrtl._
 import firrtl.graph.DiGraph
 import firrtl.ir._
-import treadle.{BlackBoxFactory, BlackBoxImplementation, FindModule, TreadleException}
 import logger.LazyLogging
+import treadle.utils.FindModule
 
 import scala.collection.immutable.Set
 import scala.collection.mutable
@@ -21,7 +21,7 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
   private val toBlackBoxImplementation: mutable.HashMap[Symbol, BlackBoxImplementation] = new mutable.HashMap()
   def addBlackBoxImplementation(symbol: Symbol, blackBoxImplementation: BlackBoxImplementation): Unit = {
     if(toBlackBoxImplementation.contains(symbol)) {
-      throw new TreadleException(s"Assigner already exists for $symbol")
+      throw TreadleException(s"Assigner already exists for $symbol")
     }
     toBlackBoxImplementation(symbol) = blackBoxImplementation
   }
@@ -167,7 +167,7 @@ object SymbolTable extends LazyLogging {
     val nameToSymbol = new mutable.HashMap[String, Symbol]()
     def addSymbol(symbol: Symbol): Unit = {
       if(nameToSymbol.contains(symbol.name)) {
-        throw new TreadleException(s"Symbol table attempting to re-add symbol $symbol")
+        throw TreadleException(s"Symbol table attempting to re-add symbol $symbol")
       }
       else {
         nameToSymbol(symbol.name) = symbol
@@ -236,7 +236,7 @@ object SymbolTable extends LazyLogging {
 
         case con: Connect =>
           con.loc match {
-            case (_: WRef | _: WSubField | _: WSubIndex) =>
+            case _: WRef | _: WSubField | _: WSubIndex =>
               val name = if (registerNames.contains(expand(con.loc.serialize))) {
                 SymbolTable.makeRegisterInputName(expand(con.loc.serialize))
               }
@@ -337,7 +337,7 @@ object SymbolTable extends LazyLogging {
               }
 
             case _ =>
-              throw new TreadleException(s"Can't find clock for $stop")
+              throw TreadleException(s"Can't find clock for $stop")
           }
 
         case print @ Print(info, _, _, clockExpression, _)  =>
@@ -351,7 +351,7 @@ object SymbolTable extends LazyLogging {
               printToPrintInfo(print) = PrintInfo(printSymbol)
 
             case _ =>
-              throw new TreadleException(s"Can't find clock for $print")
+              throw TreadleException(s"Can't find clock for $print")
           }
         case EmptyStmt =>
 
@@ -359,7 +359,7 @@ object SymbolTable extends LazyLogging {
           logger.debug(f"IsInvalid found for ${invalid.expr}%20s")
 
         case conditionally: Conditionally =>
-          throw new TreadleException(s"conditionally unsupported in engine $conditionally")
+          throw TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
           println(s"TODO: Unhandled statement $s")
       }

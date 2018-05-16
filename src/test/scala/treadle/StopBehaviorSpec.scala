@@ -4,6 +4,7 @@ package treadle
 
 import firrtl.CommonOptions
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.executable.StopException
 
 class StopBehaviorSpec extends FreeSpec with Matchers {
   val input: String =

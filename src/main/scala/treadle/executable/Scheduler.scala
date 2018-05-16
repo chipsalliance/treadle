@@ -3,7 +3,6 @@
 package treadle.executable
 
 import logger.LazyLogging
-import treadle.{BlackBoxCycler, ExecutionEngine, TreadleException}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -58,7 +57,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
       case _ =>
         if(! excludeFromCombinational) {
         if(toAssigner.contains(symbol)) {
-          throw new TreadleException(s"Assigner already exists for $symbol")
+          throw TreadleException(s"Assigner already exists for $symbol")
         }
         toAssigner(symbol) = assigner
           combinationalAssigns += assigner

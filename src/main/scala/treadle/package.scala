@@ -100,11 +100,9 @@ package object treadle {
   /**
     * return the smallest number of bits required to hold the given number in
     * an UInt
-    * Note: positive numbers will get one minimum width one higher than would be
-    * required for a UInt
     *
     * @param num number to find width for
-    * @return minimum required bits for an SInt
+    * @return    minimum required bits for an SInt
     */
   def requiredBitsForUInt(num: BigInt): Int = {
     if(num == Big0) {

@@ -1,7 +1,9 @@
 // See LICENSE for license details.
 //
-package treadle
+package treadle.utils
 
+import treadle.TreadleTester
+import treadle.executable.ExecutionEngine
 import treadle.vcd.{VCD, Wire}
 
 /**
@@ -225,7 +227,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   def nextEventHasClockUp: Boolean = {
     vcd.valuesAtTime(events(nextEvent)).exists { change =>
       vcd.wiresFor(change).exists { wire =>
-        clockNames.contains(wire.fullName) && change.value != Big0
+        clockNames.contains(wire.fullName) && change.value != BigInt(0)
       }
     }
   }
@@ -246,7 +248,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
       vcd.wiresFor(change).foreach { wire =>
         val fullName = wire.fullName
         if(clockNames.contains(fullName)) {
-          clockInfo += s""",  $fullName:${if(change.value != Big0) "↑" else "↓"}"""
+          clockInfo += s""",  $fullName:${if(change.value != BigInt(0)) "↑" else "↓"}"""
         }
         else if( inputs.contains(fullName) ) {
           inputsChanged += 1

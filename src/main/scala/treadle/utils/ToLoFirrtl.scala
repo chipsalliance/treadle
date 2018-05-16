@@ -1,13 +1,14 @@
 // See LICENSE for license details.
 
-package treadle
+package treadle.utils
 
-import firrtl.transforms.BlackBoxSourceHelper
 import firrtl.CompilerUtils.getLoweringTransforms
+import firrtl.Mappers._
 import firrtl.PrimOps.{Dshl, Shl}
 import firrtl._
 import firrtl.ir._
-import firrtl.Mappers._
+import firrtl.transforms.BlackBoxSourceHelper
+import treadle.HasTreadleOptions
 
 /**
   * Use these lowering transforms to prepare circuit for compiling

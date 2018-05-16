@@ -165,7 +165,7 @@ object DataType {
       case _: firrtl.ir.UIntType => UnsignedInt
       case firrtl.ir.ClockType   => UnsignedInt
       case t =>
-        throw new TreadleException(s"DataType does not know firrtl type $t")
+        throw TreadleException(s"DataType does not know firrtl type $t")
     }
   }
 }

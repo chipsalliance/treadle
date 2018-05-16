@@ -7,6 +7,7 @@ import firrtl._
 import firrtl.ir._
 import treadle._
 import RenderHelper.ExpressionHelper
+import treadle.utils.FindModule
 
 import scala.collection.mutable
 
@@ -25,7 +26,7 @@ class ExpressionViewBuilder(
   def getWidth(tpe: firrtl.ir.Type): Int = {
     tpe match {
       case GroundType(IntWidth(width)) => width.toInt
-      case _ => throw new TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
+      case _ => throw TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
     }
   }
 
@@ -33,7 +34,7 @@ class ExpressionViewBuilder(
     expression.tpe match {
       case GroundType(IntWidth(width)) => width.toInt
       case _ =>
-        throw new TreadleException(
+        throw TreadleException(
           s"Unresolved width found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -44,7 +45,7 @@ class ExpressionViewBuilder(
       case  _: SIntType    => true
       case  ClockType      => false
       case _ =>
-        throw new TreadleException(
+        throw TreadleException(
           s"Unsupported type found in expression $expression of firrtl.ir.Type ${expression.tpe}")
     }
   }
@@ -184,7 +185,7 @@ class ExpressionViewBuilder(
           case SIntLiteral(value, IntWidth(width)) =>
             expression"$value.S"
           case _ =>
-            throw new TreadleException(s"bad expression $expression")
+            throw TreadleException(s"bad expression $expression")
         }
         result
       }
@@ -272,7 +273,7 @@ class ExpressionViewBuilder(
         case EmptyStmt =>
         case conditionally: Conditionally =>
           // logger.debug(s"got a conditionally $conditionally")
-          throw new TreadleException(s"conditionally unsupported in engine $conditionally")
+          throw TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
           println(s"TODO: Unhandled statement $statement")
       }

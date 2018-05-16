@@ -105,12 +105,13 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        writeVCD = false,
+        writeVCD           = false,
         vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 4,
-        symbolsToWatch = Seq()
+        setVerbose         = false,
+        showFirrtlAtLoad   = false,
+        rollbackBuffers    = 4,
+        callResetAtStartUp = true,
+        symbolsToWatch     = Seq()
       )
     }
 

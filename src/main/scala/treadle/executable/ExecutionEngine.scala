@@ -1,12 +1,13 @@
 // See LICENSE for license details.
 
-package treadle
+package treadle.executable
 
 import firrtl.PortKind
 import firrtl.ir.Circuit
 import firrtl.transforms.DontCheckCombLoopsAnnotation
-import treadle.chronometry.UTC
-import treadle.executable._
+import treadle._
+import treadle.chronometry.{Timer, UTC}
+import treadle.utils.ToLoFirrtl
 import treadle.vcd.VCD
 
 //scalastyle:off magic.number number.of.methods
