@@ -13,14 +13,14 @@ trait CrossUnRootedSbtModule extends CrossSbtModule {
 }
 
 trait CommonModule extends CrossUnRootedSbtModule with PublishModule {
-  def publishVersion = "1.2-SNAPSHOT"
+  def publishVersion = "1.1-SNAPSHOT"
 
   def pomSettings = PomSettings(
     description = artifactName(),
     organization = "edu.berkeley.cs",
-    url = "https://github.com/freechipsproject/firrtl-interpreter.git",
+    url = "https://github.com/ucb-bar/treadle.git",
     licenses = Seq(License.`BSD-3-Clause`),
-    versionControl = VersionControl.github("freechipsproject", "firrtl-interpreter"),
+    versionControl = VersionControl.github("ucb-bar", "treadle"),
     developers = Seq(
       Developer("chick",    "Charles Markley",      "https://aspire.eecs.berkeley.edu/author/chick/")
     )
@@ -42,29 +42,29 @@ trait CommonModule extends CrossUnRootedSbtModule with PublishModule {
 val crossVersions = Seq("2.11.12", "2.12.4")
 
 // Make this available to external tools.
-object firrtlInterpreter extends Cross[FirrtlInterpreterModule](crossVersions: _*) {
+object treadle extends Cross[TreadleModule](crossVersions: _*) {
   def defaultVersion(ev: Evaluator[Any]) = T.command{
     println(crossVersions.head)
   }
 
   def compile = T{
-    firrtlInterpreter(crossVersions.head).compile()
+    treadle(crossVersions.head).compile()
   }
 
   def jar = T{
-    firrtlInterpreter(crossVersions.head).jar()
+    treadle(crossVersions.head).jar()
   }
 
   def test = T{
-    firrtlInterpreter(crossVersions.head).test.test()
+    treadle(crossVersions.head).test.test()
   }
 
   def publishLocal = T{
-    firrtlInterpreter(crossVersions.head).publishLocal()
+    treadle(crossVersions.head).publishLocal()
   }
 
   def docJar = T{
-    firrtlInterpreter(crossVersions.head).docJar()
+    treadle(crossVersions.head).docJar()
   }
 }
 
@@ -76,13 +76,14 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   ivy"$org::$dep:$version"
 }
 
-class FirrtlInterpreterModule(val crossScalaVersion: String) extends CommonModule {
-  override def artifactName = "firrtl-interpreter"
+class TreadleModule(val crossScalaVersion: String) extends CommonModule {
+  override def artifactName = "treadle"
 
   def chiselDeps = Agg("firrtl").map { d => getVersion(d) }
 
   override def ivyDeps = Agg(
-    ivy"org.scala-lang.modules:scala-jline:2.12.1"
+    ivy"org.scala-lang.modules:scala-jline:2.12.1",
+    ivy"org.json4s::json4s-native:3.5.3"
   ) ++ chiselDeps
 
   object test extends Tests {
