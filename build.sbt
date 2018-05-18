@@ -73,8 +73,8 @@ pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
   </license>
 </licenses>
 <scm>
-  <url>https://github.com/freechipsproject/firrtl-interpreter.git</url>
-  <connection>scm:git:github.com/freechipsproject/firrlt-interpreter.git</connection>
+  <url>https://github.com/ucb-bar/treadle.git</url>
+  <connection>scm:git:github.com/ucb-bar/treadle.git</connection>
 </scm>
 <developers>
   <developer>
