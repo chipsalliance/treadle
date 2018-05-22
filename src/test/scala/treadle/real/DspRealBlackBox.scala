@@ -4,14 +4,12 @@ package treadle.real
 
 import firrtl.ir.Type
 import treadle._
-import treadle.executable.{BlackBoxFactory, BlackBoxImplementation}
-
 
 object DspReal {
   val UnderlyingWidth = 64
 }
 
-abstract class DspRealTwoArgumentToDouble extends BlackBoxImplementation {
+abstract class DspRealTwoArgumentToDouble extends ScalaBlackBox {
   /**
     * sub-classes must implement this two argument function
     *
@@ -28,7 +26,7 @@ abstract class DspRealTwoArgumentToDouble extends BlackBoxImplementation {
     }
   }
   def cycle(): Unit = {}
-  def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     val arg1 :: arg2 :: _ = inputValues
     val doubleArg1 = bigIntBitsToDouble(arg1)
     val doubleArg2 = bigIntBitsToDouble(arg2)
@@ -38,7 +36,7 @@ abstract class DspRealTwoArgumentToDouble extends BlackBoxImplementation {
   }
 }
 
-abstract class DspRealOneArgumentToDouble extends BlackBoxImplementation {
+abstract class DspRealOneArgumentToDouble extends ScalaBlackBox {
   /**
     * sub-classes must implement this two argument function
     *
@@ -54,7 +52,7 @@ abstract class DspRealOneArgumentToDouble extends BlackBoxImplementation {
     }
   }
   def cycle(): Unit = {}
-  def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     val arg1 :: _ = inputValues
     val doubleArg1 = bigIntBitsToDouble(arg1)
     val doubleResult = oneOp(doubleArg1)
@@ -63,7 +61,7 @@ abstract class DspRealOneArgumentToDouble extends BlackBoxImplementation {
   }
 }
 
-abstract class DspRealTwoArgumentToBoolean extends BlackBoxImplementation {
+abstract class DspRealTwoArgumentToBoolean extends ScalaBlackBox {
   /**
     * sub-classes must implement this two argument function
     *
@@ -80,7 +78,7 @@ abstract class DspRealTwoArgumentToBoolean extends BlackBoxImplementation {
     }
   }
   def cycle(): Unit = {}
-  def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     val arg1 :: arg2 :: _ = inputValues
     val doubleArg1 = bigIntBitsToDouble(arg1)
     val doubleArg2 = bigIntBitsToDouble(arg2)
@@ -137,28 +135,28 @@ class DspRealIntPart(val name: String) extends DspRealOneArgumentToDouble {
   def oneOp(double1: Double): Double = double1.toInt.toDouble
 }
 
-class DspRealToInt(val name: String) extends BlackBoxImplementation {
+class DspRealToInt(val name: String) extends ScalaBlackBox {
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in")
       case _ => Seq.empty
     }
   }
-  def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     val arg1 :: _ = inputValues
     val result = arg1
     result
   }
 }
 
-class DspRealFromInt(val name: String) extends BlackBoxImplementation {
+class DspRealFromInt(val name: String) extends ScalaBlackBox {
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in")
       case _ => Seq.empty
     }
   }
-  def execute(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     val arg1 :: _ = inputValues
     val result = arg1
     result
@@ -166,8 +164,8 @@ class DspRealFromInt(val name: String) extends BlackBoxImplementation {
 }
 
 //scalastyle:off cyclomatic.complexity
-class DspRealFactory extends BlackBoxFactory {
-  def createInstance(instanceName: String, blackBoxName: String): Option[BlackBoxImplementation] = {
+class DspRealFactory extends ScalaBlackBoxFactory {
+  def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
     blackBoxName match {
       case "BBFAdd"               => Some(add(new DspRealAdd(instanceName)))
       case "BBFSubtract"          => Some(add(new DspRealSubtract(instanceName)))

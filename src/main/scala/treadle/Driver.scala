@@ -3,26 +3,26 @@
 package treadle
 
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
-import treadle.executable.{BlackBoxFactory, ClockInfo, TreadleException}
+import treadle.executable.{ClockInfo, TreadleException}
 
 //scalastyle:off magic.number
 case class TreadleOptions(
-    writeVCD           : Boolean              = false,
-    vcdShowUnderscored : Boolean              = false,
-    setVerbose         : Boolean              = false,
-    setOrderedExec     : Boolean              = false,
-    allowCycles        : Boolean              = false,
-    randomSeed        : Long                 = System.currentTimeMillis(),
-    blackBoxFactories : Seq[BlackBoxFactory] = Seq.empty,
-    maxExecutionDepth : Long                 = Int.MaxValue,
-    showFirrtlAtLoad  : Boolean              = false,
-    lowCompileAtLoad  : Boolean              = true,
-    validIfIsRandom   : Boolean              = false,
-    rollbackBuffers   : Int                  = 4,
-    clockInfo         : Seq[ClockInfo]       = Seq.empty,
-    resetName         : String               = "reset",
-    callResetAtStartUp: Boolean              = false,
-    symbolsToWatch    : Seq[String]          = Seq.empty
+                           writeVCD           : Boolean              = false,
+                           vcdShowUnderscored : Boolean              = false,
+                           setVerbose         : Boolean              = false,
+                           setOrderedExec     : Boolean              = false,
+                           allowCycles        : Boolean              = false,
+                           randomSeed        : Long                 = System.currentTimeMillis(),
+                           blackBoxFactories : Seq[ScalaBlackBoxFactory] = Seq.empty,
+                           maxExecutionDepth : Long                 = Int.MaxValue,
+                           showFirrtlAtLoad  : Boolean              = false,
+                           lowCompileAtLoad  : Boolean              = true,
+                           validIfIsRandom   : Boolean              = false,
+                           rollbackBuffers   : Int                  = 4,
+                           clockInfo         : Seq[ClockInfo]       = Seq.empty,
+                           resetName         : String               = "reset",
+                           callResetAtStartUp: Boolean              = false,
+                           symbolsToWatch    : Seq[String]          = Seq.empty
   )
   extends firrtl.ComposableOptions {
 

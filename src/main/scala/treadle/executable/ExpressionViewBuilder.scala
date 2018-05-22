@@ -17,7 +17,7 @@ class ExpressionViewBuilder(
     dataStore: DataStore,
     scheduler: Scheduler,
     validIfIsRandom: Boolean,
-    blackBoxFactories: Seq[BlackBoxFactory]
+    blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {
 
@@ -290,7 +290,7 @@ class ExpressionViewBuilder(
   }
 
   // scalastyle:off cyclomatic.complexity
-  def compile(circuit: Circuit, blackBoxFactories: Seq[BlackBoxFactory]): Unit = {
+  def compile(circuit: Circuit, blackBoxFactories: Seq[ScalaBlackBoxFactory]): Unit = {
     val module = FindModule(circuit.main, circuit) match {
       case regularModule: firrtl.ir.Module => regularModule
       case externalModule: firrtl.ir.ExtModule =>
@@ -311,7 +311,7 @@ object ExpressionViewBuilder {
       scheduler: Scheduler,
       validIfIsRandom: Boolean,
       circuit: Circuit,
-      blackBoxFactories: Seq[BlackBoxFactory]): Map[Symbol, ExpressionView] = {
+      blackBoxFactories: Seq[ScalaBlackBoxFactory]): Map[Symbol, ExpressionView] = {
     val builder = new ExpressionViewBuilder(
       symbolTable, dataStore, scheduler, validIfIsRandom, blackBoxFactories)
     builder.compile(circuit, blackBoxFactories)

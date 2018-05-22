@@ -5,8 +5,6 @@ package object treadle {
 
   import firrtl.ir._
 
-  val InterpreterMaxSupportedWidth = 100
-
   val Big0 = BigInt(0)
   val Big1 = BigInt(1)
   val DangerShiftSize = 27

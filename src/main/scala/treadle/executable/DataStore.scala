@@ -5,6 +5,7 @@ package treadle.executable
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
+import treadle.ScalaBlackBox
 
 import scala.collection.mutable
 
@@ -422,7 +423,7 @@ extends HasDataArrays {
       unexpandedName: String,
       outputName:     Symbol,
       inputs:         Seq[Symbol],
-      implementation: BlackBoxImplementation
+      implementation: ScalaBlackBox
   )
   extends BigExpressionResult {
 
@@ -430,7 +431,7 @@ extends HasDataArrays {
 
     def apply(): Big = {
       val inputValues = inputs.map { input => dataStore(input) }
-      val bigInt = implementation.execute(inputValues, outputName.firrtlType, unexpandedName)
+      val bigInt = implementation.getOutput(inputValues, outputName.firrtlType, unexpandedName)
       bigInt
     }
   }

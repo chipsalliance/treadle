@@ -9,11 +9,11 @@ import treadle._
 import treadle.utils.FindModule
 
 class ExpressionCompiler(
-    val symbolTable: SymbolTable,
-    val dataStore: DataStore,
-    scheduler: Scheduler,
-    interpreterOptions: TreadleOptions,
-    blackBoxFactories: Seq[BlackBoxFactory]
+    val symbolTable  : SymbolTable,
+    val dataStore    : DataStore,
+    scheduler        : Scheduler,
+    treadleOptions   : TreadleOptions,
+    blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {
 
@@ -543,7 +543,7 @@ class ExpressionCompiler(
           makeGet(expand(subIndex.serialize))
 
         case ValidIf(condition, value, tpe) =>
-          if(interpreterOptions.validIfIsRandom) {
+          if(treadleOptions.validIfIsRandom) {
             processExpression(condition) match {
               case c: IntExpressionResult =>
                 processExpression(value) match {
@@ -808,7 +808,7 @@ class ExpressionCompiler(
   }
 
   // scalastyle:off cyclomatic.complexity
-  def compile(circuit: Circuit, blackBoxFactories: Seq[BlackBoxFactory]): Unit = {
+  def compile(circuit: Circuit, blackBoxFactories: Seq[ScalaBlackBoxFactory]): Unit = {
     val module = FindModule(circuit.main, circuit) match {
       case regularModule: firrtl.ir.Module => regularModule
       case externalModule: firrtl.ir.ExtModule =>

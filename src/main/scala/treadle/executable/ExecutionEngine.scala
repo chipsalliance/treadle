@@ -20,8 +20,6 @@ class ExecutionEngine(
     val expressionViews : Map[Symbol, ExpressionView],
     val wallTime        : UTC
 ) {
-  private val interpreterOptions = optionsManager.treadleOptions
-
   val cycleTimeIncrement = 500
 
   var vcdOption: Option[VCD] = None
@@ -34,7 +32,7 @@ class ExecutionEngine(
   )
 
   var verbose: Boolean = false
-  setVerbose(interpreterOptions.setVerbose)
+  setVerbose(optionsManager.treadleOptions.setVerbose)
 
   var inputsChanged: Boolean = false
 
@@ -395,15 +393,15 @@ object ExecutionEngine {
 
     val t0 = System.nanoTime()
 
-    val interpreterOptions: TreadleOptions = optionsManager.treadleOptions
+    val treadleOptions: TreadleOptions = optionsManager.treadleOptions
 
     val ast = firrtl.Parser.parse(input.split("\n").toIterator)
-    val verbose: Boolean = interpreterOptions.setVerbose
-    val blackBoxFactories: Seq[BlackBoxFactory] = interpreterOptions.blackBoxFactories
+    val verbose: Boolean = treadleOptions.setVerbose
+    val blackBoxFactories: Seq[ScalaBlackBoxFactory] = treadleOptions.blackBoxFactories
     val timer = new Timer
 
-    val loweredAst: Circuit = if(interpreterOptions.lowCompileAtLoad) {
-      if(interpreterOptions.allowCycles) {
+    val loweredAst: Circuit = if(treadleOptions.lowCompileAtLoad) {
+      if(treadleOptions.allowCycles) {
         optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
           annotations = optionsManager.firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation
         )
@@ -413,20 +411,20 @@ object ExecutionEngine {
       ast
     }
 
-    if(interpreterOptions.showFirrtlAtLoad) {
+    if(treadleOptions.showFirrtlAtLoad) {
       println("LoFirrtl" + "=" * 120)
       println(loweredAst.serialize)
     }
 
     val symbolTable: SymbolTable = timer("Build Symbol Table") {
-      SymbolTable(loweredAst, blackBoxFactories, interpreterOptions.allowCycles)
+      SymbolTable(loweredAst, blackBoxFactories, treadleOptions.allowCycles)
     }
 
     val dataStoreAllocator = new DataStoreAllocator
 
     symbolTable.allocateData(dataStoreAllocator)
 
-    val dataStore = DataStore(interpreterOptions.rollbackBuffers, dataStoreAllocator)
+    val dataStore = DataStore(treadleOptions.rollbackBuffers, dataStoreAllocator)
 
     if(verbose) {
       println(s"Symbol table:\n${symbolTable.render}")
@@ -434,7 +432,7 @@ object ExecutionEngine {
 
     val scheduler = new Scheduler(symbolTable)
 
-    val compiler = new ExpressionCompiler(symbolTable, dataStore, scheduler, interpreterOptions, blackBoxFactories)
+    val compiler = new ExpressionCompiler(symbolTable, dataStore, scheduler, treadleOptions, blackBoxFactories)
 
     timer("Build Compiled Expressions") {
       compiler.compile(loweredAst, blackBoxFactories)
@@ -442,7 +440,7 @@ object ExecutionEngine {
 
     val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(
       symbolTable, dataStore, scheduler,
-      interpreterOptions.validIfIsRandom,
+      treadleOptions.validIfIsRandom,
       loweredAst, blackBoxFactories)
 
     scheduler.organizeAssigners()
