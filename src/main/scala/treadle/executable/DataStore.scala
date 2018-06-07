@@ -452,6 +452,27 @@ extends HasDataArrays {
     }
   }
 
+  def getWaveformValues(symbols: Array[Symbol], size : Int = numberOfBuffers): Array[Array[BigInt]] = {
+    val clockName = "clk" // TODO: how to handle for multiclock?
+    val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
+
+    val buffers : Seq[RollBackBuffer] = rollbackRing.newestToOldestBuffers
+    val n = size.min(buffers.length)
+
+    val valuesMap = Array.ofDim[BigInt](n, symbols.length + 1) // +1 for time values
+    rollbackRing.newestToOldestBuffers.reverse.zipWithIndex.foreach { case (buffer, i) =>
+      valuesMap(i)(0) = buffer.time
+      symbols.zipWithIndex.foreach { case (symbol, j) =>
+        symbol.dataSize match {
+          case IntSize => valuesMap(i)(j + 1) = buffer.intData(symbol.index)
+          case LongSize => valuesMap(i)(j + 1) = buffer.longData(symbol.index)
+          case BigSize => valuesMap(i)(j + 1) = buffer.bigData(symbol.index)
+        }
+      }
+    }
+    valuesMap
+  }
+
   def update(symbol: Symbol, value: Big): Unit = {
     symbol.dataSize match {
       case IntSize  => intData(symbol.index) = value.toInt

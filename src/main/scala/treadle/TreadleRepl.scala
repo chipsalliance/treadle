@@ -8,7 +8,7 @@ import firrtl.graph.CyclicException
 import treadle.vcd.VCD
 import logger.Logger
 import treadle.chronometry.UTC
-import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, TreadleException}
+import treadle.executable.{BigSize, ClockInfo, ExecutionEngine, IntSize, LongSize, Symbol, TreadleException}
 import treadle.repl._
 
 import scala.collection.mutable.ArrayBuffer
@@ -19,6 +19,10 @@ import scala.tools.jline.console.completer._
 import collection.JavaConverters._
 import scala.io.Source
 import scala.util.matching.Regex
+
+import org.json4s._
+import org.json4s.native.JsonMethods._
+import org.json4s.JsonDSL._
 
 abstract class Command(val name: String) {
   def run(args: Array[String]): Unit
@@ -1068,6 +1072,69 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 //          console.println(s"evaluator allow combinational loops is now ${engine.evaluator.evaluateAll}")
 //        }
 //      },
+      new Command("waves") {
+        def usage: (String, String) =
+          ("waves symbolName ...","generate wavedrom json for viewing waveforms")
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({
+                "waves"
+              }),
+              new StringsCompleter(jlist(engine.validNames.toSeq))
+            ))
+          }
+        }
+        def run(args: Array[String]): Unit = {
+          if (args.length == 0) {
+            error("at least one symbol needed")
+          } else {
+            val numSymbols = args.length
+            val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
+            args.zipWithIndex.foreach { case (symbolName, counter) =>
+              assert(engine.symbolTable.contains(symbolName),
+                s""""$symbolName" : argument is not an element of this circuit""")
+              symbols.update(counter, engine.symbolTable(symbolName))
+            }
+
+            val waveformValues: Array[Array[BigInt]] = engine.dataStore.getWaveformValues(symbols)
+
+            val numCycles = waveformValues.length
+            val clkWaveString = "P" + "." * (numCycles - 1)
+            val waveStrings = Array.fill[String](numSymbols)("")
+            val dataStrings = Array.fill[String](numSymbols)("")
+            val prevValues = new Array[BigInt](numSymbols)
+            waveformValues.zipWithIndex.foreach { case (arr, i) =>
+              arr.tail.zipWithIndex.foreach { case (value : BigInt, symbolIndex) =>
+                if (value == prevValues(symbolIndex)) {
+                  waveStrings.update(symbolIndex, waveStrings(symbolIndex) + ".")
+                } else {
+                  waveStrings.update(symbolIndex, waveStrings(symbolIndex) + "2")
+                  dataStrings.update(symbolIndex, dataStrings(symbolIndex) + value + " ")
+                }
+                prevValues.update(symbolIndex, value)
+              }
+            }
+
+            // Generate JSON
+            val jsonClk : JObject = ("name" -> "clk") ~ ("wave" -> clkWaveString)
+            val jsonWaves : JArray = (args.toList, waveStrings.toList, dataStrings.toList).zipped.map{
+              case (symbolName, waveString, dataString) =>
+                ("name" -> symbolName) ~ ("wave" -> waveString) ~ ("data" -> dataString)
+            }
+            val jsonAllWaves = jsonClk ++ jsonWaves
+
+            val json : JValue =
+              ("signal" -> jsonAllWaves) ~
+              ("head" ->
+                ("tick" -> JInt(0)))
+            console.println(pretty(render(json)))
+          }
+        }
+      },
       new Command("help") {
         def usage: (String, String) = ("help", "show available commands")
         def run(args: Array[String]): Unit = {
@@ -1106,7 +1173,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   /**
     * gets the next line from either the current executing script or from the console.
     * Strips comments from the line, may result in empty string, command parser is ok with that
- *
+    *
     * @return
     */
   def getNextLine: String = {
@@ -1245,3 +1312,5 @@ object TreadleRepl {
     }
   }
 }
+
+

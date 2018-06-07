@@ -30,13 +30,16 @@ class RollBackBufferRing(dataStore: DataStore) {
 
   def newestToOldestBuffers: Seq[RollBackBuffer] = {
     var list = List.empty[RollBackBuffer]
-    var index = latestBufferIndex
-    while(index != oldestBufferIndex) {
-      list = list :+ ringBuffer(index)
-      index -= 1
-      if(index < 0) {
-        index = numberOfBuffers - 1
+    if (latestBufferIndex != oldestBufferIndex) {
+      var index = latestBufferIndex
+      while (index != oldestBufferIndex) {
+        list = list :+ ringBuffer(index)
+        index -= 1
+        if (index < 0) {
+          index = numberOfBuffers - 1
+        }
       }
+      list = list :+ ringBuffer(index)
     }
     list
   }
