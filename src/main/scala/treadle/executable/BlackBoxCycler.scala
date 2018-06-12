@@ -2,13 +2,15 @@
 
 package treadle.executable
 
+import firrtl.ir.Info
 import treadle.ScalaBlackBox
 
 case class BlackBoxCycler(
-                           symbol: Symbol,
-                           blackBox: ScalaBlackBox,
-                           clockSymbol: Symbol,
-                           dataStore: DataStore
+  symbol      : Symbol,
+  blackBox    : ScalaBlackBox,
+  clockSymbol : Symbol,
+  dataStore   : DataStore,
+  info        : Info
 )
 extends Assigner {
 

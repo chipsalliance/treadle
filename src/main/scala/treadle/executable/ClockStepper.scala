@@ -2,6 +2,7 @@
 
 package treadle.executable
 
+import firrtl.ir.NoInfo
 import treadle.chronometry.UTC
 
 import scala.collection.mutable
@@ -47,7 +48,7 @@ case class SimpleSingleClockStepper(
 
   val hasRollBack: Boolean = engine.dataStore.numberOfBuffers > 0
 
-  val clockAssigner = dataStore.TriggerConstantAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1)
+  val clockAssigner = dataStore.TriggerConstantAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1, NoInfo)
   engine.scheduler.clockAssigners += clockAssigner
   engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
 
@@ -152,10 +153,10 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
     val clockSymbol = engine.symbolTable(clockInfo.name)
 
     val clockUpAssigner = dataStore.TriggerExpressionAssigner(
-      clockSymbol, scheduler, GetIntConstant(1).apply, triggerOnValue = 1)
+      clockSymbol, scheduler, GetIntConstant(1).apply, triggerOnValue = 1, NoInfo)
 
     val clockDownAssigner = dataStore.TriggerExpressionAssigner(
-      clockSymbol, scheduler, GetIntConstant(0).apply, triggerOnValue = -1)
+      clockSymbol, scheduler, GetIntConstant(0).apply, triggerOnValue = -1, NoInfo)
 
     clockAssigners(clockSymbol) = ClockAssigners(clockUpAssigner, clockDownAssigner)
 
