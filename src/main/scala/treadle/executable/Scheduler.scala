@@ -2,6 +2,7 @@
 
 package treadle.executable
 
+import firrtl.ir.{Info, NoInfo}
 import logger.LazyLogging
 
 import scala.collection.mutable
@@ -71,6 +72,20 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   def getAllAssigners: Seq[Assigner] = {
     toAssigner.values.toSeq ++ allUnassigners ++ clockAssigners
+  }
+
+  def getAssignerInfo(symbol: Symbol): Info = {
+    getAllAssigners.find(assigner => assigner.symbol == symbol) match {
+      case Some(assigner) => assigner.info
+      case _ => NoInfo
+    }
+  }
+
+  def getAssignerInfo(symbolName: String): Info = {
+    symbolTable.get(symbolName) match {
+      case Some(symbol) => getAssignerInfo(symbol)
+      case _ => NoInfo
+    }
   }
 
   def inputChildrenAssigners(): Seq[Assigner] = {

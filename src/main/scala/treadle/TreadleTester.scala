@@ -236,10 +236,13 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
     val value = peek(name)
     if(value != expectedValue) {
+      val info = engine.scheduler.getAssignerInfo(name)
       val renderer = new ExpressionViewRenderer(
         engine.dataStore, engine.symbolTable, engine.expressionViews)
       val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
-      fail(TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+      fail(
+        TreadleException(s"Error:expect($name, $expectedValue) got $value $message\n$calculation\nAssigned at: $info")
+      )
     }
     expectationsMet += 1
   }

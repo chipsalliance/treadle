@@ -3,7 +3,7 @@
 package treadle.executable
 
 import firrtl.PortKind
-import firrtl.ir.Circuit
+import firrtl.ir.{Circuit, NoInfo}
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
 import treadle.chronometry.{Timer, UTC}
@@ -359,7 +359,7 @@ class ExecutionEngine(
   class NullToggler extends ClockToggle
 
   def makeUpToggler(symbol: Symbol): Assigner = {
-    val assigner = dataStore.AssignInt(symbol, GetIntConstant(1).apply)
+    val assigner = dataStore.AssignInt(symbol, GetIntConstant(1).apply, NoInfo)
 
     if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
@@ -367,7 +367,7 @@ class ExecutionEngine(
   }
 
   def makeDownToggler(symbol: Symbol): Assigner = {
-    val assigner = dataStore.AssignInt(symbol, GetIntConstant(0).apply)
+    val assigner = dataStore.AssignInt(symbol, GetIntConstant(0).apply, NoInfo)
 
     if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
