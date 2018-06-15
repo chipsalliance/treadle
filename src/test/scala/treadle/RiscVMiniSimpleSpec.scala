@@ -19,7 +19,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
         setVerbose = false,
         showFirrtlAtLoad = false,
         rollbackBuffers = 0,
-        clockInfo = Seq(ClockInfo("clock", period = 10, -4)),
+        clockInfo = Seq(ClockInfo("clock", period = 10, initialOffset = 1)),
         symbolsToWatch = Seq()
       )
     }
@@ -27,7 +27,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
     val tester = new TreadleTester(input, optionsManager)
 
     intercept[StopException] {
-      tester.step(300)
+      tester.step(400)
     }
     tester.report()
     tester.engine.writeVCD()

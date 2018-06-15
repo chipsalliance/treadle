@@ -2,15 +2,22 @@
 
 package treadle.chronometry
 
+import treadle.utils.Render
+
 import scala.collection.mutable
 
 class UTC(scaleName: String = "picoseconds") {
   private var internalTime: Long = 0L
   def currentTime:  Long = internalTime
   def setTime(time: Long): Unit = {
-    internalTime = time
-    onTimeChange()
+    if(internalTime < time || time == 0L) {
+      internalTime = time
+      if (isVerbose) Render.headerBar(s"WallTime: $internalTime")
+      onTimeChange()
+    }
   }
+
+  var isVerbose: Boolean = false
 
   val eventQueue = new mutable.PriorityQueue[Task]()
 

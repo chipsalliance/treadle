@@ -13,7 +13,7 @@ package treadle.executable
   *
   * @param name           the signal name of a clock
   * @param period         how many ticks between rising edges of this clock
-  * @param initialOffset  how many ticks before the first rising edge occurs, this value can be negative
+  * @param initialOffset  the tick where the first up transition takes place.
   */
 case class ClockInfo(
   name          : String = ClockInfo.DefaultName,
@@ -22,6 +22,9 @@ case class ClockInfo(
 ) {
   val upPeriod   : Long = period / 2
   val downPeriod : Long = period - upPeriod
+  if(initialOffset <= 0) {
+    throw TreadleException(s"initialOffset in ClockInfo for $name must be positive. Found value $initialOffset")
+  }
 }
 
 /**

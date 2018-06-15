@@ -4,6 +4,7 @@ package treadle.executable
 
 import firrtl.ir.NoInfo
 import treadle.chronometry.UTC
+import treadle.utils.Render
 
 import scala.collection.mutable
 
@@ -14,6 +15,7 @@ trait ClockStepper {
   def addTask(taskTime: Long)(task: () => Unit): Unit
   val clockAssigners: mutable.HashMap[Symbol, ClockAssigners] = new mutable.HashMap()
   def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {}
+  def combinationalBump(value: Long): Unit = {}
 }
 
 class NoClockStepper extends ClockStepper {
@@ -48,11 +50,15 @@ case class SimpleSingleClockStepper(
 
   val hasRollBack: Boolean = engine.dataStore.numberOfBuffers > 0
 
+  var isFirstRun: Boolean = true
+
   val clockAssigner = dataStore.TriggerConstantAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1, NoInfo)
   engine.scheduler.clockAssigners += clockAssigner
   engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
 
   clockAssigners(clockSymbol) = ClockAssigners(clockAssigner, clockAssigner)
+
+  var combinationalBumps: Long = 0L
 
   /**
     * This function is (and should only) be used by the VcdReplayTester
@@ -80,56 +86,102 @@ case class SimpleSingleClockStepper(
     constantAssigner.run()
   }
 
+  override def combinationalBump(value: Long): Unit = {
+    combinationalBumps += value
+    wallTime.incrementTime(value)
+  }
+
   /**
     * Execute specified number of clock cycles (steps)
     * @param steps number of clock cycles to advance
     */
+  //scalastyle:off method.length
   override def run(steps: Int): Unit = {
+
+    /**
+      * This handles the possibility that a reset clearing was scheduled to occur during the time
+      * interval
+      */
+    def handlePossibleReset(increment: Long): Long = {
+      if(resetTaskTime > wallTime.currentTime && wallTime.currentTime + increment >= resetTaskTime) {
+        val incrementToReset = resetTaskTime - wallTime.currentTime
+        wallTime.incrementTime(incrementToReset)
+
+        resetSymbolOpt.foreach { resetSymbol =>
+          engine.setValue(resetSymbol.name, 0)
+          engine.inputsChanged = true
+          if(increment - incrementToReset > 0) {
+            engine.evaluateCircuit()
+          }
+        }
+        resetTaskTime = -1L
+
+        increment - incrementToReset
+      }
+      else {
+        increment
+      }
+    }
+
+    /**
+      * Raise the clock and propagate changes
+      */
+    def raiseClock(): Unit = {
+      clockAssigner.value = 1
+      clockAssigner.run()
+      engine.inputsChanged = true
+      engine.evaluateCircuit()
+
+      val remainingIncrement = handlePossibleReset(upPeriod)
+
+      wallTime.incrementTime(remainingIncrement)
+      combinationalBumps = 0L
+    }
+
+    /**
+      * lower the clock
+      */
+    def lowerClock(): Unit = {
+      clockAssigner.value = 0
+      clockAssigner.run()
+      combinationalBumps = 0L
+    }
+
     for(_ <- 0 until steps) {
       if(engine.verbose) {
-        println(s"step: ${cycleCount + 1} started")
+        Render.headerBar(s"step ${cycleCount + 1} started")
       }
+
       if (engine.inputsChanged) {
         engine.evaluateCircuit()
       }
 
       cycleCount += 1
 
-      /* This bit of code assumes any combinational delays occur after a down clock has happened. */
-      val downIncrement = (wallTime.currentTime - clockInitialOffset) % clockPeriod
-      wallTime.incrementTime(downPeriod - downIncrement)
-      if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
-        resetSymbolOpt.foreach { resetSymbol =>
-          engine.setValue(resetSymbol.name, 0)
-          engine.inputsChanged = true
-          engine.evaluateCircuit()
-        }
-        resetTaskTime = -1L
+      /* This bit of code adjusts for any combinational delays occur since the  down clock */
+      val downIncrement = if (isFirstRun) {
+        isFirstRun = false
+        clockInitialOffset - wallTime.currentTime
+      }
+      else {
+        downPeriod - combinationalBumps
       }
 
-      if(hasRollBack) {
+      val remainingIncrement = handlePossibleReset(downIncrement)
+
+      wallTime.incrementTime(remainingIncrement)
+
+      if (hasRollBack) {
         // save data state under roll back buffers for this clock
         engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
       }
 
-      clockAssigner.value = 1
-      clockAssigner.run()
-      engine.inputsChanged = true
-      engine.evaluateCircuit()
-      wallTime.incrementTime(upPeriod)
+      raiseClock()
 
-      if(resetTaskTime >= 0 && wallTime.currentTime >= resetTaskTime) {
-        resetSymbolOpt.foreach { resetSymbol =>
-          engine.setValue(resetSymbol.name, 0)
-          engine.inputsChanged = true
-          engine.evaluateCircuit()
-        }
-        resetTaskTime = -1L
-      }
-      clockAssigner.value = 0
-      clockAssigner.run()
+      lowerClock()
+
       if(engine.verbose) {
-        println(s"step: $cycleCount finished")
+        Render.headerBar(s"Done step: $cycleCount finished")
       }
     }
   }
@@ -142,6 +194,15 @@ case class SimpleSingleClockStepper(
   }
 }
 
+//TODO (Chick) Add support for combinational delays here.
+/**
+  * Manage multiple top-level clocks
+  * step is interpreted here to mean advance to the next clock cycle considering all the clocks
+  *      multiple clocks may fire at that time
+  * @param engine         engine for this stepper
+  * @param clockInfoList  externally specified clocks and their properties
+  * @param wallTime       handle to top level wall time
+  */
 class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], wallTime: UTC) extends ClockStepper {
   val dataStore: DataStore = engine.dataStore
   val scheduler: Scheduler = engine.scheduler

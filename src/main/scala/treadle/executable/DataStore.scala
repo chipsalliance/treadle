@@ -7,6 +7,7 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
 import treadle.ScalaBlackBox
+import treadle.utils.Render
 
 import scala.collection.mutable
 
@@ -178,30 +179,37 @@ extends HasDataArrays {
     val index: Int = symbol.index
 
     var value: Int = 0
+    var lastValue: Int = 0
 
     def runLean(): Unit = {
+      lastValue = intData(index)
       intData(index) = value
-      if(value == triggerOnValue) {
+      if(value == triggerOnValue && lastValue != triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
       }
-      else {
+      else if(value != triggerOnValue && lastValue == triggerOnValue) {
         scheduler.executeTriggeredUnassigns(symbol)
       }
     }
 
     def runFull(): Unit = {
+      lastValue = intData(index)
       intData(index) = value
-      if(value == triggerOnValue) {
-        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
-        scheduler.executeTriggeredAssigns(symbol)
-        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
-      }
-      else {
-        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
-        scheduler.executeTriggeredUnassigns(symbol)
-        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
-      }
+
       runPlugins(symbol)
+
+      if(value == triggerOnValue && lastValue != triggerOnValue) {
+        if(isVerbose) Render.headerBar(s"triggered assigns for ${symbol.name}", offset = 8)
+        scheduler.executeTriggeredAssigns(symbol)
+        if(isVerbose) Render.headerBar(s"done triggered assigns for ${symbol.name}", offset = 8)
+      }
+      else if(value != triggerOnValue && lastValue == triggerOnValue) {
+        if(scheduler.triggeredUnassigns.contains(symbol)) {
+          if(isVerbose) Render.headerBar(s"triggered un-assigns for ${symbol.name}", offset = 8)
+          scheduler.executeTriggeredUnassigns(symbol)
+          if(isVerbose) Render.headerBar(s"done triggered un-assigns for ${symbol.name}", offset = 8)
+        }
+      }
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -220,31 +228,39 @@ extends HasDataArrays {
 
     val index: Int = symbol.index
 
+    var lastValue: Int = 0
+
     def runLean(): Unit = {
       val value = expression()
       intData(index) = value
-      if(value == triggerOnValue) {
+      lastValue = intData(index)
+      if(value == triggerOnValue && lastValue != triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
       }
-      else {
+      else if(value != triggerOnValue && lastValue == triggerOnValue) {
         scheduler.executeTriggeredUnassigns(symbol)
       }
     }
 
     def runFull(): Unit = {
       val value = expression()
+      lastValue = intData(index)
       intData(index) = value
-      if(value == triggerOnValue) {
-        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
-        scheduler.executeTriggeredAssigns(symbol)
-        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
-      }
-      else {
-        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
-        scheduler.executeTriggeredUnassigns(symbol)
-        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
-      }
+
       runPlugins(symbol)
+
+      if(value == triggerOnValue && lastValue != triggerOnValue) {
+        if(isVerbose) Render.headerBar(s"triggered assigns for ${symbol.name}", offset = 8)
+        scheduler.executeTriggeredAssigns(symbol)
+        if(isVerbose) Render.headerBar(s"done triggered assigns for ${symbol.name}", offset = 8)
+      }
+      else if(value != triggerOnValue && lastValue == triggerOnValue) {
+        if(scheduler.triggeredUnassigns.contains(symbol)) {
+          if(isVerbose) Render.headerBar(s"triggered un-assigns for ${symbol.name}", offset = 8)
+          scheduler.executeTriggeredUnassigns(symbol)
+          if(isVerbose) Render.headerBar(s"done triggered un-assigns for ${symbol.name}", offset = 8)
+        }
+      }
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {

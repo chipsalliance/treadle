@@ -85,21 +85,21 @@ class ExpressionCompiler(
   ): Unit = {
     val assigner = (symbol.dataSize, expressionResult) match {
       case (IntSize,  result: IntExpressionResult)  =>
-        if(scheduler.triggeredAssigns.contains(symbol)) {
+        if(scheduler.isTrigger(symbol)) {
           dataStore.TriggerExpressionAssigner(symbol, scheduler, result.apply, triggerOnValue = 1, info)
         }
         else {
           dataStore.AssignInt(symbol, result.apply, info)
         }
       case (IntSize,  result: LongExpressionResult) =>
-        if(scheduler.triggeredAssigns.contains(symbol)) {
+        if(scheduler.isTrigger(symbol)) {
           dataStore.TriggerExpressionAssigner(symbol, scheduler, ToInt(result.apply).apply, triggerOnValue = 1, info)
         }
         else {
           dataStore.AssignInt(symbol,  ToInt(result.apply).apply, info)
         }
       case (IntSize,  result: BigExpressionResult)  =>
-        if(scheduler.triggeredAssigns.contains(symbol)) {
+        if(scheduler.isTrigger(symbol)) {
           dataStore.TriggerExpressionAssigner(symbol, scheduler, ToInt(result.apply).apply, triggerOnValue = 1, info)
         }
         else {
@@ -822,6 +822,8 @@ class ExpressionCompiler(
       case x =>
         throw TreadleException(s"Top level module is not the right kind of module $x")
     }
+
+    scheduler.registerClocks ++= FindRegisterClocks.run(module, circuit, symbolTable)
 
     processModule("", module, circuit)
 

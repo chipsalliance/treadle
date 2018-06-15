@@ -7,7 +7,7 @@ import firrtl.ir.{Circuit, NoInfo}
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
 import treadle.chronometry.{Timer, UTC}
-import treadle.utils.ToLoFirrtl
+import treadle.utils.{Render, ToLoFirrtl}
 import treadle.vcd.VCD
 
 //scalastyle:off magic.number number.of.methods
@@ -69,18 +69,17 @@ class ExecutionEngine(
 
   if(verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
-      println(s"Executing static assignments")
+      Render.headerBar(s"Executing static assignments", offset = 8)
     }
     else {
-      println(s"No static assignments")
+      Render.headerBar(s"No static assignments", offset = 8)
     }
   }
   scheduler.executeOrphanedAssigns()
   if(verbose) {
     if(scheduler.orphanedAssigns.nonEmpty) {
-      println(s"Finished executing static assignments")
+      Render.headerBar(s"Finished executing static assignments", offset = 8)
     }
-    println(getPrettyString)
   }
 
   def makeVCDLogger(fileName: String, showUnderscored: Boolean): Unit = {
@@ -151,20 +150,10 @@ class ExecutionEngine(
 
     if(inputsChanged) {
       if(verbose) {
-        println(s"inputs have changed, updating combinationally")
+        Render.headerBar(s"peeking", offset = 8)
       }
       inputsChanged = false
       runAssigns()
-
-      if(verbose) {
-        println("Inputs" + ("-" * 120))
-
-        symbolTable.inputPortsNames.map(symbolTable(_)).foreach { symbol =>
-          println(s"${symbol.name} is ${dataStore(symbol)} ")
-        }
-        println("-" * 120)
-        println(s"ExecutionEngine: next state computed ${"=" * 80}\n$getPrettyString")
-      }
     }
 
     val symbol = symbolTable(name)
@@ -213,7 +202,10 @@ class ExecutionEngine(
     val adjustedValue = symbol.valueFrom(value)
     if(offset == 0) {
       if(verbose) {
-        println(s"${symbol.name} <= $value  from tester")
+        if(! inputsChanged) {
+          Render.headerBar("Poking")
+        }
+        println(s"${symbol.name} <= $value")
       }
       dataStore.update(symbol, adjustedValue)
       vcdOption.foreach { vcd =>
@@ -225,7 +217,11 @@ class ExecutionEngine(
         throw TreadleException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
       }
       if(verbose) {
-        println(s"${symbol.name}($offset) <= $value")
+        if(! inputsChanged) {
+          Render.headerBar("Poking")
+        }
+
+        println(s"${symbol.name}($offset) <= $value from tester")
       }
       dataStore.setValueAtIndex(symbol.dataSize, symbol.index + offset, value)
     }
@@ -263,22 +259,15 @@ class ExecutionEngine(
   def evaluateCircuit(): Unit = {
     if(inputsChanged) {
       inputsChanged = false
-      if(verbose) {
-        println("Inputs" + ("-" * 120))
-
-        symbolTable.inputPortsNames.map(symbolTable(_)).foreach { symbol =>
-          println(s"${symbol.name} is ${dataStore(symbol)} ")
-        }
-        println("-" * 120)
-      }
 
       if(verbose) {
-        println(s"Executing all assigns")
+        Render.headerBar(s"combinational evaluate", offset = 8)
       }
       runAssigns()
       if(verbose) {
-        println(s"Executing all assigns finished")
+        Render.headerBar(s"done combinational evaluate", offset = 8)
       }
+
     }
   }
 
