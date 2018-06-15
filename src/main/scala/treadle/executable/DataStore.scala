@@ -452,25 +452,45 @@ extends HasDataArrays {
     }
   }
 
-  def getWaveformValues(symbols: Array[Symbol], size : Int = numberOfBuffers): Array[Array[BigInt]] = {
+  def getWaveformValues(symbols: Array[Symbol],
+                        cycleTime: Int,
+                        windowSize : Int): Option[WaveformValues] = {
     val clockName = "clk" // TODO: how to handle for multiclock?
     val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
 
-    val buffers : Seq[RollBackBuffer] = rollbackRing.newestToOldestBuffers
-    val n = size.min(buffers.length)
+    var buffers : Seq[RollBackBuffer] = rollbackRing.newestToOldestBuffers.reverse
 
-    val valuesMap = Array.ofDim[BigInt](n, symbols.length + 1) // +1 for time values
-    rollbackRing.newestToOldestBuffers.reverse.zipWithIndex.foreach { case (buffer, i) =>
-      valuesMap(i)(0) = buffer.time
-      symbols.zipWithIndex.foreach { case (symbol, j) =>
-        symbol.dataSize match {
-          case IntSize => valuesMap(i)(j + 1) = buffer.intData(symbol.index)
-          case LongSize => valuesMap(i)(j + 1) = buffer.longData(symbol.index)
-          case BigSize => valuesMap(i)(j + 1) = buffer.bigData(symbol.index)
+//    println(s"cycleTime $cycleTime, buffer length: ${buffers.length}")
+
+    if (cycleTime >= buffers.length) {
+      None
+    } else {
+      val leftIndexInclusive = 0.max(cycleTime + 1 - (windowSize + 1) / 2)
+      val rightIndexExclusive = buffers.length.min(cycleTime + windowSize / 2 + 1)
+      val n = rightIndexExclusive - leftIndexInclusive
+
+//      println(buffers.length)
+      buffers = buffers.dropRight(buffers.length - rightIndexExclusive).drop(leftIndexInclusive)
+//      println(buffers.length)
+//      println(n)
+
+      val clockValues = new Array[BigInt](n)
+      val symbolValues = Array.ofDim[BigInt](n, symbols.length)
+
+      buffers.zipWithIndex.foreach { case (buffer, i) =>
+        clockValues(i) = buffer.time
+        symbols.zipWithIndex.foreach { case (symbol, j) =>
+          symbol.dataSize match {
+            case IntSize => symbolValues(i)(j) = buffer.intData(symbol.index)
+            case LongSize => symbolValues(i)(j) = buffer.longData(symbol.index)
+            case BigSize => symbolValues(i)(j) = buffer.bigData(symbol.index)
+          }
+//          println(symbolValues(i).mkString(" "))
         }
       }
+      println(clockValues.mkString(" "))
+      Some(WaveformValues(clockValues, symbols, symbolValues))
     }
-    valuesMap
   }
 
   def update(symbol: Symbol, value: Big): Unit = {

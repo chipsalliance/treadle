@@ -8,7 +8,7 @@ import firrtl.graph.CyclicException
 import treadle.vcd.VCD
 import logger.Logger
 import treadle.chronometry.UTC
-import treadle.executable.{BigSize, ClockInfo, ExecutionEngine, IntSize, LongSize, Symbol, TreadleException}
+import treadle.executable.{BigSize, ClockInfo, ExecutionEngine, IntSize, LongSize, Symbol, TreadleException, WaveformValues}
 import treadle.repl._
 
 import scala.collection.mutable.ArrayBuffer
@@ -19,7 +19,6 @@ import scala.tools.jline.console.completer._
 import collection.JavaConverters._
 import scala.io.Source
 import scala.util.matching.Regex
-
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
@@ -1089,49 +1088,29 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           }
         }
         def run(args: Array[String]): Unit = {
-          if (args.length == 0) {
-            error("at least one symbol needed")
+          if (args.length < 3) {
+            //            error("at least one symbol needed")
+            None
           } else {
-            val numSymbols = args.length
+            val cycleTime = args(1).toInt
+            val symbolNames = args.tail.tail
+            val numSymbols = symbolNames.length
             val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
-            args.zipWithIndex.foreach { case (symbolName, counter) =>
+            symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
               assert(engine.symbolTable.contains(symbolName),
                 s""""$symbolName" : argument is not an element of this circuit""")
               symbols.update(counter, engine.symbolTable(symbolName))
             }
 
-            val waveformValues: Array[Array[BigInt]] = engine.dataStore.getWaveformValues(symbols)
+            val waveformValues: Option[WaveformValues] =
+              engine.dataStore.getWaveformValues(symbols, cycleTime, 4)
 
-            val numCycles = waveformValues.length
-            val clkWaveString = "P" + "." * (numCycles - 1)
-            val waveStrings = Array.fill[String](numSymbols)("")
-            val dataStrings = Array.fill[String](numSymbols)("")
-            val prevValues = new Array[BigInt](numSymbols)
-            waveformValues.zipWithIndex.foreach { case (arr, i) =>
-              arr.tail.zipWithIndex.foreach { case (value : BigInt, symbolIndex) =>
-                if (value == prevValues(symbolIndex)) {
-                  waveStrings.update(symbolIndex, waveStrings(symbolIndex) + ".")
-                } else {
-                  waveStrings.update(symbolIndex, waveStrings(symbolIndex) + "2")
-                  dataStrings.update(symbolIndex, dataStrings(symbolIndex) + value + " ")
-                }
-                prevValues.update(symbolIndex, value)
-              }
+            console.println(waveformValues.toString)
+
+            waveformValues match {
+              case Some(waveform) => console.println(pretty(render(waveform.toJson)))
+              case _ => None
             }
-
-            // Generate JSON
-            val jsonClk : JObject = ("name" -> "clk") ~ ("wave" -> clkWaveString)
-            val jsonWaves : JArray = (args.toList, waveStrings.toList, dataStrings.toList).zipped.map{
-              case (symbolName, waveString, dataString) =>
-                ("name" -> symbolName) ~ ("wave" -> waveString) ~ ("data" -> dataString)
-            }
-            val jsonAllWaves = jsonClk ++ jsonWaves
-
-            val json : JValue =
-              ("signal" -> jsonAllWaves) ~
-              ("head" ->
-                ("tick" -> JInt(0)))
-            console.println(pretty(render(json)))
           }
         }
       },

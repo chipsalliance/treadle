@@ -10,7 +10,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import treadle.chronometry.UTC
-import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, TreadleException}
+import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, TreadleException, WaveformValues}
 import treadle.repl._
 import treadle.vcd.VCD
 
@@ -1077,7 +1077,7 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
 //      },
       new APICommand("waves") {
         def usage: (String, String) =
-          ("waves symbolName ...","generate wavedrom json for viewing waveforms")
+          ("waves cycleTime symbolName windowSize ...","generate wavedrom json for viewing waveforms")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -1092,11 +1092,13 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
           }
         }
         def run(args: Array[String]): Option[JValue] = {
-          val symbolNames = args.tail
-          if (symbolNames.length == 0) {
-//            error("at least one symbol needed")
+          if (args.length < 4) {
+            //            error("at least one symbol needed")
             None
           } else {
+            val cycleTime = args(1).toInt
+            val windowSize = args(2).toInt
+            val symbolNames = args.tail.tail.tail
             val numSymbols = symbolNames.length
             val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
             symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
@@ -1105,40 +1107,13 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
               symbols.update(counter, engine.symbolTable(symbolName))
             }
 
-            val waveformValues: Array[Array[BigInt]] = engine.dataStore.getWaveformValues(symbols)
+            val waveformValues: Option[WaveformValues] =
+              engine.dataStore.getWaveformValues(symbols, cycleTime, windowSize)
 
-            val numCycles = waveformValues.length
-            val clkWaveString = "P" + "." * (numCycles - 1)
-            val waveStrings = Array.fill[String](numSymbols)("")
-            val dataStrings = Array.fill[String](numSymbols)("")
-            val prevValues = new Array[BigInt](numSymbols)
-            waveformValues.zipWithIndex.foreach { case (arr, i) =>
-              arr.tail.zipWithIndex.foreach { case (value : BigInt, symbolIndex) =>
-                if (value == prevValues(symbolIndex)) {
-                  waveStrings.update(symbolIndex, waveStrings(symbolIndex) + ".")
-                } else {
-                  waveStrings.update(symbolIndex, waveStrings(symbolIndex) + "2")
-                  dataStrings.update(symbolIndex, dataStrings(symbolIndex) + value + " ")
-                }
-                prevValues.update(symbolIndex, value)
-              }
+            waveformValues match {
+              case Some(waveform) => Some(waveform.toJson)
+              case _ => None
             }
-
-            // Generate JSON
-            val jsonClk : JObject = ("name" -> "clk") ~ ("wave" -> clkWaveString)
-            val jsonWaves : JArray = (symbolNames.toList, waveStrings.toList, dataStrings.toList).zipped.map{
-              case (symbolName, waveString, dataString) =>
-                ("name" -> symbolName) ~ ("wave" -> waveString) ~ ("data" -> dataString)
-            }
-            val jsonAllWaves = jsonClk ++ jsonWaves
-
-            val json : JValue =
-              ("signal" -> jsonAllWaves) ~
-              ("head" ->
-                ("tick" -> JInt(0)))
-
-            Some(json)
-//            console.println(pretty(render(json)))
           }
         }
       }
@@ -1303,6 +1278,24 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
 
   def executeCommand(args : Array[String]): Option[JValue] = {
     Commands.commandMap(args.head).run(args)
+  }
+
+  def generateWaveDromJson(symbolNames: Array[String],
+                           clkWaveString: String,
+                           waveStrings: Array[String],
+                           dataStrings: Array[String]): JValue = {
+    val jsonClk : JObject = ("name" -> "clk") ~ ("wave" -> clkWaveString)
+    val jsonWaves : JArray = (symbolNames.toList, waveStrings.toList, dataStrings.toList).zipped.map{
+      case (symbolName, waveString, dataString) =>
+        ("name" -> symbolName) ~ ("wave" -> waveString) ~ ("data" -> dataString)
+    }
+    val jsonAllWaves = jsonClk ++ jsonWaves
+
+    val json : JValue =
+      ("signal" -> jsonAllWaves) ~
+        ("head" ->
+          ("tick" -> JInt(0)))
+    json
   }
 }
 
