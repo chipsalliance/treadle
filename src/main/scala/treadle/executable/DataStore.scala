@@ -231,9 +231,9 @@ extends HasDataArrays {
     var lastValue: Int = 0
 
     def runLean(): Unit = {
+      lastValue = intData(index)
       val value = expression()
       intData(index) = value
-      lastValue = intData(index)
       if(value == triggerOnValue && lastValue != triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
       }
@@ -243,8 +243,8 @@ extends HasDataArrays {
     }
 
     def runFull(): Unit = {
-      val value = expression()
       lastValue = intData(index)
+      val value = expression()
       intData(index) = value
 
       runPlugins(symbol)

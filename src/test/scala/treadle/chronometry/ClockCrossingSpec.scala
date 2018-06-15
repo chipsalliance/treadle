@@ -16,31 +16,26 @@ class ClockCrossingSpec extends FreeSpec with Matchers {
   "clocks generated using asClock should function properly by advancing their associated registers" in {
     val chirrtlString =
       """
-        |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.11.12, sbtVersion: 1.1.1
-        |circuit ClockCrossing :
-        |  module ClockCrossing :
-        |    input clock : Clock
-        |    input reset : UInt<1>
-        |    output io : {flip divIn : UInt<8>, mainOut : UInt<8>}
+        |circuit ClockCrossingTestanonfun1anonfunapplymcVsp1anon3 : @[:@2.0]
+        |  module ClockCrossingTestanonfun1anonfunapplymcVsp1anon3 : @[:@3.2]
+        |    input clock : Clock @[:@4.4]
+        |    input reset : UInt<1> @[:@5.4]
+        |    output io : { flip divIn : UInt<8>, mainOut : UInt<8>} @[:@6.4]
         |
-        |    reg divClock : UInt<1>, clock with : (reset => (reset, UInt<1>("h01"))) @[ClockCrossingTest.scala 22:29]
-        |
-        |    node _T_12 = eq(divClock, UInt<1>("h00")) @[ClockCrossingTest.scala 23:19]
-        |    divClock <= _T_12 @[ClockCrossingTest.scala 23:16]
-        |
-        |    wire divRegWire : UInt @[ClockCrossingTest.scala 25:28]
-        |    node _T_14 = asClock(divClock) @[ClockCrossingTest.scala 26:26]
-        |
-        |    reg _T_17 : UInt, _T_14 with : (reset => (reset, UInt<1>("h01"))) @[ClockCrossingTest.scala 27:29]
-        |
-        |    _T_17 <= io.divIn @[ClockCrossingTest.scala 27:29]
-        |    divRegWire <= _T_17 @[ClockCrossingTest.scala 28:20]
-        |
-        |    reg mainReg : UInt, clock with : (reset => (reset, UInt<1>("h00"))) @[ClockCrossingTest.scala 31:28]
-        |    mainReg <= divRegWire @[ClockCrossingTest.scala 31:28]
-        |
-        |    io.mainOut <= mainReg @[ClockCrossingTest.scala 32:18]
-        |
+        |    reg divClock : UInt<1>, clock with :
+        |      reset => (reset, UInt<1>("h1")) @[ClockCrossingTest.scala 30:29:@8.4]
+        |    node _T_12 = eq(divClock, UInt<1>("h0")) @[ClockCrossingTest.scala 31:19:@9.4]
+        |    divClock <= _T_12 @[ClockCrossingTest.scala 31:16:@10.4]
+        |    wire divRegWire : UInt @[ClockCrossingTest.scala 33:28:@11.4]
+        |    node _T_14 = asClock(divClock) @[ClockCrossingTest.scala 34:26:@12.4]
+        |    reg _T_17 : UInt, _T_14 with :
+        |      reset => (reset, UInt<1>("h1")) @[ClockCrossingTest.scala 35:29:@13.4]
+        |    _T_17 <= io.divIn @[ClockCrossingTest.scala 35:29:@14.4]
+        |    divRegWire <= _T_17 @[ClockCrossingTest.scala 36:20:@15.4]
+        |    reg mainReg : UInt, clock with :
+        |      reset => (reset, UInt<1>("h0")) @[ClockCrossingTest.scala 39:28:@16.4]
+        |    mainReg <= divRegWire @[ClockCrossingTest.scala 39:28:@17.4]
+        |    io.mainOut <= mainReg @[ClockCrossingTest.scala 40:18:@18.4]
       """.stripMargin
 
     val firrtlOptionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
@@ -52,7 +47,7 @@ class ClockCrossingSpec extends FreeSpec with Matchers {
         val optionsManager = new TreadleOptionsManager {
           commonOptions = commonOptions.copy(targetDirName = "test_run_dir/clock_crossing")
           treadleOptions = treadleOptions.copy(
-            setVerbose = true, writeVCD = true, callResetAtStartUp = false,
+            setVerbose = false, writeVCD = false, callResetAtStartUp = false,
             showFirrtlAtLoad = false,
             clockInfo = Seq(ClockInfo(name = "clock", period = 2, initialOffset = 1)))
         }
