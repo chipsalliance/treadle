@@ -2,6 +2,7 @@
 
 package treadle.utils
 
+//scalastyle:off magic.number regex
 object Render {
   def binary(value: BigInt, bitWidth: Int): String = {
     val numberString = if(value < 0) {
@@ -18,5 +19,11 @@ object Render {
     else {
       numberString
     }
+  }
+
+  def headerBar(string: String, offset: Int = 4, width: Int = 80): Unit = {
+    val header = "-" * offset + " " + string + " " +
+      ("-" * (width - string.length - offset - 2))
+    println(header)
   }
 }

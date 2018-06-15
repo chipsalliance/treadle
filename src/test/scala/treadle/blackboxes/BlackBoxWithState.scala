@@ -47,7 +47,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         symbolsToWatch = Seq("io_data"),
         blackBoxFactories = Seq(new AccumBlackBoxFactory),
         callResetAtStartUp = true,
-        clockInfo = Seq(ClockInfo("clock", 10, -2))
+        clockInfo = Seq(ClockInfo("clock", 10, 8))
       )
     }
     val tester = new TreadleTester(input, manager)
@@ -88,8 +88,8 @@ class AccumulatorBlackBox(val name: String) extends ScalaBlackBox {
       case PositiveEdge =>
         if(! isInReset) {
           ps = ns
-          ns = ps + 1
         }
+        ns = ps + 1
         // println(s"blackbox:$name ps $ps ns $ns")
       case _ =>
         // println(s"not positive edge, not action for cycle in $name")

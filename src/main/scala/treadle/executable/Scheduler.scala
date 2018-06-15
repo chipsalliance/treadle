@@ -30,6 +30,12 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
       }
     }
 
+  val registerClocks       : mutable.HashSet[Symbol] = new mutable.HashSet
+
+  def isTrigger(symbol: Symbol): Boolean = {
+    registerClocks.contains(symbol) || triggeredAssigns.contains(symbol)
+  }
+
   val triggeredUnassigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
     new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
       override def default(key: Symbol): ArrayBuffer[Assigner] = {
@@ -214,7 +220,13 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
     triggeredAssigns.map { case (symbol, assigners) =>
       s"Assigners triggered by ${symbol.name} (${assigners.length})\n" +
-      assigners.map(renderAssigner).mkString("\n")
+        assigners.map(renderAssigner).mkString("\n") +
+        "\n"
+    }.mkString("\n") +
+      triggeredUnassigns.map { case (symbol, assigners) =>
+      s"Un-assigners triggered by ${symbol.name} (${assigners.length})\n" +
+        assigners.map(renderAssigner).mkString("\n") +
+        "\n"
     }.mkString("\n") +
     "\n\n"
   }
