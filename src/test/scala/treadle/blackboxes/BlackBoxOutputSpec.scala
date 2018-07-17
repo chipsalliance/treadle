@@ -25,7 +25,7 @@ class FanOutAdder extends ScalaBlackBox {
     inputValues.head + BigInt(inc)
   }
 
-  override def cycle(transition: Transition): Unit = {}
+  override def clockChange(transition: Transition, clockName: String): Unit = {}
 
   override def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
@@ -59,7 +59,7 @@ class BlackBoxCounter extends ScalaBlackBox {
     counter
   }
 
-  override def cycle(transition: Transition): Unit = {
+  override def clockChange(transition: Transition, clockName: String): Unit = {
     if(transition == PositiveEdge) {
       if(! clearSet) counter += 1
     }

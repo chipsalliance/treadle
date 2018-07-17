@@ -257,7 +257,6 @@ object Memory {
       val chain = Seq(addr) ++ pipelineReadSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
-      val drivingClock = symbolTable.findHighestClock(clock)
       chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>
           expressionViews(target) = expression"$source"
@@ -306,7 +305,6 @@ object Memory {
       val chain = Seq(rootSymbol) ++ pipelineSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
-      val drivingClock = symbolTable.findHighestClock(clockSymbol)
       chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>
           expressionViews(target) = expression"$source"
@@ -398,11 +396,20 @@ object Memory {
       * @param latency      length of pipeline
       * @return
       */
-    def buildPipeLine(portString: String, pipelineName: String, latency: Int): Seq[Symbol] = {
+    def buildPipeLine(
+      portString: String,
+      pipelineName: String,
+      latency: Int,
+      clockSymbolOpt: Option[Symbol]
+    ): Seq[Symbol] = {
+
       (0 until latency).flatMap { n =>
+        val register = symbolTable(s"$portString.pipeline_${pipelineName}_$n")
+        clockSymbolOpt.foreach { clockSymbol => symbolTable.registerToClock(register) = clockSymbol }
+
         Seq(
           symbolTable(s"$portString.pipeline_${pipelineName}_$n/in"),
-          symbolTable(s"$portString.pipeline_${pipelineName}_$n")
+          register
         )
       }
     }
@@ -430,11 +437,12 @@ object Memory {
       info        : Info
     ): Symbol = {
 
-      val pipelineReadSymbols = buildPipeLine(portName, pipelineName, memory.readLatency)
+      val drivingClock = symbolTable.findHighestClock(clock)
+
+      val pipelineReadSymbols = buildPipeLine(portName, pipelineName, memory.readLatency, drivingClock)
       val chain = Seq(addr) ++ pipelineReadSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
-      val drivingClock = symbolTable.findHighestClock(clock)
       chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>
           compiler.makeAssigner(target, compiler.makeGet(source), drivingClock, info)
@@ -481,11 +489,12 @@ object Memory {
                                     pipelineName:    String
                                    ): Symbol = {
 
-      val pipelineSymbols = buildPipeLine(writerString, pipelineName, memory.writeLatency)
+      val drivingClock = symbolTable.findHighestClock(clockSymbol)
+
+      val pipelineSymbols = buildPipeLine(writerString, pipelineName, memory.writeLatency, drivingClock)
       val chain = Seq(rootSymbol) ++ pipelineSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
-      val drivingClock = symbolTable.findHighestClock(clockSymbol)
       chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
         case source :: target :: Nil =>
           compiler.makeAssigner(target, compiler.makeGet(source), drivingClock, info = memory.info)

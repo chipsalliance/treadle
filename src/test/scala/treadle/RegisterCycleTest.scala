@@ -88,7 +88,7 @@ class RegisterCycleTest extends FreeSpec with Matchers {
       val output = new ByteArrayOutputStream()
       Console.withOut(new PrintStream(output)) {
         val optionsManager = new TreadleOptionsManager
-        optionsManager.parser.parse(Array("-fistw", "io_Out,mySubModule_1.io_Out"))
+        optionsManager.parser.parse(Array("-tstw", "io_Out,mySubModule_1.io_Out"))
 
         val tester = new TreadleTester(input, optionsManager)
         tester.poke("io_In", 1)
