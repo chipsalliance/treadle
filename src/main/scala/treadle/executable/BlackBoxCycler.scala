@@ -15,7 +15,7 @@ case class BlackBoxCycler(
 extends Assigner {
 
   override def run: FuncUnit = {
-    blackBox.cycle(PositiveEdge)
+    blackBox.clockChange(PositiveEdge, clockSymbol.name)
     if (isVerbose) {
       println(s"${symbol.name} : black box cycle($PositiveEdge)")
     }

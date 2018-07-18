@@ -10,8 +10,8 @@ import treadle.executable._
 
 // scalastyle:off magic.number
 /**
-  * This test is pretty sensitive to when the reset comes down.
-  * Hence the negative initialOffset
+  * Demonstrates how a black box can maintain and change internal state
+  * based on clock transitions
   */
 class BlackBoxWithState extends FreeSpec with Matchers {
   "BlackBoxWithState should pass a basic test" in {
@@ -83,7 +83,7 @@ class AccumulatorBlackBox(val name: String) extends ScalaBlackBox {
     }
   }
 
-  override def cycle(transition: Transition): Unit = {
+  override def clockChange(transition: Transition, clockName: String): Unit = {
     transition match {
       case PositiveEdge =>
         if(! isInReset) {
@@ -92,7 +92,7 @@ class AccumulatorBlackBox(val name: String) extends ScalaBlackBox {
         ns = ps + 1
         // println(s"blackbox:$name ps $ps ns $ns")
       case _ =>
-        // println(s"not positive edge, not action for cycle in $name")
+        // println(s"not positive edge, no action for cycle in $name")
     }
   }
 

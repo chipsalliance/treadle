@@ -14,7 +14,7 @@ import scala.collection._
   */
 trait ScalaBlackBox {
   def name: String
-  def fullName(componentName: String): String = s"$name.$componentName"
+  def completeName(componentName: String): String = s"$name.$componentName"
 
   /**
     * getOutput is called to determine the value for the named output at the
@@ -29,8 +29,10 @@ trait ScalaBlackBox {
 
   /**
     * Called whenever the cycle command of the engine is called.
+    * @param transition, tells whether clock went up or down or didn't change.
+    * @param clockName name of the clock, only need if there are multiple clocks
     */
-  def cycle(transition: Transition): Unit = {}
+  def clockChange(transition: Transition, clockName: String = ""): Unit = {}
 
   /**
     * returns a list of names of inputs that this output depends on.

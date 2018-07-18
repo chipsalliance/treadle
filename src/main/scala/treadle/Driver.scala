@@ -41,45 +41,45 @@ trait HasTreadleOptions {
 
   var treadleOptions = TreadleOptions()
 
-  parser.note("firrtl-engine-options")
+  parser.note("treadle-options")
 
-  parser.opt[Unit]("fint-write-vcd")
-    .abbr("fiwv")
+  parser.opt[Unit]("tr-write-vcd")
+    .abbr("tiwv")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(writeVCD = true)
     }
     .text("writes vcd execution log, filename will be base on top")
 
-  parser.opt[Unit]("fint-vcd-show-underscored-vars")
-    .abbr("fivsuv")
+  parser.opt[Unit]("tr-vcd-show-underscored-vars")
+    .abbr("tivsuv")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(vcdShowUnderscored = true)
     }
     .text("vcd output by default does not show var that start with underscore, this overrides that")
 
-  parser.opt[Unit]("fint-verbose")
-    .abbr("fiv")
+  parser.opt[Unit]("tr-verbose")
+    .abbr("tv")
     .foreach {_ =>
       treadleOptions = treadleOptions.copy(setVerbose = true)
     }
     .text("makes engine very verbose")
 
-  parser.opt[Unit]("fint-ordered-exec")
-    .abbr("fioe")
+  parser.opt[Unit]("tr-ordered-exec")
+    .abbr("tioe")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(setOrderedExec = true)
     }
     .text("operates on dependencies optimally, can increase overhead, makes verbose mode easier to read")
 
   parser.opt[Unit]("fr-allow-cycles")
-    .abbr("fiac")
+    .abbr("tiac")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(allowCycles = true)
     }
     .text(s"allow combinational loops to be processed, though unreliable, default is ${treadleOptions.allowCycles}")
 
-  parser.opt[Long]("fint-random-seed")
-    .abbr("firs")
+  parser.opt[Long]("tr-random-seed")
+    .abbr("tirs")
       .valueName("<long-value>")
     .foreach { x =>
       treadleOptions = treadleOptions.copy(randomSeed = x)
@@ -87,35 +87,35 @@ trait HasTreadleOptions {
     .text("seed used for random numbers generated for tests and poison values, default is current time in ms")
 
   parser.opt[Unit]("show-firrtl-at-load")
-    .abbr("fisfas")
+    .abbr("tisfas")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(showFirrtlAtLoad = true)
     }
     .text("compiled low firrtl at firrtl load time")
 
   parser.opt[Unit]("dont-run-lower-compiler-on-load")
-    .abbr("filcol")
+    .abbr("tilcol")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(lowCompileAtLoad = false)
     }
     .text("run lowering compiler when firrtl file is loaded")
 
   parser.opt[Unit]("validif-random")
-    .abbr("fivir")
+    .abbr("tivir")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(validIfIsRandom = true)
     }
     .text("validIf returns random value when condition is false")
 
   parser.opt[Unit]("call-reset-at-start")
-    .abbr("ficras")
+    .abbr("ticras")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(callResetAtStartUp = true)
     }
     .text("has the tester automatically do a reset on it's own at startup")
 
-  parser.opt[Int]("fint-rollback-buffers")
-    .abbr("firb")
+  parser.opt[Int]("tr-rollback-buffers")
+    .abbr("tirb")
     .valueName("<int-value>")
     .foreach { x =>
       treadleOptions = treadleOptions.copy(rollbackBuffers = x)
@@ -134,8 +134,8 @@ trait HasTreadleOptions {
         throw TreadleException(s"Bad clock info string $input, should be name[:period[:offset]]")
     }
   }
-  parser.opt[String]("fint-clock-info")
-    .abbr("fici")
+  parser.opt[String]("tr-clock-info")
+    .abbr("tici")
     .unbounded()
     .valueName("<string>")
     .foreach { x =>
@@ -143,16 +143,16 @@ trait HasTreadleOptions {
     }
     .text("clock-name[:period[:initial-offset]]")
 
-  parser.opt[Seq[String]]("fint-symbols-to-watch")
-    .abbr("fistw")
+  parser.opt[Seq[String]]("tr-symbols-to-watch")
+    .abbr("tstw")
     .valueName("symbols]")
     .foreach { x =>
     treadleOptions = treadleOptions.copy(symbolsToWatch = x)
     }
     .text("symbol[,symbol[...]")
 
-  parser.opt[String]("fint-reset-name")
-    .abbr("firn")
+  parser.opt[String]("tr-reset-name")
+    .abbr("tirn")
     .valueName("<string>")
     .foreach { x =>
       treadleOptions = treadleOptions.copy(resetName = x)
