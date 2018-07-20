@@ -6,7 +6,6 @@ import treadle._
 import firrtl.{MemKind, WireKind}
 import firrtl.ir.{ClockType, DefMemory, Info, IntWidth}
 import RenderHelper.ExpressionHelper
-import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryLoadFileType, ModuleName}
 
 import scala.collection.mutable
 
@@ -591,52 +590,6 @@ object Memory {
       )
     }
   }
-}
 
-class MemoryInitializer(engine: ExecutionEngine) {
-  case class MemoryMetadata(symbol: Symbol, fileName: String, radix: Int)
 
-  val memoryLoadAnnotations: Seq[LoadMemoryAnnotation] = engine.optionsManager.firrtlOptions.annotations.collect {
-    case mla: LoadMemoryAnnotation => mla
-  }
-
-  /*
-  module containing a memory may have been instantiated multiple times
-  This makes sure that every instance of the memory gets loaded
-   */
-  val memoryMetadata: Seq[MemoryMetadata] = memoryLoadAnnotations.flatMap { anno =>
-    anno.target match {
-      case ComponentName(memoryName, ModuleName(moduleName, _)) =>
-        val radix = anno.hexOrBinary match {
-          case MemoryLoadFileType.Hex => 16
-          case MemoryLoadFileType.Binary => 2
-        }
-        engine.symbolTable.moduleMemoryToMemorySymbol(s"$moduleName.$memoryName").toSeq.map { memorySymbol =>
-          MemoryMetadata(memorySymbol, anno.getFileName, radix)
-        }
-      case _ => Seq()
-    }
-  }
-
-  private def doInitialize(memorySymbol: Symbol, fileName: String, radix: Int): Unit = {
-    io.Source.fromFile(fileName).getLines().zipWithIndex.foreach {
-      case (line, lineNumber) if lineNumber < memorySymbol.slots =>
-        try {
-          val value = BigInt(line.trim, radix)
-          engine.dataStore.update(memorySymbol, lineNumber, value)
-        }
-        catch {
-          case t: TreadleException => throw t
-          case t: Throwable =>
-            throw TreadleException(s"loading memory ${memorySymbol.name}[$lineNumber] <= $line: error: ${t.getMessage}")
-        }
-      case _ =>
-    }
-  }
-
-  def initializeMemoriesFromFiles(): Unit = {
-    memoryMetadata.foreach { metadata =>
-      doInitialize(metadata.symbol, metadata.fileName, metadata.radix)
-    }
-  }
 }

@@ -1,10 +1,6 @@
 // See LICENSE for license details.
 package treadle
 
-import java.io.{File, PrintWriter}
-
-import firrtl.FileUtils
-import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
 import org.scalatest.{FreeSpec, Matchers}
 
 /**
@@ -124,7 +120,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         callResetAtStartUp = true
       )
     }
-    val tester: TreadleTester = new TreadleTester(input, optionsManager) {
+    val tester = new TreadleTester(input, optionsManager) {
       poke("a", 1)
       poke("b", 0)
       poke("select", 0)
@@ -392,81 +388,5 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
 
       tester.report()
     }
-  }
-
-  "memory can be initialized at startup" in {
-    val input =
-      """
-        |circuit UsesMem :
-        |  module UsesMemLow :
-        |    input clock : Clock
-        |    input reset : UInt<1>
-        |    output io : {flip address : UInt<16>, value : UInt<16>}
-        |
-        |    cmem memory : UInt<16>[8] @[LoadMemoryFromFileSpec.scala 42:19]
-        |    node _T_8 = bits(io.address, 2, 0) @[LoadMemoryFromFileSpec.scala 46:21]
-        |    infer mport _T_9 = memory[_T_8], clock @[LoadMemoryFromFileSpec.scala 46:21]
-        |    io.value <= _T_9 @[LoadMemoryFromFileSpec.scala 46:12]
-        |
-        |  module UsesMem :
-        |    input clock : Clock
-        |    input reset : UInt<1>
-        |    output io : {flip address : UInt<16>, value : UInt<16>, value2 : UInt<16>}
-        |
-        |    cmem memory : UInt<16>[8] @[LoadMemoryFromFileSpec.scala 24:19]
-        |    node _T_8 = bits(io.address, 2, 0) @[LoadMemoryFromFileSpec.scala 28:21]
-        |    infer mport _T_9 = memory[_T_8], clock @[LoadMemoryFromFileSpec.scala 28:21]
-        |    io.value <= _T_9 @[LoadMemoryFromFileSpec.scala 28:12]
-        |    inst low of UsesMemLow @[LoadMemoryFromFileSpec.scala 30:19]
-        |    low.clock <= clock
-        |    low.reset <= reset
-        |    low.io.address <= io.address @[LoadMemoryFromFileSpec.scala 32:18]
-        |    io.value2 <= low.io.value @[LoadMemoryFromFileSpec.scala 33:13]
-      """.stripMargin
-
-    val targetDirName = "test_run_dir/load_mem_test"
-    FileUtils.makeDirectory(targetDirName)
-
-    val memoryAnnotations = Seq(
-      LoadMemoryAnnotation(
-        ComponentName("memory", ModuleName("UsesMem", CircuitName("UsesMem"))), s"$targetDirName/mem1"
-      ),
-      LoadMemoryAnnotation(
-        ComponentName("memory", ModuleName("UsesMemLow", CircuitName("UsesMem"))), s"$targetDirName/mem2"
-      )
-    )
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        callResetAtStartUp = true
-      )
-      firrtlOptions = firrtlOptions.copy(
-        annotations = firrtlOptions.annotations ++ memoryAnnotations
-      )
-      commonOptions = commonOptions.copy(targetDirName = "test_run_dir", topName = "load_mem_test")
-    }
-
-    val writer = new PrintWriter(new File(s"$targetDirName/mem1"))
-    for(i <- 0 until 8) {
-      writer.println(i)
-    }
-    writer.close()
-
-    val writer2 = new PrintWriter(new File(s"$targetDirName/mem2"))
-    for(i <- 0 until 8) {
-      writer2.println(7 - i)
-    }
-    writer2.close()
-
-    val tester = new TreadleTester(input, optionsManager)
-
-    for(i <- 0 until 8) {
-      tester.expectMemory("memory", i, i)
-      tester.expectMemory("low.memory", i, 7 - i)
-
-    }
-    tester.report()
-    tester.finish
   }
 }

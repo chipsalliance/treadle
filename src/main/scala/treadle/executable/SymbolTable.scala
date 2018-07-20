@@ -44,8 +44,6 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
 
   val registerToClock:  mutable.HashMap[Symbol, Symbol] = new mutable.HashMap()
 
-  val moduleMemoryToMemorySymbol: mutable.HashMap[String, mutable.HashSet[Symbol]] = new mutable.HashMap
-
   val stopToStopInfo   : mutable.HashMap[Stop, StopInfo]   = new mutable.HashMap[Stop, StopInfo]
   val printToPrintInfo : mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
 
@@ -188,13 +186,6 @@ object SymbolTable extends LazyLogging {
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
 
-    val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]] {
-      override def default(key: String): mutable.HashSet[Symbol] = {
-        this(key) = new mutable.HashSet[Symbol]()
-        this(key)
-      }
-    }
-
     val blackBoxImplementations = new mutable.HashMap[Symbol, ScalaBlackBox]()
 
     def addDependency(sensitiveSymbol: Symbol, drivingSymbols: Set[Symbol]): Unit = {
@@ -204,7 +195,7 @@ object SymbolTable extends LazyLogging {
     }
 
     // scalastyle:off
-    def processDependencyStatements(modulePrefix: String, s: Statement, module: Module): Unit = {
+    def processDependencyStatements(modulePrefix: String, s: Statement): Unit = {
       def expand(name: String): String = if (modulePrefix.isEmpty) name else modulePrefix + "." + name
 
       def expressionToReferences(expression: Expression): SymbolSet = {
@@ -241,7 +232,7 @@ object SymbolTable extends LazyLogging {
       s match {
         case block: Block =>
           block.stmts.foreach { subStatement =>
-            processDependencyStatements(modulePrefix, subStatement, module)
+            processDependencyStatements(modulePrefix, subStatement)
           }
 
         case con: Connect =>
@@ -328,14 +319,9 @@ object SymbolTable extends LazyLogging {
           val expandedName = expand(defMemory.name)
           logger.debug(s"declaration:DefMemory:${defMemory.name} becomes $expandedName")
 
-          val memorySymbols = Memory.buildSymbols(defMemory, expandedName, sensitivityGraphBuilder, registerNames)
-          memorySymbols.foreach { symbol =>
+          Memory.buildSymbols(defMemory, expandedName, sensitivityGraphBuilder, registerNames).foreach { symbol =>
             addSymbol(symbol)
           }
-          val moduleMemory = module.name + "." + defMemory.name
-
-          moduleMemoryToMemorySymbol(moduleMemory) += memorySymbols.head
-
 
         case stop @ Stop(info, _, clockExpression, _)   =>
           getClockSymbol(clockExpression) match {
@@ -422,7 +408,7 @@ object SymbolTable extends LazyLogging {
       myModule match {
         case module: Module =>
           processPorts(module)
-          processDependencyStatements(modulePrefix, module.body, module)
+          processDependencyStatements(modulePrefix, module.body)
         case extModule: ExtModule => // Look to see if we have an implementation for this
           logger.debug(s"got external module ${extModule.name} instance $modulePrefix")
           processPorts(extModule)
@@ -471,8 +457,6 @@ object SymbolTable extends LazyLogging {
 
     symbolTable.parentsOf                = sensitivityGraphBuilder.getParentsOfDiGraph
     symbolTable.childrenOf               = sensitivityGraphBuilder.getChildrenOfDiGraph
-
-    symbolTable.moduleMemoryToMemorySymbol ++= moduleMemoryToMemorySymbol
 
     val sorted: Seq[Symbol] = try {
       symbolTable.childrenOf.linearize
