@@ -82,6 +82,8 @@ class ExecutionEngine(
     }
   }
 
+  val memoryInitializer = new MemoryInitializer(this)
+
   def makeVCDLogger(fileName: String, showUnderscored: Boolean): Unit = {
     val vcd = VCD(ast.main, showUnderscoredNames = showUnderscored)
 
@@ -450,6 +452,8 @@ object ExecutionEngine {
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
     println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
       s"${scheduler.combinationalAssigns.size} statements")
+
+    executionEngine.memoryInitializer.initializeMemoriesFromFiles()
 
     executionEngine
   }
