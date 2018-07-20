@@ -486,6 +486,17 @@ extends HasDataArrays {
     }
   }
 
+  def update(symbol: Symbol, offset: Int, value: Big): Unit = {
+    if(offset >= symbol.slots) {
+      throw TreadleException(s"assigning to memory ${symbol.name}[$offset] <= $value: index out of range")
+    }
+    symbol.dataSize match {
+      case IntSize  => intData(symbol.index + offset) = value.toInt
+      case LongSize => longData(symbol.index + offset) = value.toLong
+      case BigSize  => bigData(symbol.index + offset) = value
+    }
+  }
+
   //scalastyle:off cyclomatic.complexity method.length
   def serialize: String = {
 
