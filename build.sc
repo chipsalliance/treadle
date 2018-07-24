@@ -18,9 +18,9 @@ trait CommonModule extends CrossUnRootedSbtModule with PublishModule {
   def pomSettings = PomSettings(
     description = artifactName(),
     organization = "edu.berkeley.cs",
-    url = "https://github.com/ucb-bar/treadle.git",
+    url = "https://github.com/freechipsproject/treadle.git",
     licenses = Seq(License.`BSD-3-Clause`),
-    versionControl = VersionControl.github("ucb-bar", "treadle"),
+    versionControl = VersionControl.github("freechipsproject", "treadle"),
     developers = Seq(
       Developer("chick",    "Charles Markley",      "https://aspire.eecs.berkeley.edu/author/chick/")
     )
