@@ -2,6 +2,7 @@
 
 package treadle.executable
 
+import firrtl.ir.{Info, NoInfo}
 import logger.LazyLogging
 
 import scala.collection.mutable
@@ -28,6 +29,12 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
         this(key)
       }
     }
+
+  val registerClocks       : mutable.HashSet[Symbol] = new mutable.HashSet
+
+  def isTrigger(symbol: Symbol): Boolean = {
+    registerClocks.contains(symbol) || triggeredAssigns.contains(symbol)
+  }
 
   val triggeredUnassigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
     new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
@@ -71,6 +78,20 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   def getAllAssigners: Seq[Assigner] = {
     toAssigner.values.toSeq ++ allUnassigners ++ clockAssigners
+  }
+
+  def getAssignerInfo(symbol: Symbol): Info = {
+    getAllAssigners.find(assigner => assigner.symbol == symbol) match {
+      case Some(assigner) => assigner.info
+      case _ => NoInfo
+    }
+  }
+
+  def getAssignerInfo(symbolName: String): Info = {
+    symbolTable.get(symbolName) match {
+      case Some(symbol) => getAssignerInfo(symbol)
+      case _ => NoInfo
+    }
   }
 
   def inputChildrenAssigners(): Seq[Assigner] = {
@@ -199,7 +220,13 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
     triggeredAssigns.map { case (symbol, assigners) =>
       s"Assigners triggered by ${symbol.name} (${assigners.length})\n" +
-      assigners.map(renderAssigner).mkString("\n")
+        assigners.map(renderAssigner).mkString("\n") +
+        "\n"
+    }.mkString("\n") +
+      triggeredUnassigns.map { case (symbol, assigners) =>
+      s"Un-assigners triggered by ${symbol.name} (${assigners.length})\n" +
+        assigners.map(renderAssigner).mkString("\n") +
+        "\n"
     }.mkString("\n") +
     "\n\n"
   }

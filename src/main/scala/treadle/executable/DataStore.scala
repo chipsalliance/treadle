@@ -2,10 +2,12 @@
 
 package treadle.executable
 
+import firrtl.ir.Info
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
 import treadle.ScalaBlackBox
+import treadle.utils.Render
 
 import scala.collection.mutable
 
@@ -150,7 +152,7 @@ extends HasDataArrays {
     def apply(): Int = intData(index)
   }
 
-  case class AssignInt(symbol: Symbol, expression: FuncInt) extends Assigner {
+  case class AssignInt(symbol: Symbol, expression: FuncInt, info: Info) extends Assigner {
     val index: Int = symbol.index
 
     def runLean(): Unit = {intData(index) = expression() }
@@ -167,35 +169,47 @@ extends HasDataArrays {
     var run: FuncUnit = runLean
   }
 
-  case class TriggerConstantAssigner(symbol: Symbol, scheduler: Scheduler, triggerOnValue: Int = -1) extends Assigner {
+  case class TriggerConstantAssigner(
+    symbol: Symbol,
+    scheduler: Scheduler,
+    triggerOnValue: Int = -1,
+    info: Info
+  ) extends Assigner {
 
     val index: Int = symbol.index
 
     var value: Int = 0
+    var lastValue: Int = 0
 
     def runLean(): Unit = {
+      lastValue = intData(index)
       intData(index) = value
-      if(value == triggerOnValue) {
+      if(value == triggerOnValue && lastValue != triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
       }
-      else {
+      else if(value != triggerOnValue && lastValue == triggerOnValue) {
         scheduler.executeTriggeredUnassigns(symbol)
       }
     }
 
     def runFull(): Unit = {
+      lastValue = intData(index)
       intData(index) = value
-      if(value == triggerOnValue) {
-        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
-        scheduler.executeTriggeredAssigns(symbol)
-        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
-      }
-      else {
-        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
-        scheduler.executeTriggeredUnassigns(symbol)
-        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
-      }
+
       runPlugins(symbol)
+
+      if(value == triggerOnValue && lastValue != triggerOnValue) {
+        if(isVerbose) Render.headerBar(s"triggered assigns for ${symbol.name}", offset = 8)
+        scheduler.executeTriggeredAssigns(symbol)
+        if(isVerbose) Render.headerBar(s"done triggered assigns for ${symbol.name}", offset = 8)
+      }
+      else if(value != triggerOnValue && lastValue == triggerOnValue) {
+        if(scheduler.triggeredUnassigns.contains(symbol)) {
+          if(isVerbose) Render.headerBar(s"triggered un-assigns for ${symbol.name}", offset = 8)
+          scheduler.executeTriggeredUnassigns(symbol)
+          if(isVerbose) Render.headerBar(s"done triggered un-assigns for ${symbol.name}", offset = 8)
+        }
+      }
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -208,36 +222,45 @@ extends HasDataArrays {
     symbol: Symbol,
     scheduler: Scheduler,
     expression: FuncInt,
-    triggerOnValue: Int = -1
+    triggerOnValue: Int = -1,
+    info: Info
   ) extends Assigner {
 
     val index: Int = symbol.index
 
+    var lastValue: Int = 0
+
     def runLean(): Unit = {
+      lastValue = intData(index)
       val value = expression()
       intData(index) = value
-      if(value == triggerOnValue) {
+      if(value == triggerOnValue && lastValue != triggerOnValue) {
         scheduler.executeTriggeredAssigns(symbol)
       }
-      else {
+      else if(value != triggerOnValue && lastValue == triggerOnValue) {
         scheduler.executeTriggeredUnassigns(symbol)
       }
     }
 
     def runFull(): Unit = {
+      lastValue = intData(index)
       val value = expression()
       intData(index) = value
-      if(value == triggerOnValue) {
-        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
-        scheduler.executeTriggeredAssigns(symbol)
-        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
-      }
-      else {
-        if(isVerbose) println(s"===> Starting triggered assigns for $symbol")
-        scheduler.executeTriggeredUnassigns(symbol)
-        if(isVerbose) println(s"===> Finished triggered assigns for $symbol")
-      }
+
       runPlugins(symbol)
+
+      if(value == triggerOnValue && lastValue != triggerOnValue) {
+        if(isVerbose) Render.headerBar(s"triggered assigns for ${symbol.name}", offset = 8)
+        scheduler.executeTriggeredAssigns(symbol)
+        if(isVerbose) Render.headerBar(s"done triggered assigns for ${symbol.name}", offset = 8)
+      }
+      else if(value != triggerOnValue && lastValue == triggerOnValue) {
+        if(scheduler.triggeredUnassigns.contains(symbol)) {
+          if(isVerbose) Render.headerBar(s"triggered un-assigns for ${symbol.name}", offset = 8)
+          scheduler.executeTriggeredUnassigns(symbol)
+          if(isVerbose) Render.headerBar(s"done triggered un-assigns for ${symbol.name}", offset = 8)
+        }
+      }
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -250,7 +273,7 @@ extends HasDataArrays {
     def apply(): Long = longData(index)
   }
 
-  case class AssignLong(symbol: Symbol, expression: FuncLong) extends Assigner {
+  case class AssignLong(symbol: Symbol, expression: FuncLong, info: Info) extends Assigner {
     val index: Int = symbol.index
 
     def runLean(): Unit = {
@@ -277,7 +300,7 @@ extends HasDataArrays {
     def apply(): Big = bigData(index)
   }
 
-  case class AssignBig(symbol: Symbol, expression: FuncBig) extends Assigner {
+  case class AssignBig(symbol: Symbol, expression: FuncBig, info: Info) extends Assigner {
     val index: Int = symbol.index
 
     def runLean(): Unit = {
@@ -308,10 +331,10 @@ extends HasDataArrays {
   }
 
   case class GetLongIndirect(
-                             memorySymbol: Symbol,
-                             getMemoryIndex: FuncInt,
-                             enable: FuncInt
-                           ) extends LongExpressionResult {
+    memorySymbol: Symbol,
+    getMemoryIndex: FuncInt,
+    enable: FuncInt
+  ) extends LongExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Long = {
       longData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
@@ -319,10 +342,10 @@ extends HasDataArrays {
   }
 
   case class GetBigIndirect(
-                             memorySymbol: Symbol,
-                             getMemoryIndex: FuncInt,
-                             enable: FuncInt
-                           ) extends BigExpressionResult {
+    memorySymbol: Symbol,
+    getMemoryIndex: FuncInt,
+    enable: FuncInt
+  ) extends BigExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Big = {
       bigData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
@@ -330,12 +353,13 @@ extends HasDataArrays {
   }
 
   case class AssignIntIndirect(
-                               symbol: Symbol,
-                               memorySymbol: Symbol,
-                               getMemoryIndex: FuncInt,
-                               enable: FuncInt,
-                               expression: FuncInt
-                              ) extends Assigner {
+    symbol: Symbol,
+    memorySymbol: Symbol,
+    getMemoryIndex: FuncInt,
+    enable: FuncInt,
+    expression: FuncInt,
+    info: Info
+  ) extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {
@@ -360,12 +384,13 @@ extends HasDataArrays {
   }
 
   case class AssignLongIndirect(
-                               symbol: Symbol,
-                               memorySymbol: Symbol,
-                               getMemoryIndex: FuncInt,
-                               enable: FuncInt,
-                               expression: FuncLong
-                              ) extends Assigner {
+    symbol: Symbol,
+    memorySymbol: Symbol,
+    getMemoryIndex: FuncInt,
+    enable: FuncInt,
+    expression: FuncLong,
+    info: Info
+  ) extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {
@@ -390,12 +415,13 @@ extends HasDataArrays {
   }
 
   case class AssignBigIndirect(
-                                 symbol: Symbol,
-                                 memorySymbol: Symbol,
-                                 getMemoryIndex: FuncInt,
-                                 enable: FuncInt,
-                                 expression: FuncBig
-                               ) extends Assigner {
+    symbol: Symbol,
+    memorySymbol: Symbol,
+    getMemoryIndex: FuncInt,
+    enable: FuncInt,
+    expression: FuncBig,
+    info: Info
+  ) extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {

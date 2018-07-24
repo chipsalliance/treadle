@@ -30,7 +30,7 @@ class CombinationalDelaySpec extends FreeSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = false,
-        clockInfo = Seq(ClockInfo("clock", period = 1000L, initialOffset = 0)),
+        clockInfo = Seq(ClockInfo("clock", period = 1000L, initialOffset = 500L)),
         vcdShowUnderscored = false,
         setVerbose = false,
         showFirrtlAtLoad = false,

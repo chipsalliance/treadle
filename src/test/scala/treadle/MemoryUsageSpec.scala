@@ -120,7 +120,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         callResetAtStartUp = true
       )
     }
-    val tester = new TreadleTester(input, optionsManager) {
+    val tester: TreadleTester = new TreadleTester(input, optionsManager) {
       poke("a", 1)
       poke("b", 0)
       poke("select", 0)

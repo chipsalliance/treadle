@@ -33,7 +33,7 @@ class TestUtilsSpec extends FlatSpec with Matchers {
     var count = 0
     for (i <- IntWidthTestValuesGenerator(-18, -12)) {
       print(s"$i")
-      if (count > 18) assert(false)
+      if (count > 18) assert(false, s"count $count is bigger than 18")
       count += 1
     }
     println()
@@ -103,7 +103,7 @@ class TestUtilsSpec extends FlatSpec with Matchers {
     var count = 0
     for (i <- BigIntTestValuesGenerator(-18, -12)) {
 //      println(s"$i")
-      if (count > 18) assert(false)
+      if (count > 18) assert(false, s"count $count is bigger than 18")
       count += 1
 
     }

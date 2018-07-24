@@ -3,6 +3,7 @@
 package treadle
 
 import java.io.PrintWriter
+import java.util.Calendar
 
 import treadle.chronometry.UTC
 import treadle.executable._
@@ -26,16 +27,18 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
 
   val wallTime = UTC()
+
+  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager, wallTime)
+  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
+
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
       vcd.setTime(wallTime.currentTime)}
   }
 
-  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager, wallTime)
-  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
-
   val resetName: String = treadleOptions.resetName
   def setVerbose(value: Boolean = true): Unit = {
+    wallTime.isVerbose = value
     engine.setVerbose(value)
   }
 
@@ -95,6 +98,12 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   }
 
   setVerbose(treadleOptions.setVerbose)
+
+  wallTime.setTime(0L)
+
+  if(engine.verbose) {
+    println(s"${"-"*60}\nStarting Treadle at ${Calendar.getInstance.getTime} WallTime: ${wallTime.currentTime}")
+  }
 
   if(treadleOptions.writeVCD) {
     optionsManager.setTopNameIfNotSet(engine.ast.main)
@@ -219,7 +228,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
         println(s"peeking $name on stale circuit, refreshing START")
       }
       engine.evaluateCircuit()
-      wallTime.incrementTime(combinationalDelay)
+      clockStepper.combinationalBump(combinationalDelay)
       if(engine.verbose) {
         println(s"peeking $name on stale circuit, refreshing DONE")
       }
@@ -236,10 +245,13 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
     val value = peek(name)
     if(value != expectedValue) {
+      val info = engine.scheduler.getAssignerInfo(name)
       val renderer = new ExpressionViewRenderer(
         engine.dataStore, engine.symbolTable, engine.expressionViews)
       val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
-      fail(TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+      fail(
+        TreadleException(s"Error:expect($name, $expectedValue) got $value $message\n$calculation\nAssigned at: $info")
+      )
     }
     expectationsMet += 1
   }

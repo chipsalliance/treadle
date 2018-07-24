@@ -2,6 +2,8 @@
 
 package treadle
 
+import firrtl.ir.Info
+
 package object executable {
   type Big = BigInt
 
@@ -18,9 +20,11 @@ package object executable {
 
   trait Assigner {
     val symbol: Symbol
+    val info: Info
     def run: FuncUnit
-    def setLeanMode(isLean: Boolean): Unit = {}
     def render: String = symbol.render
+
+    def setLeanMode(isLean: Boolean): Unit = {}
 
     private var verboseAssign: Boolean = false
     def isVerbose: Boolean = verboseAssign

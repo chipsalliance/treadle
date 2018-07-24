@@ -89,6 +89,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
       val tester = TreadleTester(input, manager)
 
       tester.step(2)
+      tester.finish
     }
     output.toString().contains("HELLO WORLD") should be (true)
     output.toString.split("\n").count(_.contains("HELLO WORLD")) should be (2)
