@@ -24,7 +24,7 @@ import scala.tools.jline.{Terminal, TerminalFactory}
 import scala.util.matching.Regex
 
 abstract class APICommand(val name: String) {
-  def run(args: Array[String]): Option[JValue]
+  def run(args: Array[String]): Option[WaveformValues]
   def usage: (String, String)
   def completer: Option[ArgumentCompleter] = {
     Some(new ArgumentCompleter(
@@ -280,7 +280,7 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
             new FileNameCompleter
           ))
         }
-        def run(args: Array[String]): Option[JValue] = {
+        def run(args: Array[String]): Option[WaveformValues] = {
           getOneArg(args,"load filename") match {
             case Some(fileName) => loadFile(fileName)
             case _ =>
@@ -502,7 +502,7 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
             ))
           }
         }
-        def run(args: Array[String]): Option[JValue] = {
+        def run(args: Array[String]): Option[WaveformValues] = {
           getTwoArgs(args, "poke inputPortName value") match {
             case (Some(portName), Some(valueString)) =>
               try {
@@ -584,7 +584,7 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
             ))
           }
         }
-        def run(args: Array[String]): Option[JValue] = {
+        def run(args: Array[String]): Option[WaveformValues] = {
           getTwoArgs(args, "peek componentName", arg2Option = Some("0")) match {
             case (Some(componentName), Some(offsetString)) =>
               try {
@@ -753,7 +753,7 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
       new APICommand("step") {
         def usage: (String, String) = ("step [numberOfSteps]",
           "cycle the clock numberOfSteps (default 1) times, and show state")
-        def run(args: Array[String]): Option[JValue] = {
+        def run(args: Array[String]): Option[WaveformValues] = {
           getOneArg(args, "step [numberOfSteps]", Some("1")) match {
             case Some(numberOfStepsString) =>
               try {
@@ -1091,7 +1091,7 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
             ))
           }
         }
-        def run(args: Array[String]): Option[JValue] = {
+        def run(args: Array[String]): Option[WaveformValues] = {
           if (args.length < 4) {
             //            error("at least one symbol needed")
             None
@@ -1110,10 +1110,11 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
             val waveformValues: Option[WaveformValues] =
               engine.dataStore.getWaveformValues(symbols, cycleTime, windowSize)
 
-            waveformValues match {
-              case Some(waveform) => Some(waveform.toJson)
-              case _ => None
-            }
+            waveformValues
+//            waveformValues match {
+//              case Some(waveform) => Some(waveform.toJson)
+//              case _ => None
+//            }
           }
         }
       }
@@ -1276,7 +1277,7 @@ class TreadleAPI(val optionsManager: TreadleOptionsManager with HasReplConfig) {
     array.asJava
   }
 
-  def executeCommand(args : Array[String]): Option[JValue] = {
+  def executeCommand(args : Array[String]): Option[WaveformValues] = {
     Commands.commandMap(args.head).run(args)
   }
 

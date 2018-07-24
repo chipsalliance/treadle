@@ -475,15 +475,15 @@ extends HasDataArrays {
 //      println(n)
 
       val clockValues = new Array[BigInt](n)
-      val symbolValues = Array.ofDim[BigInt](n, symbols.length)
+      val symbolValues = Array.ofDim[BigInt](symbols.length, n)
 
       buffers.zipWithIndex.foreach { case (buffer, i) =>
         clockValues(i) = buffer.time
         symbols.zipWithIndex.foreach { case (symbol, j) =>
           symbol.dataSize match {
-            case IntSize => symbolValues(i)(j) = buffer.intData(symbol.index)
-            case LongSize => symbolValues(i)(j) = buffer.longData(symbol.index)
-            case BigSize => symbolValues(i)(j) = buffer.bigData(symbol.index)
+            case IntSize => symbolValues(j)(i) = buffer.intData(symbol.index)
+            case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
+            case BigSize => symbolValues(j)(i) = buffer.bigData(symbol.index)
           }
 //          println(symbolValues(i).mkString(" "))
         }
