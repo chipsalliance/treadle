@@ -311,6 +311,17 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     expectationsMet += 1
   }
 
+  def getWaveValues(cycleTime: Int, windowSize: Int, symbolNames: Array[String]): Option[WaveformValues] = {
+    val numSymbols = symbolNames.length
+    val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
+    symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
+      assert(engine.symbolTable.contains(symbolName),
+        s""""$symbolName" : argument is not an element of this circuit""")
+      symbols.update(counter, engine.symbolTable(symbolName))
+    }
+    engine.dataStore.getWaveformValues(symbols, cycleTime, windowSize)
+  }
+
 
   def reportString: String = {
     val endTime = System.nanoTime()

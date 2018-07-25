@@ -486,8 +486,6 @@ extends HasDataArrays {
 
     var buffers : Seq[RollBackBuffer] = rollbackRing.newestToOldestBuffers.reverse
 
-//    println(s"cycleTime $cycleTime, buffer length: ${buffers.length}")
-
     if (cycleTime >= buffers.length) {
       None
     } else {
@@ -495,10 +493,7 @@ extends HasDataArrays {
       val rightIndexExclusive = buffers.length.min(cycleTime + windowSize / 2 + 1)
       val n = rightIndexExclusive - leftIndexInclusive
 
-//      println(buffers.length)
       buffers = buffers.dropRight(buffers.length - rightIndexExclusive).drop(leftIndexInclusive)
-//      println(buffers.length)
-//      println(n)
 
       val clockValues = new Array[BigInt](n)
       val symbolValues = Array.ofDim[BigInt](symbols.length, n)
@@ -511,10 +506,8 @@ extends HasDataArrays {
             case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
             case BigSize => symbolValues(j)(i) = buffer.bigData(symbol.index)
           }
-//          println(symbolValues(i).mkString(" "))
         }
       }
-      println(clockValues.mkString(" "))
       Some(WaveformValues(clockValues, symbols, symbolValues))
     }
   }
