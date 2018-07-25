@@ -73,8 +73,8 @@ pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
   </license>
 </licenses>
 <scm>
-  <url>https://github.com/ucb-bar/treadle.git</url>
-  <connection>scm:git:github.com/ucb-bar/treadle.git</connection>
+  <url>https://github.com/freechipsproject/treadle.git</url>
+  <connection>scm:git:github.com/freechipsproject/treadle.git</connection>
 </scm>
 <developers>
   <developer>
@@ -100,7 +100,7 @@ scalacOptions in Compile in doc ++= Seq(
   "-diagrams-max-classes", "25",
   "-doc-version", version.value,
   "-sourcepath", baseDirectory.value.getAbsolutePath,
-  "-doc-source-url", "https://github.com/ucb-bar/chisel-testers/tree/master/€{FILE_PATH}.scala"
+  "-doc-source-url", "https://github.com/freechipsproject/chisel-testers/tree/master/€{FILE_PATH}.scala"
 ) ++ scalacOptionsVersion(scalaVersion.value)
 
 javacOptions ++= javacOptionsVersion(scalaVersion.value)
