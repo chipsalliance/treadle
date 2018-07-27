@@ -23,14 +23,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true,
-        showFirrtlAtLoad = false
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input, "--tr-call-reset-at-startup")
 
     tester.poke("reset1", 1)
     tester.step()
@@ -79,13 +72,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input, "--tr-call-reset-at-startup")
 
     tester.poke("reset1", 1)
     tester.poke("reset2", 0)
@@ -155,10 +142,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false, writeVCD = false)
-    }
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input)
     tester.poke("reset", 1)
     tester.step()
     tester.poke("reset", 0)
@@ -185,13 +169,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true,
-        writeVCD = false)
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input, "--tr-call-reset-at-startup")
 
     tester.poke("reset1", 1)
     tester.step()
@@ -248,15 +226,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true,
-        showFirrtlAtLoad = false,
-        writeVCD = false
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input, "--tr-call-reset-at-startup")
 
     tester.poke("in", 7)
     tester.step()
@@ -313,15 +283,10 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = false,
-        setVerbose = false,
-        callResetAtStartUp = true,
-        writeVCD = false,
-        rollbackBuffers = 15)
-    }
-    val tester = new TreadleTester(input, manager)
+    val tester = TreadleTester(input, Seq(
+      CallResetAtStartupAnnotation,
+      RollBackBuffersAnnotation(15)
+    ))
 
     tester.poke("io_in", 77)
     tester.poke("io_en", 0)

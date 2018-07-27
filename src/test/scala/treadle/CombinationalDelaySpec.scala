@@ -27,19 +27,8 @@ class CombinationalDelaySpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "combinational delay takes 100th of period to execute" in {
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        clockInfo = Seq(ClockInfo("clock", period = 1000L, initialOffset = 500L)),
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
+    val t = TreadleFactory(input, "--tr-clock-info", "clock:1000:500")
 
-    val t = new TreadleTester(input, optionsManager)
     t.poke("in_0", 20)
     t.poke("in_1", 11)
     t.expect("add_out", 31)

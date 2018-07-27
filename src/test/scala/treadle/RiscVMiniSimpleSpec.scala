@@ -12,19 +12,7 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
     val stream = getClass.getResourceAsStream("/core-simple.lo.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        clockInfo = Seq(ClockInfo("clock", period = 10, initialOffset = 1)),
-        symbolsToWatch = Seq()
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, Seq(ClockInfoAnnotation(ClockInfo("clock", 10, 1))))
 
     intercept[StopException] {
       tester.step(400)

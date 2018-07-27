@@ -2,12 +2,12 @@
 
 package treadle.vcd
 
-import treadle.{TreadleOptionsManager, TreadleTester, VcdReplayTester, VcdReplayTesterOptions}
-import firrtl.CommonOptions
-import firrtl.util.BackendCompilationUtilities
 import java.io.File
 
+import firrtl.TargetDirAnnotation
+import firrtl.util.BackendCompilationUtilities
 import org.scalatest.{FlatSpec, Matchers}
+import treadle._
 
 // scalastyle:off magic.number
 class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
@@ -125,11 +125,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
         |    c <= add(a, b)
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
-    val engine = new TreadleTester(input, manager)
+    val engine = new TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
     engine.poke("a", -1)
     engine.peek("a") should be (BigInt(-1))
     engine.poke("b", -7)
@@ -155,12 +151,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val stream = getClass.getResourceAsStream("/VcdAdder.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
-
-    val engine = new TreadleTester(input, manager)
+    val engine = new TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
     engine.step()
     engine.poke("io_a", 3)
     engine.poke("io_b", 5)
@@ -205,12 +196,12 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     // logger.Logger.setLevel(LogLevel.Debug)
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir/vcd_register_delay")
-    }
     {
-      val engine = new TreadleTester(input, manager)
+      val engine = new TreadleTester(input, Seq(
+        WriteVcdAnnotation,
+        TargetDirAnnotation("test_run_dir/vcd_register_delay")
+      ))
+
       engine.setVerbose()
       engine.poke("reset", 0)
 
@@ -248,14 +239,8 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val stream = getClass.getResourceAsStream("/VcdAdder.fir")
     val input = io.Source.fromInputStream(stream).mkString
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = true
-      )
-      commonOptions = CommonOptions(targetDirName = "test_run_dir/")
-    }
+    val tester = new TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
 
-    val tester = new TreadleTester(input, manager)
 
     tester.poke("io_a", 3)
     tester.poke("io_b", 5)
@@ -267,14 +252,10 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     tester.report()
     tester.finish
 
-    val replayManager = new VcdReplayTesterOptions() {
-
-      goldenVcdOptions = goldenVcdOptions.copy(
-        firrtlSourceName = "src/test/resources/VcdAdder.fir",
-        vcdSourceName = "test_run_dir/VcdAdder.vcd"
-      )
-    }
-    val replayTester = new VcdReplayTester(replayManager)
+    val replayTester = new VcdReplayTester(Seq(
+      VcdReplayFirrtlSourceNameAnnotation("src/test/resources/VcdAdder.fir"),
+      VcdReplayVcdFileAnnotation("test_run_dir/VcdAdder.vcd")
+    ))
     replayTester.run()
 
     replayTester.testSuccesses should be (7)

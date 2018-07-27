@@ -2,13 +2,10 @@
 
 package treadle.chronometry
 
-import firrtl.{Driver, ExecutionOptionsManager}
-import firrtl.{FirrtlExecutionSuccess, HasFirrtlOptions, Parser}
-import firrtl.passes.CheckChirrtl
+import firrtl.{CompilerNameAnnotation, FirrtlExecutionSuccess, FirrtlSourceAnnotation, TargetDirAnnotation}
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
-import treadle.{TreadleOptionsManager, TreadleTester}
-import treadle.utils.ToLoFirrtl
+import treadle.{ClockInfoAnnotation, TreadleTester}
 
 //noinspection ScalaStyle
 class ClockCrossingSpec extends FreeSpec with Matchers {
@@ -38,21 +35,19 @@ class ClockCrossingSpec extends FreeSpec with Matchers {
         |    io.mainOut <= mainReg @[ClockCrossingTest.scala 40:18:@18.4]
       """.stripMargin
 
-    val firrtlOptionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
-      firrtlOptions = firrtlOptions.copy(firrtlSource = Some(chirrtlString), compilerName = "low")
-    }
+    val firrtlAnnotations = Seq(
+      FirrtlSourceAnnotation(chirrtlString),
+      CompilerNameAnnotation("low"),
+      TargetDirAnnotation("test_run_dir/clock_crossing")
+    )
 
-    Driver.execute(firrtlOptionsManager) match {
+    firrtl.Driver.execute(Array.empty, firrtlAnnotations) match {
       case FirrtlExecutionSuccess(_, highFirrtl) =>
-        val optionsManager = new TreadleOptionsManager {
-          commonOptions = commonOptions.copy(targetDirName = "test_run_dir/clock_crossing")
-          treadleOptions = treadleOptions.copy(
-            setVerbose = false, writeVCD = false, callResetAtStartUp = false,
-            showFirrtlAtLoad = false,
-            clockInfo = Seq(ClockInfo(name = "clock", period = 2, initialOffset = 1)))
-        }
 
-        val tester = new TreadleTester(highFirrtl, optionsManager)
+        val tester = TreadleTester(
+          highFirrtl,
+          Seq(ClockInfoAnnotation(ClockInfo(name = "clock", period = 2, initialOffset = 1)))
+        )
 
         tester.reset(8)
 

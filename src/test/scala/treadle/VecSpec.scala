@@ -2,7 +2,6 @@
 
 package treadle
 
-import firrtl.CommonOptions
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -32,15 +31,7 @@ class VecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input)
 
     def show(): Unit = {
       println("")
@@ -112,14 +103,7 @@ class VecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        setVerbose = false
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input)
 
     tester.poke("reset", 1)
     tester.step()

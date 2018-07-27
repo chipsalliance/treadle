@@ -103,19 +103,7 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD           = false,
-        vcdShowUnderscored = false,
-        setVerbose         = false,
-        showFirrtlAtLoad   = false,
-        rollbackBuffers    = 4,
-        callResetAtStartUp = true,
-        symbolsToWatch     = Seq()
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input, "--tr-call-reset-at-startup")
 
     tester.step(100)
     tester.report()

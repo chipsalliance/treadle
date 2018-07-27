@@ -109,13 +109,10 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
       val factory = new FanOutAdderFactory
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(factory),
-          randomSeed = 0L)
-      }
-      val tester = new TreadleTester(adderInput, optionsManager)
+      val tester = new TreadleTester(adderInput, Seq(
+        BlackBoxFactoriesAnnotation(Seq(factory)),
+        RandomSeedAnnotation(0L)
+      ))
 
       for(i <- 0 until 10) {
         tester.poke("in", i)
@@ -153,13 +150,10 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
       val factory = new BlackBoxCounterFactory
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(factory),
-          randomSeed = 0L)
-      }
-      val tester = new TreadleTester(input, optionsManager)
+      val tester = new TreadleTester(input, Seq(
+        BlackBoxFactoriesAnnotation(Seq(factory)),
+        RandomSeedAnnotation(0L)
+      ))
 
       tester.poke("clear", 1)
       tester.step()

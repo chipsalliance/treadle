@@ -2,7 +2,7 @@
 
 package treadle.executable
 
-import firrtl.CommonOptions
+import firrtl.TargetDirAnnotation
 import firrtl.graph.CyclicException
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
@@ -38,9 +38,9 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     """
         .stripMargin
 
-    val optionsManager = new TreadleOptionsManager
-    val wallTime = new UTC()
-    val simulator = ExecutionEngine(simpleFirrtl, optionsManager, wallTime)
+    val tester = TreadleTester(simpleFirrtl)
+
+    val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
 
@@ -79,8 +79,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new TreadleOptionsManager
-    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val tester = new TreadleTester(simpleFirrtl)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -125,8 +124,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new TreadleOptionsManager
-    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val tester = new TreadleTester(simpleFirrtl)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -179,11 +177,9 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
-    val tester = new TreadleTester(simpleFirrtl, optionsManager)
+    val tester = new TreadleTester(simpleFirrtl, Seq(
+      TargetDirAnnotation("test_run_dir")
+    ))
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -258,14 +254,11 @@ class SymbolTableSpec extends FreeSpec with Matchers {
        """
               .stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false)
-      firrtlOptions = firrtlOptions.copy(annotations = firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
-
     try {
-      new TreadleTester(simpleFirrtl, optionsManager)
+      TreadleTester(simpleFirrtl, Seq(
+        TargetDirAnnotation("test_run_dir"),
+        DontCheckCombLoopsAnnotation
+      ))
     }
     catch {
       case c: CyclicException =>

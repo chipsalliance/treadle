@@ -34,12 +34,8 @@ class Performance extends FreeSpec with Matchers {
     """
               .stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
-    }
+    val tester = TreadleFactory(junkFirrtl, "--tr-rollback-buffers", "0")
 
-    val tester = new TreadleTester(junkFirrtl, manager)
 
     val startTime = System.nanoTime()
 

@@ -43,15 +43,7 @@ class ClockSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        vcdShowUnderscored = true,
-        writeVCD = false
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input)
 
     intercept[StopException] {
       tester.step(100)
@@ -100,17 +92,7 @@ class ClockSpec extends FreeSpec with Matchers {
         |    out1 <= m.read.data
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        vcdShowUnderscored = true,
-        showFirrtlAtLoad = false,
-        writeVCD = false,
-        validIfIsRandom = false
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input)
 
     // load memory
     tester.poke("write_en", 1)

@@ -7,7 +7,8 @@ import firrtl.options.{DriverExecutionResult, ExecutionOptionsManager}
 import firrtl.options.Viewer._
 import firrtl.FirrtlViewer._
 
-case class TreadleExecutionResult(treadleTesterOpt: Option[TreadleTester]) extends DriverExecutionResult
+case class TreadleTesterCreated(treadleTester: TreadleTester) extends DriverExecutionResult
+case class TreadleTesterFailed(message: String) extends DriverExecutionResult
 
 object Driver extends firrtl.options.Driver {
 
@@ -25,15 +26,16 @@ object Driver extends firrtl.options.Driver {
     new ExecutionOptionsManager("treadle") with HasFirrtlExecutionOptions
   }
 
-  override def execute(args: Array[String], initialAnnotations: AnnotationSeq): DriverExecutionResult = {
+  def execute(args: Array[String], initialAnnotations: AnnotationSeq = Seq.empty): DriverExecutionResult = {
     val annotations = optionsManager.parse(args, initialAnnotations)
 
     val firrtlInput = annotations.collectFirst {
+      case firrtl:  TreadleFirrtlString     => firrtl.firrtl
       case circuit: FirrtlCircuitAnnotation => circuit.value.serialize
 
     }
     val tester = new TreadleTester(firrtlInput.get, initialAnnotations)
-    TreadleExecutionResult(Some(tester))
+    TreadleTesterCreated(tester)
   }
 }
 

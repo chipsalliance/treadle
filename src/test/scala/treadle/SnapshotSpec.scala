@@ -35,18 +35,7 @@ class SnapshotSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 4,
-        symbolsToWatch = Seq()
-      )
-    }
-
-    val t = new TreadleTester(input, optionsManager)
+    val t = new TreadleTester(input)
     t.poke("in0", 1)
     t.step()
     t.poke("in0", 2)

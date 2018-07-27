@@ -41,6 +41,7 @@ object TreadleViewer {
           case ValidIfIsRandomAnnotation             => previousOptions.copy(validIfIsRandom = true)
           case RollBackBuffersAnnotation(buffers)    => previousOptions.copy(rollbackBuffers = buffers)
           case ResetNameAnnotation(name)             => previousOptions.copy(resetName = name)
+          case CallResetAtStartupAnnotation          => previousOptions.copy(callResetAtStartUp = true)
           case ClockInfoAnnotation(clockInfo) =>
             previousOptions.copy(clockInfo = previousOptions.clockInfo :+ clockInfo)
           case SymbolsToWatchAnnotation(symbols) =>

@@ -359,7 +359,7 @@ class TreadleTester(input: String, annotations: AnnotationSeq = Seq.empty) {
 }
 
 object TreadleTester {
-  def apply(input : String, annotationSeq: AnnotationSeq): TreadleTester = {
+  def apply(input : String, annotationSeq: AnnotationSeq = Seq.empty): TreadleTester = {
     new TreadleTester(input, annotationSeq)
   }
 }

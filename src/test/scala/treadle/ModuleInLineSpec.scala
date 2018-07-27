@@ -20,13 +20,7 @@ class ModuleInLineSpec extends FlatSpec with Matchers {
     val stream = getClass.getResourceAsStream("/NestedModsWithReg.fir")
     val input = io.Source.fromInputStream(stream).mkString
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = false
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input)
 
     tester.poke("in1", 3)
     tester.step()

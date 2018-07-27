@@ -159,6 +159,27 @@ case class ResetNameAnnotation(symbolNames: String = "") extends NoTargetAnnotat
     .text("name of the default reset signal")
 }
 
+/**
+  *  Tells treadle to present random value when validIf's condition is off
+  */
+case object CallResetAtStartupAnnotation extends NoTargetAnnotation with TreadleOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("tr-call-reset-at-startup")
+    .abbr("tcras")
+    .action( (_, c) => c :+ this )
+    .unbounded()
+    .text("makes treadle do it's own reset at startup, usually for internal use only")
+}
+
+case class TreadleFirrtlString(firrtl: String = "") extends NoTargetAnnotation with TreadleOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("tr-firrtl-source-string")
+    .abbr("trns")
+    .action( (x, c) => c :+ TreadleFirrtlString(x) )
+    .unbounded()
+    .text("a serialized firrtl circuit, mostly used internally")
+}
+
+case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFactory]) extends NoTargetAnnotation
+
 object TreadleLibrary extends RegisteredLibrary {
   override def name: String = "treadle"
 
@@ -175,7 +196,9 @@ object TreadleLibrary extends RegisteredLibrary {
       RollBackBuffersAnnotation(),
       ClockInfoAnnotation(),
       SymbolsToWatchAnnotation(),
-      ResetNameAnnotation()
+      ResetNameAnnotation(),
+      CallResetAtStartupAnnotation,
+      TreadleFirrtlString()
     )
 
     seq.foreach(_.addOptions(parser))

@@ -16,14 +16,16 @@ class DriverSpec extends FreeSpec with Matchers {
           |    y <= x
         """.stripMargin
       //      val engine = Driver.execute(Array.empty[String], input)
-      val engine = Driver.execute(Array("--tr-verbose"), input)
+//      val engine = Driver.execute(Array(), input)
 
-      engine should not be empty
+      val result = Driver.execute(Array.empty, Seq(TreadleFirrtlString(input)))
 
-      engine.foreach { tester =>
-        tester.poke("x", 1)
-        tester.expect("y", 1)
-      }
+      result.isInstanceOf[TreadleTesterCreated] should be (true)
+
+      val tester = result.asInstanceOf[TreadleTesterCreated].treadleTester
+
+      tester.poke("x", 1)
+      tester.expect("y", 1)
     }
   }
 }

@@ -91,18 +91,8 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
             |
           """.stripMargin
 
-        val optionsManager = new TreadleOptionsManager {
-          treadleOptions = treadleOptions.copy(
-            writeVCD = false,
-            vcdShowUnderscored = false,
-            setVerbose = false,
-            showFirrtlAtLoad = false,
-            rollbackBuffers = 0,
-            symbolsToWatch = Seq()
-          )
-        }
+        val tester = TreadleFactory(input, "--tr-rollback-buffers", "0")
 
-        val tester = new TreadleTester(input, optionsManager)
         println(s"peek out 0x${tester.peek("out").toString(16)}")
         tester.report()
       }

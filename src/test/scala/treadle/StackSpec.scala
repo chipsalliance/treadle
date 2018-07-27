@@ -80,18 +80,7 @@ class StackSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleFactory(input, "--tr-rollback-buffers", "0")
 
     tester.poke("io_en", 1)
     tester.poke("io_push", 1)

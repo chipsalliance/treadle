@@ -32,18 +32,12 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
         |    out <= node0
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
+    val t = TreadleFactory(input,
+     "--tr-write-vcd", "--tr-vcd-show-underscored-vars",
+     // "--tr-verbose", "--tr-show-firrtl-at-load",
+     "tr-rollback-buffers", "0"
+    )
 
-    val t = new TreadleTester(input, optionsManager)
     t.poke("in0", 10)
     t.poke("in1", 11)
     t.poke("in2", 12)
@@ -83,18 +77,13 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = true,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 10,
-        symbolsToWatch = Seq()
-      )
-    }
+    val t = TreadleFactory(input,
+      // "--tr-write-vcd",
+      // "--tr-vcd-show-underscored-vars",
+      // "--tr-verbose", "--tr-show-firrtl-at-load",
+      "tr-rollback-buffers", "10"
+    )
 
-    val t = new TreadleTester(input, optionsManager)
     t.poke("in0", 1)
     t.step()
     t.poke("in0", 2)

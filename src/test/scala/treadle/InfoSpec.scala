@@ -27,7 +27,7 @@ class InfoSpec extends FreeSpec with Matchers {
     val outputBuffer = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputBuffer)) {
 
-      val tester = TreadleTester(input)
+      val tester = TreadleFactory(input)
       tester.poke("in1", 7)
 
       try {
