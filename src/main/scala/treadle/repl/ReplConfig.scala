@@ -26,7 +26,7 @@ object ReplViewer {
           case ReplFirrtlAnnotation(name)                      => previousOptions.copy(firrtlSource = name)
           case ReplScriptNameAnnotation(name)                  => previousOptions.copy(scriptName = name)
           case ReplUseVcdScriptAnnotation                      => previousOptions.copy(useVcdScript = true)
-          case ReplScriptNameAnnotation(name)                  => previousOptions.copy(scriptName = name)
+          case ReplRunScriptOnStartupAnnotation                => previousOptions.copy(runScriptAtStart = true)
           case _ => previousOptions
         }
 

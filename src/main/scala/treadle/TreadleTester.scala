@@ -24,7 +24,7 @@ import treadle.TreadleViewer._
   * @param input              a firrtl program contained in a string
   * @param annotations        collection of all annotations
   */
-class TreadleTester(input: String, annotations: AnnotationSeq) {
+class TreadleTester(input: String, annotations: AnnotationSeq = Seq.empty) {
   var expectationsMet = 0
 
   val firrtlOptions:  FirrtlExecutionOptions = view[FirrtlExecutionOptions](annotations).get
