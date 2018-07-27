@@ -4,7 +4,7 @@ package treadle.repl
 
 import treadle.executable.ExecutionEngine
 import treadle.vcd.VCD
-import treadle.TreadleRepl
+import treadle.{Driver, TreadleRepl}
 import treadle.utils.VcdRunner
 
 import scala.tools.jline.console.ConsoleReader
@@ -225,8 +225,9 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
       case fileName :: _ =>
         repl.loadVcdScript(fileName)
       case Nil =>
-        if(repl.optionsManager.getVcdFileName.nonEmpty) {
-          repl.loadVcdScript(repl.optionsManager.getVcdFileName)
+        val fileName = Driver.vcdInputFileName(repl.annotationSeq)
+        if(fileName.nonEmpty) {
+          repl.loadVcdScript(fileName)
         }
     }
   }

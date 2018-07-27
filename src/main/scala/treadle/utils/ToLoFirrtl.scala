@@ -8,7 +8,6 @@ import firrtl.PrimOps.{Dshl, Shl}
 import firrtl._
 import firrtl.ir._
 import firrtl.transforms.BlackBoxSourceHelper
-import treadle.HasTreadleOptions
 
 /**
   * Use these lowering transforms to prepare circuit for compiling
@@ -20,11 +19,9 @@ object ToLoFirrtl extends Compiler {
             Seq(new LowFirrtlOptimization, new BlackBoxSourceHelper, new FixupOps)
   }
 
-  def lower(c: Circuit,
-            optionsManager: ExecutionOptionsManager with HasFirrtlOptions with HasTreadleOptions): Circuit = {
+  def lower(c: Circuit, annotationSeq: AnnotationSeq): Circuit = {
 
-    val annotations = optionsManager.firrtlOptions.annotations
-    val compileResult = compileAndEmit(firrtl.CircuitState(c, ChirrtlForm, annotations))
+    val compileResult = compileAndEmit(firrtl.CircuitState(c, ChirrtlForm, annotationSeq))
 
     compileResult.circuit
   }

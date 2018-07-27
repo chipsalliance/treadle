@@ -5,9 +5,12 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
+import firrtl.{AnnotationSeq, FirrtlExecutionOptions}
 import treadle.chronometry.UTC
 import treadle.executable._
-
+import firrtl.options.Viewer._
+import firrtl.FirrtlViewer._
+import treadle.TreadleViewer._
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
   * and allows poke, peek, expect and step
@@ -19,17 +22,19 @@ import treadle.executable._
   * so that io.a.b must be referenced as io_a_b
   *
   * @param input              a firrtl program contained in a string
-  * @param optionsManager     collection of options for the engine
+  * @param annotations        collection of all annotations
   */
-class TreadleTester(input: String, optionsManager: HasTreadleSuite = new TreadleOptionsManager) {
+class TreadleTester(input: String, annotations: AnnotationSeq) {
   var expectationsMet = 0
 
-  treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
+  val firrtlOptions:  FirrtlExecutionOptions = view[FirrtlExecutionOptions](annotations).get
+  val treadleOptions: TreadleExecutionOptions = view[TreadleExecutionOptions](annotations).get
+
+  treadle.random.setSeed(treadleOptions.randomSeed)
 
   val wallTime = UTC()
 
-  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager, wallTime)
-  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
+  val engine: ExecutionEngine  = ExecutionEngine(input, treadleOptions, wallTime, annotations)
 
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
@@ -106,15 +111,17 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   }
 
   if(treadleOptions.writeVCD) {
-    optionsManager.setTopNameIfNotSet(engine.ast.main)
-    optionsManager.makeTargetDir()
-    engine.makeVCDLogger(
-      treadleOptions.vcdOutputFileName(optionsManager),
-      treadleOptions.vcdShowUnderscored
-    )
+    val updatedOptions = if(firrtlOptions.topName.isEmpty) {
+      firrtlOptions.copy(topName = Some(engine.ast.main))
+    }
+    else {
+      firrtlOptions
+    }
+
+    engine.makeVCDLogger(updatedOptions.getBuildFileName("vcd"), treadleOptions.vcdShowUnderscored)
   }
 
-  if(optionsManager.treadleOptions.callResetAtStartUp && engine.symbolTable.contains(resetName)) {
+  if(treadleOptions.callResetAtStartUp && engine.symbolTable.contains(resetName)) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
 //      reset(clockInfo.period + clockInfo.initialOffset - (clockInfo.period / 2)) // once found this to help on a test
@@ -159,7 +166,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
   }
 
   def makeSnapshot(): Unit = {
-    val snapshotName = optionsManager.getBuildFileName(".datastore.snapshot.json")
+    val snapshotName = firrtlOptions.getBuildFileName(".datastore.snapshot.json")
     val writer = new PrintWriter(snapshotName)
     writer.write(engine.dataStore.serialize)
     writer.close()
@@ -352,7 +359,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
 }
 
 object TreadleTester {
-  def apply(input : String, optionsManager: HasTreadleSuite = new TreadleOptionsManager): TreadleTester = {
-    new TreadleTester(input, optionsManager)
+  def apply(input : String, annotationSeq: AnnotationSeq): TreadleTester = {
+    new TreadleTester(input, annotationSeq)
   }
 }

@@ -2,54 +2,102 @@
 
 package treadle.vcd
 
-import firrtl.ExecutionOptionsManager
+import firrtl.AnnotationSeq
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.{HasScoptOptions, OptionsView, RegisteredLibrary}
+import scopt.OptionParser
 
 case class VCDConfig(
-                     vcdSourceName:       String = "",
-                     vcdTargetName:       String = "",
-                     startScope:          String = "",
-                     renameStartScope:    String = "",
-                     varPrefix:           String = "",
-                     newVarPrefix:        String = "")
-  extends firrtl.ComposableOptions {
+  vcdSourceName:       String = "",
+  vcdTargetName:       String = "",
+  startScope:          String = "",
+  renameStartScope:    String = "",
+  varPrefix:           String = "",
+  newVarPrefix:        String = ""
+)
+
+object VcdConfigViewer {
+  implicit object VcdConfigView extends OptionsView[VCDConfig] {
+    def view(options: AnnotationSeq): Option[VCDConfig] = {
+      val executionOptions = options.foldLeft(VCDConfig()) { (previousOptions, annotation) =>
+        annotation match {
+          case VcdSourceNameAnnotation(name)       => previousOptions.copy(vcdSourceName = name)
+          case VcdTargetNameAnnotation(name)       => previousOptions.copy(vcdTargetName = name)
+          case VcdStartScopeAnnotation(name)       => previousOptions.copy(startScope = name)
+          case VcdRenameStartScopeAnnotation(name) => previousOptions.copy(renameStartScope = name)
+          case VcdVarPrefixAnnotation(name)        => previousOptions.copy(varPrefix = name)
+          case _ => previousOptions
+        }
+
+      }
+      Some(executionOptions)
+    }
+  }
 }
 
-trait HasVCDConfig {
-  self: ExecutionOptionsManager =>
+sealed trait VcdConfigOption extends HasScoptOptions
 
-  var vcdConfig = VCDConfig()
-
-  parser.note("vcd")
-
-  parser.opt[String]("start-scope")
-    .abbr("vss")
-    .foreach { x => vcdConfig = vcdConfig.copy(startScope = x)}
-    .text("starts saving information at specified scope")
-
-  parser.opt[String]("rename-start-scope")
-    .abbr("vrss")
-    .foreach { x => vcdConfig = vcdConfig.copy(renameStartScope = x)}
-    .text("rename startScope to this")
-
-  parser.opt[String]("<retain-vars-with-prefix>...")
-    .abbr("vrp")
-    .foreach { x => vcdConfig = vcdConfig.copy(varPrefix = x) }
-    .text("only vars that start with prefix will be kept")
-
-  parser.opt[String]("<new-var-prefix>...")
-    .abbr("vnvp")
-    .foreach { x => vcdConfig = vcdConfig.copy(newVarPrefix = x) }
-    .text("re-prefix vars with this string")
-
-  parser.arg[String]("<input-vcd-file>...")
-    .required()
-    .foreach { x => vcdConfig = vcdConfig.copy(vcdSourceName = x) }
-    .text("name of input vcd file")
-
-  parser.arg[String]("<output-vcd-file>...")
-    .optional()
-    .foreach { x => vcdConfig = vcdConfig.copy(vcdTargetName = x) }
-    .text("name of output vcd file (optional)")
+case class VcdSourceNameAnnotation(name: String = "") extends NoTargetAnnotation with VcdConfigOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("vcd-start-scope")
+    .abbr("vcd-sf")
+    .action( (name, c) => c :+ VcdSourceNameAnnotation(name) )
+    .unbounded()
+    .text("vcd source file")
 }
 
-class VCDOptionsManager extends ExecutionOptionsManager("vcd") with HasVCDConfig
+case class VcdTargetNameAnnotation(name: String = "") extends NoTargetAnnotation with VcdConfigOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("vcd-target-file")
+    .abbr("vcd-tf")
+    .action( (name, c) => c :+ VcdTargetNameAnnotation(name) )
+    .unbounded()
+    .text("vcd target file")
+}
+
+case class VcdStartScopeAnnotation(name: String = "") extends NoTargetAnnotation with VcdConfigOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("vcd-start-scope")
+    .abbr("vcd-ss")
+    .action( (name, c) => c :+ VcdStartScopeAnnotation(name) )
+    .unbounded()
+    .text("vcd scope to start at")
+}
+
+case class VcdRenameStartScopeAnnotation(name: String = "") extends NoTargetAnnotation with VcdConfigOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("vcd-rename-start-scope")
+    .abbr("vcd-rss")
+    .action( (name, c) => c :+ VcdRenameStartScopeAnnotation(name) )
+    .unbounded()
+    .text("vcd rename starting scope to this")
+}
+
+case class VcdVarPrefixAnnotation(name: String = "") extends NoTargetAnnotation with VcdConfigOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("vcd-var-prefix")
+    .abbr("vcd-vp")
+    .action( (name, c) => c :+ VcdVarPrefixAnnotation(name) )
+    .unbounded()
+    .text("find vars with this prefix")
+}
+
+case class VcdNewVarPrefixAnnotation(name: String = "") extends NoTargetAnnotation with VcdConfigOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("vcd-new-var-prefix")
+    .abbr("vcd-nvp")
+    .action( (name, c) => c :+ VcdNewVarPrefixAnnotation(name) )
+    .unbounded()
+    .text("change vars prefix vars to this")
+}
+
+object TreadleReplLibrary extends RegisteredLibrary {
+  override def name: String = "vcd-replay"
+
+  override def addOptions(parser: OptionParser[AnnotationSeq]): Unit = {
+    val seq: Seq[HasScoptOptions] = Seq(
+      VcdSourceNameAnnotation(),
+      VcdTargetNameAnnotation(),
+      VcdStartScopeAnnotation(),
+      VcdRenameStartScopeAnnotation(),
+      VcdVarPrefixAnnotation(),
+      VcdNewVarPrefixAnnotation()
+    )
+
+    seq.foreach(_.addOptions(parser))
+  }
+}

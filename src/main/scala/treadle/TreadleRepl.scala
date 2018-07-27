@@ -4,12 +4,16 @@ package treadle
 
 import java.io.{File, PrintWriter}
 
+import firrtl.{AnnotationSeq, HasFirrtlExecutionOptions}
 import firrtl.graph.CyclicException
+import firrtl.options.{DriverExecutionResult, ExecutionOptionsManager}
 import treadle.vcd.VCD
-import logger.Logger
 import treadle.chronometry.UTC
 import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, TreadleException}
 import treadle.repl._
+import firrtl.options.Viewer._
+import treadle.repl.ReplViewer._
+import treadle.TreadleViewer._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.tools.jline.console.ConsoleReader
@@ -30,9 +34,9 @@ abstract class Command(val name: String) {
   }
 }
 
-class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) {
-  val replConfig: ReplConfig = optionsManager.replConfig
-  def treadleOptions: TreadleOptions = optionsManager.treadleOptions
+class TreadleRepl(val annotationSeq: AnnotationSeq) {
+  val replConfig: ReplExecutionOptions = view[ReplExecutionOptions](annotationSeq).get
+  val treadleOptions: TreadleExecutionOptions = view[TreadleExecutionOptions](annotationSeq).get
 
   treadle.random.setSeed(treadleOptions.randomSeed)
 
@@ -67,7 +71,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   var currentVcdScript: Option[VCD] = None
   var replVcdController: Option[ReplVcdController] = None
 
-  var outputFormat: String = optionsManager.replConfig.outputFormat
+  var outputFormat: String = replConfig.outputFormat
 
   def formatOutput(value: BigInt): String = {
     outputFormat match {
@@ -78,7 +82,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   }
 
   def loadSource(input: String): Unit = {
-    currentTreadleTesterOpt = Some(TreadleTester(input, optionsManager))
+    currentTreadleTesterOpt = Some(TreadleTester(input, annotationSeq))
     currentTreadleTesterOpt.foreach { _ =>
       engine.setVerbose(treadleOptions.setVerbose)
     }
@@ -395,7 +399,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
         def run(args: Array[String]): Unit = {
           args.toList match {
-            case "load" :: fileName :: tail =>
+            case "load" :: fileName :: _ =>
               loadVcdScript(fileName)
             case _ =>
               replVcdController match {
@@ -420,7 +424,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
               engine.disableVCD()
             case Some(fileName) =>
               engine.makeVCDLogger(
-                fileName, showUnderscored = optionsManager.treadleOptions.vcdShowUnderscored)
+                fileName, showUnderscored = treadleOptions.vcdShowUnderscored)
             case _ =>
               engine.disableVCD()
           }
@@ -1153,7 +1157,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         loadScript(replConfig.scriptName)
       }
       if (replConfig.useVcdScript) {
-        loadVcdScript(optionsManager.getVcdFileName)
+        loadVcdScript(Driver.vcdInputFileName(annotationSeq, Some(replConfig.vcdScriptOverride)))
       }
     }
     catch {
@@ -1228,20 +1232,18 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   }
 }
 
-object TreadleRepl {
-  def execute(optionsManager: TreadleOptionsManager with HasReplConfig): Unit = {
-    val repl = new TreadleRepl(optionsManager)
-    repl.run()
+case object ReplExecutionResult extends DriverExecutionResult
+
+object TreadleReplDriver extends firrtl.options.Driver {
+  val optionsManager: ExecutionOptionsManager = {
+    new ExecutionOptionsManager("treadle") with HasFirrtlExecutionOptions
   }
 
-  def main(args: Array[String]): Unit = {
-    val optionsManager = new TreadleOptionsManager with HasReplConfig
+  override def execute(args: Array[String], initialAnnotations: AnnotationSeq = Seq.empty): DriverExecutionResult = {
+    val annotations = optionsManager.parse(args, initialAnnotations)
 
-    if(optionsManager.parse(args)) {
-      Logger.makeScope(optionsManager) {
-        val repl = new TreadleRepl(optionsManager)
-        repl.run()
-      }
-    }
+    val repl = new TreadleRepl(annotations)
+    repl.run()
+    ReplExecutionResult
   }
 }

@@ -12,7 +12,7 @@ class ExpressionCompiler(
     val symbolTable  : SymbolTable,
     val dataStore    : DataStore,
     scheduler        : Scheduler,
-    treadleOptions   : TreadleOptions,
+    treadleOptions   : TreadleExecutionOptions,
     blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {
@@ -661,7 +661,6 @@ class ExpressionCompiler(
 
           if(assignedSymbol.firrtlType == ClockType) {
             getDrivingClock(con.expr).foreach { drivingClock =>
-              val clockDown = symbolTable(drivingClock.name)
               val downAssigner = dataStore.AssignInt(
                 assignedSymbol, makeGet(drivingClock).asInstanceOf[IntExpressionResult].apply, info = con.info)
               scheduler.addUnassigner(drivingClock, downAssigner)
@@ -802,8 +801,6 @@ class ExpressionCompiler(
   // scalastyle:on
 
   def processModule(modulePrefix: String, myModule: DefModule, circuit: Circuit): Unit = {
-    def expand(name: String): String = if(modulePrefix.isEmpty) name else modulePrefix + "." + name
-
     myModule match {
       case module: firrtl.ir.Module =>
         processStatements(modulePrefix, circuit: Circuit, module.body)

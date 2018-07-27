@@ -10,10 +10,16 @@ import logger.LazyLogging
 import collection._
 import java.util.{Date, TimeZone}
 
+import firrtl.{AnnotationSeq, HasFirrtlExecutionOptions}
+import firrtl.options.{DriverExecutionResult, ExecutionOptionsManager}
+
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
-object VCD extends LazyLogging {
+import firrtl.options.Viewer._
+import treadle.vcd.VcdConfigViewer._
+
+object VCD extends firrtl.options.Driver with LazyLogging {
   val Version = "0.2"
 
   val DateDeclaration: String = "$date"
@@ -429,35 +435,31 @@ object VCD extends LazyLogging {
     vcd
   }
 
-  /**
-    * This exercises vcd reading and optionally writing
-    * and depending up filtering options can pull out only those change values that
-    * are specific to a particular module
-    * @param args command lines strings use --help to see what they are
-    */
-  def main(args: Array[String]) {
-    val manager = new VCDOptionsManager
+  object VcdExecutionResult extends DriverExecutionResult
 
-    if(manager.parse(args)) {
-      val config = manager.vcdConfig
+  val optionsManager: ExecutionOptionsManager = {
+    new ExecutionOptionsManager("vcd-replay") with HasFirrtlExecutionOptions
+  }
 
-      val vcd = read(
-        vcdFile = config.vcdSourceName,
-        startScope = config.startScope,
-        renameStartScope = config.renameStartScope,
-        varPrefix = config.varPrefix,
-        newVarPrefix = config.newVarPrefix
-      )
+  def execute(args: Array[String], initialAnnos: AnnotationSeq = Seq.empty): DriverExecutionResult = {
+    val annotations = optionsManager.parse(args, initialAnnos)
 
-      println(s"${vcd.info}")
+    val config: VCDConfig = view[VCDConfig](annotations).get
 
-      if(config.vcdTargetName.nonEmpty) {
-        vcd.write(config.vcdTargetName) }
+    val vcd = read(
+      vcdFile = config.vcdSourceName,
+      startScope = config.startScope,
+      renameStartScope = config.renameStartScope,
+      varPrefix = config.varPrefix,
+      newVarPrefix = config.newVarPrefix
+    )
+
+    println(s"${vcd.info}")
+
+    if(config.vcdTargetName.nonEmpty) {
+      vcd.write(config.vcdTargetName)
     }
-    else {
-      manager.parser.showUsageAsError()
-    }
-
+    VcdExecutionResult
   }
 }
 

@@ -2,9 +2,12 @@
 
 package treadle.repl
 
-import firrtl.ExecutionOptionsManager
+import firrtl.AnnotationSeq
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.{HasScoptOptions, OptionsView, RegisteredLibrary}
+import scopt.OptionParser
 
-case class ReplConfig(
+case class ReplExecutionOptions(
   firrtlSourceName : String = "",
   scriptName       : String = "",
   firrtlSource     : String = "",
@@ -13,63 +16,100 @@ case class ReplConfig(
   runScriptAtStart : Boolean = false,
   outputFormat     : String = "d"
 )
-        extends firrtl.ComposableOptions
 
-trait HasReplConfig {
-  self: ExecutionOptionsManager =>
+object ReplViewer {
+  implicit object ReplOptionsView extends OptionsView[ReplExecutionOptions] {
+    def view(options: AnnotationSeq): Option[ReplExecutionOptions] = {
+      val executionOptions = options.foldLeft(ReplExecutionOptions()) { (previousOptions, annotation) =>
+        annotation match {
+          case ReplSourceNameAnnotation(name)                  => previousOptions.copy(firrtlSourceName = name)
+          case ReplFirrtlAnnotation(name)                      => previousOptions.copy(firrtlSource = name)
+          case ReplScriptNameAnnotation(name)                  => previousOptions.copy(scriptName = name)
+          case ReplUseVcdScriptAnnotation                      => previousOptions.copy(useVcdScript = true)
+          case ReplScriptNameAnnotation(name)                  => previousOptions.copy(scriptName = name)
+          case _ => previousOptions
+        }
 
-  var replConfig = ReplConfig()
-
-  parser.note("firrtl-repl")
-
-  parser.opt[String]("fr-firrtl-source")
-    .abbr("frfs")
-    .valueName("<firrtl-source-file>")
-    .foreach { x =>
-      replConfig = replConfig.copy(firrtlSourceName = x)
+      }
+      Some(executionOptions)
     }
-    .text("firrtl file to load on startup, default is no file")
-
-  parser.opt[String]("fr-script-file")
-    .abbr("frsf")
-    .valueName("<firrtl-script-file>")
-    .foreach { x =>
-      replConfig = replConfig.copy(scriptName = x)
-    }
-    .text("script file to load on startup, default is no file")
-
-  parser.opt[Unit]("fr-use-vcd-script")
-    .abbr("fruvs")
-    .foreach { _ =>
-      replConfig = replConfig.copy(useVcdScript = true)
-    }
-    .text("load vcd file as script, default is false")
-
-  parser.opt[String]("fr-vcd-script-override")
-    .abbr("frvso")
-    .valueName("<vcd-file>")
-    .foreach { x =>
-      replConfig = replConfig.copy(vcdScriptOverride = x, useVcdScript = true)
-    }
-    .text("load vcd file as script, default is false")
-
-  parser.opt[String]("fr-display-format")
-    .abbr("frdf")
-    .valueName("format")
-    .foreach { x =>
-      replConfig = replConfig.copy(outputFormat = x)
-    }
-    .text("how to display values d - decimal, x - hex, b - binary")
-
-  parser.opt[Unit]("fr-run-script-on-startup")
-    .abbr("frrsos")
-    .valueName("<vcd-file>")
-    .foreach { _ =>
-      replConfig = replConfig.copy(runScriptAtStart = true)
-    }
-    .text("run script immediately on startup")
-
-  def getVcdFileName: String = {
-    self.getBuildFileName("vcd", replConfig.vcdScriptOverride)
   }
 }
+
+sealed trait ReplOption extends HasScoptOptions
+
+case class ReplSourceNameAnnotation(name: String = "") extends NoTargetAnnotation with ReplOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("repl-source-file")
+    .abbr("r-sf")
+    .action( (name, c) => c :+ ReplSourceNameAnnotation(name) )
+    .unbounded()
+    .text("firrtl source for repl to operate on")
+}
+
+case class ReplFirrtlAnnotation(name: String = "") extends NoTargetAnnotation with ReplOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("repl-source")
+    .abbr("r-s")
+    .action( (firrtl, c) => c :+ ReplFirrtlAnnotation(firrtl) )
+    .unbounded()
+    .text("firrtl source for repl to operate on")
+}
+
+case class ReplScriptNameAnnotation(name: String = "") extends NoTargetAnnotation with ReplOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("repl-script-name")
+    .abbr("r-sf")
+    .action( (name, c) => c :+ ReplScriptNameAnnotation(name) )
+    .unbounded()
+    .text("script file to load")
+}
+
+case object ReplUseVcdScriptAnnotation extends NoTargetAnnotation with ReplOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("repl-use-vcd")
+    .abbr("r-sf")
+    .action( (_, c) => c :+ this )
+    .unbounded()
+    .text("script file to load")
+}
+
+case class ReplVcdScriptOverrideAnnotation(name: String = "") extends NoTargetAnnotation with ReplOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("repl-vcd-script-override")
+    .abbr("r-vso")
+    .action( (firrtl, c) => c :+ ReplVcdScriptOverrideAnnotation(firrtl) )
+    .unbounded()
+    .text("override default name for vcd input file")
+}
+
+case object ReplRunScriptOnStartupAnnotation extends NoTargetAnnotation with ReplOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("repl-run-script-on-startup")
+    .abbr("r-rsos")
+    .action( (_, c) => c :+ this )
+    .unbounded()
+    .text("run the script automatically at start-up")
+}
+
+case class ReplOutputFormatAnnotation(name: String = "d") extends NoTargetAnnotation with ReplOption {
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("repl-output-format")
+    .abbr("r-of")
+    .action( (format, c) => c :+ ReplOutputFormatAnnotation(format) )
+    .unbounded()
+    .text("default output format when display wire values b, d, x")
+}
+
+object TreadleReplLibrary extends RegisteredLibrary {
+  override def name: String = "treadle-repl"
+
+  override def addOptions(parser: OptionParser[AnnotationSeq]): Unit = {
+    val seq: Seq[HasScoptOptions] = Seq(
+      ReplSourceNameAnnotation(),
+      ReplFirrtlAnnotation(),
+      ReplScriptNameAnnotation(),
+      ReplUseVcdScriptAnnotation,
+      ReplVcdScriptOverrideAnnotation(),
+      ReplRunScriptOnStartupAnnotation,
+      ReplOutputFormatAnnotation()
+    )
+
+    seq.foreach(_.addOptions(parser))
+  }
+}
+
+
