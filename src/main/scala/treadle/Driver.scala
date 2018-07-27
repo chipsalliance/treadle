@@ -2,7 +2,7 @@
 
 package treadle
 
-import firrtl.{AnnotationSeq, FirrtlCircuitAnnotation, FirrtlExecutionOptions, HasFirrtlExecutionOptions}
+import firrtl.{AnnotationSeq, FirrtlCircuitAnnotation, FirrtlExecutionOptions, FirrtlSourceAnnotation, HasFirrtlExecutionOptions}
 import firrtl.options.{DriverExecutionResult, ExecutionOptionsManager}
 import firrtl.options.Viewer._
 import firrtl.FirrtlViewer._
@@ -25,12 +25,14 @@ object Driver extends firrtl.options.Driver {
   val optionsManager: ExecutionOptionsManager = {
     new ExecutionOptionsManager("treadle") with HasFirrtlExecutionOptions
   }
+  TreadleLibrary.addOptions(optionsManager.parser)
 
   def execute(args: Array[String], initialAnnotations: AnnotationSeq = Seq.empty): DriverExecutionResult = {
     val annotations = optionsManager.parse(args, initialAnnotations)
 
     val firrtlInput = annotations.collectFirst {
       case firrtl:  TreadleFirrtlString     => firrtl.firrtl
+      case firrtl:  FirrtlSourceAnnotation  => firrtl.value
       case circuit: FirrtlCircuitAnnotation => circuit.value.serialize
 
     }

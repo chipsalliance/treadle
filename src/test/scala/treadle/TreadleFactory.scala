@@ -2,11 +2,12 @@
 
 package treadle
 
+import firrtl.FirrtlSourceAnnotation
 import treadle.executable.TreadleException
 
 object TreadleFactory {
   def apply(input: String, args: String*): TreadleTester = {
-    Driver.execute(args.toArray, Seq(TreadleFirrtlString(input))) match {
+    Driver.execute(args.toArray, Seq(FirrtlSourceAnnotation(input))) match {
       case TreadleTesterCreated(tester) => tester
       case _ =>
         throw TreadleException(

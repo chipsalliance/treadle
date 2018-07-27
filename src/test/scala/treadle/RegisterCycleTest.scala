@@ -42,7 +42,7 @@ class RegisterCycleTest extends FreeSpec with Matchers {
       for(i <- 0 to 10) {
         println(s"experiment $i")
         scala.util.Random.setSeed(i.toLong)
-        val tester = new TreadleTester(input)
+        val tester = TreadleTester(input)
 //        tester.setVerbose(true)
 
         tester.poke("reset", 1)
@@ -87,13 +87,14 @@ class RegisterCycleTest extends FreeSpec with Matchers {
 
       val output = new ByteArrayOutputStream()
       Console.withOut(new PrintStream(output)) {
-        val tester = TreadleFactory(input, "--tr-symbols-to-watch", "io_Out,mySubModule_1.io_Out")
+        val tester = TreadleFactory(input, "--tr-verbose", "--tr-symbols-to-watch", "io_Out,mySubModule_1.io_Out")
 
         tester.poke("io_In", 1)
         tester.step(3)
         tester.expect("io_Out", 1)
       }
 
+      println(s"output\n${output.toString()}")
       output.toString.contains("io_Out <= 1") should be (true)
     }
   }

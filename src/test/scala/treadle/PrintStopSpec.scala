@@ -157,7 +157,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
         """.stripMargin
 
-    val tester = new TreadleTester(input)
+    val tester = TreadleTester(input)
     tester.poke("enable", 0)
     tester.poke("in1", 1)
     println("before peek")

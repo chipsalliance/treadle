@@ -125,7 +125,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
         |    c <= add(a, b)
       """.stripMargin
 
-    val engine = new TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
+    val engine = TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
     engine.poke("a", -1)
     engine.peek("a") should be (BigInt(-1))
     engine.poke("b", -7)
@@ -151,7 +151,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val stream = getClass.getResourceAsStream("/VcdAdder.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val engine = new TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
+    val engine = TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
     engine.step()
     engine.poke("io_a", 3)
     engine.poke("io_b", 5)
@@ -197,7 +197,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     // logger.Logger.setLevel(LogLevel.Debug)
 
     {
-      val engine = new TreadleTester(input, Seq(
+      val engine = TreadleTester(input, Seq(
         WriteVcdAnnotation,
         TargetDirAnnotation("test_run_dir/vcd_register_delay")
       ))
@@ -239,7 +239,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val stream = getClass.getResourceAsStream("/VcdAdder.fir")
     val input = io.Source.fromInputStream(stream).mkString
 
-    val tester = new TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
+    val tester = TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
 
 
     tester.poke("io_a", 3)

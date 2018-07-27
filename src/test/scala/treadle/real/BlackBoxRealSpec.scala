@@ -37,9 +37,8 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
 
     "addition should work expand instances as found" in {
 
-      val tester = new TreadleTester(adderInput, Seq(
-        BlackBoxFactoriesAnnotation(Seq(new DspRealFactory)),
-        RandomSeedAnnotation(0L)
+      val tester = TreadleTester(adderInput, Seq(
+        BlackBoxFactoriesAnnotation(Seq(new DspRealFactory))
       ))
 
       tester.poke("io_a1_node", doubleToBigIntBits(1.5))
@@ -69,9 +68,8 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
         |    BBFIntPart_1.in <= io_a_node
       """.stripMargin
 
-    val tester = new TreadleTester(input, Seq(
-      BlackBoxFactoriesAnnotation(Seq(new DspRealFactory)),
-      RandomSeedAnnotation(0L)
+    val tester = TreadleTester(input, Seq(
+      BlackBoxFactoriesAnnotation(Seq(new DspRealFactory))
     ))
 
     tester.poke("io_a_node", doubleToBigIntBits(3.14159))

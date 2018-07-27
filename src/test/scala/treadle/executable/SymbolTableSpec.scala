@@ -79,7 +79,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val tester = new TreadleTester(simpleFirrtl)
+    val tester = TreadleTester(simpleFirrtl)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -124,7 +124,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val tester = new TreadleTester(simpleFirrtl)
+    val tester = TreadleTester(simpleFirrtl)
     val simulator = tester.engine
 
     val symbolTable = simulator.symbolTable
@@ -177,7 +177,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          """
         .stripMargin
 
-    val tester = new TreadleTester(simpleFirrtl, Seq(
+    val tester = TreadleTester(simpleFirrtl, Seq(
       TargetDirAnnotation("test_run_dir")
     ))
     val simulator = tester.engine

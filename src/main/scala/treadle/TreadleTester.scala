@@ -5,7 +5,7 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
-import firrtl.{AnnotationSeq, FirrtlExecutionOptions}
+import firrtl.{AnnotationSeq, FirrtlExecutionOptions, FirrtlSourceAnnotation}
 import treadle.chronometry.UTC
 import treadle.executable._
 import firrtl.options.Viewer._
@@ -360,6 +360,6 @@ class TreadleTester(input: String, annotations: AnnotationSeq = Seq.empty) {
 
 object TreadleTester {
   def apply(input : String, annotationSeq: AnnotationSeq = Seq.empty): TreadleTester = {
-    new TreadleTester(input, annotationSeq)
+    new TreadleTester(input, annotationSeq :+ FirrtlSourceAnnotation(input))
   }
 }

@@ -2,7 +2,8 @@
 
 package treadle
 
-import org.scalatest.{Matchers, FreeSpec}
+import firrtl.FirrtlSourceAnnotation
+import org.scalatest.{FreeSpec, Matchers}
 
 class DriverSpec extends FreeSpec with Matchers {
   "The Driver class provides a simple caller with run-time parameters" - {
@@ -18,7 +19,7 @@ class DriverSpec extends FreeSpec with Matchers {
       //      val engine = Driver.execute(Array.empty[String], input)
 //      val engine = Driver.execute(Array(), input)
 
-      val result = Driver.execute(Array.empty, Seq(TreadleFirrtlString(input)))
+      val result = Driver.execute(Array.empty, Seq(FirrtlSourceAnnotation(input)))
 
       result.isInstanceOf[TreadleTesterCreated] should be (true)
 
