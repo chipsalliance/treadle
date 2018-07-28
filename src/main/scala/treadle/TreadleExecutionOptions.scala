@@ -42,6 +42,8 @@ object TreadleViewer {
           case RollBackBuffersAnnotation(buffers)    => previousOptions.copy(rollbackBuffers = buffers)
           case ResetNameAnnotation(name)             => previousOptions.copy(resetName = name)
           case CallResetAtStartupAnnotation          => previousOptions.copy(callResetAtStartUp = true)
+          case BlackBoxFactoriesAnnotation(seq)      =>
+            previousOptions.copy(blackBoxFactories = previousOptions.blackBoxFactories ++ seq)
           case ClockInfoAnnotation(clockInfo) =>
             previousOptions.copy(clockInfo = previousOptions.clockInfo :+ clockInfo)
           case SymbolsToWatchAnnotation(symbols) =>
