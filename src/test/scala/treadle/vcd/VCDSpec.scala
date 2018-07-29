@@ -4,7 +4,7 @@ package treadle.vcd
 
 import java.io.File
 
-import firrtl.TargetDirAnnotation
+import firrtl.{FirrtlSourceAnnotation, TargetDirAnnotation}
 import firrtl.util.BackendCompilationUtilities
 import org.scalatest.{FlatSpec, Matchers}
 import treadle._
@@ -241,7 +241,6 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     val tester = TreadleTester(input, Seq(WriteVcdAnnotation, TargetDirAnnotation("test_run_dir")))
 
-
     tester.poke("io_a", 3)
     tester.poke("io_b", 5)
 
@@ -253,6 +252,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     tester.finish
 
     val replayTester = new VcdReplayTester(Seq(
+      FirrtlSourceAnnotation(input),
       VcdReplayFirrtlSourceNameAnnotation("src/test/resources/VcdAdder.fir"),
       VcdReplayVcdFileAnnotation("test_run_dir/VcdAdder.vcd")
     ))
