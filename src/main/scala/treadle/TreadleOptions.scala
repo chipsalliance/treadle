@@ -180,9 +180,8 @@ case class TreadleFirrtlString(firrtl: String = "") extends NoTargetAnnotation w
 
 case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFactory]) extends NoTargetAnnotation
 
-object TreadleLibrary extends RegisteredLibrary {
-  override def name: String = "treadle"
-
+class TreadleLibrary extends RegisteredLibrary {
+  val name: String = "treadle"
   override def addOptions(parser: OptionParser[AnnotationSeq]): Unit = {
     val seq: Seq[HasScoptOptions] = Seq(
       WriteVcdAnnotation,
