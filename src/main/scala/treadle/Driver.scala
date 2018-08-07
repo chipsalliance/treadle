@@ -26,8 +26,6 @@ object Driver extends firrtl.options.Driver {
     new ExecutionOptionsManager("treadle") with HasFirrtlExecutionOptions
   }
 
-  TreadleLibrary.addOptions(optionsManager.parser)
-
   def execute(args: Array[String], initialAnnotations: AnnotationSeq = Seq.empty): DriverExecutionResult = {
     val annotations = optionsManager.parse(args, initialAnnotations)
 
@@ -41,4 +39,3 @@ object Driver extends firrtl.options.Driver {
     TreadleTesterCreated(tester)
   }
 }
-
