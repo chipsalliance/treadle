@@ -30,11 +30,11 @@ name := "treadle"
 
 organization := "edu.berkeley.cs"
 
-version := "1.1-SNAPSHOT"
+version := "1.0.0"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.11.12"
 
-crossScalaVersions := Seq("2.12.6", "2.11.12")
+crossScalaVersions := Seq("2.11.12", "2.12.6")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -43,7 +43,7 @@ resolvers ++= Seq(
 )
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.1.2")
 
 libraryDependencies ++= (Seq("firrtl").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })
