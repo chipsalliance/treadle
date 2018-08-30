@@ -1102,15 +1102,11 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
               symbols.update(counter, engine.symbolTable(symbolName))
             }
 
-            val waveformValues: Option[WaveformValues] =
+            val waveformValues: WaveformValues =
               engine.dataStore.getWaveformValues(symbols, cycleTime, 4)
 
             console.println(waveformValues.toString)
-
-            waveformValues match {
-              case Some(waveform) => console.println(pretty(render(waveform.toJson)))
-              case _ => None
-            }
+            console.println(pretty(render(waveformValues.toJson)))
           }
         }
       },

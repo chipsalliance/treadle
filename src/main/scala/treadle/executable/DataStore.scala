@@ -478,19 +478,21 @@ extends HasDataArrays {
     }
   }
 
-  def getWaveformValues(symbols: Array[Symbol],
-                        cycleTime: Int,
-                        windowSize : Int): Option[WaveformValues] = {
-    val clockName = "clk" // TODO: how to handle for multiclock?
-    val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
-
-    var buffers : Seq[RollBackBuffer] = rollbackRing.newestToOldestBuffers.reverse
-
-    if (cycleTime >= buffers.length) {
-      None
+  def getWaveformValues(symbols: Array[Symbol], startCycle: Int = 0, endCycle: Int = -1): WaveformValues = {
+    if (rollBackBufferManager.clockToBuffers.isEmpty) {
+      WaveformValues(Array[BigInt](), symbols, Array.fill(symbols.length)(Array[BigInt]()))
     } else {
-      val leftIndexInclusive = 0.max(cycleTime + 1 - (windowSize + 1) / 2)
-      val rightIndexExclusive = buffers.length.min(cycleTime + windowSize / 2 + 1)
+      var clockName = "clk" // TODO: how to handle for multiclock?
+      if (!rollBackBufferManager.clockToBuffers.contains(clockName)) {
+        clockName = rollBackBufferManager.clockToBuffers.keySet.head
+        println(s"clock name changed to $clockName")
+      }
+      val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
+
+      var buffers: Seq[RollBackBuffer] = rollbackRing.newestToOldestBuffers.reverse
+
+      val leftIndexInclusive = math.max(0, startCycle)
+      val rightIndexExclusive = if (endCycle == -1) buffers.length else math.min(buffers.length, endCycle)
       val n = rightIndexExclusive - leftIndexInclusive
 
       buffers = buffers.dropRight(buffers.length - rightIndexExclusive).drop(leftIndexInclusive)
@@ -508,7 +510,7 @@ extends HasDataArrays {
           }
         }
       }
-      Some(WaveformValues(clockValues, symbols, symbolValues))
+      WaveformValues(clockValues, symbols, symbolValues)
     }
   }
 

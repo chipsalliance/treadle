@@ -311,17 +311,36 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
     expectationsMet += 1
   }
 
-  def getWaveValues(cycleTime: Int, windowSize: Int, symbolNames: Array[String]): Option[WaveformValues] = {
-    val numSymbols = symbolNames.length
-    val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
-    symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
-      assert(engine.symbolTable.contains(symbolName),
-        s""""$symbolName" : argument is not an element of this circuit""")
-      symbols.update(counter, engine.symbolTable(symbolName))
+  def waveformValues(
+      symbolNames: Array[String] = Array[String](),
+      startCycle: Int = 0,
+      endCycle: Int = -1
+  ): WaveformValues = {
+    val symbols = if (symbolNames.length == 0) {
+      engine.symbolTable.nameToSymbol.values.toArray
+    } else {
+      val numSymbols = symbolNames.length
+      new Array[Symbol](numSymbols)
     }
-    engine.dataStore.getWaveformValues(symbols, cycleTime, windowSize)
+
+    if (symbolNames.length == 0) {
+      symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
+        assert(engine.symbolTable.contains(symbolName),
+          s""""$symbolName" : argument is not an element of this circuit""")
+        symbols.update(counter, engine.symbolTable(symbolName))
+      }
+    }
+
+    engine.dataStore.getWaveformValues(symbols, startCycle, endCycle)
   }
 
+  def allWaveformValues: WaveformValues = {
+    engine.dataStore.getWaveformValues(engine.symbolTable.nameToSymbol.values.toArray)
+  }
+
+  def dependencyInfo(symbolName: String): String = engine.renderComputation(symbolName, showValues = false)
+
+  def isRegister(symbolName: String): Boolean = engine.symbolTable.isRegister(symbolName)
 
   def reportString: String = {
     val endTime = System.nanoTime()

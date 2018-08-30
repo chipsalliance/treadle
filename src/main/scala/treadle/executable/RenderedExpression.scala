@@ -135,9 +135,9 @@ class ExpressionViewRenderer(
               symbolTable.inputPortsNames.contains(symbol.name) ||
               symbolsSeen.contains(symbol)
             )) {
-            if(showValues) {
-              symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, dataTime, dataArrays))
-            }
+//            if(showValues) {
+            symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, dataTime, dataArrays))
+//            }
           }
 
           val value = symbol.normalize(dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))

@@ -114,7 +114,7 @@ class ExecutionEngine(
     }
   }
 
-  def renderComputation(symbolNames: String, outputFormat: String = "d"): String = {
+  def renderComputation(symbolNames: String, outputFormat: String = "d", showValues: Boolean = true): String = {
     val renderer = new ExpressionViewRenderer(dataStore, symbolTable, expressionViews)
 
     val symbols = symbolNames.split(",").map(_.trim).flatMap { s => symbolTable.get(s) }.distinct
@@ -122,7 +122,7 @@ class ExecutionEngine(
     symbols.flatMap { symbol =>
       expressionViews.get(symbol) match {
         case Some(_) =>
-          Some(s"${renderer.render(symbol, wallTime.currentTime, outputFormat = outputFormat)}")
+          Some(s"${renderer.render(symbol, wallTime.currentTime, outputFormat = outputFormat, showValues)}")
         case _ => None
       }
     }.mkString("\n")
