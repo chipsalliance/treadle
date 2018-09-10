@@ -13,7 +13,7 @@ trait CrossUnRootedSbtModule extends CrossSbtModule {
 }
 
 trait CommonModule extends CrossUnRootedSbtModule with PublishModule {
-  def publishVersion = "1.1-SNAPSHOT"
+  def publishVersion = "1.0.1"
 
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -39,7 +39,7 @@ trait CommonModule extends CrossUnRootedSbtModule with PublishModule {
   override def javacOptions = CommonBuild.javacOptionsVersion(crossScalaVersion)
 }
 
-val crossVersions = Seq("2.12.6", "2.11.12")
+val crossVersions = Seq("2.11.12", "2.12.6")
 
 // Make this available to external tools.
 object treadle extends Cross[TreadleModule](crossVersions: _*) {
@@ -69,7 +69,7 @@ object treadle extends Cross[TreadleModule](crossVersions: _*) {
 }
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.1.3")
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
