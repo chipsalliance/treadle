@@ -155,7 +155,9 @@ extends HasDataArrays {
   case class AssignInt(symbol: Symbol, expression: FuncInt, info: Info) extends Assigner {
     val index: Int = symbol.index
 
-    def runLean(): Unit = {intData(index) = expression() }
+    def runLean(): Unit = {
+      intData(index) = expression()
+    }
 
     def runFull(): Unit = {
       val value = expression()

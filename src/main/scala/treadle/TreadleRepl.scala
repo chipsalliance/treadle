@@ -52,7 +52,11 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   var currentTreadleTesterOpt: Option[TreadleTester] = None
   def currentTreadleTester: TreadleTester = currentTreadleTesterOpt.get
 
-  def engine: ExecutionEngine = currentTreadleTesterOpt.get.engine
+  def engine: ExecutionEngine = currentTreadleTesterOpt match {
+    case Some(tester) => tester.engine
+    case _ =>
+      throw TreadleException(s"No file currently loaded")
+  }
 
   var args = Array.empty[String]
   var done = false
@@ -395,7 +399,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
         def run(args: Array[String]): Unit = {
           args.toList match {
-            case "load" :: fileName :: tail =>
+            case "load" :: fileName :: _ =>
               loadVcdScript(fileName)
             case _ =>
               replVcdController match {
@@ -775,6 +779,21 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       new Command("waitfor") {
         def usage: (String, String) = ("waitfor componentName value [maxNumberOfSteps]",
           "wait for particular value (default 1) on component, up to maxNumberOfSteps (default 100)")
+
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({
+                "waitfor"
+              }),
+              new StringsCompleter(jlist(engine.validNames.toSeq))
+            ))
+          }
+        }
+
         def run(args: Array[String]): Unit = {
           getThreeArgs(
             "waitfor componentName [value] [maxNumberOfSteps]",
@@ -794,7 +813,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                 if(engine.getValue(componentName) != BigInt(value)) {
                   console.println(
                     s"waitfor exhausted $componentName did not take on" +
-                            " value ${formatOutput(value)} in $maxNumberOfSteps cycles")
+                      s" value ${formatOutput(value)} in $maxNumberOfSteps cycles")
                 }
                 else {
                   console.println(s"$componentName == value ${formatOutput(value)} in $tries cycles")
@@ -858,7 +877,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("show") {
-        def usage: (String, String) = ("show [state|input|lofirrtl]", "show useful things")
+        def usage: (String, String) = ("show [state|input|inputs|outputs|firrtl|lofirrtl]", "show useful things")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -866,7 +885,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           else {
             Some(new ArgumentCompleter(
               new StringsCompleter({ "show"}),
-              new StringsCompleter(jlist(Seq("state", "input", "lofirrtl")))
+              new StringsCompleter(jlist(Seq("state", "input", "inputs", "outputs", "firrtl", "lofirrtl")))
             ))
           }
         }
@@ -875,15 +894,19 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           getOneArg("", Some("state")) match {
             case Some("lofirrtl") =>
               console.println(engine.ast.serialize)
-            case Some("input") =>
+            case Some("input") | Some("firrtl") =>
               console.println(engine.ast.serialize)
+            case Some("inputs") =>
+              console.println(engine.symbolTable.inputPortsNames.toSeq.sorted.mkString("\n"))
+            case Some("outputs") =>
+              console.println(engine.symbolTable.outputPortsNames.toSeq.sorted.mkString("\n"))
             case _ =>
               console.println(engine.getPrettyString)
           }
         }
       },
       new Command("display") {
-        def usage: (String, String) = ("how signal[, signal, ...]", "show computation of symbols")
+        def usage: (String, String) = ("display signal[, signal, ...]", "show computation of symbols")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None

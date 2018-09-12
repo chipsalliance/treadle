@@ -39,7 +39,9 @@ class ExecutionEngine(
   /* Default dataStore plugins */
 
   dataStore.addPlugin(
-    "show-assigns", new ReportAssignments(this), enable = optionsManager.treadleOptions.setVerbose)
+    "show-assigns", new ReportAssignments(this),
+    enable = optionsManager.treadleOptions.setVerbose
+  )
 
   dataStore.addPlugin(
     "show-computation",
@@ -62,6 +64,10 @@ class ExecutionEngine(
   def setVerbose(isVerbose: Boolean = true): Unit = {
     verbose = isVerbose
     setLeanMode()
+    dataStore.plugins.get("show-assigns") match {
+      case Some(plugin) => plugin.setEnabled(verbose)
+      case _ => None
+    }
     scheduler.setVerboseAssign(isVerbose)
   }
 
