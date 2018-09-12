@@ -10,6 +10,7 @@ import logger.Logger
 import treadle.chronometry.UTC
 import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, TreadleException}
 import treadle.repl._
+import treadle.utils.ToLoFirrtl
 
 import scala.collection.mutable.ArrayBuffer
 import scala.tools.jline.console.ConsoleReader
@@ -877,7 +878,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("show") {
-        def usage: (String, String) = ("show [state|input|inputs|outputs|firrtl|lofirrtl]", "show useful things")
+        def usage: (String, String) = ("show [state|inputs|outputs|firrtl|lofirrtl]", "show useful things")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -885,15 +886,15 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           else {
             Some(new ArgumentCompleter(
               new StringsCompleter({ "show"}),
-              new StringsCompleter(jlist(Seq("state", "input", "inputs", "outputs", "firrtl", "lofirrtl")))
+              new StringsCompleter(jlist(Seq("state", "inputs", "outputs", "firrtl", "lofirrtl")))
             ))
           }
         }
 
         def run(args: Array[String]): Unit = {
-          getOneArg("", Some("state")) match {
+          getOneArg("", Some("lofirrtl")) match {
             case Some("lofirrtl") =>
-              console.println(engine.ast.serialize)
+              console.println(ToLoFirrtl.lower(engine.ast, optionsManager).serialize)
             case Some("input") | Some("firrtl") =>
               console.println(engine.ast.serialize)
             case Some("inputs") =>
