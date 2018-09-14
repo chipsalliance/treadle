@@ -361,6 +361,10 @@ class ExpressionCompiler(
         case (BigSize, _, _) =>
           throw TreadleException(
             s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head}) ($arg1, $arg2)")
+
+        case (_, _, _) =>
+          throw TreadleException(
+            s"Error:BinaryOp:$opCode(${args.head}, ${args.tail.head}) ($arg1, $arg2)")
       }
     }
 
@@ -521,6 +525,9 @@ class ExpressionCompiler(
               MuxBigs(c.apply, t.apply, LongToBig(f.apply).apply)
             case (t: BigExpressionResult, f: BigExpressionResult) =>
               MuxBigs(c.apply, t.apply, f.apply)
+
+            case (a, b) =>
+              throw TreadleException(s"Unhandled Mux($condition, $a, $b)")
           }
         case c =>
           throw TreadleException(s"Mux condition is not 1 bit $condition parsed as $c")
@@ -661,7 +668,6 @@ class ExpressionCompiler(
 
           if(assignedSymbol.firrtlType == ClockType) {
             getDrivingClock(con.expr).foreach { drivingClock =>
-              val clockDown = symbolTable(drivingClock.name)
               val downAssigner = dataStore.AssignInt(
                 assignedSymbol, makeGet(drivingClock).asInstanceOf[IntExpressionResult].apply, info = con.info)
               scheduler.addUnassigner(drivingClock, downAssigner)
@@ -802,8 +808,6 @@ class ExpressionCompiler(
   // scalastyle:on
 
   def processModule(modulePrefix: String, myModule: DefModule, circuit: Circuit): Unit = {
-    def expand(name: String): String = if(modulePrefix.isEmpty) name else modulePrefix + "." + name
-
     myModule match {
       case module: firrtl.ir.Module =>
         processStatements(modulePrefix, circuit: Circuit, module.body)
