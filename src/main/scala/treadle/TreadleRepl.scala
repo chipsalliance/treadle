@@ -41,16 +41,26 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 
   val terminal: Terminal = TerminalFactory.create()
   val console = new ConsoleReader
-  private val historyPath = "~/.treadle_repl_history".replaceFirst("^~",System.getProperty("user.home"))
+
+  // creates a treadle repl history in the current directory
+  // makes it nicer when switching between projects
+  private val historyPath = ".treadle_repl_history"
   val historyFile = new File(historyPath)
-  if(! historyFile.exists()) {
-    println(s"creating ${historyFile.getName}")
-    historyFile.createNewFile()
-  }
   val history = new FileHistory(historyFile)
 
-  history.load(historyFile)
-  console.setHistory(history)
+  try {
+    if (!historyFile.exists()) {
+      println(s"creating ${historyFile.getName}")
+      historyFile.createNewFile()
+      history.load(historyFile)
+      console.setHistory(history)
+    }
+  }
+  catch {
+    case e: Exception =>
+      // ignore problems with history file, better to run than freak out over this.
+      println(s"Error creating history file: message is ${e.getMessage}")
+  }
 
   var currentTreadleTesterOpt: Option[TreadleTester] = None
   def currentTreadleTester: TreadleTester = currentTreadleTesterOpt.get
@@ -1252,10 +1262,16 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       }
     }
 
-    console.println(s"saving history ${history.size()}")
-    console.flush()
-    history.flush()
-    console.shutdown()
+    try {
+      console.println(s"saving history ${history.size()}")
+      console.flush()
+      history.flush()
+      console.shutdown()
+    }
+    catch {
+      case e: Exception =>
+        println(s"Error on quit, message is ${e.getMessage}")
+    }
     terminal.restore()
   }
 
