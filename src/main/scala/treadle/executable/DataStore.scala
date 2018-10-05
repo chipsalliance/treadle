@@ -155,7 +155,9 @@ extends HasDataArrays {
   case class AssignInt(symbol: Symbol, expression: FuncInt, info: Info) extends Assigner {
     val index: Int = symbol.index
 
-    def runLean(): Unit = {intData(index) = expression() }
+    def runLean(): Unit = {
+      intData(index) = expression()
+    }
 
     def runFull(): Unit = {
       val value = expression()
@@ -519,6 +521,17 @@ extends HasDataArrays {
       case IntSize  => intData(symbol.index) = value.toInt
       case LongSize => longData(symbol.index) = value.toLong
       case BigSize  => bigData(symbol.index) = value
+    }
+  }
+
+  def update(symbol: Symbol, offset: Int, value: Big): Unit = {
+    if(offset >= symbol.slots) {
+      throw TreadleException(s"assigning to memory ${symbol.name}[$offset] <= $value: index out of range")
+    }
+    symbol.dataSize match {
+      case IntSize  => intData(symbol.index + offset) = value.toInt
+      case LongSize => longData(symbol.index + offset) = value.toLong
+      case BigSize  => bigData(symbol.index + offset) = value
     }
   }
 

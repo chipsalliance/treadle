@@ -4,7 +4,6 @@ package treadle.chronometry
 
 import firrtl.{Driver, ExecutionOptionsManager}
 import firrtl.{FirrtlExecutionSuccess, HasFirrtlOptions, Parser}
-import firrtl.passes.CheckChirrtl
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
 import treadle.{TreadleOptionsManager, TreadleTester}

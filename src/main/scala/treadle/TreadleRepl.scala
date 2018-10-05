@@ -4,12 +4,13 @@ package treadle
 
 import java.io.{File, PrintWriter}
 
-import firrtl.graph.CyclicException
+import firrtl.graph.{CyclicException, DiGraph}
 import treadle.vcd.VCD
 import logger.Logger
 import treadle.chronometry.UTC
-import treadle.executable.{BigSize, ClockInfo, ExecutionEngine, IntSize, LongSize, Symbol, TreadleException, WaveformValues}
+import treadle.executable.{BigSize, ClockInfo, ExecutionEngine, IntSize, LongSize, Symbol, SymbolTable, TreadleException, WaveformValues}
 import treadle.repl._
+import treadle.utils.ToLoFirrtl
 
 import scala.collection.mutable.ArrayBuffer
 import scala.tools.jline.console.ConsoleReader
@@ -17,6 +18,7 @@ import scala.tools.jline.console.history.FileHistory
 import scala.tools.jline.{Terminal, TerminalFactory}
 import scala.tools.jline.console.completer._
 import collection.JavaConverters._
+import scala.collection.mutable
 import scala.io.Source
 import scala.util.matching.Regex
 import org.json4s._
@@ -65,7 +67,11 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   var currentTreadleTesterOpt: Option[TreadleTester] = None
   def currentTreadleTester: TreadleTester = currentTreadleTesterOpt.get
 
-  def engine: ExecutionEngine = currentTreadleTesterOpt.get.engine
+  def engine: ExecutionEngine = currentTreadleTesterOpt match {
+    case Some(tester) => tester.engine
+    case _ =>
+      throw TreadleException(s"No file currently loaded")
+  }
 
   var args = Array.empty[String]
   var done = false
@@ -256,12 +262,12 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         (None, None)
       }
     }
-    //noinspection ScalaStyle
+    //scalastyle:off magic.number
     def getThreeArgs(failureMessage: String,
-                     arg1Option: Option[String] = None,
-                     arg2Option: Option[String] = None,
-                     arg3Option: Option[String] = None
-                  ): (Option[String],Option[String],Option[String]) = {
+      arg1Option: Option[String] = None,
+      arg2Option: Option[String] = None,
+      arg3Option: Option[String] = None
+    ): (Option[String],Option[String],Option[String]) = {
       if(args.length == 4) {
         (Some(args(1)), Some(args(2)), Some(args(3)))
       }
@@ -278,6 +284,15 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         error(failureMessage)
         (None, None, None)
       }
+    }
+
+    //scalastyle:off magic.number
+    def getManyArgs(defaults: Option[String]*): List[Option[String]] = {
+      val combined: Seq[(Option[String], Option[String])] = args.tail.map(Some(_)).zipAll(defaults, None, None)
+
+      val result = combined.map { case (command, default) => if(command.isDefined) command else default }
+
+      result.toList
     }
 
     val commands: ArrayBuffer[Command] = ArrayBuffer.empty[Command]
@@ -408,7 +423,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
         def run(args: Array[String]): Unit = {
           args.toList match {
-            case "load" :: fileName :: tail =>
+            case "load" :: fileName :: _ =>
               loadVcdScript(fileName)
             case _ =>
               replVcdController match {
@@ -788,6 +803,21 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       new Command("waitfor") {
         def usage: (String, String) = ("waitfor componentName value [maxNumberOfSteps]",
           "wait for particular value (default 1) on component, up to maxNumberOfSteps (default 100)")
+
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({
+                "waitfor"
+              }),
+              new StringsCompleter(jlist(engine.validNames.toSeq))
+            ))
+          }
+        }
+
         def run(args: Array[String]): Unit = {
           getThreeArgs(
             "waitfor componentName [value] [maxNumberOfSteps]",
@@ -807,7 +837,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                 if(engine.getValue(componentName) != BigInt(value)) {
                   console.println(
                     s"waitfor exhausted $componentName did not take on" +
-                            " value ${formatOutput(value)} in $maxNumberOfSteps cycles")
+                      s" value ${formatOutput(value)} in $maxNumberOfSteps cycles")
                 }
                 else {
                   console.println(s"$componentName == value ${formatOutput(value)} in $tries cycles")
@@ -822,7 +852,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("depend") {
-        def usage: (String, String) = ("depend [childrenOf|parentsOf|compare] signal [signal]",
+        def usage: (String, String) = ("depend [childrenOf|parentsOf] signal [depth] | depend compare signal1 signal2",
           "show dependency relationship to signal or between to signal")
 
         override def completer: Option[ArgumentCompleter] = {
@@ -841,29 +871,64 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           }
         }
 
+        def showRelated(direction: String, digraph: DiGraph[Symbol], symbolName: String, maxDepth: Int) {
+          val table = engine.symbolTable
+          val symbol = engine.symbolTable(symbolName)
+          val symbolsAtDepth = Array.fill(maxDepth + 1) {
+            new mutable.HashSet[Symbol]
+          }
+
+          walkGraph(symbol, depth = 0)
+
+          def walkGraph(symbol: Symbol, depth: Int): Unit = {
+            symbolsAtDepth(depth) += symbol
+
+            if (depth < maxDepth) {
+              digraph.getEdges(symbol).toSeq.sortBy(_.name).foreach { childSymbol =>
+                walkGraph(childSymbol, depth + 1)
+              }
+              if (table.isRegister(symbol.name)) {
+                walkGraph(table(SymbolTable.makeRegisterInputName(symbol)), depth + 1)
+              }
+            }
+          }
+
+          val showDepth = symbolsAtDepth.count(_.nonEmpty)
+          for (depth <- 0 until showDepth) {
+            println(s"$direction signals at distance $depth")
+            println(symbolsAtDepth(depth).toSeq.map(_.name).sorted.mkString("\n"))
+          }
+        }
+
         def run(args: Array[String]): Unit = {
           val table = engine.symbolTable
-          getThreeArgs(
-            "depend [childrenOf|parentsOf] signal [signal]"
-          ) match {
-            case (Some("childrenOf"), Some(signal), _) =>
-              println(table.getChildren(Seq(table(signal))).map(_.name).toList.sorted.mkString("\n"))
-            case (Some("parentsOf"), Some(signal), _) =>
-              println(table.getParents(Seq(table(signal))).map(_.name).toList.sorted.mkString("\n"))
-            case (Some("compare"), Some(signal1), Some(signal2)) =>
-              if(table.getChildren(Seq(table(signal1)))
-                        .contains(table(signal2))) {
-                println(s"$signal1 drives $signal2")
+          val parsedArgs = getManyArgs(Some("parentsOf"), None, Some("4"))
+          parsedArgs match {
+            case Some("parentsOf") :: Some(signal1) :: Some(depth) :: _ =>
+              showRelated("Parents", table.parentsOf, signal1, maxDepth = depth.toInt)
+            case Some("parentsOf") :: _ =>
+              console.println(s"""You must specify a signal with command "depend parentsOf" """)
+            case Some("childrenOf") :: Some(signal1) :: Some(depth) :: _ =>
+              showRelated("Children", table.childrenOf, signal1, maxDepth = depth.toInt)
+            case Some("childrenOf") :: _ =>
+              console.println(s"""You must specify a signal with command "depend childrenOf" """)
+            case Some("compare") :: Some(signal1) :: Some(signal2) :: _ =>
+              val (symbol1, symbol2) = (table(signal1), table(signal2))
+              def showPath(direction: String, digraph: DiGraph[Symbol]) {
+                try {
+                  val path = digraph.path(symbol1, symbol2)
+                  console.println(s"$signal1 is a $direction of $signal2 via")
+                  path.foreach { symbol =>
+                    console.println(f"${symbol.name}")
+                  }
+                }
+                catch {
+                  case _: firrtl.graph.PathNotFoundException =>
+                    console.println(s"$signal1 is not a $direction of $signal2")
+                }
               }
-              else if(table.getChildren(Seq(table(signal1)))
-                      .contains(table(signal2))) {
-                println(s"$signal1 is driven by $signal2")
-              }
-              else {
-                println(s"there is no dependency between $signal1 and $signal2")
-              }
-            case (Some("compare"), Some(_), None) =>
-              println(s"you must specify two signals when using compare")
+              showPath("parent", table.parentsOf)
+              showPath("child", table.childrenOf)
             case _ =>
               println(usage)
 
@@ -871,7 +936,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("show") {
-        def usage: (String, String) = ("show [state|input|lofirrtl]", "show useful things")
+        def usage: (String, String) = ("show [state|inputs|outputs|firrtl|lofirrtl]", "show useful things")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -879,24 +944,28 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           else {
             Some(new ArgumentCompleter(
               new StringsCompleter({ "show"}),
-              new StringsCompleter(jlist(Seq("state", "input", "lofirrtl")))
+              new StringsCompleter(jlist(Seq("state", "inputs", "outputs", "firrtl", "lofirrtl")))
             ))
           }
         }
 
         def run(args: Array[String]): Unit = {
-          getOneArg("", Some("state")) match {
+          getOneArg("", Some("lofirrtl")) match {
             case Some("lofirrtl") =>
+              console.println(ToLoFirrtl.lower(engine.ast, optionsManager).serialize)
+            case Some("input") | Some("firrtl") =>
               console.println(engine.ast.serialize)
-            case Some("input") =>
-              console.println(engine.ast.serialize)
+            case Some("inputs") =>
+              console.println(engine.symbolTable.inputPortsNames.toSeq.sorted.mkString("\n"))
+            case Some("outputs") =>
+              console.println(engine.symbolTable.outputPortsNames.toSeq.sorted.mkString("\n"))
             case _ =>
               console.println(engine.getPrettyString)
           }
         }
       },
       new Command("display") {
-        def usage: (String, String) = ("how signal[, signal, ...]", "show computation of symbols")
+        def usage: (String, String) = ("display signal[, signal, ...]", "show computation of symbols")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -1303,5 +1372,3 @@ object TreadleRepl {
     }
   }
 }
-
-

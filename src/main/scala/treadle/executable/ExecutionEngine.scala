@@ -39,7 +39,9 @@ class ExecutionEngine(
   /* Default dataStore plugins */
 
   dataStore.addPlugin(
-    "show-assigns", new ReportAssignments(this), enable = optionsManager.treadleOptions.setVerbose)
+    "show-assigns", new ReportAssignments(this),
+    enable = optionsManager.treadleOptions.setVerbose
+  )
 
   dataStore.addPlugin(
     "show-computation",
@@ -62,6 +64,10 @@ class ExecutionEngine(
   def setVerbose(isVerbose: Boolean = true): Unit = {
     verbose = isVerbose
     setLeanMode()
+    dataStore.plugins.get("show-assigns") match {
+      case Some(plugin) => plugin.setEnabled(verbose)
+      case _ => None
+    }
     scheduler.setVerboseAssign(isVerbose)
   }
 
@@ -81,6 +87,8 @@ class ExecutionEngine(
       Render.headerBar(s"Finished executing static assignments", offset = 8)
     }
   }
+
+  val memoryInitializer = new MemoryInitializer(this)
 
   def makeVCDLogger(fileName: String, showUnderscored: Boolean): Unit = {
     val vcd = VCD(ast.main, showUnderscoredNames = showUnderscored)
@@ -450,6 +458,8 @@ object ExecutionEngine {
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
     println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
       s"${scheduler.combinationalAssigns.size} statements")
+
+    executionEngine.memoryInitializer.initializeMemoriesFromFiles()
 
     executionEngine
   }
