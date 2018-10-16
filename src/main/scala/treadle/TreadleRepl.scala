@@ -8,7 +8,7 @@ import firrtl.graph.{CyclicException, DiGraph}
 import treadle.vcd.VCD
 import logger.Logger
 import treadle.chronometry.UTC
-import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, SymbolTable, TreadleException}
+import treadle.executable.{BigSize, ClockInfo, ExecutionEngine, IntSize, LongSize, Symbol, SymbolTable, TreadleException, WaveformValues}
 import treadle.repl._
 import treadle.utils.ToLoFirrtl
 
@@ -21,6 +21,9 @@ import collection.JavaConverters._
 import scala.collection.mutable
 import scala.io.Source
 import scala.util.matching.Regex
+import org.json4s._
+import org.json4s.native.JsonMethods._
+import org.json4s.JsonDSL._
 
 abstract class Command(val name: String) {
   def run(args: Array[String]): Unit
@@ -40,16 +43,26 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 
   val terminal: Terminal = TerminalFactory.create()
   val console = new ConsoleReader
-  private val historyPath = "~/.treadle_repl_history".replaceFirst("^~",System.getProperty("user.home"))
+
+  // creates a treadle repl history in the current directory
+  // makes it nicer when switching between projects
+  private val historyPath = ".treadle_repl_history"
   val historyFile = new File(historyPath)
-  if(! historyFile.exists()) {
-    println(s"creating ${historyFile.getName}")
-    historyFile.createNewFile()
-  }
   val history = new FileHistory(historyFile)
 
-  history.load(historyFile)
-  console.setHistory(history)
+  try {
+    if (!historyFile.exists()) {
+      println(s"creating ${historyFile.getName}")
+      historyFile.createNewFile()
+      history.load(historyFile)
+      console.setHistory(history)
+    }
+  }
+  catch {
+    case e: Exception =>
+      // ignore problems with history file, better to run than freak out over this.
+      println(s"Error creating history file: message is ${e.getMessage}")
+  }
 
   var currentTreadleTesterOpt: Option[TreadleTester] = None
   def currentTreadleTester: TreadleTester = currentTreadleTesterOpt.get
@@ -1137,6 +1150,45 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 //          console.println(s"evaluator allow combinational loops is now ${engine.evaluator.evaluateAll}")
 //        }
 //      },
+      new Command("waves") {
+        def usage: (String, String) =
+          ("waves symbolName ...","generate wavedrom json for viewing waveforms")
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({
+                "waves"
+              }),
+              new StringsCompleter(jlist(engine.validNames.toSeq))
+            ))
+          }
+        }
+        def run(args: Array[String]): Unit = {
+          if (args.length < 3) {
+            //            error("at least one symbol needed")
+            None
+          } else {
+            val cycleTime = args(1).toInt
+            val symbolNames = args.tail.tail
+            val numSymbols = symbolNames.length
+            val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
+            symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
+              assert(engine.symbolTable.contains(symbolName),
+                s""""$symbolName" : argument is not an element of this circuit""")
+              symbols.update(counter, engine.symbolTable(symbolName))
+            }
+
+            val waveformValues: WaveformValues =
+              engine.dataStore.getWaveformValues(symbols, cycleTime, 4)
+
+            console.println(waveformValues.toString)
+            console.println(pretty(render(waveformValues.toJson)))
+          }
+        }
+      },
       new Command("help") {
         def usage: (String, String) = ("help", "show available commands")
         def run(args: Array[String]): Unit = {
@@ -1175,7 +1227,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   /**
     * gets the next line from either the current executing script or from the console.
     * Strips comments from the line, may result in empty string, command parser is ok with that
- *
+    *
     * @return
     */
   def getNextLine: String = {
@@ -1279,10 +1331,16 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       }
     }
 
-    console.println(s"saving history ${history.size()}")
-    console.flush()
-    history.flush()
-    console.shutdown()
+    try {
+      console.println(s"saving history ${history.size()}")
+      console.flush()
+      history.flush()
+      console.shutdown()
+    }
+    catch {
+      case e: Exception =>
+        println(s"Error on quit, message is ${e.getMessage}")
+    }
     terminal.restore()
   }
 

@@ -367,6 +367,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
 
       val optionsManager = new TreadleOptionsManager {
         treadleOptions = treadleOptions.copy(
+          writeVCD = true,
           setVerbose = false,
           showFirrtlAtLoad = false,
           callResetAtStartUp = true

@@ -18,7 +18,7 @@ case class TreadleOptions(
                            showFirrtlAtLoad  : Boolean              = false,
                            lowCompileAtLoad  : Boolean              = true,
                            validIfIsRandom   : Boolean              = false,
-                           rollbackBuffers   : Int                  = 4,
+                           rollbackBuffers   : Int                  = 10,
                            clockInfo         : Seq[ClockInfo]       = Seq.empty,
                            resetName         : String               = "reset",
                            callResetAtStartUp: Boolean              = false,
