@@ -48,11 +48,16 @@ val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
 libraryDependencies ++= (Seq("firrtl").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })
 
+// sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
+// when compiling tests under 2.11.12
+// An explicit dependency on junit seems to alleviate this.
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.0.1",
-  "org.scalacheck" %% "scalacheck" % "1.13.4",
+  "junit" % "junit" % "4.12" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
+  "com.github.scopt" %% "scopt" % "3.7.0",
   "org.scala-lang.modules" % "scala-jline" % "2.12.1",
-  "org.json4s" %% "json4s-native" % "3.5.3"
+  "org.json4s" %% "json4s-native" % "3.6.1"
 )
 
 //javaOptions in run ++= Seq(
