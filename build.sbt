@@ -36,6 +36,9 @@ scalaVersion := "2.12.6"
 
 crossScalaVersions := Seq("2.12.6", "2.11.12")
 
+// enables using control-c in sbt CLI
+cancelable in Global := true
+
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   Resolver.sonatypeRepo("releases"),
