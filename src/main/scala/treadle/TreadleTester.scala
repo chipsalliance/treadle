@@ -80,6 +80,11 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       new MultiClockStepper(engine = this.engine, clockInfoList, wallTime)
   }
 
+  def advanceTime(interval: Long): Unit = {
+    assert(interval >= 0L, "TreadleTester#advanceTime called with negative value")
+    wallTime.setTime(wallTime.currentTime + interval)
+  }
+
   /*
   The Idea here is that combinational delay will be used when a peek follows a poke without a step
   This should allow VCD output to show the events as if they had taken place in a small

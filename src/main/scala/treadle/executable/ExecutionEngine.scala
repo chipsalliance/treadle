@@ -10,6 +10,8 @@ import treadle.chronometry.{Timer, UTC}
 import treadle.utils.{Render, ToLoFirrtl}
 import treadle.vcd.VCD
 
+import scala.collection.mutable
+
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
     val ast             : Circuit,
@@ -30,6 +32,8 @@ class ExecutionEngine(
     symbolTable,
     expressionViews
   )
+
+  val symbolsPokedSinceEvaluation: mutable.HashSet[Symbol] = new mutable.HashSet
 
   var verbose: Boolean = false
   setVerbose(optionsManager.treadleOptions.setVerbose)
@@ -186,7 +190,7 @@ class ExecutionEngine(
     * @param registerPoke changes which side of a register is poked
     * @return the concrete value that was derived from type and value
     */
-  //scalastyle:off method.length
+  // scalastyle:off cyclomatic.complexity method.length
   def setValue(
     name: String,
     value: BigInt,
@@ -200,6 +204,15 @@ class ExecutionEngine(
     val symbol = symbolTable(name)
 
     inputsChanged = true
+    if(symbolsPokedSinceEvaluation.contains(symbol)) {
+      if(verbose) {
+        println(s"updating circuit on second update of same input without clock advance")
+      }
+      symbolsPokedSinceEvaluation.clear()
+      scheduler.executeCombinationalAssigns()
+      scheduler.executeTriggeredAssigns(symbol)
+    }
+    symbolsPokedSinceEvaluation += symbol
 
     if(!force) {
       assert(symbol.dataKind == PortKind,
@@ -215,9 +228,19 @@ class ExecutionEngine(
         }
         println(s"${symbol.name} <= $value")
       }
+      val currentValue = dataStore(symbol)
       dataStore.update(symbol, adjustedValue)
       vcdOption.foreach { vcd =>
         vcd.wireChanged(symbol.name, dataStore(symbol), symbol.bitWidth)
+      }
+
+      if(
+        scheduler.triggeredAssigns.contains(symbol) &&
+        currentValue == Big0 && adjustedValue == Big1
+      ) {
+
+        scheduler.executeCombinationalAssigns()
+        scheduler.executeTriggeredAssigns(symbol)
       }
     }
     else {
@@ -267,6 +290,7 @@ class ExecutionEngine(
   def evaluateCircuit(): Unit = {
     if(inputsChanged) {
       inputsChanged = false
+      symbolsPokedSinceEvaluation.clear()
 
       if(verbose) {
         Render.headerBar(s"combinational evaluate", offset = 8)
