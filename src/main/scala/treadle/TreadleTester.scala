@@ -80,6 +80,12 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
       new MultiClockStepper(engine = this.engine, clockInfoList, wallTime)
   }
 
+  /**
+    * Advance time in ticks of the [[UTC]] wallTime, the default is picoseconds, but can be
+    * read by the scaleName of the wallTime.  One should probably be advancing by some simple factor
+    * of a clock period. The clockInfoList of the options should define this (could be more than one).
+    * @param interval units are in units of the [[wallTime]] scale.
+    */
   def advanceTime(interval: Long): Unit = {
     assert(interval >= 0L, "TreadleTester#advanceTime called with negative value")
     wallTime.setTime(wallTime.currentTime + interval)

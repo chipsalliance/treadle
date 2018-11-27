@@ -122,29 +122,4 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
     tester.report()
   }
 
-  "treadle should update register at right time" in {
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = true,
-        vcdShowUnderscored = true,
-        writeVCD = true,
-        callResetAtStartUp = false
-      )
-      commonOptions = commonOptions.copy(
-        targetDirName = "test_run_dir/auto_clocked/clock_up",
-        topName = "clock_up"
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
-
-    tester.poke("in1", 1)
-    tester.step()
-    tester.poke("in1", 2)
-    tester.step()
-    tester.poke("in1", 1)
-
-    tester.report()
-  }
-
 }

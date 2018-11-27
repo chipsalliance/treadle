@@ -6,7 +6,7 @@ import treadle.utils.Render
 
 import scala.collection.mutable
 
-class UTC(scaleName: String = "picoseconds") {
+class UTC(val scaleName: String = "picoseconds") {
   private var internalTime: Long = 0L
   def currentTime:  Long = internalTime
   def setTime(time: Long): Unit = {
