@@ -3,7 +3,7 @@
 package treadle
 
 import firrtl.ir.{Param, Type}
-import treadle.executable.Transition
+import treadle.executable.{DataStore, Symbol, Transition}
 
 import scala.collection._
 
@@ -12,9 +12,18 @@ import scala.collection._
   * black box.  Implementing classes should add internal
   * variables to hold any state information.
   */
+//TODO: Consider providing a VCD hook here, so internal state can be dumped
 trait ScalaBlackBox {
   def name: String
   def completeName(componentName: String): String = s"$name.$componentName"
+
+  /**
+    * This method will be called for each input symbol of the black box.
+    * This method should be overridden
+    * @param name the name of the input to this black box
+    * @param value the latest value computed for this input. It may not be different than the current value
+    */
+  def inputChanged(name: String, value: BigInt): Unit = {}
 
   /**
     * getOutput is called to determine the value for the named output at the
@@ -72,5 +81,12 @@ abstract class ScalaBlackBoxFactory {
     boxes(blackBox.name) = blackBox
     blackBox
   }
+
+  /**
+    * This function will be called during treadle compilation.
+    * @param instanceName The name of the specific instance being created
+    * @param blackBoxName The BlackBox implementation name
+    * @return
+    */
   def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox]
 }

@@ -74,7 +74,7 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
         else {
           Some(symbol)
         }
-      case x =>
+      case _ =>
         Some(symbol)
     }
   }
@@ -276,7 +276,6 @@ object SymbolTable extends LazyLogging {
             case extModule: ExtModule =>
               blackBoxImplementations.get(instanceSymbol) match {
                 case Some(implementation) =>
-                  implementation.setParams(extModule.params)
                   for (port <- extModule.ports) {
                     if(port.direction == Output) {
                       val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))
@@ -339,7 +338,7 @@ object SymbolTable extends LazyLogging {
 
         case stop @ Stop(info, _, clockExpression, _)   =>
           getClockSymbol(clockExpression) match {
-            case Some(clockSymbol) =>
+            case Some(_) =>
               val stopSymbolName = makeStopName()
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(stopSymbol)
@@ -357,7 +356,7 @@ object SymbolTable extends LazyLogging {
 
         case print @ Print(info, _, _, clockExpression, _)  =>
           getClockSymbol(clockExpression) match {
-            case Some(clockSymbol) =>
+            case Some(_) =>
               val printSymbolName = makePrintName()
               val printSymbol = Symbol(
                 printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)

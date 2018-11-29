@@ -220,6 +220,22 @@ extends HasDataArrays {
     var run: FuncUnit = runLean
   }
 
+  case class ExternalModuleInputAssigner(
+    symbol:             Symbol,
+    portName:           String,
+    blackBox:           ScalaBlackBox,
+    underlyingAssigner: Assigner,
+  ) extends Assigner {
+
+    val info: Info = underlyingAssigner.info
+
+    override def run: FuncUnit = {
+      underlyingAssigner.run()
+      blackBox.inputChanged(portName, apply(symbol))
+      () => Unit
+    }
+  }
+
   case class TriggerExpressionAssigner(
     symbol: Symbol,
     scheduler: Scheduler,

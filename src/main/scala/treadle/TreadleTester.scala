@@ -8,6 +8,8 @@ import java.util.Calendar
 import treadle.chronometry.UTC
 import treadle.executable._
 
+//TODO: Indirect assignments to external modules input is possibly not handled correctly
+
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
   * and allows poke, peek, expect and step
@@ -21,7 +23,7 @@ import treadle.executable._
   * @param input              a firrtl program contained in a string
   * @param optionsManager     collection of options for the engine
   */
-class TreadleTester(input: String, optionsManager: HasTreadleSuite = new TreadleOptionsManager) {
+class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
   var expectationsMet = 0
 
   treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
@@ -393,7 +395,23 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = new Treadle
 }
 
 object TreadleTester {
-  def apply(input : String, optionsManager: HasTreadleSuite = new TreadleOptionsManager): TreadleTester = {
+  /**
+    * this convenience method avoids files laying around in current directory
+    * @return
+    */
+  def getDefaultManager: HasTreadleSuite = {
+    new TreadleOptionsManager {
+      commonOptions = commonOptions.copy(targetDirName = "test_run_dir")
+    }
+  }
+
+  /**
+    * Create a treadle tester
+    * @param input           the firrtl to parse
+    * @param optionsManager  options manager
+    * @return
+    */
+  def apply(input : String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
     new TreadleTester(input, optionsManager)
   }
 }
