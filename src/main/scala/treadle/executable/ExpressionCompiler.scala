@@ -132,7 +132,7 @@ class ExpressionCompiler(
 
   def addAssigner(
     assigner: Assigner,
-    triggerOption: Option[Symbol] = None,
+    triggerOption: Option[Symbol] = None
   ): Unit = {
 
     val symbol = assigner.symbol
