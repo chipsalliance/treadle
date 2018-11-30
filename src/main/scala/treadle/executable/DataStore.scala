@@ -224,7 +224,7 @@ extends HasDataArrays {
     symbol:             Symbol,
     portName:           String,
     blackBox:           ScalaBlackBox,
-    underlyingAssigner: Assigner,
+    underlyingAssigner: Assigner
   ) extends Assigner {
 
     val info: Info = underlyingAssigner.info
