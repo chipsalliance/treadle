@@ -23,8 +23,8 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
 
   override def inputChanged(name: String, value: BigInt): Unit = {
     name match {
-      case "d"     => nextValue = value
-      case "en"    => enable = value > Big0
+      case "io_d"     => nextValue = value
+      case "io_en"    => enable = value > Big0
       case "rst"   =>
         if(value > Big0) {
           nextValue = resetValue
@@ -42,7 +42,7 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
   }
 
   override def outputDependencies(outputName: String): Seq[String] = {
-    Seq("rst", "clk", "d")
+    Seq("rst", "clk", "io_d", "io_en")
   }
 
   override def setParams(params: Seq[Param]): Unit = {

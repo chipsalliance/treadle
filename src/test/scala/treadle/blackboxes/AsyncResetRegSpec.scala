@@ -14,19 +14,15 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
         |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.6
         |circuit UsesAsyncResetReg :
         |  extmodule AsyncResetReg :
-        |    input d : UInt<1>
-        |    output q : UInt<1>
-        |    input en : UInt<1>
+        |    output io : {flip d : UInt<1>, q : UInt<1>, flip en : UInt<1>}
         |    input clk : Clock
         |    input rst : UInt<1>
         |
         |    defname = AsyncResetReg
-        |    parameter RESET_VALUE = 0
+        |    parameter RESET_VALUE = 1
         |
         |  extmodule AsyncResetReg_1 :
-        |    input d : UInt<1>
-        |    output q : UInt<1>
-        |    input en : UInt<1>
+        |    output io : {flip d : UInt<1>, q : UInt<1>, flip en : UInt<1>}
         |    input clk : Clock
         |    input rst : UInt<1>
         |
@@ -34,79 +30,72 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
         |    parameter RESET_VALUE = 1
         |
         |  extmodule AsyncResetReg_2 :
-        |    input d : UInt<1>
-        |    output q : UInt<1>
-        |    input en : UInt<1>
+        |    output io : {flip d : UInt<1>, q : UInt<1>, flip en : UInt<1>}
         |    input clk : Clock
         |    input rst : UInt<1>
         |
         |    defname = AsyncResetReg
-        |    parameter RESET_VALUE = 1
+        |    parameter RESET_VALUE = 0
         |
-        |  module AsyncResetRegVec_w3_i42 :
+        |  module AsyncResetRegVec_w3_i3 :
         |    input clock : Clock
         |    input reset : UInt<1>
         |    output io : {flip d : UInt<3>, q : UInt<3>, flip en : UInt<1>}
         |
-        |    inst reg_0 of AsyncResetReg @[AsyncResetRegTest.scala 45:11]
-        |    reg_0.rst is invalid
+        |    inst reg_0 of AsyncResetReg @[AsyncResetRegTest.scala 103:11]
+        |    reg_0.io is invalid
         |    reg_0.clk is invalid
-        |    reg_0.en is invalid
-        |    reg_0.q is invalid
-        |    reg_0.d is invalid
-        |    inst reg_1 of AsyncResetReg_1 @[AsyncResetRegTest.scala 45:11]
-        |    reg_1.rst is invalid
+        |    reg_0.rst is invalid
+        |    inst reg_1 of AsyncResetReg_1 @[AsyncResetRegTest.scala 103:11]
+        |    reg_1.io is invalid
         |    reg_1.clk is invalid
-        |    reg_1.en is invalid
-        |    reg_1.q is invalid
-        |    reg_1.d is invalid
-        |    inst reg_2 of AsyncResetReg_2 @[AsyncResetRegTest.scala 45:11]
-        |    reg_2.rst is invalid
+        |    reg_1.rst is invalid
+        |    inst reg_2 of AsyncResetReg_2 @[AsyncResetRegTest.scala 103:11]
+        |    reg_2.io is invalid
         |    reg_2.clk is invalid
-        |    reg_2.en is invalid
-        |    reg_2.q is invalid
-        |    reg_2.d is invalid
-        |    reg_0.clk <= clock @[AsyncResetRegTest.scala 49:16]
-        |    reg_0.rst <= reset @[AsyncResetRegTest.scala 50:16]
-        |    node _T = bits(io.d, 0, 0) @[AsyncResetRegTest.scala 51:23]
-        |    reg_0.d <= _T @[AsyncResetRegTest.scala 51:16]
-        |    reg_0.en <= io.en @[AsyncResetRegTest.scala 52:16]
-        |    reg_1.clk <= clock @[AsyncResetRegTest.scala 49:16]
-        |    reg_1.rst <= reset @[AsyncResetRegTest.scala 50:16]
-        |    node _T_1 = bits(io.d, 1, 1) @[AsyncResetRegTest.scala 51:23]
-        |    reg_1.d <= _T_1 @[AsyncResetRegTest.scala 51:16]
-        |    reg_1.en <= io.en @[AsyncResetRegTest.scala 52:16]
-        |    reg_2.clk <= clock @[AsyncResetRegTest.scala 49:16]
-        |    reg_2.rst <= reset @[AsyncResetRegTest.scala 50:16]
-        |    node _T_2 = bits(io.d, 2, 2) @[AsyncResetRegTest.scala 51:23]
-        |    reg_2.d <= _T_2 @[AsyncResetRegTest.scala 51:16]
-        |    reg_2.en <= io.en @[AsyncResetRegTest.scala 52:16]
-        |    node _T_3 = cat(reg_0.q, reg_1.q) @[Cat.scala 30:58]
-        |    node _T_4 = cat(_T_3, reg_2.q) @[Cat.scala 30:58]
-        |    io.q <= _T_4 @[AsyncResetRegTest.scala 57:8]
+        |    reg_2.rst is invalid
+        |    reg_0.clk <= clock @[AsyncResetRegTest.scala 107:13]
+        |    reg_0.rst <= reset @[AsyncResetRegTest.scala 108:13]
+        |    node _T = bits(io.d, 0, 0) @[AsyncResetRegTest.scala 109:23]
+        |    reg_0.io.d <= _T @[AsyncResetRegTest.scala 109:16]
+        |    reg_0.io.en <= io.en @[AsyncResetRegTest.scala 110:16]
+        |    reg_1.clk <= clock @[AsyncResetRegTest.scala 107:13]
+        |    reg_1.rst <= reset @[AsyncResetRegTest.scala 108:13]
+        |    node _T_1 = bits(io.d, 1, 1) @[AsyncResetRegTest.scala 109:23]
+        |    reg_1.io.d <= _T_1 @[AsyncResetRegTest.scala 109:16]
+        |    reg_1.io.en <= io.en @[AsyncResetRegTest.scala 110:16]
+        |    reg_2.clk <= clock @[AsyncResetRegTest.scala 107:13]
+        |    reg_2.rst <= reset @[AsyncResetRegTest.scala 108:13]
+        |    node _T_2 = bits(io.d, 2, 2) @[AsyncResetRegTest.scala 109:23]
+        |    reg_2.io.d <= _T_2 @[AsyncResetRegTest.scala 109:16]
+        |    reg_2.io.en <= io.en @[AsyncResetRegTest.scala 110:16]
+        |    node _T_3 = cat(reg_2.io.q, reg_1.io.q) @[Cat.scala 30:58]
+        |    node _T_4 = cat(_T_3, reg_0.io.q) @[Cat.scala 30:58]
+        |    io.q <= _T_4 @[AsyncResetRegTest.scala 116:8]
         |
         |  module UsesAsyncResetReg :
         |    input clock : Clock
         |    input reset : UInt<1>
         |    output io : {flip in : UInt<3>, out : UInt<3>}
         |
-        |    inst reg of AsyncResetRegVec_w3_i42 @[AsyncResetRegTest.scala 69:19]
+        |    inst reg of AsyncResetRegVec_w3_i3 @[AsyncResetRegTest.scala 128:19]
         |    reg.clock <= clock
         |    reg.reset <= reset
-        |    reg.io.d <= io.in @[AsyncResetRegTest.scala 71:12]
-        |    reg.clock <= clock @[AsyncResetRegTest.scala 72:13]
-        |    reg.reset <= reset @[AsyncResetRegTest.scala 73:13]
-        |    reg.io.en <= UInt<1>("h01") @[AsyncResetRegTest.scala 74:13]
-        |    io.out <= reg.io.q @[AsyncResetRegTest.scala 76:10]
+        |    reg.io.d <= io.in @[AsyncResetRegTest.scala 130:12]
+        |    reg.clock <= clock @[AsyncResetRegTest.scala 131:13]
+        |    reg.reset <= reset @[AsyncResetRegTest.scala 132:13]
+        |    reg.io.en <= UInt<1>("h01") @[AsyncResetRegTest.scala 133:13]
+        |    io.out <= reg.io.q @[AsyncResetRegTest.scala 135:10]
         |
         |
-    """.stripMargin
+      """.stripMargin
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
         callResetAtStartUp = false,
-        setVerbose = true
+        setVerbose = true,
+        showFirrtlAtLoad = true
       )
     }
     val tester = TreadleTester(input, manager)
@@ -134,9 +123,9 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
         |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.6
         |circuit UsesAsyncResetReg :
         |  extmodule AsyncResetReg :
-        |    input d : UInt<1>
-        |    output q : UInt<1>
-        |    input en : UInt<1>
+        |    input io_d : UInt<1>
+        |    output io_q : UInt<1>
+        |    input io_en : UInt<1>
         |    input clk : Clock
         |    input rst : UInt<1>
         |
@@ -151,16 +140,16 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
         |    inst reg_0 of AsyncResetReg @[AsyncResetRegTest.scala 45:11]
         |    reg_0.rst is invalid
         |    reg_0.clk is invalid
-        |    reg_0.en is invalid
-        |    reg_0.q is invalid
-        |    reg_0.d is invalid
+        |    reg_0.io_en is invalid
+        |    reg_0.io_q is invalid
+        |    reg_0.io_d is invalid
         |
         |    reg_0.clk <= clock
         |    reg_0.rst <= reset
-        |    reg_0.d <= io.in  @[AsyncResetRegTest.scala 51:16]
-        |    reg_0.en <= io.en @[AsyncResetRegTest.scala 52:16]
+        |    reg_0.io_d <= io.in  @[AsyncResetRegTest.scala 51:16]
+        |    reg_0.io_en <= io.en @[AsyncResetRegTest.scala 52:16]
         |
-        |    io.out <= reg_0.q
+        |    io.out <= reg_0.io_q
         |
         |
     """.stripMargin

@@ -391,8 +391,17 @@ object SymbolTable extends LazyLogging {
 
       for (outputPort <- extModule.ports if outputPort.direction == Output) {
         instance.outputDependencies(outputPort.name).foreach { inputPortName =>
+          val drivingSymbol = nameToSymbol.getOrElse(
+            expand(inputPortName),
+            throw TreadleException {
+              s"external module ${extModule.name}" +
+                      s" claims output ${expand(outputPort.name)}" +
+                      s" depends on non-existent input ${inputPortName}," +
+                      s" probably a bad name in override def outputDependencies"
+            }
+          )
           sensitivityGraphBuilder.addSensitivity(
-            drivingSymbol = nameToSymbol(expand(inputPortName)),
+            drivingSymbol,
             sensitiveSymbol = nameToSymbol(expand(outputPort.name))
           )
         }
