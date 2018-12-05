@@ -1,0 +1,67 @@
+// See LICENSE for license details.
+
+package treadle.asyncreset
+
+import firrtl.ir.{Param, Type}
+import treadle._
+import treadle.executable._
+
+/**
+  * Implements a single bit register with asynchronous reset
+  */
+class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
+  override def name: String = "AsyncResetReg"
+
+  var nextValue:    BigInt = Big0
+  var currentValue: BigInt = Big0
+  var resetValue:   BigInt = Big0
+  var enable:       Boolean = false
+
+  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+    currentValue
+  }
+
+  override def inputChanged(name: String, value: BigInt): Unit = {
+    name match {
+      case "io_d"     => nextValue = value
+      case "io_en"    => enable = value > Big0
+      case "rst"   =>
+        if(value > Big0) {
+          nextValue = resetValue
+          currentValue = nextValue
+        }
+      case _ =>
+    }
+    println(s"next $nextValue cur $currentValue, en $enable")
+  }
+
+  override def clockChange(transition: Transition, clockName: String): Unit = {
+    if(transition == PositiveEdge && enable) {
+      currentValue = nextValue
+    }
+  }
+
+  override def outputDependencies(outputName: String): Seq[String] = {
+    Seq("rst", "clk", "io_d", "io_en")
+  }
+
+  override def setParams(params: Seq[Param]): Unit = {
+    params.foreach {
+      case firrtl.ir.IntParam("RESET_VALUE", value) =>
+        resetValue = value
+      case _ =>
+        // ignore
+    }
+  }
+}
+
+class AsyncResetBlackBoxFactory extends ScalaBlackBoxFactory {
+  override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
+    blackBoxName match {
+      case "AsyncResetReg" =>
+        Some(add(new AsyncResetReg(instanceName)))
+      case _ =>
+        None
+    }
+  }
+}

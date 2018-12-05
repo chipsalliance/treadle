@@ -8,6 +8,8 @@ import firrtl.ir._
 import treadle._
 import treadle.utils.FindModule
 
+import scala.collection.mutable
+
 class ExpressionCompiler(
     val symbolTable  : SymbolTable,
     val dataStore    : DataStore,
@@ -16,6 +18,10 @@ class ExpressionCompiler(
     blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {
+
+  case class ExternalInputParams(instance: ScalaBlackBox, portName: String)
+
+  private val externalModuleInputs = new mutable.HashMap[Symbol, ExternalInputParams]
 
   def getWidth(tpe: firrtl.ir.Type): Int = {
     tpe match {
@@ -76,7 +82,7 @@ class ExpressionCompiler(
     }
   }
 
-  //scalastyle:off cyclomatic.complexity
+  //scalastyle:off cyclomatic.complexity method.length
   def makeAssigner(
     symbol: Symbol,
     expressionResult: ExpressionResult,
@@ -124,9 +130,20 @@ class ExpressionCompiler(
     addAssigner(assigner, triggerOption)
   }
 
-  def addAssigner(assigner: Assigner, triggerOption: Option[Symbol] = None): Unit = {
+  def addAssigner(
+    assigner: Assigner,
+    triggerOption: Option[Symbol] = None
+  ): Unit = {
+
     val symbol = assigner.symbol
-    scheduler.addAssigner(symbol, assigner, triggerOption)
+    externalModuleInputs.get(symbol) match {
+      case Some(ExternalInputParams(instance, portName)) =>
+        // if there's a black box listening to this add the ext module wrapper
+        scheduler.addAssigner(symbol, dataStore.ExternalModuleInputAssigner(symbol, portName, instance, assigner))
+      case _ =>
+        // typical case
+        scheduler.addAssigner(symbol, assigner, triggerOption)
+    }
   }
 
   def makeIndirectAssigner(
@@ -707,6 +724,10 @@ class ExpressionCompiler(
                     val drivingClockOption = symbolTable.findHighestClock(clockSymbol)
 
                     scheduler.addAssigner(instanceSymbol, blackBoxCycler, triggerOption = drivingClockOption)
+                  }
+                  else if(port.direction == Input) {
+                    val portSymbol = symbolTable(expand(instanceName + "." + port.name))
+                    externalModuleInputs(portSymbol) = ExternalInputParams(implementation, port.name)
                   }
                 }
               case _ =>

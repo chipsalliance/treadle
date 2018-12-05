@@ -63,10 +63,10 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
         triggeredAssigns(triggerSignal) += assigner
       case _ =>
         if(! excludeFromCombinational) {
-        if(toAssigner.contains(symbol)) {
-          throw TreadleException(s"Assigner already exists for $symbol")
-        }
-        toAssigner(symbol) = assigner
+          if(toAssigner.contains(symbol)) {
+            throw TreadleException(s"Assigner already exists for $symbol")
+          }
+          toAssigner(symbol) = assigner
           combinationalAssigns += assigner
         }
     }
