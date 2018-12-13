@@ -52,12 +52,6 @@ case class SimpleSingleClockStepper(
 
   var isFirstRun: Boolean = true
 
-  val clockAssigner = dataStore.TriggerConstantAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1, NoInfo)
-  engine.scheduler.clockAssigners += clockAssigner
-  engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
-
-  clockAssigners(clockSymbol) = ClockAssigners(clockAssigner, clockAssigner)
-
   var combinationalBumps: Long = 0L
 
   /**
@@ -71,19 +65,8 @@ case class SimpleSingleClockStepper(
       engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
     }
 
-    val constantAssigner = clockAssigner
-    constantAssigner.value = if(value > Big(0)) {
-      if(hasRollBack) {
-        // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
-      }
-      cycleCount += 1
-      1
-    }
-    else {
-      0
-    }
-    constantAssigner.run()
+    engine.setValue(clockSymbol.name, value)
+    cycleCount += 1
   }
 
   override def combinationalBump(value: Long): Unit = {
@@ -127,9 +110,7 @@ case class SimpleSingleClockStepper(
       * Raise the clock and propagate changes
       */
     def raiseClock(): Unit = {
-      clockAssigner.value = 1
-      clockAssigner.run()
-      engine.inputsChanged = true
+      engine.setValue(clockSymbol.name, 1)
       engine.evaluateCircuit()
 
       val remainingIncrement = handlePossibleReset(upPeriod)
@@ -142,8 +123,7 @@ case class SimpleSingleClockStepper(
       * lower the clock
       */
     def lowerClock(): Unit = {
-      clockAssigner.value = 0
-      clockAssigner.run()
+      engine.setValue(clockSymbol.name, 0)
       combinationalBumps = 0L
     }
 
@@ -210,41 +190,42 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
 
   val shortestPeriod: Long = clockInfoList.map(_.period).min
 
-  clockInfoList.foreach { clockInfo =>
-    val clockSymbol = engine.symbolTable(clockInfo.name)
+  ???
 
-    val clockUpAssigner = dataStore.TriggerExpressionAssigner(
-      clockSymbol, scheduler, GetIntConstant(1).apply, triggerOnValue = 1, NoInfo)
-
-    val clockDownAssigner = dataStore.TriggerExpressionAssigner(
-      clockSymbol, scheduler, GetIntConstant(0).apply, triggerOnValue = -1, NoInfo)
-
-    clockAssigners(clockSymbol) = ClockAssigners(clockUpAssigner, clockDownAssigner)
-
-
-    scheduler.clockAssigners += clockUpAssigner
-    scheduler.clockAssigners += clockDownAssigner
-
-    // this sets clock high and will call register updates
-    wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, s"${clockInfo.name}/up") { () =>
-      if(hasRollBack) {
-        // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
-      }
-      cycleCount += 1
-      clockUpAssigner.run()
-      engine.inputsChanged = true
-    }
-
-    // this task sets clocks low
-    wallTime.addRecurringTask(
-      clockInfo.period,
-      clockInfo.initialOffset + clockInfo.upPeriod,
-      s"${clockInfo.name}/down"
-    ) { () =>
-      clockDownAssigner.run()
-    }
-  }
+//  clockInfoList.foreach { clockInfo =>
+//    val clockSymbol = engine.symbolTable(clockInfo.name)
+//
+//    val clockUpAssigner = dataStore.TriggerExpressionAssigner(
+//      clockSymbol, scheduler, GetIntConstant(1).apply, triggerOnValue = 1, NoInfo)
+//
+//    val clockDownAssigner = dataStore.TriggerExpressionAssigner(
+//      clockSymbol, scheduler, GetIntConstant(0).apply, triggerOnValue = -1, NoInfo)
+//
+//    clockAssigners(clockSymbol) = ClockAssigners(clockUpAssigner, clockDownAssigner)
+//
+//
+//    //TODO: XXX make steppers work again
+//
+//    // this sets clock high and will call register updates
+//    wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, s"${clockInfo.name}/up") { () =>
+//      if(hasRollBack) {
+//        // save data state under roll back buffers for this clock
+//        engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
+//      }
+//      cycleCount += 1
+//      clockUpAssigner.run()
+//      engine.inputsChanged = true
+//    }
+//
+//    // this task sets clocks low
+//    wallTime.addRecurringTask(
+//      clockInfo.period,
+//      clockInfo.initialOffset + clockInfo.upPeriod,
+//      s"${clockInfo.name}/down"
+//    ) { () =>
+//      clockDownAssigner.run()
+//    }
+//  }
 
   /**
     * This function is (and should only) be used by the VcdReplayTester

@@ -210,7 +210,6 @@ class ExecutionEngine(
       }
       symbolsPokedSinceEvaluation.clear()
       scheduler.executeCombinationalAssigns()
-      scheduler.executeTriggeredAssigns(symbol)
     }
     symbolsPokedSinceEvaluation += symbol
 
@@ -232,15 +231,6 @@ class ExecutionEngine(
       dataStore.update(symbol, adjustedValue)
       vcdOption.foreach { vcd =>
         vcd.wireChanged(symbol.name, dataStore(symbol), symbol.bitWidth)
-      }
-
-      if(
-        scheduler.triggeredAssigns.contains(symbol) &&
-        currentValue == Big0 && adjustedValue == Big1
-      ) {
-
-        scheduler.executeCombinationalAssigns()
-        scheduler.executeTriggeredAssigns(symbol)
       }
     }
     else {

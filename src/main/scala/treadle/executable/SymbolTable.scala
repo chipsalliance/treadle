@@ -130,6 +130,7 @@ object SymbolTable extends LazyLogging {
 
   val RegisterInputSuffix = "/in"
   val LastValueSuffix     = "/last"
+  val PrevSuffix          = "/prev"
 
   def makeRegisterInputName(name: String): String = name + RegisterInputSuffix
   def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
@@ -139,6 +140,9 @@ object SymbolTable extends LazyLogging {
 
   def makeLastValueName(name: String)       : String = name + LastValueSuffix
   def makeLastValueName(symbol: Symbol)     : String = symbol.name + LastValueSuffix
+
+  def makePreviousValue(name: String)       : String = name + PrevSuffix
+  def makePreviousValue(symbol: Symbol)     : String = symbol.name + PrevSuffix
 
   def makeLastValueSymbol(symbol: Symbol): Symbol = {
     Symbol(makeLastValueName(symbol), UIntType(IntWidth(1)))
@@ -238,6 +242,14 @@ object SymbolTable extends LazyLogging {
         clocks.headOption
       }
 
+      def createPrevClock(clockName: String, tpe: Type, info: Info): Unit = {
+        val prevClockName = makePreviousValue(clockName)
+
+        val symbol = Symbol.apply(prevClockName, tpe, firrtl.NodeKind, slots = 0, info = info)
+
+        addSymbol(symbol)
+      }
+
       s match {
         case block: Block =>
           block.stmts.foreach { subStatement =>
@@ -254,8 +266,19 @@ object SymbolTable extends LazyLogging {
                 expand(con.loc.serialize)
               }
               val symbol = nameToSymbol(name)
+              if(symbol.firrtlType == ClockType) {
+                //
+                // we have found a clock on the LHS, create a previous value for it
+                val prevClockSymbolName = makePreviousValue(symbol)
+                val prevClockSymbol = Symbol(prevClockSymbolName, ClockType, WireKind, info = symbol.info)
+                addSymbol(prevClockSymbol)
+              }
 
-              addDependency(symbol, expressionToReferences(con.expr))
+              val references = expressionToReferences(con.expr)
+              addDependency(symbol, references)
+
+            case _ =>
+              println(s"Warning: connect at ${con.info}, ${con.loc} is not WRef, WSubField or WSubIndex")
           }
 
         case WDefInstance(info, instanceName, moduleName, _) =>
@@ -284,6 +307,10 @@ object SymbolTable extends LazyLogging {
                         addDependency(portSymbol, Set(inputSymbol, instanceSymbol))
                       }
                     }
+                    if(port.tpe == ClockType) {
+                      val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))
+                      addDependency(instanceSymbol, Set(portSymbol))
+                    }
                   }
                 case _ =>
                   println(
@@ -300,12 +327,18 @@ object SymbolTable extends LazyLogging {
           val symbol = Symbol(expandedName, expression.tpe, firrtl.NodeKind, info = info)
           addSymbol(symbol)
           addDependency(symbol, expressionToReferences(expression))
+          if(expression.tpe == ClockType) {
+            createPrevClock(symbol.name, expression.tpe, info)
+          }
 
         case DefWire(info, name, tpe) =>
           logger.debug(s"declaration:DefWire:$name")
           val expandedName = expand(name)
           val symbol = Symbol(expandedName, tpe, WireKind, info = info)
           addSymbol(symbol)
+          if(tpe == ClockType) {
+            createPrevClock(symbol.name, tpe, info)
+          }
 
         case DefRegister(info, name, tpe, clockExpression, resetExpression, _) =>
           val expandedName = expand(name)
@@ -321,7 +354,6 @@ object SymbolTable extends LazyLogging {
           addDependency(registerIn, expressionToReferences(resetExpression))
 
           registerToClock(registerOut) = expressionToReferences(clockExpression).head
-          // addDependency(registerIn, Set(registerOut))
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)
@@ -336,13 +368,16 @@ object SymbolTable extends LazyLogging {
           moduleMemoryToMemorySymbol(moduleMemory) += memorySymbols.head
 
 
-        case stop @ Stop(info, _, clockExpression, _)   =>
+        case stop @ Stop(info, args, clockExpression, enableExpression)   =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
               val stopSymbolName = makeStopName()
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(stopSymbol)
               stopToStopInfo(stop) = StopInfo(stopSymbol)
+
+              addDependency(stopSymbol, expressionToReferences(clockExpression))
+              addDependency(stopSymbol, expressionToReferences(enableExpression))
 
               if(! nameToSymbol.contains(StopOp.stopHappenedName)) {
                 addSymbol(
@@ -354,7 +389,8 @@ object SymbolTable extends LazyLogging {
               throw TreadleException(s"Can't find clock for $stop")
           }
 
-        case print @ Print(info, _, _, clockExpression, _)  =>
+
+        case print @ Print(info, _, args, clockExpression, enableExpression)  =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
               val printSymbolName = makePrintName()
@@ -363,6 +399,11 @@ object SymbolTable extends LazyLogging {
               addSymbol(printSymbol)
 
               printToPrintInfo(print) = PrintInfo(printSymbol)
+              addDependency(printSymbol, expressionToReferences(clockExpression))
+              addDependency(printSymbol, expressionToReferences(enableExpression))
+              args.foreach { arg =>
+                addDependency(printSymbol, expressionToReferences(arg))
+              }
 
             case _ =>
               throw TreadleException(s"Can't find clock for $print")
@@ -396,7 +437,7 @@ object SymbolTable extends LazyLogging {
             throw TreadleException {
               s"external module ${extModule.name}" +
                       s" claims output ${expand(outputPort.name)}" +
-                      s" depends on non-existent input ${inputPortName}," +
+                      s" depends on non-existent input $inputPortName," +
                       s" probably a bad name in override def outputDependencies"
             }
           )
@@ -416,12 +457,17 @@ object SymbolTable extends LazyLogging {
           val expandedName = expand(port.name)
           val symbol = Symbol(expandedName, port.tpe, PortKind)
           addSymbol(symbol)
+
           if(modulePrefix.isEmpty) {  // this is true only at top level
             if(port.direction == Input) {
               inputPorts += symbol.name
             }
             else if(port.direction == Output) {
               outputPorts += symbol.name
+            }
+            if(port.tpe == ClockType) {
+              val prevClockSymbol = Symbol(makePreviousValue(symbol), ClockType, PortKind)
+              addSymbol(prevClockSymbol)
             }
           }
         }

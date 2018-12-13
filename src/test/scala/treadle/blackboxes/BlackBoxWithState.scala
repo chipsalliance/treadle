@@ -42,7 +42,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = false,
+        setVerbose = true,
         writeVCD = false,
         symbolsToWatch = Seq("io_data"),
         blackBoxFactories = Seq(new AccumBlackBoxFactory),
@@ -75,6 +75,9 @@ class AccumulatorBlackBox(val name: String) extends ScalaBlackBox {
   var ns : BigInt = 0
   var ps : BigInt = 0
   var isInReset: Boolean = false
+
+  override def inputChanged(name: String, value: BigInt): Unit = {
+  }
 
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {

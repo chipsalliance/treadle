@@ -7,7 +7,6 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
 import treadle.ScalaBlackBox
-import treadle.utils.Render
 
 import scala.collection.mutable
 
@@ -171,55 +170,6 @@ extends HasDataArrays {
     var run: FuncUnit = runLean
   }
 
-  case class TriggerConstantAssigner(
-    symbol: Symbol,
-    scheduler: Scheduler,
-    triggerOnValue: Int = -1,
-    info: Info
-  ) extends Assigner {
-
-    val index: Int = symbol.index
-
-    var value: Int = 0
-    var lastValue: Int = 0
-
-    def runLean(): Unit = {
-      lastValue = intData(index)
-      intData(index) = value
-      if(value == triggerOnValue && lastValue != triggerOnValue) {
-        scheduler.executeTriggeredAssigns(symbol)
-      }
-      else if(value != triggerOnValue && lastValue == triggerOnValue) {
-        scheduler.executeTriggeredUnassigns(symbol)
-      }
-    }
-
-    def runFull(): Unit = {
-      lastValue = intData(index)
-      intData(index) = value
-
-      runPlugins(symbol)
-
-      if(value == triggerOnValue && lastValue != triggerOnValue) {
-        if(isVerbose) Render.headerBar(s"triggered assigns for ${symbol.name}", offset = 8)
-        scheduler.executeTriggeredAssigns(symbol)
-        if(isVerbose) Render.headerBar(s"done triggered assigns for ${symbol.name}", offset = 8)
-      }
-      else if(value != triggerOnValue && lastValue == triggerOnValue) {
-        if(scheduler.triggeredUnassigns.contains(symbol)) {
-          if(isVerbose) Render.headerBar(s"triggered un-assigns for ${symbol.name}", offset = 8)
-          scheduler.executeTriggeredUnassigns(symbol)
-          if(isVerbose) Render.headerBar(s"done triggered un-assigns for ${symbol.name}", offset = 8)
-        }
-      }
-    }
-
-    override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
-    }
-    var run: FuncUnit = runLean
-  }
-
   case class ExternalModuleInputAssigner(
     symbol:             Symbol,
     portName:           String,
@@ -234,57 +184,6 @@ extends HasDataArrays {
       blackBox.inputChanged(portName, apply(symbol))
       () => Unit
     }
-  }
-
-  case class TriggerExpressionAssigner(
-    symbol: Symbol,
-    scheduler: Scheduler,
-    expression: FuncInt,
-    triggerOnValue: Int = -1,
-    info: Info
-  ) extends Assigner {
-
-    val index: Int = symbol.index
-
-    var lastValue: Int = 0
-
-    def runLean(): Unit = {
-      lastValue = intData(index)
-      val value = expression()
-      intData(index) = value
-      if(value == triggerOnValue && lastValue != triggerOnValue) {
-        scheduler.executeTriggeredAssigns(symbol)
-      }
-      else if(value != triggerOnValue && lastValue == triggerOnValue) {
-        scheduler.executeTriggeredUnassigns(symbol)
-      }
-    }
-
-    def runFull(): Unit = {
-      lastValue = intData(index)
-      val value = expression()
-      intData(index) = value
-
-      runPlugins(symbol)
-
-      if(value == triggerOnValue && lastValue != triggerOnValue) {
-        if(isVerbose) Render.headerBar(s"triggered assigns for ${symbol.name}", offset = 8)
-        scheduler.executeTriggeredAssigns(symbol)
-        if(isVerbose) Render.headerBar(s"done triggered assigns for ${symbol.name}", offset = 8)
-      }
-      else if(value != triggerOnValue && lastValue == triggerOnValue) {
-        if(scheduler.triggeredUnassigns.contains(symbol)) {
-          if(isVerbose) Render.headerBar(s"triggered un-assigns for ${symbol.name}", offset = 8)
-          scheduler.executeTriggeredUnassigns(symbol)
-          if(isVerbose) Render.headerBar(s"done triggered un-assigns for ${symbol.name}", offset = 8)
-        }
-      }
-    }
-
-    override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
-    }
-    var run: FuncUnit = runLean
   }
 
   case class GetLong(index: Int) extends LongExpressionResult {
