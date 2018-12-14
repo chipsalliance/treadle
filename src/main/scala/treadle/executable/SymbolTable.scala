@@ -245,7 +245,7 @@ object SymbolTable extends LazyLogging {
       def createPrevClock(clockName: String, tpe: Type, info: Info): Unit = {
         val prevClockName = makePreviousValue(clockName)
 
-        val symbol = Symbol.apply(prevClockName, tpe, firrtl.NodeKind, slots = 0, info = info)
+        val symbol = Symbol.apply(prevClockName, tpe, firrtl.NodeKind, info = info)
 
         addSymbol(symbol)
       }

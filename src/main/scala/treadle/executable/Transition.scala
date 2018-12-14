@@ -43,14 +43,27 @@ case class ClockBasedAssigner(
 
   private val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
 
-  override def run: FuncUnit = {
+  def runLean(): Unit = {
     if(clockTransitionGetter.transition == requiredTransition) {
       assigner.run()
     }
-    () => Unit
   }
+
+  def runFull(): Unit = {
+    if(clockTransitionGetter.transition == requiredTransition) {
+      assigner.run()
+    }
+    else if(isVerbose) {
+      println(
+        s"${assigner.symbol.name} <= register not updated" +
+            s" ${clockSymbol.name} state ${clockTransitionGetter.transition} not the required $requiredTransition")
+    }
+  }
+
+  var run: FuncUnit = runLean
 
   override def setLeanMode(isLean: Boolean): Unit = {
     assigner.setLeanMode(isLean)
+    run = if(isLean) runLean else runFull
   }
 }

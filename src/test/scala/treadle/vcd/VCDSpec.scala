@@ -277,7 +277,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val replayTester = new VcdReplayTester(replayManager)
     replayTester.run()
 
-    replayTester.testSuccesses should be (7)
+    replayTester.testSuccesses should be (8)
     replayTester.testFailures should be (0)
   }
 }
