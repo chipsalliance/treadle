@@ -21,7 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-  val endOfCycleAssigns    : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val endOfCycleAssigns    : mutable.HashSet[Assigner] = new mutable.HashSet
 
   val registerClocks       : mutable.HashSet[Symbol] = new mutable.HashSet
 
@@ -49,6 +49,12 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
     toAssigner(symbol) = assigner
     combinationalAssigns += assigner
+  }
+
+  def addEndOfCycleAssigner(assigner: Assigner): Unit = {
+    if(! endOfCycleAssigns.exists(a => a.symbol == assigner.symbol)) {
+      endOfCycleAssigns += assigner
+    }
   }
 
   def hasAssigner(symbol: Symbol): Boolean = {

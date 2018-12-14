@@ -43,6 +43,10 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
         vcdShowUnderscored = true,
         writeVCD = true
       )
+      commonOptions = commonOptions.copy(
+        targetDirName = "test_run_dir/manually_clocked_pos",
+        topName = "manually_clocked_pos",
+      )
     }
 
     val tester = new TreadleTester(input, optionsManager)
@@ -89,8 +93,8 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
         writeVCD = true
       )
       commonOptions = commonOptions.copy(
-        targetDirName = "test_run_dir/manually_clocked/clock_up",
-        topName = "clock_up"
+        targetDirName = "test_run_dir/manually_clocked_neg",
+        topName = "neg_reg"
       )
     }
 
@@ -103,7 +107,7 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
     tester.poke("reset", 0)
 
     tester.expect("out_direct", 1)
-    tester.expect("out_from_reg", 1)
+    tester.expect("out_from_reg", 0)
     tester.expect("inverted_clock", 0)
 
     tester.advanceTime(10)
@@ -112,12 +116,16 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
     tester.poke("clock", 0)
 
     tester.expect("out_direct", 2)
-    tester.expect("out_from_reg", 1)
+    tester.expect("out_from_reg", 0)
     tester.expect("inverted_clock", 1)
 
     tester.advanceTime(10)
 
-    tester.poke("in1", 1)
+    tester.poke("clock", 1)
+
+    tester.expect("out_direct", 2)
+    tester.expect("out_from_reg", 2)
+    tester.expect("inverted_clock", 0)
 
     tester.report()
   }

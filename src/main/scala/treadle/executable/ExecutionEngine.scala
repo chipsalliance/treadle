@@ -95,7 +95,7 @@ class ExecutionEngine(
   val memoryInitializer = new MemoryInitializer(this)
 
   def makeVCDLogger(fileName: String, showUnderscored: Boolean): Unit = {
-    val vcd = VCD(ast.main, showUnderscoredNames = showUnderscored)
+    val vcd = VCD(ast.main, showUnderscoredNames = ! showUnderscored)
 
     symbolTable.instanceNames.foreach { name =>
       vcd.scopeRoot.addScope(name)

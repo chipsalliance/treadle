@@ -683,7 +683,7 @@ class ExpressionCompiler(
             val prevClockAssigner = dataStore.AssignInt(
               prevClockSymbol, makeGet(assignedSymbol).asInstanceOf[IntExpressionResult].apply, info = con.info
             )
-            scheduler.endOfCycleAssigns += prevClockAssigner
+            scheduler.addEndOfCycleAssigner(prevClockAssigner)
           }
         }
 
@@ -752,7 +752,7 @@ class ExpressionCompiler(
           val prevClockAssigner = dataStore.AssignInt(
             prevClockSymbol, makeGet(symbol).asInstanceOf[IntExpressionResult].apply, info
           )
-          scheduler.endOfCycleAssigns += prevClockAssigner
+          scheduler.addEndOfCycleAssigner(prevClockAssigner)
         }
 
       case DefWire(_, name, _) =>
@@ -863,7 +863,7 @@ class ExpressionCompiler(
         val prevClockAssigner = dataStore.AssignInt(
           prevClockSymbol, makeGet(clockSymbol).asInstanceOf[IntExpressionResult].apply, info = NoInfo
         )
-        scheduler.endOfCycleAssigns += prevClockAssigner
+        scheduler.addEndOfCycleAssigner(prevClockAssigner)
       }
     }
   }
