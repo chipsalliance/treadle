@@ -61,7 +61,7 @@ case class SimpleSingleClockStepper(
   override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
     if(hasRollBack) {
       // save data state under roll back buffers for this clock
-      engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
+      engine.dataStore.saveData(wallTime.currentTime)
     }
 
     engine.setValue(clockSymbol.name, value)
@@ -91,7 +91,6 @@ case class SimpleSingleClockStepper(
 
         resetSymbolOpt.foreach { resetSymbol =>
           engine.setValue(resetSymbol.name, 0)
-          engine.inputsChanged = true
           if(increment - incrementToReset > 0) {
             engine.evaluateCircuit()
           }
@@ -150,11 +149,6 @@ case class SimpleSingleClockStepper(
 
       wallTime.incrementTime(remainingIncrement)
 
-      if (hasRollBack) {
-        // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
-      }
-
       raiseClock()
 
       lowerClock()
@@ -194,10 +188,6 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
 
     // this sets clock high and will call register updates
     wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, s"${clockInfo.name}/up") { () =>
-      if(hasRollBack) {
-        // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
-      }
       cycleCount += 1
       engine.setValue(clockSymbol.name, BigInt(1))
     }
@@ -222,7 +212,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
     if(value > Big(0)) {
       if(hasRollBack) {
         // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
+        engine.dataStore.saveData(wallTime.currentTime)
       }
       assigner.upAssigner.run()
     }

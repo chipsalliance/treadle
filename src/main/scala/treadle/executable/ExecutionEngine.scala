@@ -143,6 +143,10 @@ class ExecutionEngine(
   private def runAssigns(): Unit = {
     try {
       scheduler.executeCombinationalAssigns()
+
+      // save data state under roll back buffers if they are being used
+      dataStore.saveData(wallTime.currentTime)
+
       if(lastStopResult.isDefined) {
         writeVCD()
         val stopKind = if(lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
@@ -286,6 +290,7 @@ class ExecutionEngine(
         Render.headerBar(s"combinational evaluate", offset = 8)
       }
       runAssigns()
+
       if(verbose) {
         Render.headerBar(s"done combinational evaluate", offset = 8)
       }
@@ -466,6 +471,7 @@ object ExecutionEngine {
       scheduler.setVerboseAssign(verbose)
     }
 
+    // Do this to make sure inits and what-not happen
     executionEngine.inputsChanged = true
 
     val t1 = System.nanoTime()

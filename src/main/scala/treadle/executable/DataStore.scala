@@ -111,9 +111,17 @@ extends HasDataArrays {
   val bigData:   Array[Big]  = Array.fill(numberOfBigs)(Big(0))
 
   val rollBackBufferManager = new RollBackBufferManager(this)
+
+  def saveData(time: Long): Unit = {
+    if(numberOfBuffers > 0) {
+      rollBackBufferManager.saveData(time)
+    }
+  }
+
+  @deprecated("Use saveData(time: Long), clock based rollback buffers are no longer supported")
   def saveData(clockName: String, time: Long): Unit = {
     if(numberOfBuffers > 0) {
-      rollBackBufferManager.saveData(clockName, time)
+      rollBackBufferManager.saveData(time)
     }
   }
 
@@ -396,39 +404,28 @@ extends HasDataArrays {
   }
 
   def getWaveformValues(symbols: Array[Symbol], startCycle: Int = 0, endCycle: Int = -1): WaveformValues = {
-    if (rollBackBufferManager.clockToBuffers.isEmpty) {
-      WaveformValues(Array[BigInt](), symbols, Array.fill(symbols.length)(Array[BigInt]()))
-    } else {
-      var clockName = "clk" // TODO: how to handle for multiclock?
-      if (!rollBackBufferManager.clockToBuffers.contains(clockName)) {
-        clockName = rollBackBufferManager.clockToBuffers.keySet.head
-        println(s"clock name changed to $clockName")
-      }
-      val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
+    var buffers: Seq[RollBackBuffer] = rollBackBufferManager.newestToOldestBuffers.reverse
 
-      var buffers: Seq[RollBackBuffer] = rollbackRing.newestToOldestBuffers.reverse
+    val leftIndexInclusive = math.max(0, startCycle)
+    val rightIndexExclusive = if (endCycle == -1) buffers.length else math.min(buffers.length, endCycle)
+    val n = rightIndexExclusive - leftIndexInclusive
 
-      val leftIndexInclusive = math.max(0, startCycle)
-      val rightIndexExclusive = if (endCycle == -1) buffers.length else math.min(buffers.length, endCycle)
-      val n = rightIndexExclusive - leftIndexInclusive
+    buffers = buffers.dropRight(buffers.length - rightIndexExclusive).drop(leftIndexInclusive)
 
-      buffers = buffers.dropRight(buffers.length - rightIndexExclusive).drop(leftIndexInclusive)
+    val clockValues = new Array[BigInt](n)
+    val symbolValues = Array.ofDim[BigInt](symbols.length, n)
 
-      val clockValues = new Array[BigInt](n)
-      val symbolValues = Array.ofDim[BigInt](symbols.length, n)
-
-      buffers.zipWithIndex.foreach { case (buffer, i) =>
-        clockValues(i) = buffer.time
-        symbols.zipWithIndex.foreach { case (symbol, j) =>
-          symbol.dataSize match {
-            case IntSize => symbolValues(j)(i) = buffer.intData(symbol.index)
-            case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
-            case BigSize => symbolValues(j)(i) = buffer.bigData(symbol.index)
-          }
+    buffers.zipWithIndex.foreach { case (buffer, i) =>
+      clockValues(i) = buffer.time
+      symbols.zipWithIndex.foreach { case (symbol, j) =>
+        symbol.dataSize match {
+          case IntSize => symbolValues(j)(i) = buffer.intData(symbol.index)
+          case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
+          case BigSize => symbolValues(j)(i) = buffer.bigData(symbol.index)
         }
       }
-      WaveformValues(clockValues, symbols, symbolValues)
     }
+    WaveformValues(clockValues, symbols, symbolValues)
   }
 
   def update(symbol: Symbol, value: Big): Unit = {
@@ -466,8 +463,8 @@ extends HasDataArrays {
     val bigDataValues  = toBigJArray(bigData)
 
     def packageRollbackBuffers = {
-      val packet = rollBackBufferManager.clockToBuffers.keys.toList.sorted.map { clockName =>
-        val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
+      val packet = List("AllClocks").map { clockName =>
+        val rollbackRing = rollBackBufferManager.rollBackBufferRing
 
         val intArray  = JArray(rollbackRing.ringBuffer.map { x => toIntJArray(x.intData)   }.toList)
         val longArray = JArray(rollbackRing.ringBuffer.map { x => toLongJArray(x.longData) }.toList)
@@ -548,7 +545,7 @@ extends HasDataArrays {
             case _ =>
           }
         case "rollbackData" =>
-          var clockBuffer = rollBackBufferManager.clockToBuffers.values.head
+          var clockBuffer = rollBackBufferManager.rollBackBufferRing
           value match {
             case JArray(clockSections) =>
               for {
@@ -557,8 +554,7 @@ extends HasDataArrays {
               } {
                 (subFieldName, subValue) match {
                   case ("clockName", JString(clockName)) =>
-                    assert(rollBackBufferManager.clockToBuffers.contains(clockName))
-                    clockBuffer = rollBackBufferManager.clockToBuffers(clockName)
+                    clockBuffer = rollBackBufferManager.rollBackBufferRing
 
                   case ("latestBufferIndex", JInt(latestBufferIndex)) =>
                     clockBuffer.latestBufferIndex = latestBufferIndex.toInt

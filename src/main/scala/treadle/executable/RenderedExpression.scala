@@ -193,7 +193,7 @@ class ExpressionViewRenderer(
           if(symbolTable.isRegister(symbol.name)) {
             val clockName = symbolTable.registerToClock(symbol).name
 
-            dataStore.rollBackBufferManager.findEarlierBuffer(clockName, dataTime) match {
+            dataStore.rollBackBufferManager.findEarlierBuffer(dataTime) match {
 
               case Some(buffer) =>
                 builder ++= renderView(view, symbolAtDepth.displayDepth, buffer.time, buffer)

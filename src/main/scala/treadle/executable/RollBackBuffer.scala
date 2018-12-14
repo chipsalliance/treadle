@@ -30,12 +30,19 @@ class RollBackBuffer(dataStore: DataStore) extends HasDataArrays {
   */
 class RollBackBufferRing(dataStore: DataStore) {
   val numberOfBuffers: Int = dataStore.numberOfBuffers
-  val ringBuffer: Array[RollBackBuffer] = Array.fill(dataStore.numberOfBuffers)(new RollBackBuffer(dataStore))
+  val ringBuffer: Array[RollBackBuffer] = Array.fill(numberOfBuffers)(new RollBackBuffer(dataStore))
 
   var oldestBufferIndex: Int = 0
   var latestBufferIndex: Int = 0
 
-  def currentNumberOfBuffers: Int = (latestBufferIndex + numberOfBuffers - oldestBufferIndex) % numberOfBuffers
+  def currentNumberOfBuffers: Int = {
+    if(numberOfBuffers == 0) {
+      0
+    }
+    else {
+      (latestBufferIndex + numberOfBuffers - oldestBufferIndex) % numberOfBuffers
+    }
+  }
 
   /**
     * Return the buffers as a list in reverse time order.
@@ -43,7 +50,7 @@ class RollBackBufferRing(dataStore: DataStore) {
     */
   def newestToOldestBuffers: Seq[RollBackBuffer] = {
     var list = List.empty[RollBackBuffer]
-    if (latestBufferIndex != oldestBufferIndex) {
+    if(currentNumberOfBuffers > 0) {
       var index = latestBufferIndex
       while (index != oldestBufferIndex) {
         list = list :+ ringBuffer(index)
@@ -60,17 +67,27 @@ class RollBackBufferRing(dataStore: DataStore) {
   /**
     * Advances the last buffer pointer and returns a buffer to be used for new data.
     * In the beginning this is an unused buffer, after the ring fills, it returns the oldest buffer
+    * If the time parameter matches the most recent buffers time, that buffer will be re-used.
+    * @param time the time that the returned buffer will be used to store d
     * @return
     */
-  def advanceAndGetNextBuffer(): RollBackBuffer = {
-    latestBufferIndex += 1
-    if(latestBufferIndex >= numberOfBuffers) {
-      latestBufferIndex = 0
+  def advanceAndGetNextBuffer(time: Long): RollBackBuffer = {
+    if(currentNumberOfBuffers > 0 && time < ringBuffer(latestBufferIndex).time) {
+      // It's an error to record something earlier in time
+      throw TreadleException(s"rollback buffer requested has earlier time that last used buffer")
     }
-    if(latestBufferIndex == oldestBufferIndex) {
-      oldestBufferIndex += 1
-      if(oldestBufferIndex >= numberOfBuffers) {
-        oldestBufferIndex = 0
+    else if(currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time) {
+      // time has advanced so get a new buffer or re-use the oldest one
+      // if time did not advance just fall through and newest buffer to be used again
+      latestBufferIndex += 1
+      if (latestBufferIndex >= numberOfBuffers) {
+        latestBufferIndex = 0
+      }
+      if (latestBufferIndex == oldestBufferIndex) {
+        oldestBufferIndex += 1
+        if (oldestBufferIndex >= numberOfBuffers) {
+          oldestBufferIndex = 0
+        }
       }
     }
     ringBuffer(latestBufferIndex)
@@ -78,41 +95,35 @@ class RollBackBufferRing(dataStore: DataStore) {
 }
 
 /**
-  * Manage a number of rollback buffers for each clock
+  * Manage the allocation of the rollback buffers
   */
 class RollBackBufferManager(dataStore: DataStore) {
 
-  val clockToBuffers: mutable.HashMap[String, RollBackBufferRing] = new mutable.HashMap()
+  val rollBackBufferRing = new RollBackBufferRing(dataStore)
 
   /**
     * save current system state for a specific clock.
-    * @param clockName the clock that ticked and triggered this save event
-    * @param time
+    * @param time the time that snapshot will be for
     */
-  def saveData(clockName: String, time: Long): Unit = {
-    val buffer: RollBackBuffer = {
-      if(! clockToBuffers.contains(clockName)) {
-        clockToBuffers(clockName) = new RollBackBufferRing(dataStore)
-      }
-      clockToBuffers(clockName).advanceAndGetNextBuffer()
-    }
+  def saveData(time: Long): Unit = {
+    val buffer = rollBackBufferRing.advanceAndGetNextBuffer(time)
     buffer.dump(time)
   }
 
   /**
     * Finds the most recent buffer for the specified clock that is older than the specified time
-    * @param clockName the clock of the buffer set to search
     * @param time      a time that the buffer must be older than
     * @return
     */
-  def findEarlierBuffer(clockName: String, time: Long): Option[RollBackBuffer] = {
-    clockToBuffers.get(clockName) match {
-      case Some(rollBackBufferRing) =>
-        rollBackBufferRing.newestToOldestBuffers.find { buffer =>
-          buffer.time < time
-        }
-      case _ =>
-        None
+  def findEarlierBuffer(time: Long): Option[RollBackBuffer] = {
+    rollBackBufferRing.newestToOldestBuffers.find { buffer =>
+      buffer.time < time
     }
   }
+
+  /**
+    * returns a Seq of rollback buffers
+    * @return
+    */
+  def newestToOldestBuffers: Seq[RollBackBuffer] = rollBackBufferRing.newestToOldestBuffers
 }

@@ -130,14 +130,12 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
   if(optionsManager.treadleOptions.callResetAtStartUp && engine.symbolTable.contains(resetName)) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
-//      reset(clockInfo.period + clockInfo.initialOffset - (clockInfo.period / 2)) // once found this to help on a test
     }
   }
 
   def reset(timeRaised: Long): Unit = {
     engine.symbolTable.get(resetName).foreach { resetSymbol =>
       engine.setValue(resetName, 1)
-      engine.inputsChanged = true
 
       clockStepper match {
         case _: NoClockStepper =>
@@ -151,7 +149,6 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
             if (engine.verbose) {
               println(s"reset dropped at ${wallTime.currentTime}")
             }
-            engine.inputsChanged = true
             engine.evaluateCircuit()
           }
           while(engine.dataStore(resetSymbol) != Big0) {
@@ -164,7 +161,6 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
             if (engine.verbose) {
               println(s"reset dropped at ${wallTime.currentTime}")
             }
-            engine.inputsChanged = true
           }
           wallTime.runUntil(wallTime.currentTime + timeRaised)
       }
