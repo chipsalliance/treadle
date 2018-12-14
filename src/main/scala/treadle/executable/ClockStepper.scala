@@ -2,7 +2,6 @@
 
 package treadle.executable
 
-import firrtl.ir.NoInfo
 import treadle.chronometry.UTC
 import treadle.utils.Render
 
