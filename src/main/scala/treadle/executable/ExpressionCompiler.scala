@@ -855,9 +855,25 @@ class ExpressionCompiler(
   }
   // scalastyle:on
 
+  def processTopLevelClocks(module: Module): Unit = {
+    module.ports.foreach { port =>
+      if(port.tpe == ClockType) {
+        val clockSymbol = symbolTable(port.name)
+        val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+        val prevClockAssigner = dataStore.AssignInt(
+          prevClockSymbol, makeGet(clockSymbol).asInstanceOf[IntExpressionResult].apply, info = NoInfo
+        )
+        scheduler.endOfCycleAssigns += prevClockAssigner
+      }
+    }
+  }
+
   def processModule(modulePrefix: String, myModule: DefModule, circuit: Circuit): Unit = {
     myModule match {
       case module: firrtl.ir.Module =>
+        if(modulePrefix.isEmpty) {
+          processTopLevelClocks(module)
+        }
         processStatements(modulePrefix, circuit: Circuit, module.body)
       case extModule: ExtModule => // Look to see if we have an implementation for this
         logger.debug(s"got external module ${extModule.name} instance $modulePrefix")

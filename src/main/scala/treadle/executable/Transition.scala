@@ -49,4 +49,8 @@ case class ClockBasedAssigner(
     }
     () => Unit
   }
+
+  override def setLeanMode(isLean: Boolean): Unit = {
+    assigner.setLeanMode(isLean)
+  }
 }

@@ -270,8 +270,10 @@ object SymbolTable extends LazyLogging {
                 //
                 // we have found a clock on the LHS, create a previous value for it
                 val prevClockSymbolName = makePreviousValue(symbol)
-                val prevClockSymbol = Symbol(prevClockSymbolName, ClockType, WireKind, info = symbol.info)
-                addSymbol(prevClockSymbol)
+                if(! nameToSymbol.contains(prevClockSymbolName)) {
+                  val prevClockSymbol = Symbol(prevClockSymbolName, ClockType, WireKind, info = symbol.info)
+                  addSymbol(prevClockSymbol)
+                }
               }
 
               val references = expressionToReferences(con.expr)
@@ -352,6 +354,7 @@ object SymbolTable extends LazyLogging {
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
+          addDependency(registerIn, Set(registerOut))
 
           registerToClock(registerOut) = expressionToReferences(clockExpression).head
 

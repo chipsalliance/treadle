@@ -38,6 +38,10 @@ class VecSpec extends FreeSpec with Matchers {
         setVerbose = false,
         showFirrtlAtLoad = false
       )
+      commonOptions = commonOptions.copy(
+        targetDirName = "test_run_dir/vec_spec1",
+        topName = "vec_spec"
+      )
     }
 
     val tester = new TreadleTester(input, optionsManager)
