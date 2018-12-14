@@ -190,42 +190,28 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
 
   val shortestPeriod: Long = clockInfoList.map(_.period).min
 
-  ???
+  clockInfoList.foreach { clockInfo =>
+    val clockSymbol = engine.symbolTable(clockInfo.name)
 
-//  clockInfoList.foreach { clockInfo =>
-//    val clockSymbol = engine.symbolTable(clockInfo.name)
-//
-//    val clockUpAssigner = dataStore.TriggerExpressionAssigner(
-//      clockSymbol, scheduler, GetIntConstant(1).apply, triggerOnValue = 1, NoInfo)
-//
-//    val clockDownAssigner = dataStore.TriggerExpressionAssigner(
-//      clockSymbol, scheduler, GetIntConstant(0).apply, triggerOnValue = -1, NoInfo)
-//
-//    clockAssigners(clockSymbol) = ClockAssigners(clockUpAssigner, clockDownAssigner)
-//
-//
-//    //TODO: XXX make steppers work again
-//
-//    // this sets clock high and will call register updates
-//    wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, s"${clockInfo.name}/up") { () =>
-//      if(hasRollBack) {
-//        // save data state under roll back buffers for this clock
-//        engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
-//      }
-//      cycleCount += 1
-//      clockUpAssigner.run()
-//      engine.inputsChanged = true
-//    }
-//
-//    // this task sets clocks low
-//    wallTime.addRecurringTask(
-//      clockInfo.period,
-//      clockInfo.initialOffset + clockInfo.upPeriod,
-//      s"${clockInfo.name}/down"
-//    ) { () =>
-//      clockDownAssigner.run()
-//    }
-//  }
+    // this sets clock high and will call register updates
+    wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, s"${clockInfo.name}/up") { () =>
+      if(hasRollBack) {
+        // save data state under roll back buffers for this clock
+        engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
+      }
+      cycleCount += 1
+      engine.setValue(clockSymbol.name, BigInt(1))
+    }
+
+    // this task sets clocks low
+    wallTime.addRecurringTask(
+      clockInfo.period,
+      clockInfo.initialOffset + clockInfo.upPeriod,
+      s"${clockInfo.name}/down"
+    ) { () =>
+      engine.setValue(clockSymbol.name, BigInt(0))
+    }
+  }
 
   /**
     * This function is (and should only) be used by the VcdReplayTester
