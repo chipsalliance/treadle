@@ -76,7 +76,7 @@ class RollBackBufferRing(dataStore: DataStore) {
       // It's an error to record something earlier in time
       throw TreadleException(s"rollback buffer requested has earlier time that last used buffer")
     }
-    else if(currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time) {
+    else if(currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time)) {
       // time has advanced so get a new buffer or re-use the oldest one
       // if time did not advance just fall through and newest buffer to be used again
       latestBufferIndex += 1
@@ -118,6 +118,35 @@ class RollBackBufferManager(dataStore: DataStore) {
   def findEarlierBuffer(time: Long): Option[RollBackBuffer] = {
     rollBackBufferRing.newestToOldestBuffers.find { buffer =>
       buffer.time < time
+    }
+  }
+
+  /**
+    * Finds a buffer where a previous buffer has a high clock and this one has a low clock,then return this.
+    *
+    * @param time             buffer time must be earlier (<) than time
+    * @param clockIndex       where to find value of clock at time rollback buffer's time
+    * @param prevClockIndex   same as above but index is prevClock value
+    * @return
+    */
+  def findBufferBeforeClockTransition(time: Long, clockIndex: Int, prevClockIndex: Int): Option[RollBackBuffer] = {
+    var foundHighClock = false
+
+    rollBackBufferRing.newestToOldestBuffers.find { buffer =>
+      if(buffer.time >= time) {
+        false
+      }
+      else if(foundHighClock && buffer.intData(prevClockIndex) == 0) {
+        true
+      }
+      else if(buffer.intData(clockIndex) > 0) {
+        foundHighClock = true
+        false
+      }
+      else {
+        foundHighClock = false
+        false
+      }
     }
   }
 

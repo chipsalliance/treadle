@@ -2,7 +2,6 @@
 
 package treadle
 
-import firrtl.CommonOptions
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -36,7 +35,8 @@ class VecSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         writeVCD = false,
         setVerbose = false,
-        showFirrtlAtLoad = false
+        showFirrtlAtLoad = false,
+        rollbackBuffers = 20
       )
       commonOptions = commonOptions.copy(
         targetDirName = "test_run_dir/vec_spec1",
@@ -47,27 +47,35 @@ class VecSpec extends FreeSpec with Matchers {
     val tester = new TreadleTester(input, optionsManager)
 
     def show(): Unit = {
-      println("")
-      for(name <- Seq("shifter_3", "shifter_2", "shifter_1", "shifter_0")) {
+      println("Rendering register assignments")
+      for(name <- Seq.tabulate(1) { i => s"shifter_$i" }) {
         println(s"${tester.engine.renderComputation(name)}")
       }
     }
 
+    def testRegisterValues(value0: BigInt, value1: BigInt, value2: BigInt, value3: BigInt) {
+      tester.expect("shifter_0", value0)
+      tester.expect("shifter_1", value1)
+      tester.expect("shifter_2", value2)
+      tester.expect("shifter_3", value3)
+    }
+
+    tester.step()
+    testRegisterValues(0, 0, 0, 0)
     tester.step()
     show()
+    testRegisterValues(0, 0, 0, 1)
     tester.step()
+    testRegisterValues(0, 0, 1, 2)
+    tester.step()
+    testRegisterValues(0, 1, 2, 3)
+    tester.step()
+    testRegisterValues(1, 2, 3, 4)
+    tester.step()
+    testRegisterValues(2, 3, 4, 5)
     show()
-    tester.step()
-    show()
-    tester.step()
-    show()
-    tester.step()
-    show()
-    tester.step()
-    show()
-    tester.step()
-    show()
-    tester.step()
+
+    tester.report()
   }
 
   "VecSpec should pass a basic test" in {
