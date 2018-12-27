@@ -6,7 +6,8 @@ import treadle._
 import firrtl.{MemKind, WireKind}
 import firrtl.ir.{ClockType, DefMemory, Info, IntWidth}
 import RenderHelper.ExpressionHelper
-import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryLoadFileType, ModuleName}
+import firrtl.annotations.{ComponentName, ModuleName}
+import firrtl.transforms.{LoadMemoryAnnotation, MemoryLoadFileType}
 
 import scala.collection.mutable
 
