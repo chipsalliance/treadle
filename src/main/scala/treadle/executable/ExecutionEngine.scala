@@ -202,10 +202,11 @@ class ExecutionEngine(
     registerPoke: Boolean = false,
     offset: Int = 0
   ): BigInt = {
-    if(! symbolTable.contains(name)) {
+
+    val symbol = symbolTable.getOrElse(
+      name,
       throw TreadleException(s"setValue: Cannot find $name in symbol table")
-    }
-    val symbol = symbolTable(name)
+    )
 
     inputsChanged = true
     if(symbolsPokedSinceEvaluation.contains(symbol)) {
@@ -215,7 +216,9 @@ class ExecutionEngine(
       symbolsPokedSinceEvaluation.clear()
       scheduler.executeCombinationalAssigns()
     }
-    symbolsPokedSinceEvaluation += symbol
+    else {
+      symbolsPokedSinceEvaluation += symbol
+    }
 
     if(!force) {
       assert(symbol.dataKind == PortKind,
@@ -231,10 +234,9 @@ class ExecutionEngine(
         }
         println(s"${symbol.name} <= $value")
       }
-      val currentValue = dataStore(symbol)
       dataStore.update(symbol, adjustedValue)
       vcdOption.foreach { vcd =>
-        vcd.wireChanged(symbol.name, dataStore(symbol), symbol.bitWidth)
+        vcd.wireChanged(symbol.name, adjustedValue, symbol.bitWidth)
       }
     }
     else {
@@ -249,6 +251,46 @@ class ExecutionEngine(
         println(s"${symbol.name}($offset) <= $value from tester")
       }
       dataStore.setValueAtIndex(symbol.dataSize, symbol.index + offset, value)
+    }
+
+    value
+  }
+
+  /**
+    * Update the dataStore with the supplied information.
+    * IMPORTANT: This should never be used internally.
+    *
+    * @param symbol symbol to set
+    * @param value new concrete value
+    */
+  // scalastyle:off cyclomatic.complexity method.length
+  def setIntValue(
+    symbol: Symbol,
+    value: Int,
+  ): Int = {
+
+    inputsChanged = true
+    if(symbolsPokedSinceEvaluation.contains(symbol)) {
+      if(verbose) {
+        println(s"updating circuit on second update of same input without clock advance")
+      }
+      symbolsPokedSinceEvaluation.clear()
+      scheduler.executeCombinationalAssigns()
+    }
+    else {
+      symbolsPokedSinceEvaluation += symbol
+    }
+
+    val adjustedValue = symbol.valueFrom(value)
+    if(verbose) {
+      if(! inputsChanged) {
+        Render.headerBar("Poking")
+      }
+      println(s"${symbol.name} <= $value")
+    }
+    dataStore.intData(symbol.index) = value
+    vcdOption.foreach { vcd =>
+      vcd.wireChanged(symbol.name, adjustedValue, symbol.bitWidth)
     }
 
     value

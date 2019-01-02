@@ -108,7 +108,7 @@ case class SimpleSingleClockStepper(
       * Raise the clock and propagate changes
       */
     def raiseClock(): Unit = {
-      engine.setValue(clockSymbol.name, 1)
+      engine.setIntValue(clockSymbol, 1)
       engine.evaluateCircuit()
 
       val remainingIncrement = handlePossibleReset(upPeriod)
@@ -121,7 +121,7 @@ case class SimpleSingleClockStepper(
       * lower the clock
       */
     def lowerClock(): Unit = {
-      engine.setValue(clockSymbol.name, 0)
+      engine.setIntValue(clockSymbol, 0)
       combinationalBumps = 0L
     }
 
