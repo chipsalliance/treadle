@@ -506,6 +506,9 @@ object ExecutionEngine {
     val executionEngine =
       new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews, wallTime)
 
+    val classBuilder = new ScalaClassBuilder(symbolTable, dataStore, scheduler, false, Seq.empty)
+    classBuilder.compile(loweredAst, Seq.empty)
+
     executionEngine.dataStore.setExecutionEngine(executionEngine)
 
     if(verbose) {
