@@ -2,24 +2,24 @@
 
 package treadle.executable
 
-import java.io.PrintWriter
-
 import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir._
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
 import treadle.chronometry.Timer
-import treadle.executable.RenderHelper.ExpressionHelper
 import treadle.utils.{BitMasks, FindModule, RemoveTempWires, ToLoFirrtl}
 
 import scala.collection.mutable
 
 trait SimplePokerPeeker {
-  def poke(s: String, value: Int): Unit
-  def peek(s:String): Int
+  def poke(s: String, value: BigInt): Unit
+  def peek(s:String): BigInt
+  def expect(s:String, value: BigInt): Unit
   def step(steps: Int): Unit
   def cycles: Int
+  def lastStopResult: Option[Int]
+  def report()
 }
 
 //noinspection ScalaUnusedSymbol
@@ -450,24 +450,33 @@ class ScalaClassBuilder(
 
     def addPeekPoke(): Unit = {
       val s = s"""
-         |  def poke(s: String, value: Int): Unit = {
-         |    intArray(dataIndices(s)) = value
+         |  def poke(s: String, value: BigInt): Unit = {
+         |    intArray(dataIndices(s)) = value.toInt
          |  }
          |
-         |  def peek(s: String): Int = {
-         |    intArray(dataIndices(s))
+         |  def peek(s: String): BigInt = {
+         |    BigInt(intArray(dataIndices(s)))
+         |  }
+         |
+         |  def expect(s: String, value: BigInt): Unit = {
+         |    if(BigInt(intArray(dataIndices(s))) != value) {
+         |      throw new Exception(s"Expect failure expect(" + s + ", " + value + ") instead got " + value)
+         |    }
          |  }
          |
          |  def step(steps: Int): Unit = {
          |    var step = 0
          |    while(step < steps) {
-         |    update()
+         |      update()
          |      intArray(dataIndices("clock")) = 1
          |      update()
          |      intArray(dataIndices("clock")) = 0
          |      step += 1
          |    }
          |  }
+         |
+         |  def report(): Unit = {}
+         |
        """.stripMargin
       pw ++= s
       pw ++= "\n"
@@ -482,6 +491,7 @@ class ScalaClassBuilder(
          |  val longArray = Array.fill(${dataStore.longData.length})(0L)
          |  val bigArray = Array.fill(${dataStore.bigData.length})(BigInt(0))
          |  var cycles = 0
+         |  var lastStopResult: Option[Int] = None
          |
          |
        """.stripMargin
