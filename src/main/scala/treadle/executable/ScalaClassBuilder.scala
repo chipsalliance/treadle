@@ -90,6 +90,22 @@ class ScalaClassBuilder(
 
     def processStatements(statement: firrtl.ir.Statement): Unit = {
 
+      def getDrivingClock(clockExpression: Expression): Option[Symbol] = {
+
+        clockExpression match {
+          case WRef(clockName, _, _, _) =>
+            for {
+              clockSym <- symbolTable.get(expand(clockName))
+              topClock <- symbolTable.findHighestClock(clockSym)
+            } yield {
+              topClock
+            }
+          case _ =>
+            None
+        }
+      }
+
+
       def binaryOps(opCode: String, args: Seq[Expression], tpe: Type): String = {
 
         def getParameters(e: Expression) = (processExpression(e), getSigned(e), getWidth(e))
@@ -396,8 +412,20 @@ class ScalaClassBuilder(
         case IsInvalid(info, expression) =>
 
         case stop @ Stop(info, ret, clockExpression, enableExpression) =>
-          //TODO: SCALABUILD
-//          statements(symbolTable.stopToStopInfo(stop).stopSymbol) = processExpression(enableExpression)
+          val stopSymbol = symbolTable.stopToStopInfo(stop).stopSymbol
+          getDrivingClock(clockExpression).foreach { clockSymbol =>
+            val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+            statements(stopSymbol) =
+                    s"""
+                       |    if(${intDataName}(${asVarName(clockSymbol)}) > 0 && ${intDataName}(${asVarName(prevClockSymbol)}) == 0) {
+                       |      if((${processExpression(enableExpression)}) > 0) {
+                       |        lastStopResult = Some($ret)
+                       |        println("Dang I'm stopped")
+                       |      }
+                       |    }
+                     """.stripMargin
+
+          }
 
         case print @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
           //TODO: SCALABUILD

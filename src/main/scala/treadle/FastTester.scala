@@ -2,7 +2,7 @@
 
 package treadle
 
-import treadle.OnTheFly.getClass
+import treadle.chronometry.Timer
 import treadle.executable.{ScalaClassBuilder, SimplePokerPeeker}
 
 import scala.reflect.runtime.universe
@@ -13,14 +13,22 @@ object FastTester {
     val optionsManager = new TreadleOptionsManager
 
     if(optionsManager.parse(args)) {
-      val scalaTesterSource = ScalaClassBuilder.makeScalaSource(input, optionsManager)
+      val timer = new Timer
+      val scalaTesterSource = timer("generate") {
+        ScalaClassBuilder.makeScalaSource(input, optionsManager)
+      }
 
-      println(scalaTesterSource)
+      // println(scalaTesterSource)
 
       val tb = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
 
-      val parsed = tb.parse(scalaTesterSource)
-      val evald = tb.eval(parsed).asInstanceOf[SimplePokerPeeker]
+      val evald = timer("compile") {
+        val parsed = tb.parse(scalaTesterSource)
+        tb.eval(parsed).asInstanceOf[SimplePokerPeeker]
+      }
+
+      println(timer.report)
+
       evald
     }
     else {
