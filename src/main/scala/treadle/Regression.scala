@@ -36,19 +36,19 @@ object Regression {
          |      reset => (UInt<1>("h0"), x)
          |    reg y : UInt<$width>, clock with :
          |      reset => (UInt<1>("h0"), y)
-         |    node T_13 = gt(x, y)
-         |    node T_14 = sub(x, y)
-         |    node T_15 = tail(T_14, 1)
-         |    node T_17 = eq(T_13, UInt<1>("h0"))
-         |    node T_18 = sub(y, x)
-         |    node T_19 = tail(T_18, 1)
-         |    node T_21 = eq(y, UInt<1>("h0"))
-         |    node GEN_0 = mux(T_13, T_15, x)
-         |    x <= mux(io_e, io_a, GEN_0)
-         |    node GEN_1 = mux(T_17, T_19, y)
-         |    y <= mux(io_e, io_b, GEN_1)
+         |    node _T_13 = gt(x, y)
+         |    node _T_14 = sub(x, y)
+         |    node _T_15 = tail(_T_14, 1)
+         |    node _T_17 = eq(_T_13, UInt<1>("h0"))
+         |    node _T_18 = sub(y, x)
+         |    node _T_19 = tail(_T_18, 1)
+         |    node _T_21 = eq(y, UInt<1>("h0"))
+         |    node _GEN_0 = mux(_T_13, _T_15, x)
+         |    x <= mux(io_e, io_a, _GEN_0)
+         |    node _GEN_1 = mux(_T_17, _T_19, y)
+         |    y <= mux(io_e, io_b, _GEN_1)
          |    io_z <= x
-         |    io_v <= T_21
+         |    io_v <= _T_21
     """
               .stripMargin
 

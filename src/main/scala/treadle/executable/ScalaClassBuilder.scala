@@ -7,18 +7,25 @@ import java.io.PrintWriter
 import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir._
+import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
+import treadle.chronometry.Timer
 import treadle.executable.RenderHelper.ExpressionHelper
-import treadle.utils.{BitMasks, FindModule}
+import treadle.utils.{BitMasks, FindModule, RemoveTempWires, ToLoFirrtl}
 
 import scala.collection.mutable
+
+trait SimplePokerPeeker {
+  def poke(s: String, value: Int): Unit
+  def peek(s:String): Int
+  def step(steps: Int): Unit
+  def cycles: Int
+}
 
 //noinspection ScalaUnusedSymbol
 class ScalaClassBuilder(
     symbolTable: SymbolTable,
     dataStore: DataStore,
-    scheduler: Scheduler,
-    validIfIsRandom: Boolean,
     blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {
@@ -211,7 +218,7 @@ class ScalaClassBuilder(
             val conditionClause = processExpression(condition)
             val trueClause = processExpression(trueExpression)
             val falseClause = processExpression(falseExpression)
-            s"""if($conditionClause > 0) { $trueClause } else { $falseClause }
+            s"""if(($conditionClause) > 0) { $trueClause } else { $falseClause }
              """.stripMargin
           case WRef(name, _, _, _) =>
             dataStoreRef(symbolTable(expand(name)))
@@ -416,28 +423,29 @@ class ScalaClassBuilder(
   }
 
   // scalastyle:off cyclomatic.complexity method.length
-  def compile(circuit: Circuit, blackBoxFactories: Seq[ScalaBlackBoxFactory]): Unit = {
-    val pw = new PrintWriter(s"${circuit.main}ScalaImpl.scala")
+  def compile(circuit: Circuit, blackBoxFactories: Seq[ScalaBlackBoxFactory]): String = {
+    val pw = new mutable.StringBuilder()
 
     def addClockPrevStatements(): Unit = {
       symbolTable.registerToClock.values.toSet.foreach { clockSymbol: Symbol =>
         val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
-        pw.println(s"    ${dataStoreRef(prevClockSymbol)} = ${dataStoreRef(clockSymbol)}")
+        pw ++= s"    ${dataStoreRef(prevClockSymbol)} = ${dataStoreRef(clockSymbol)}\n"
       }
     }
 
     def addNamedIndices(): Unit = {
       val validSymbols = symbolTable.nameToSymbol.values.filter(_.index >= 0)
       validSymbols.foreach { symbol =>
-        pw.println(s"  val `${symbol.name}` = ${symbol.index}")
+        pw ++= s"  val `${symbol.name}` = ${symbol.index}\n"
       }
-      pw.println("\n")
+      pw ++= "\n"
 
       val mapString = validSymbols.map { symbol =>
         s"""    "${symbol.name}" -> ${symbol.index}"""
       }.mkString("  val dataIndices = Map(\n", ",\n", "  )")
 
-      pw.println(mapString)
+      pw ++= mapString
+      pw ++= "\n"
     }
 
     def addPeekPoke(): Unit = {
@@ -450,8 +458,6 @@ class ScalaClassBuilder(
          |    intArray(dataIndices(s))
          |  }
          |
-         |  var cycles = 0
-         |
          |  def step(steps: Int): Unit = {
          |    var step = 0
          |    while(step < steps) {
@@ -463,19 +469,22 @@ class ScalaClassBuilder(
          |    }
          |  }
        """.stripMargin
-      pw.println(s)
+      pw ++= s
+      pw ++= "\n"
     }
 
 
-    pw.println(
-      s"""
-         |class ${circuit.main}ScalaImpl {
+    pw ++= s"""
+         |import treadle.executable.SimplePokerPeeker
+         |
+         |class ${circuit.main}ScalaImpl extends SimplePokerPeeker {
          |  val intArray = Array.fill(${dataStore.intData.length})(0)
          |  val longArray = Array.fill(${dataStore.longData.length})(0L)
          |  val bigArray = Array.fill(${dataStore.bigData.length})(BigInt(0))
+         |  var cycles = 0
+         |
          |
        """.stripMargin
-    )
 
     addNamedIndices()
 
@@ -491,22 +500,68 @@ class ScalaClassBuilder(
 
     processModule("", module, circuit)
 
-    pw.println(s"\n  def update(): Unit = {")
+    pw ++= s"\n  def update(): Unit = {\n"
 
     statements.keys.toList.sortBy(_.cardinalNumber).foreach { key =>
-      pw.println("    " + statements(key))
+      pw ++= "    " + statements(key) + "\n"
     }
 
     addClockPrevStatements()
 
-    pw.println(s"    cycles += 1")
+    pw ++= s"    cycles += 1\n"
 
-    pw.println(s"  }")
+    pw ++= s"  }\n"
 
-    pw.println("}")
+    pw ++= "}\n"
 
-    pw.close()
+    pw ++= "\nnew GCDScalaImpl\n"
 
+    pw.toString
+  }
+}
+
+object ScalaClassBuilder {
+  def makeScalaSource(
+    firrtlText:        String,
+    optionsManager:    TreadleOptionsManager
+  ): String = {
+
+    val treadleOptions: TreadleOptions = optionsManager.treadleOptions
+
+    val ast = firrtl.Parser.parse(firrtlText.split("\n").toIterator)
+    val blackBoxFactories: Seq[ScalaBlackBoxFactory] = treadleOptions.blackBoxFactories
+    val timer = new Timer
+
+    val loweredAst: Circuit = if(treadleOptions.lowCompileAtLoad) {
+      if(treadleOptions.allowCycles) {
+        optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+          annotations = optionsManager.firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation
+        )
+      }
+            val lowered = ToLoFirrtl.lower(ast, optionsManager)
+            (new RemoveTempWires).execute(CircuitState(lowered, LowForm)).circuit
+//      ToLoFirrtl.lower(ast, optionsManager)
+    } else {
+      ast
+    }
+
+    if(treadleOptions.showFirrtlAtLoad) {
+      println("LoFirrtl" + "=" * 120)
+      println(loweredAst.serialize)
+    }
+
+    val symbolTable: SymbolTable = timer("Build Symbol Table") {
+      SymbolTable(loweredAst, blackBoxFactories, treadleOptions.allowCycles)
+    }
+
+    val dataStoreAllocator = new DataStoreAllocator
+
+    symbolTable.allocateData(dataStoreAllocator)
+
+    val dataStore = DataStore(treadleOptions.rollbackBuffers, dataStoreAllocator)
+
+    val classBuilder = new ScalaClassBuilder(symbolTable, dataStore, blackBoxFactories)
+    classBuilder.compile(loweredAst, Seq.empty)
   }
 }
 

@@ -2,8 +2,6 @@
 
 package treadle.utils
 
-// See LICENSE for license details.
-
 import firrtl.ir._
 import firrtl.{CircuitForm, CircuitState, LowForm, Parser, Transform, WRef, WSubField, WSubIndex}
 
