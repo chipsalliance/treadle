@@ -62,7 +62,7 @@ object Regression {
 
     val values =
       for {x <- 1 to 1000
-           y <- 1 to 100
+           y <- 1 to 1000
       } yield (x, y, computeGcd(x, y)._1)
 
     val tester = new TreadleTester(gcdFirrtl, manager)

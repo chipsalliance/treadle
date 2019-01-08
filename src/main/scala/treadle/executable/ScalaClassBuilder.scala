@@ -500,6 +500,7 @@ class ScalaClassBuilder(
          |      update()
          |      intArray(dataIndices("clock")) = 0
          |      step += 1
+         |      cycles += 1
          |    }
          |  }
          |
@@ -545,8 +546,6 @@ class ScalaClassBuilder(
     }
 
     addClockPrevStatements()
-
-    pw ++= s"    cycles += 1\n"
 
     pw ++= s"  }\n"
 
