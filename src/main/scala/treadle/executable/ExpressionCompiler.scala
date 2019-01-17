@@ -463,6 +463,8 @@ class ExpressionCompiler(
         case ClockType             => 1
       }
 
+      val sourceWidth = getWidth(expressions.head)
+
       arg1 match {
         case e1: IntExpressionResult =>
           op match {
@@ -475,9 +477,9 @@ class ExpressionCompiler(
             case Neg     => NegInts(e1.apply)
             case Not     => NotInts(e1.apply, width)
 
-            case Andr    => AndrInts(e1.apply, width)
-            case Orr     => OrrInts(e1.apply,  width)
-            case Xorr    => XorrInts(e1.apply, width)
+            case Andr    => AndrInts(e1.apply, sourceWidth)
+            case Orr     => OrrInts(e1.apply,  sourceWidth)
+            case Xorr    => XorrInts(e1.apply, sourceWidth)
           }
         case e1: LongExpressionResult =>
           op match {
@@ -490,9 +492,9 @@ class ExpressionCompiler(
             case Neg     => NegLongs(e1.apply)
             case Not     => NotLongs(e1.apply, width)
 
-            case Andr    => AndrLongs(e1.apply, width)
-            case Orr     => OrrLongs(e1.apply,  width)
-            case Xorr    => XorrLongs(e1.apply, width)
+            case Andr    => AndrLongs(e1.apply, sourceWidth)
+            case Orr     => OrrLongs(e1.apply,  sourceWidth)
+            case Xorr    => XorrLongs(e1.apply, sourceWidth)
           }
         case e1: BigExpressionResult =>
           op match {
@@ -505,9 +507,9 @@ class ExpressionCompiler(
             case Neg     => NegBigs(e1.apply)
             case Not     => NotBigs(e1.apply, width)
 
-            case Andr    => AndrBigs(e1.apply, width)
-            case Orr     => OrrBigs(e1.apply,  width)
-            case Xorr    => XorrBigs(e1.apply, width)
+            case Andr    => AndrBigs(e1.apply, sourceWidth)
+            case Orr     => OrrBigs(e1.apply,  sourceWidth)
+            case Xorr    => XorrBigs(e1.apply, sourceWidth)
           }
       }
     }
