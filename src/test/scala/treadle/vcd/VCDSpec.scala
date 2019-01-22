@@ -245,7 +245,8 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
   behavior of "vcd replay spec"
 
   it should "replay a script and the treadle engine should match the vcd" in {
-    val stream = getClass.getResourceAsStream("/VcdAdder.fir")
+    val resourceName = "/VcdAdder.fir"
+    val stream = getClass.getResourceAsStream(resourceName)
     val input = io.Source.fromInputStream(stream).mkString
 
     val manager = new TreadleOptionsManager {
@@ -255,6 +256,8 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       commonOptions = CommonOptions(targetDirName = "test_run_dir/")
     }
 
+    val resourceFileName = manager.targetDirName + resourceName
+    copyResourceToFile(resourceName, new File(resourceFileName))
     val tester = new TreadleTester(input, manager)
 
     tester.poke("io_a", 3)
@@ -270,7 +273,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val replayManager = new VcdReplayTesterOptions() {
 
       goldenVcdOptions = goldenVcdOptions.copy(
-        firrtlSourceName = "src/test/resources/VcdAdder.fir",
+        firrtlSourceName = resourceFileName,
         vcdSourceName = "test_run_dir/VcdAdder.vcd"
       )
     }
