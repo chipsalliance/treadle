@@ -181,9 +181,10 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     engine.report()
   }
 
-  behavior of "example from edysusanto"
+  behavior of "vcd can record temp vars or not"
 
-  it should "align register updates with clock cycles" ignore {
+  //scalastyle:off method.length
+  def testVcdTempWireTest(hasTempWires: Boolean): Unit = {
     val input =
       """
         |circuit pwminCount :
@@ -203,15 +204,12 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
         |
       """.stripMargin
 
-    // logger.Logger.setLevel(LogLevel.Debug)
-
     val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
+      treadleOptions = treadleOptions.copy(writeVCD = true, vcdShowUnderscored = hasTempWires)
       commonOptions = CommonOptions(targetDirName = "test_run_dir/vcd_register_delay")
     }
     {
       val engine = new TreadleTester(input, manager)
-      engine.setVerbose()
       engine.poke("reset", 0)
 
       engine.step(50)
@@ -219,8 +217,6 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       engine.report()
       engine.finish
     }
-
-//    Thread.sleep(3000)
 
     val vcd = VCD.read("test_run_dir/vcd_register_delay/pwminCount.vcd")
 
@@ -240,6 +236,21 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
       getValue(timeStep, "testReg") should be (getValue(timeStep, "io_testReg"))
     }
+
+    if(hasTempWires) {
+      vcd.wires.values.exists { value => value.name.startsWith("_T_") } should be (true)
+    }
+    else {
+      vcd.wires.values.forall { value => ! value.name.startsWith("_T_") } should be (true)
+    }
+  }
+
+  it should "have temp wires when desired" in {
+    testVcdTempWireTest(hasTempWires = true)
+  }
+
+  it should "not have temp wires when desired" in {
+    testVcdTempWireTest(hasTempWires = false)
   }
 
   behavior of "vcd replay spec"
@@ -277,7 +288,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val replayTester = new VcdReplayTester(replayManager)
     replayTester.run()
 
-    replayTester.testSuccesses should be (8)
+    replayTester.testSuccesses should be (7)
     replayTester.testFailures should be (0)
   }
 }

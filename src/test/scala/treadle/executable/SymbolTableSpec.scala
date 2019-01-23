@@ -46,6 +46,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val keyToDependent = symbolTable.childrenOf
 
+    // b3, b3/in, and io_out2 depend on clock
     keyToDependent.reachableFrom(symbolTable("clock")).size should be (3)
 
     symbolTable.registerNames.toList.sorted.foreach { key =>
@@ -133,6 +134,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
+    // a3, a3/in and io_out1 depend on clock
     childrenOf.reachableFrom(symbolTable("clock")).size should be (3)
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
