@@ -11,23 +11,23 @@ import treadle.ScalaBlackBox
   * @param symbol symbol name of instance
   * @param blackBox the instance
   * @param clockSymbol clock used by instance
-  * @param dataStore the data
   * @param info source location
   */
 //TODO: This should be called everytime something hanppens to clock and should indicate all possible transitions
 case class BlackBoxCycler(
-  symbol      : Symbol,
-  blackBox    : ScalaBlackBox,
-  clockSymbol : Symbol,
-  dataStore   : DataStore,
-  info        : Info
+  symbol:                Symbol,
+  blackBox:              ScalaBlackBox,
+  clockSymbol:           Symbol,
+  clockTransitionGetter: ClockTransitionGetter,
+  info:                  Info
 )
 extends Assigner {
 
   override def run: FuncUnit = {
-    blackBox.clockChange(PositiveEdge, clockSymbol.name)
+    val transition = clockTransitionGetter.transition
+    blackBox.clockChange(transition, clockSymbol.name)
     if (isVerbose) {
-      println(s"${symbol.name} : black box cycle($PositiveEdge)")
+      println(s"${symbol.name} : clock ${clockSymbol.name} state ($transition)")
     }
     () => Unit
   }

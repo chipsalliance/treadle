@@ -10,13 +10,13 @@ case class PrintfOp(
   info            : Info,
   string          : StringLit,
   args            : Seq[ExpressionResult],
-  condition       : IntExpressionResult,
-  dataStore       : DataStore
+  clockTransition : ClockTransitionGetter,
+  condition       : IntExpressionResult
 ) extends Assigner {
 
   def run: FuncUnit = {
     val conditionValue = condition.apply() > 0
-    if (conditionValue) {
+    if (conditionValue && clockTransition.isPosEdge) {
       val currentArgValues = args.map {
         case e: IntExpressionResult => e.apply()
         case e: LongExpressionResult => e.apply()

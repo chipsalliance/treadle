@@ -44,7 +44,7 @@ class ClockCrossingSpec extends FreeSpec with Matchers {
     Driver.execute(firrtlOptionsManager) match {
       case FirrtlExecutionSuccess(_, highFirrtl) =>
         val optionsManager = new TreadleOptionsManager {
-          commonOptions = commonOptions.copy(targetDirName = "test_run_dir/clock_crossing")
+          commonOptions = commonOptions.copy(targetDirName = "test_run_dir/clock_crossing", topName = "clock_crossing")
           treadleOptions = treadleOptions.copy(
             setVerbose = false, writeVCD = false, callResetAtStartUp = false,
             showFirrtlAtLoad = false,

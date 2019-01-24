@@ -76,6 +76,9 @@ class AccumulatorBlackBox(val name: String) extends ScalaBlackBox {
   var ps : BigInt = 0
   var isInReset: Boolean = false
 
+  override def inputChanged(name: String, value: BigInt): Unit = {
+  }
+
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "data" => Seq("clock", "reset")

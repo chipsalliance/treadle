@@ -2,7 +2,6 @@
 
 package treadle.executable
 
-import firrtl.ir.NoInfo
 import treadle.chronometry.UTC
 import treadle.utils.Render
 
@@ -52,12 +51,6 @@ case class SimpleSingleClockStepper(
 
   var isFirstRun: Boolean = true
 
-  val clockAssigner = dataStore.TriggerConstantAssigner(clockSymbol, engine.scheduler, triggerOnValue = 1, NoInfo)
-  engine.scheduler.clockAssigners += clockAssigner
-  engine.scheduler.addAssigner(clockSymbol, clockAssigner, excludeFromCombinational = true)
-
-  clockAssigners(clockSymbol) = ClockAssigners(clockAssigner, clockAssigner)
-
   var combinationalBumps: Long = 0L
 
   /**
@@ -68,22 +61,11 @@ case class SimpleSingleClockStepper(
   override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
     if(hasRollBack) {
       // save data state under roll back buffers for this clock
-      engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
+      engine.dataStore.saveData(wallTime.currentTime)
     }
 
-    val constantAssigner = clockAssigner
-    constantAssigner.value = if(value > Big(0)) {
-      if(hasRollBack) {
-        // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
-      }
-      cycleCount += 1
-      1
-    }
-    else {
-      0
-    }
-    constantAssigner.run()
+    engine.setValue(clockSymbol.name, value)
+    cycleCount += 1
   }
 
   override def combinationalBump(value: Long): Unit = {
@@ -109,7 +91,6 @@ case class SimpleSingleClockStepper(
 
         resetSymbolOpt.foreach { resetSymbol =>
           engine.setValue(resetSymbol.name, 0)
-          engine.inputsChanged = true
           if(increment - incrementToReset > 0) {
             engine.evaluateCircuit()
           }
@@ -127,9 +108,7 @@ case class SimpleSingleClockStepper(
       * Raise the clock and propagate changes
       */
     def raiseClock(): Unit = {
-      clockAssigner.value = 1
-      clockAssigner.run()
-      engine.inputsChanged = true
+      engine.setIntValue(clockSymbol, 1)
       engine.evaluateCircuit()
 
       val remainingIncrement = handlePossibleReset(upPeriod)
@@ -142,8 +121,7 @@ case class SimpleSingleClockStepper(
       * lower the clock
       */
     def lowerClock(): Unit = {
-      clockAssigner.value = 0
-      clockAssigner.run()
+      engine.setIntValue(clockSymbol, 0)
       combinationalBumps = 0L
     }
 
@@ -170,11 +148,6 @@ case class SimpleSingleClockStepper(
       val remainingIncrement = handlePossibleReset(downIncrement)
 
       wallTime.incrementTime(remainingIncrement)
-
-      if (hasRollBack) {
-        // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
-      }
 
       raiseClock()
 
@@ -213,27 +186,10 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
   clockInfoList.foreach { clockInfo =>
     val clockSymbol = engine.symbolTable(clockInfo.name)
 
-    val clockUpAssigner = dataStore.TriggerExpressionAssigner(
-      clockSymbol, scheduler, GetIntConstant(1).apply, triggerOnValue = 1, NoInfo)
-
-    val clockDownAssigner = dataStore.TriggerExpressionAssigner(
-      clockSymbol, scheduler, GetIntConstant(0).apply, triggerOnValue = -1, NoInfo)
-
-    clockAssigners(clockSymbol) = ClockAssigners(clockUpAssigner, clockDownAssigner)
-
-
-    scheduler.clockAssigners += clockUpAssigner
-    scheduler.clockAssigners += clockDownAssigner
-
     // this sets clock high and will call register updates
     wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, s"${clockInfo.name}/up") { () =>
-      if(hasRollBack) {
-        // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockInfo.name, wallTime.currentTime)
-      }
       cycleCount += 1
-      clockUpAssigner.run()
-      engine.inputsChanged = true
+      engine.setValue(clockSymbol.name, BigInt(1))
     }
 
     // this task sets clocks low
@@ -242,7 +198,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
       clockInfo.initialOffset + clockInfo.upPeriod,
       s"${clockInfo.name}/down"
     ) { () =>
-      clockDownAssigner.run()
+      engine.setValue(clockSymbol.name, BigInt(0))
     }
   }
 
@@ -256,7 +212,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
     if(value > Big(0)) {
       if(hasRollBack) {
         // save data state under roll back buffers for this clock
-        engine.dataStore.saveData(clockSymbol.name, wallTime.currentTime)
+        engine.dataStore.saveData(wallTime.currentTime)
       }
       assigner.upAssigner.run()
     }

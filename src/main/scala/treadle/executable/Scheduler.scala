@@ -21,19 +21,12 @@ import scala.collection.mutable.ArrayBuffer
 class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-
-  val triggeredAssigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
-    new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
-      override def default(key: Symbol): ArrayBuffer[Assigner] = {
-        this(key) = new mutable.ArrayBuffer[Assigner]()
-        this(key)
-      }
-    }
+  val endOfCycleAssigns    : mutable.HashSet[Assigner] = new mutable.HashSet
 
   val registerClocks       : mutable.HashSet[Symbol] = new mutable.HashSet
 
   def isTrigger(symbol: Symbol): Boolean = {
-    registerClocks.contains(symbol) || triggeredAssigns.contains(symbol)
+    registerClocks.contains(symbol)
   }
 
   val triggeredUnassigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
@@ -45,30 +38,22 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     }
 
   val orphanedAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-  val allUnassigners    : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-  val clockAssigners    : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
 
   def addAssigner(
     symbol: Symbol,
     assigner: Assigner,
-    triggerOption: Option[Symbol] = None,
     excludeFromCombinational: Boolean = false
   ): Unit = {
 
-    triggerOption match {
-      case Some(triggerSignal) =>
-        toAssigner(symbol) = assigner
-        triggeredAssigns(triggerSignal) += assigner
-      case _ =>
-        if(! excludeFromCombinational) {
-          if(toAssigner.contains(symbol)) {
-            throw TreadleException(s"Assigner already exists for $symbol")
-          }
-          toAssigner(symbol) = assigner
-          combinationalAssigns += assigner
-        }
+    toAssigner(symbol) = assigner
+    combinationalAssigns += assigner
+  }
+
+  def addEndOfCycleAssigner(assigner: Assigner): Unit = {
+    if(! endOfCycleAssigns.exists(a => a.symbol == assigner.symbol)) {
+      endOfCycleAssigns += assigner
     }
   }
 
@@ -77,7 +62,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
   }
 
   def getAllAssigners: Seq[Assigner] = {
-    toAssigner.values.toSeq ++ allUnassigners ++ clockAssigners
+    toAssigner.values.toSeq
   }
 
   def getAssignerInfo(symbol: Symbol): Info = {
@@ -106,11 +91,6 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
   def getAssigners(symbols: Seq[Symbol]): Seq[Assigner] = {
     val assigners = symbols.flatMap { symbol => toAssigner.get(symbol) }
     assigners
-  }
-
-  def addUnassigner(symbol: Symbol, assigner: Assigner): Unit = {
-    triggeredUnassigns(symbol) += assigner
-    allUnassigners += assigner
   }
 
   def organizeAssigners(): Unit = {
@@ -168,28 +148,13 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
   }
 
   /**
-    *  updates signals that depend on inputs
-    */
-  def executeTriggeredAssigns(trigger: Symbol): Unit = {
-    executeAssigners(triggeredAssigns(trigger))
-  }
-
-  /**
-    *  this is like executeTriggeredAssigns but is a hack
-    *  to propagate clock down signals to child clocks
-    */
-  def executeTriggeredUnassigns(trigger: Symbol): Unit = {
-    executeAssigners(triggeredUnassigns(trigger))
-  }
-
-  /**
     * de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
     val deduplicatedAssigns = (combinationalAssigns -- orphanedAssigns).distinct
     combinationalAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
       assigner.symbol.cardinalNumber
-    }
+    } ++ endOfCycleAssigns
   }
 
   def setOrphanedAssigners(assigners: Seq[Assigner]): Unit = {
@@ -202,9 +167,16 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     * @return
     */
   def render(engine: ExecutionEngine): String = {
+    val expressionViewRenderer = new ExpressionViewRenderer(
+      engine.dataStore,
+      symbolTable,
+      engine.expressionViews,
+      maxDependencyDepth = 0
+    )
+
     def renderAssigner(assigner: Assigner): String = {
       val expression =
-        engine.expressionViewRenderer.render(assigner.symbol, engine.wallTime.currentTime, showValues = false)
+        expressionViewRenderer.render(assigner.symbol, engine.wallTime.currentTime, showValues = false)
 
       if(expression.isEmpty) {
         s"${assigner.symbol.name} :::"
@@ -217,18 +189,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     s"Static assigns (${orphanedAssigns.size})\n" +
       orphanedAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
     s"Active assigns (${combinationalAssigns.size})\n" +
-    combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
-    triggeredAssigns.map { case (symbol, assigners) =>
-      s"Assigners triggered by ${symbol.name} (${assigners.length})\n" +
-        assigners.map(renderAssigner).mkString("\n") +
-        "\n"
-    }.mkString("\n") +
-      triggeredUnassigns.map { case (symbol, assigners) =>
-      s"Un-assigners triggered by ${symbol.name} (${assigners.length})\n" +
-        assigners.map(renderAssigner).mkString("\n") +
-        "\n"
-    }.mkString("\n") +
-    "\n\n"
+    combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n"
   }
 }
 

@@ -84,33 +84,21 @@ class ExpressionCompiler(
 
   //scalastyle:off cyclomatic.complexity method.length
   def makeAssigner(
-    symbol: Symbol,
-    expressionResult: ExpressionResult,
-    triggerOption: Option[Symbol] = None,
-    info: Info
+    symbol                : Symbol,
+    expressionResult      : ExpressionResult,
+    conditionalClockSymbol: Option[Symbol] = None,
+    info                  : Info
   ): Unit = {
     val assigner = (symbol.dataSize, expressionResult) match {
       case (IntSize,  result: IntExpressionResult)  =>
-        if(scheduler.isTrigger(symbol)) {
-          dataStore.TriggerExpressionAssigner(symbol, scheduler, result.apply, triggerOnValue = 1, info)
-        }
-        else {
-          dataStore.AssignInt(symbol, result.apply, info)
-        }
+        dataStore.AssignInt(symbol, result.apply, info)
+
       case (IntSize,  result: LongExpressionResult) =>
-        if(scheduler.isTrigger(symbol)) {
-          dataStore.TriggerExpressionAssigner(symbol, scheduler, ToInt(result.apply).apply, triggerOnValue = 1, info)
-        }
-        else {
           dataStore.AssignInt(symbol,  ToInt(result.apply).apply, info)
-        }
+
       case (IntSize,  result: BigExpressionResult)  =>
-        if(scheduler.isTrigger(symbol)) {
-          dataStore.TriggerExpressionAssigner(symbol, scheduler, ToInt(result.apply).apply, triggerOnValue = 1, info)
-        }
-        else {
           dataStore.AssignInt(symbol,  ToInt(result.apply).apply, info)
-        }
+
       case (LongSize, result: IntExpressionResult)  => dataStore.AssignLong(symbol, ToLong(result.apply).apply, info)
       case (LongSize, result: LongExpressionResult) => dataStore.AssignLong(symbol, result.apply, info)
       case (LongSize, result: BigExpressionResult)  => dataStore.AssignLong(symbol, BigToLong(result.apply).apply, info)
@@ -127,14 +115,17 @@ class ExpressionCompiler(
         throw TreadleException(
           s"Error:assignment size mismatch ($size)${symbol.name} <= ($expressionSize)$expressionResult")
     }
-    addAssigner(assigner, triggerOption)
+
+    conditionalClockSymbol match {
+      case Some(clockSymbol) =>
+        val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+        addAssigner(ClockBasedAssigner(assigner, clockSymbol, prevClockSymbol, dataStore, PositiveEdge))
+      case _ =>
+        addAssigner(assigner)
+    }
   }
 
-  def addAssigner(
-    assigner: Assigner,
-    triggerOption: Option[Symbol] = None
-  ): Unit = {
-
+  def addAssigner(assigner: Assigner): Unit = {
     val symbol = assigner.symbol
     externalModuleInputs.get(symbol) match {
       case Some(ExternalInputParams(instance, portName)) =>
@@ -142,7 +133,7 @@ class ExpressionCompiler(
         scheduler.addAssigner(symbol, dataStore.ExternalModuleInputAssigner(symbol, portName, instance, assigner))
       case _ =>
         // typical case
-        scheduler.addAssigner(symbol, assigner, triggerOption)
+        scheduler.addAssigner(symbol, assigner)
     }
   }
 
@@ -686,11 +677,15 @@ class ExpressionCompiler(
           makeAssigner(assignedSymbol, processExpression(con.expr), info = con.info)
 
           if(assignedSymbol.firrtlType == ClockType) {
-            getDrivingClock(con.expr).foreach { drivingClock =>
-              val downAssigner = dataStore.AssignInt(
-                assignedSymbol, makeGet(drivingClock).asInstanceOf[IntExpressionResult].apply, info = con.info)
-              scheduler.addUnassigner(drivingClock, downAssigner)
-            }
+            //
+            // If we are here then we need to add an assigner at the end of the cycle that records
+            // the clocks state in the clock's prev state
+            //
+            val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(assignedSymbol))
+            val prevClockAssigner = dataStore.AssignInt(
+              prevClockSymbol, makeGet(assignedSymbol).asInstanceOf[IntExpressionResult].apply, info = con.info
+            )
+            scheduler.addEndOfCycleAssigner(prevClockAssigner)
           }
         }
 
@@ -721,11 +716,16 @@ class ExpressionCompiler(
                   }
                   if (port.tpe == ClockType) {
                     val clockSymbol = symbolTable(expand(instanceName + "." + port.name))
-                    val blackBoxCycler = BlackBoxCycler(instanceSymbol, implementation, clockSymbol, dataStore, info)
+                    val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+
+                    val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
+
+                    val blackBoxCycler = BlackBoxCycler(
+                      instanceSymbol, implementation, clockSymbol, clockTransitionGetter, info)
 
                     val drivingClockOption = symbolTable.findHighestClock(clockSymbol)
 
-                    scheduler.addAssigner(instanceSymbol, blackBoxCycler, triggerOption = drivingClockOption)
+                    scheduler.addAssigner(instanceSymbol, blackBoxCycler)
                   }
                   else if(port.direction == Input) {
                     val portSymbol = symbolTable(expand(instanceName + "." + port.name))
@@ -745,6 +745,17 @@ class ExpressionCompiler(
         val symbol = symbolTable(expand(name))
         logger.debug(s"declaration:DefNode:${symbol.name}:${expression.serialize}")
         makeAssigner(symbol, processExpression(expression), info = info)
+        if(symbol.firrtlType == ClockType) {
+          //
+          // If we are here then we need to add an assigner at the end of the cycle that records
+          // the clocks state in the clock's prev state
+          //
+          val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(symbol))
+          val prevClockAssigner = dataStore.AssignInt(
+            prevClockSymbol, makeGet(symbol).asInstanceOf[IntExpressionResult].apply, info
+          )
+          scheduler.addEndOfCycleAssigner(prevClockAssigner)
+        }
 
       case DefWire(_, name, _) =>
         logger.debug(s"declaration:DefWire:$name")
@@ -778,16 +789,24 @@ class ExpressionCompiler(
                 throw TreadleException(s"Error: stop $stop has unknown condition type")
             }
 
-            val stopOp = StopOp(
-              symbol          = stopInfo.stopSymbol,
-              info            = info,
-              returnValue     = returnValue,
-              condition       = intExpression,
-              hasStopped      = symbolTable(StopOp.stopHappenedName),
-              dataStore       = dataStore
-            )
-            val drivingClockOption = getDrivingClock(clockExpression)
-            addAssigner(stopOp, triggerOption = drivingClockOption)
+            getDrivingClock(clockExpression) match {
+              case Some(clockSymbol) =>
+                val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+
+                val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
+                val stopOp = StopOp(
+                  symbol = stopInfo.stopSymbol,
+                  info = info,
+                  returnValue = returnValue,
+                  condition = intExpression,
+                  hasStopped = symbolTable(StopOp.stopHappenedName),
+                  dataStore = dataStore,
+                  clockTransitionGetter
+                )
+                addAssigner(stopOp)
+              case _ =>
+                throw TreadleException(s"Could not find symbol for Stop $stop")
+            }
 
           case _ =>
             throw TreadleException(s"Could not find symbol for Stop $stop")
@@ -805,15 +824,23 @@ class ExpressionCompiler(
                 throw TreadleException(s"Error: printf $printf has unknown condition type")
             }
 
-            val printOp = PrintfOp(
-              printInfo.printSymbol,
-              info, stringLiteral,
-              argExpressions.map { expression => processExpression(expression) },
-              intExpression,
-              dataStore
-            )
-            val drivingClockOption = getDrivingClock(clockExpression)
-            addAssigner(printOp, triggerOption = drivingClockOption)
+            getDrivingClock(clockExpression) match {
+              case Some(clockSymbol) =>
+                val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+
+                val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
+                val printOp = PrintfOp(
+                  printInfo.printSymbol,
+                  info, stringLiteral,
+                  argExpressions.map { expression => processExpression(expression) },
+                  clockTransitionGetter,
+                  intExpression
+                )
+                addAssigner(printOp)
+              case _ =>
+                throw TreadleException(s"Error: no clock found for Print $printf")
+            }
+
 
           case _ =>
             throw TreadleException(s"Could not find symbol for Print $printf")
@@ -830,9 +857,25 @@ class ExpressionCompiler(
   }
   // scalastyle:on
 
+  def processTopLevelClocks(module: Module): Unit = {
+    module.ports.foreach { port =>
+      if(port.tpe == ClockType) {
+        val clockSymbol = symbolTable(port.name)
+        val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+        val prevClockAssigner = dataStore.AssignInt(
+          prevClockSymbol, makeGet(clockSymbol).asInstanceOf[IntExpressionResult].apply, info = NoInfo
+        )
+        scheduler.addEndOfCycleAssigner(prevClockAssigner)
+      }
+    }
+  }
+
   def processModule(modulePrefix: String, myModule: DefModule, circuit: Circuit): Unit = {
     myModule match {
       case module: firrtl.ir.Module =>
+        if(modulePrefix.isEmpty) {
+          processTopLevelClocks(module)
+        }
         processStatements(modulePrefix, circuit: Circuit, module.body)
       case extModule: ExtModule => // Look to see if we have an implementation for this
         logger.debug(s"got external module ${extModule.name} instance $modulePrefix")
@@ -853,7 +896,5 @@ class ExpressionCompiler(
     scheduler.registerClocks ++= FindRegisterClocks.run(module, circuit, symbolTable)
 
     processModule("", module, circuit)
-
-    scheduler.sortInputSensitiveAssigns()
   }
 }
