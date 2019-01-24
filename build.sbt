@@ -32,9 +32,9 @@ organization := "edu.berkeley.cs"
 
 version := "1.1-SNAPSHOT"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.7"
 
-crossScalaVersions := Seq("2.12.6", "2.11.12")
+crossScalaVersions := Seq("2.12.7", "2.11.12")
 
 // enables using control-c in sbt CLI
 cancelable in Global := true
@@ -44,6 +44,17 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("public")
 )
+
+// Assembly
+
+assemblyJarName in assembly := "treadle.jar"
+
+mainClass in assembly := Some("treadle.TreadleRepl")
+
+test in assembly := {} // Should there be tests?
+
+assemblyOutputPath in assembly := file("./utils/bin/treadle.jar")
+
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")

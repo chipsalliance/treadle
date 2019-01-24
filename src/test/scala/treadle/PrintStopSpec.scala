@@ -196,4 +196,67 @@ class PrintStopSpec extends FlatSpec with Matchers {
     tester.step()
     println("after peek")
   }
+
+
+  it should "print rry=480 in the following example" in {
+    val input =
+      """
+        |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.7
+        |circuit BadPrintf :
+        |  module BadPrintf :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip in : UInt<10>, out : UInt<10>}
+        |
+        |    wire y : UInt<10> @[PrintfWrong.scala 12:15]
+        |    reg regY : UInt, clock @[PrintfWrong.scala 13:21]
+        |    regY <= y @[PrintfWrong.scala 13:21]
+        |    reg regRegY : UInt, clock @[PrintfWrong.scala 14:24]
+        |    regRegY <= regY @[PrintfWrong.scala 14:24]
+        |    y <= io.in @[PrintfWrong.scala 16:5]
+        |    node _T = eq(regRegY, UInt<9>("h01e0")) @[PrintfWrong.scala 18:17]
+        |    when _T : @[PrintfWrong.scala 18:28]
+        |      node _T_1 = eq(regRegY, UInt<1>("h00")) @[PrintfWrong.scala 19:76]
+        |      node _T_2 = eq(regRegY, UInt<9>("h01e0")) @[PrintfWrong.scala 19:93]
+        |      node _T_3 = bits(reset, 0, 0) @[PrintfWrong.scala 19:11]
+        |      node _T_4 = eq(_T_3, UInt<1>("h00")) @[PrintfWrong.scala 19:11]
+        |      when _T_4 : @[PrintfWrong.scala 19:11]
+        |        printf(clock, UInt<1>(1), "+++ ry=%d rry=%d isZero=%x is480=%x\n", regY, regRegY, _T_1, _T_2) @[PrintfWrong.scala 19:11]
+        |        skip @[PrintfWrong.scala 19:11]
+        |      skip @[PrintfWrong.scala 18:28]
+        |    io.out <= regRegY @[PrintfWrong.scala 22:10]
+        |
+        |
+      """.stripMargin
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = false,
+        showFirrtlAtLoad = false
+      )
+    }
+
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val tester = new TreadleTester(input, optionsManager)
+      tester.poke("io_in", 479)
+      tester.step()
+
+      tester.poke("io_in", 480)
+      tester.step()
+
+      tester.poke("io_in", 481)
+      tester.step(5)
+
+    }
+
+    output
+      .toString
+      .split("\n").count { line => line.contains("+++ ry=481 rry=480 isZero=0 is480=1") } should be (1)
+
+    output
+      .toString
+      .split("\n").count { line => line.contains("+++ ry=") } should be (1)
+
+  }
 }

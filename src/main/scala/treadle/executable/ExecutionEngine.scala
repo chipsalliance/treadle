@@ -143,6 +143,10 @@ class ExecutionEngine(
   private def runAssigns(): Unit = {
     try {
       scheduler.executeCombinationalAssigns()
+
+      // save data state under roll back buffers if they are being used
+      dataStore.saveData(wallTime.currentTime)
+
       if(lastStopResult.isDefined) {
         writeVCD()
         val stopKind = if(lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
@@ -198,10 +202,11 @@ class ExecutionEngine(
     registerPoke: Boolean = false,
     offset: Int = 0
   ): BigInt = {
-    if(! symbolTable.contains(name)) {
+
+    val symbol = symbolTable.getOrElse(
+      name,
       throw TreadleException(s"setValue: Cannot find $name in symbol table")
-    }
-    val symbol = symbolTable(name)
+    )
 
     inputsChanged = true
     if(symbolsPokedSinceEvaluation.contains(symbol)) {
@@ -210,9 +215,10 @@ class ExecutionEngine(
       }
       symbolsPokedSinceEvaluation.clear()
       scheduler.executeCombinationalAssigns()
-      scheduler.executeTriggeredAssigns(symbol)
     }
-    symbolsPokedSinceEvaluation += symbol
+    else {
+      symbolsPokedSinceEvaluation += symbol
+    }
 
     if(!force) {
       assert(symbol.dataKind == PortKind,
@@ -228,19 +234,9 @@ class ExecutionEngine(
         }
         println(s"${symbol.name} <= $value")
       }
-      val currentValue = dataStore(symbol)
       dataStore.update(symbol, adjustedValue)
       vcdOption.foreach { vcd =>
-        vcd.wireChanged(symbol.name, dataStore(symbol), symbol.bitWidth)
-      }
-
-      if(
-        scheduler.triggeredAssigns.contains(symbol) &&
-        currentValue == Big0 && adjustedValue == Big1
-      ) {
-
-        scheduler.executeCombinationalAssigns()
-        scheduler.executeTriggeredAssigns(symbol)
+        vcd.wireChanged(symbol.name, adjustedValue, symbol.bitWidth)
       }
     }
     else {
@@ -255,6 +251,46 @@ class ExecutionEngine(
         println(s"${symbol.name}($offset) <= $value from tester")
       }
       dataStore.setValueAtIndex(symbol.dataSize, symbol.index + offset, value)
+    }
+
+    value
+  }
+
+  /**
+    * Update the dataStore with the supplied information.
+    * IMPORTANT: This should never be used internally.
+    *
+    * @param symbol symbol to set
+    * @param value new concrete value
+    */
+  // scalastyle:off cyclomatic.complexity method.length
+  def setIntValue(
+    symbol: Symbol,
+    value: Int,
+  ): Int = {
+
+    inputsChanged = true
+    if(symbolsPokedSinceEvaluation.contains(symbol)) {
+      if(verbose) {
+        println(s"updating circuit on second update of same input without clock advance")
+      }
+      symbolsPokedSinceEvaluation.clear()
+      scheduler.executeCombinationalAssigns()
+    }
+    else {
+      symbolsPokedSinceEvaluation += symbol
+    }
+
+    val adjustedValue = symbol.valueFrom(value)
+    if(verbose) {
+      if(! inputsChanged) {
+        Render.headerBar("Poking")
+      }
+      println(s"${symbol.name} <= $value")
+    }
+    dataStore.intData(symbol.index) = value
+    vcdOption.foreach { vcd =>
+      vcd.wireChanged(symbol.name, adjustedValue, symbol.bitWidth)
     }
 
     value
@@ -296,6 +332,7 @@ class ExecutionEngine(
         Render.headerBar(s"combinational evaluate", offset = 8)
       }
       runAssigns()
+
       if(verbose) {
         Render.headerBar(s"done combinational evaluate", offset = 8)
       }
@@ -476,6 +513,7 @@ object ExecutionEngine {
       scheduler.setVerboseAssign(verbose)
     }
 
+    // Do this to make sure inits and what-not happen
     executionEngine.inputsChanged = true
 
     val t1 = System.nanoTime()

@@ -10,12 +10,13 @@ case class StopOp(
   returnValue        : Int,
   condition          : IntExpressionResult,
   hasStopped         : Symbol,
-  dataStore          : DataStore
+  dataStore          : DataStore,
+  clockTransition    : ClockTransitionGetter
 ) extends Assigner {
 
   def run: FuncUnit = {
     val conditionValue = condition.apply() > 0
-    if (conditionValue) {
+    if (conditionValue && clockTransition.isPosEdge) {
       if (isVerbose) {
         println(s"clock ${symbol.name} has fired")
       }

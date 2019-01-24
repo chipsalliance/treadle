@@ -62,8 +62,11 @@ class SnapshotSpec extends FreeSpec with Matchers {
     t.step()
 
     val snapshot1 = t.engine.dataStore.serialize
+
+    println(s"snapshot0\n$snapshot0")
+    println(s"snapshot1\n$snapshot1")
+
     snapshot1.contains(""""numberOfBuffers":4,""") should be (true)
-    snapshot1.contains(""""clockName":"clock",""") should be (true)
 
     println(s"snapshot0\n$snapshot0")
     println(s"snapshot1\n$snapshot1")

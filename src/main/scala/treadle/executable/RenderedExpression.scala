@@ -31,17 +31,17 @@ object SymbolAtDepth {
   * it shows all arguments of PrimOPs and should only show any symbols value once.
   * Muxes only show the expanded derivation of the branch taken
   * Display goes from top to bottom since it is usually the top value one wants
-  * to see rendered last.
+  * to see that is rendered last.
   *
   * @param dataStore        current state
   * @param symbolTable      the symbol table
   * @param expressionViews  expression information
   */
 class ExpressionViewRenderer(
-    dataStore       : DataStore,
-    symbolTable     : SymbolTable,
-    expressionViews : Map[Symbol, ExpressionView]
-
+  dataStore:          DataStore,
+  symbolTable:        SymbolTable,
+  expressionViews:    Map[Symbol, ExpressionView],
+  maxDependencyDepth: Int = 8
 ) {
 
   private def order(symbolAtDepth: SymbolAtDepth) = symbolAtDepth.displayDepth
@@ -131,11 +131,12 @@ class ExpressionViewRenderer(
       val argStrings = args.map {
         case symbol: Symbol =>
           if(! (
-            symbolTable.isRegister(symbol.name) ||
               symbolTable.inputPortsNames.contains(symbol.name) ||
               symbolsSeen.contains(symbol)
             )) {
-            symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, dataTime, dataArrays))
+            if(displayDepth < maxDependencyDepth) {
+              symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, dataTime, dataArrays))
+            }
           }
 
           val value = symbol.normalize(dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))
@@ -191,14 +192,19 @@ class ExpressionViewRenderer(
           }
 
           if(symbolTable.isRegister(symbol.name)) {
-            val clockName = symbolTable.registerToClock(symbol).name
+            val clockSymbol = symbolTable.registerToClock(symbol)
+            val clockIndex  = clockSymbol.index
+            val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+            val prevClockIndex = prevClockSymbol.index
 
-            dataStore.rollBackBufferManager.findEarlierBuffer(clockName, dataTime) match {
+            dataStore
+                    .rollBackBufferManager
+                    .findBufferBeforeClockTransition(dataTime, clockIndex, prevClockIndex) match {
 
               case Some(buffer) =>
                 builder ++= renderView(view, symbolAtDepth.displayDepth, buffer.time, buffer)
+
               case _ =>
-                builder ++= renderView(view, symbolAtDepth.displayDepth, dataTime, symbolAtDepth.dataArrays)
             }
           }
           else {

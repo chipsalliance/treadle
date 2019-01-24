@@ -7,7 +7,6 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
 import treadle.ScalaBlackBox
-import treadle.utils.Render
 
 import scala.collection.mutable
 
@@ -112,9 +111,17 @@ extends HasDataArrays {
   val bigData:   Array[Big]  = Array.fill(numberOfBigs)(Big(0))
 
   val rollBackBufferManager = new RollBackBufferManager(this)
+
+  def saveData(time: Long): Unit = {
+    if(numberOfBuffers > 0) {
+      rollBackBufferManager.saveData(time)
+    }
+  }
+
+  @deprecated("Use saveData(time: Long), clock based rollback buffers are no longer supported")
   def saveData(clockName: String, time: Long): Unit = {
     if(numberOfBuffers > 0) {
-      rollBackBufferManager.saveData(clockName, time)
+      rollBackBufferManager.saveData(time)
     }
   }
 
@@ -171,55 +178,6 @@ extends HasDataArrays {
     var run: FuncUnit = runLean
   }
 
-  case class TriggerConstantAssigner(
-    symbol: Symbol,
-    scheduler: Scheduler,
-    triggerOnValue: Int = -1,
-    info: Info
-  ) extends Assigner {
-
-    val index: Int = symbol.index
-
-    var value: Int = 0
-    var lastValue: Int = 0
-
-    def runLean(): Unit = {
-      lastValue = intData(index)
-      intData(index) = value
-      if(value == triggerOnValue && lastValue != triggerOnValue) {
-        scheduler.executeTriggeredAssigns(symbol)
-      }
-      else if(value != triggerOnValue && lastValue == triggerOnValue) {
-        scheduler.executeTriggeredUnassigns(symbol)
-      }
-    }
-
-    def runFull(): Unit = {
-      lastValue = intData(index)
-      intData(index) = value
-
-      runPlugins(symbol)
-
-      if(value == triggerOnValue && lastValue != triggerOnValue) {
-        if(isVerbose) Render.headerBar(s"triggered assigns for ${symbol.name}", offset = 8)
-        scheduler.executeTriggeredAssigns(symbol)
-        if(isVerbose) Render.headerBar(s"done triggered assigns for ${symbol.name}", offset = 8)
-      }
-      else if(value != triggerOnValue && lastValue == triggerOnValue) {
-        if(scheduler.triggeredUnassigns.contains(symbol)) {
-          if(isVerbose) Render.headerBar(s"triggered un-assigns for ${symbol.name}", offset = 8)
-          scheduler.executeTriggeredUnassigns(symbol)
-          if(isVerbose) Render.headerBar(s"done triggered un-assigns for ${symbol.name}", offset = 8)
-        }
-      }
-    }
-
-    override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
-    }
-    var run: FuncUnit = runLean
-  }
-
   case class ExternalModuleInputAssigner(
     symbol:             Symbol,
     portName:           String,
@@ -234,57 +192,6 @@ extends HasDataArrays {
       blackBox.inputChanged(portName, apply(symbol))
       () => Unit
     }
-  }
-
-  case class TriggerExpressionAssigner(
-    symbol: Symbol,
-    scheduler: Scheduler,
-    expression: FuncInt,
-    triggerOnValue: Int = -1,
-    info: Info
-  ) extends Assigner {
-
-    val index: Int = symbol.index
-
-    var lastValue: Int = 0
-
-    def runLean(): Unit = {
-      lastValue = intData(index)
-      val value = expression()
-      intData(index) = value
-      if(value == triggerOnValue && lastValue != triggerOnValue) {
-        scheduler.executeTriggeredAssigns(symbol)
-      }
-      else if(value != triggerOnValue && lastValue == triggerOnValue) {
-        scheduler.executeTriggeredUnassigns(symbol)
-      }
-    }
-
-    def runFull(): Unit = {
-      lastValue = intData(index)
-      val value = expression()
-      intData(index) = value
-
-      runPlugins(symbol)
-
-      if(value == triggerOnValue && lastValue != triggerOnValue) {
-        if(isVerbose) Render.headerBar(s"triggered assigns for ${symbol.name}", offset = 8)
-        scheduler.executeTriggeredAssigns(symbol)
-        if(isVerbose) Render.headerBar(s"done triggered assigns for ${symbol.name}", offset = 8)
-      }
-      else if(value != triggerOnValue && lastValue == triggerOnValue) {
-        if(scheduler.triggeredUnassigns.contains(symbol)) {
-          if(isVerbose) Render.headerBar(s"triggered un-assigns for ${symbol.name}", offset = 8)
-          scheduler.executeTriggeredUnassigns(symbol)
-          if(isVerbose) Render.headerBar(s"done triggered un-assigns for ${symbol.name}", offset = 8)
-        }
-      }
-    }
-
-    override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
-    }
-    var run: FuncUnit = runLean
   }
 
   case class GetLong(index: Int) extends LongExpressionResult {
@@ -497,39 +404,28 @@ extends HasDataArrays {
   }
 
   def getWaveformValues(symbols: Array[Symbol], startCycle: Int = 0, endCycle: Int = -1): WaveformValues = {
-    if (rollBackBufferManager.clockToBuffers.isEmpty) {
-      WaveformValues(Array[BigInt](), symbols, Array.fill(symbols.length)(Array[BigInt]()))
-    } else {
-      var clockName = "clk" // TODO: how to handle for multiclock?
-      if (!rollBackBufferManager.clockToBuffers.contains(clockName)) {
-        clockName = rollBackBufferManager.clockToBuffers.keySet.head
-        println(s"clock name changed to $clockName")
-      }
-      val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
+    var buffers: Seq[RollBackBuffer] = rollBackBufferManager.newestToOldestBuffers.reverse
 
-      var buffers: Seq[RollBackBuffer] = rollbackRing.newestToOldestBuffers.reverse
+    val leftIndexInclusive = math.max(0, startCycle)
+    val rightIndexExclusive = if (endCycle == -1) buffers.length else math.min(buffers.length, endCycle)
+    val n = rightIndexExclusive - leftIndexInclusive
 
-      val leftIndexInclusive = math.max(0, startCycle)
-      val rightIndexExclusive = if (endCycle == -1) buffers.length else math.min(buffers.length, endCycle)
-      val n = rightIndexExclusive - leftIndexInclusive
+    buffers = buffers.dropRight(buffers.length - rightIndexExclusive).drop(leftIndexInclusive)
 
-      buffers = buffers.dropRight(buffers.length - rightIndexExclusive).drop(leftIndexInclusive)
+    val clockValues = new Array[BigInt](n)
+    val symbolValues = Array.ofDim[BigInt](symbols.length, n)
 
-      val clockValues = new Array[BigInt](n)
-      val symbolValues = Array.ofDim[BigInt](symbols.length, n)
-
-      buffers.zipWithIndex.foreach { case (buffer, i) =>
-        clockValues(i) = buffer.time
-        symbols.zipWithIndex.foreach { case (symbol, j) =>
-          symbol.dataSize match {
-            case IntSize => symbolValues(j)(i) = buffer.intData(symbol.index)
-            case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
-            case BigSize => symbolValues(j)(i) = buffer.bigData(symbol.index)
-          }
+    buffers.zipWithIndex.foreach { case (buffer, i) =>
+      clockValues(i) = buffer.time
+      symbols.zipWithIndex.foreach { case (symbol, j) =>
+        symbol.dataSize match {
+          case IntSize => symbolValues(j)(i) = buffer.intData(symbol.index)
+          case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
+          case BigSize => symbolValues(j)(i) = buffer.bigData(symbol.index)
         }
       }
-      WaveformValues(clockValues, symbols, symbolValues)
     }
+    WaveformValues(clockValues, symbols, symbolValues)
   }
 
   def update(symbol: Symbol, value: Big): Unit = {
@@ -567,8 +463,8 @@ extends HasDataArrays {
     val bigDataValues  = toBigJArray(bigData)
 
     def packageRollbackBuffers = {
-      val packet = rollBackBufferManager.clockToBuffers.keys.toList.sorted.map { clockName =>
-        val rollbackRing = rollBackBufferManager.clockToBuffers(clockName)
+      val packet = List("AllClocks").map { clockName =>
+        val rollbackRing = rollBackBufferManager.rollBackBufferRing
 
         val intArray  = JArray(rollbackRing.ringBuffer.map { x => toIntJArray(x.intData)   }.toList)
         val longArray = JArray(rollbackRing.ringBuffer.map { x => toLongJArray(x.longData) }.toList)
@@ -649,7 +545,7 @@ extends HasDataArrays {
             case _ =>
           }
         case "rollbackData" =>
-          var clockBuffer = rollBackBufferManager.clockToBuffers.values.head
+          var clockBuffer = rollBackBufferManager.rollBackBufferRing
           value match {
             case JArray(clockSections) =>
               for {
@@ -658,8 +554,7 @@ extends HasDataArrays {
               } {
                 (subFieldName, subValue) match {
                   case ("clockName", JString(clockName)) =>
-                    assert(rollBackBufferManager.clockToBuffers.contains(clockName))
-                    clockBuffer = rollBackBufferManager.clockToBuffers(clockName)
+                    clockBuffer = rollBackBufferManager.rollBackBufferRing
 
                   case ("latestBufferIndex", JInt(latestBufferIndex)) =>
                     clockBuffer.latestBufferIndex = latestBufferIndex.toInt
