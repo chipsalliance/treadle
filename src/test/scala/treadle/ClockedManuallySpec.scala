@@ -45,7 +45,7 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
       )
       commonOptions = commonOptions.copy(
         targetDirName = "test_run_dir/manually_clocked_pos",
-        topName = "manually_clocked_pos",
+        topName = "manually_clocked_pos"
       )
     }
 

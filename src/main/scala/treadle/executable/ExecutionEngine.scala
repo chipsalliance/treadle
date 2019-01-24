@@ -266,7 +266,7 @@ class ExecutionEngine(
   // scalastyle:off cyclomatic.complexity method.length
   def setIntValue(
     symbol: Symbol,
-    value: Int,
+    value: Int
   ): Int = {
 
     inputsChanged = true
