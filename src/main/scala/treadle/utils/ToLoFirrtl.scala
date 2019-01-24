@@ -4,7 +4,7 @@ package treadle.utils
 
 import firrtl.CompilerUtils.getLoweringTransforms
 import firrtl.Mappers._
-import firrtl.PrimOps.{Dshl, Shl}
+import firrtl.PrimOps.Dshl
 import firrtl._
 import firrtl.ir._
 import firrtl.transforms.BlackBoxSourceHelper
@@ -40,7 +40,6 @@ class FixupOps extends Transform {
   private def onExpr(expr: Expression): Expression =
     expr.map(onExpr) match {
       case prim @ DoPrim(Dshlw,_,_,_) => prim.copy(op = Dshl)
-      case prim @ DoPrim(Shlw,_,_,_) => prim.copy(op = Shl)
       case other => other
     }
   private def onStmt(stmt: Statement): Statement = stmt.map(onStmt).map(onExpr)
