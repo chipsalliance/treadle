@@ -44,7 +44,7 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
           randomSeed = 0L
         )
       }
-      val tester = new TreadleTester(adderInput, optionsManager)
+      val tester = TreadleTester(adderInput, optionsManager)
 
       tester.poke("io_a1_node", doubleToBigIntBits(1.5))
       tester.poke("io_a2_node", doubleToBigIntBits(3.25))
@@ -80,7 +80,7 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
         randomSeed = 0L
       )
     }
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     tester.poke("io_a_node", doubleToBigIntBits(3.14159))
 

@@ -73,12 +73,13 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false, setVerbose = false)
     }
-    val tester = new TreadleTester(chirrtlMemInput, optionsManager) {
-      poke("reset", 1)
-      step()
-      poke("reset", 0)
-      step()
-    }
+    val tester = TreadleTester(chirrtlMemInput, optionsManager)
+
+    tester.poke("reset", 1)
+    tester.step()
+    tester.poke("reset", 0)
+    tester.step()
+
     tester.report()
   }
 
@@ -124,20 +125,20 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         callResetAtStartUp = true
       )
     }
-    val tester: TreadleTester = new TreadleTester(input, optionsManager) {
-      poke("a", 1)
-      poke("b", 0)
-      poke("select", 0)
+    val tester: TreadleTester = TreadleTester(input, optionsManager)
+    tester.poke("a", 1)
+    tester.poke("b", 0)
+    tester.poke("select", 0)
 
-      step()
+    tester.step()
 
-      def testC(): Unit = {
-        val m = peek("c")
-        println(s"got $m")
-        step()
-      }
-      testC()
+    def testC(): Unit = {
+      val m = tester.peek("c")
+      println(s"got $m")
+      tester.step()
     }
+    testC()
+
     tester.report()
   }
 
@@ -172,23 +173,21 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
-    val tester = new TreadleTester(input) {
-      // setVerbose(true)
+    val tester = TreadleTester(input)
 
-      poke("do_write", 1)
-      for(i <- 0 until depth) {
-        poke("index", i)
-        poke("write_data", i + 3)
-        step()
-      }
-      poke("do_write", 0)
-      step(2)
+    tester.poke("do_write", 1)
+    for(i <- 0 until depth) {
+      tester.poke("index", i)
+      tester.poke("write_data", i + 3)
+      tester.step()
+    }
+    tester.poke("do_write", 0)
+    tester.step(2)
 
-      for(i <- 0 until depth) {
-        poke("index", i)
-        step()
-        expect("read_data", i + 3)
-      }
+    for(i <- 0 until depth) {
+      tester.poke("index", i)
+      tester.step()
+      tester.expect("read_data", i + 3)
     }
     tester.report()
   }
@@ -250,24 +249,23 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false, setVerbose = false)
     }
-    val tester = new TreadleTester(input, optionsManager) {
-      // setVerbose(true)
+    val tester = TreadleTester(input, optionsManager)
 
-      poke("outer_write_en", 1)
-      for(i <- 0 until 10) {
-        poke("outer_addr", i)
-        poke("outer_din", i * 3)
-        step()
-      }
-      poke("outer_write_en", 0)
-      step(2)
-
-      for(i <- 0 until 10) {
-        poke("outer_addr", i)
-        step()
-        expect("outer_dout", i * 3)
-      }
+    tester.poke("outer_write_en", 1)
+    for(i <- 0 until 10) {
+      tester.poke("outer_addr", i)
+      tester.poke("outer_din", i * 3)
+      tester.step()
     }
+    tester.poke("outer_write_en", 0)
+    tester.step(2)
+
+    for(i <- 0 until 10) {
+      tester.poke("outer_addr", i)
+      tester.step()
+      tester.expect("outer_dout", i * 3)
+    }
+
     tester.report()
   }
 
@@ -308,7 +306,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         callResetAtStartUp = true
       )
     }
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
     tester.poke("in1", 11)
     tester.poke("addr", 3)
     tester.poke("write_en", 1)
@@ -373,7 +371,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
           callResetAtStartUp = true
         )
       }
-      val tester = new TreadleTester(input, optionsManager)
+      val tester = TreadleTester(input, optionsManager)
       tester.poke("in1", 11)
       tester.poke("addr", 3)
       tester.poke("write_en", 1)
@@ -460,7 +458,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     }
     writer2.close()
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     for(i <- 0 until 8) {
       tester.expectMemory("memory", i, i)

@@ -43,7 +43,7 @@ class GetIntBreakdownSpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(firrtlString, manager)
+    val tester = TreadleTester(firrtlString, manager)
 
     for(i <- 0 to 1000) {
       tester.poke("io_in", 4)

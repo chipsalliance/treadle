@@ -40,7 +40,7 @@ class ClockMadnessSpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "ClockMadnessSpec should pass a basic test" in {
-    val tester = new TreadleTester(input)
+    val tester = TreadleTester(input)
     //    tester.poke("reset", 0)
     //    tester.poke("io_enable", 1)
     //    for(_ <- 0 until 3) {

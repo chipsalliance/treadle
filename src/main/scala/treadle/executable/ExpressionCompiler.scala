@@ -6,6 +6,7 @@ import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir._
 import treadle._
+import treadle.stage.TreadleConfig
 import treadle.utils.FindModule
 
 import scala.collection.mutable
@@ -14,7 +15,7 @@ class ExpressionCompiler(
     val symbolTable  : SymbolTable,
     val dataStore    : DataStore,
     scheduler        : Scheduler,
-    treadleOptions   : TreadleOptions,
+    treadleOptions   : TreadleConfig,
     blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {

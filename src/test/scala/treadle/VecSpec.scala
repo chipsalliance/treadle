@@ -44,7 +44,7 @@ class VecSpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     def show(): Unit = {
       println("Rendering register assignments")
@@ -131,7 +131,7 @@ class VecSpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     tester.poke("reset", 1)
     tester.step()

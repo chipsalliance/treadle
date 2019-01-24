@@ -163,7 +163,7 @@ trait HasTreadleOptions {
 object Driver {
 
   def execute(firrtlInput: String, optionsManager: TreadleOptionsManager): Option[TreadleTester] = {
-    val tester = new TreadleTester(firrtlInput, optionsManager)
+    val tester = TreadleTester(firrtlInput, optionsManager)
     Some(tester)
   }
 

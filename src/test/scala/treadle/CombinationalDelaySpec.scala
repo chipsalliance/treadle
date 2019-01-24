@@ -39,7 +39,7 @@ class CombinationalDelaySpec extends FreeSpec with Matchers {
       )
     }
 
-    val t = new TreadleTester(input, optionsManager)
+    val t = TreadleTester(input, optionsManager)
     t.poke("in_0", 20)
     t.poke("in_1", 11)
     t.expect("add_out", 31)

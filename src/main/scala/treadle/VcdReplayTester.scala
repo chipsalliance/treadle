@@ -38,7 +38,7 @@ class VcdReplayTester(optionsManager: VcdReplayTesterOptions) extends LazyLoggin
   val vcdTesterOptions: VcdReplayOptions = optionsManager.goldenVcdOptions
   val treadleOptions  : TreadleOptions   = optionsManager.treadleOptions
 
-  val tester: TreadleTester = new TreadleTester(getInput(vcdTesterOptions.firrtlSourceName), optionsManager)
+  val tester: TreadleTester = TreadleTester(getInput(vcdTesterOptions.firrtlSourceName), optionsManager)
 
   val vcd: VCD = VCD.read(vcdTesterOptions.vcdSourceName, tester.engine.ast.main)
 

@@ -49,7 +49,7 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     tester.advanceTime(300)
 
@@ -98,7 +98,7 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     tester.advanceTime(10)
 

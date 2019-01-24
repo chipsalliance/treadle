@@ -115,7 +115,7 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     tester.step(100)
     tester.report()

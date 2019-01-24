@@ -24,6 +24,7 @@ import scala.util.matching.Regex
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
+import treadle.stage.Compatibility
 
 
 //TODO: show inputs/outputs should show values also
@@ -955,7 +956,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def run(args: Array[String]): Unit = {
           getOneArg("", Some("lofirrtl")) match {
             case Some("lofirrtl") =>
-              console.println(ToLoFirrtl.lower(engine.ast, optionsManager).serialize)
+              val annotations = Compatibility.toAnnotations(optionsManager)
+              console.println(ToLoFirrtl.lower(engine.ast, annotations).serialize)
             case Some("input") | Some("firrtl") =>
               console.println(engine.ast.serialize)
             case Some("inputs") =>

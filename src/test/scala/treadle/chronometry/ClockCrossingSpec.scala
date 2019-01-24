@@ -51,7 +51,7 @@ class ClockCrossingSpec extends FreeSpec with Matchers {
             clockInfo = Seq(ClockInfo(name = "clock", period = 2, initialOffset = 1)))
         }
 
-        val tester = new TreadleTester(highFirrtl, optionsManager)
+        val tester = TreadleTester(highFirrtl, optionsManager)
 
         tester.reset(8)
 

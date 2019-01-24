@@ -65,7 +65,7 @@ object Regression {
            y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = new TreadleTester(gcdFirrtl, manager)
+    val tester = TreadleTester(gcdFirrtl, manager)
 
     val startTime = System.nanoTime()
     tester.poke("clock", 1)

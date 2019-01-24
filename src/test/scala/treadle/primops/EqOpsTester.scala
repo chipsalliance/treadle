@@ -96,7 +96,7 @@ class EqOpsTester extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
     tester.peek("out") should be (BigInt(0))
     println(s"peek out ${tester.peek("out") != BigInt(0)}")
     tester.report()

@@ -5,8 +5,13 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
+import firrtl.AnnotationSeq
+import firrtl.stage.{FirrtlOptionsView, FirrtlSourceAnnotation}
+import firrtl.transforms.DontCheckCombLoopsAnnotation
+import firrtl.options.{StageOptions, Viewer}
 import treadle.chronometry.UTC
 import treadle.executable._
+import treadle.stage.{AllowCycles, Compatibility, TreadleConfig, TreadleConfigView}
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 
@@ -20,18 +25,31 @@ import treadle.executable._
   * Important note: port names in LoFirrtl have replaced dot notation with underscore notation
   * so that io.a.b must be referenced as io_a_b
   *
-  * @param input              a firrtl program contained in a string
-  * @param optionsManager     collection of options for the engine
+  * @param annotations all the controls and the input source are here
   */
-class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
+class TreadleTester(annotations: AnnotationSeq) {
   var expectationsMet = 0
 
-  treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
+  val input: String = annotations.collectFirst {
+    case anno: FirrtlSourceAnnotation => anno
+  }
+    .getOrElse(throw TreadleException("TreadleTester started with no firrtl source"))
+    .source
+
+  val updatedAnnotations = annotations.flatMap {
+    case AllowCycles => Some(DontCheckCombLoopsAnnotation)
+    case other => Some(other)
+  }
+
+  val treadleOptions = TreadleConfigView.view(updatedAnnotations)
+  treadle.random.setSeed(treadleOptions.randomSeed)
+
+  val firrtlOptions = FirrtlOptionsView.view(updatedAnnotations)
+  val stageOptions = Viewer.view[StageOptions](updatedAnnotations)
 
   val wallTime = UTC()
 
-  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager, wallTime)
-  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
+  val engine         : ExecutionEngine  = ExecutionEngine(input, updatedAnnotations, wallTime)
 
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
@@ -118,16 +136,17 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
     println(s"${"-"*60}\nStarting Treadle at ${Calendar.getInstance.getTime} WallTime: ${wallTime.currentTime}")
   }
 
-  if(treadleOptions.writeVCD) {
-    optionsManager.setTopNameIfNotSet(engine.ast.main)
-    optionsManager.makeTargetDir()
+  val topName = engine.ast.main
+
+  if(treadleOptions.writeVcd) {
+    //TODO: used to call makeTargetDir here, is this obviated
     engine.makeVCDLogger(
-      treadleOptions.vcdOutputFileName(optionsManager),
+      stageOptions.getBuildFileName(filename = topName, suffix = Some("vcd")),
       treadleOptions.vcdShowUnderscored
     )
   }
 
-  if(optionsManager.treadleOptions.callResetAtStartUp && engine.symbolTable.contains(resetName)) {
+  if(treadleOptions.callResetAtStartUp && engine.symbolTable.contains(resetName)) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
     }
@@ -168,7 +187,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
   }
 
   def makeSnapshot(): Unit = {
-    val snapshotName = optionsManager.getBuildFileName(".datastore.snapshot.json")
+    val snapshotName = stageOptions.getBuildFileName(filename = ".datastore.snapshot.json")
     val writer = new PrintWriter(snapshotName)
     writer.write(engine.dataStore.serialize)
     writer.close()
@@ -408,6 +427,10 @@ object TreadleTester {
     * @return
     */
   def apply(input : String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
-    new TreadleTester(input, optionsManager)
+    new TreadleTester(Compatibility.toAnnotations(optionsManager) :+ FirrtlSourceAnnotation(input))
+  }
+
+  def apply(annotations: AnnotationSeq): TreadleTester = {
+    new TreadleTester(annotations)
   }
 }

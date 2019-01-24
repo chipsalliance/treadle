@@ -5,7 +5,7 @@ package treadle.stage
 import treadle.ScalaBlackBoxFactory
 import treadle.executable.ClockInfo
 
-case class TreadleOptions (
+case class TreadleConfig (
   writeVcd             : Boolean                   = false,
   vcdShowUnderscored   : Boolean                   = false,
   setVerbose           : Boolean                   = false,

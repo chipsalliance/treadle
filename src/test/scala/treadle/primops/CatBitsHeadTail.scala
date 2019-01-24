@@ -102,7 +102,7 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
           )
         }
 
-        val tester = new TreadleTester(input, optionsManager)
+        val tester = TreadleTester(input, optionsManager)
         println(s"peek out 0x${tester.peek("out").toString(16)}")
         tester.report()
       }

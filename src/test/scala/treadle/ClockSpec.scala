@@ -51,7 +51,7 @@ class ClockSpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     intercept[StopException] {
       tester.step(100)
@@ -110,7 +110,7 @@ class ClockSpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     // load memory
     tester.poke("write_en", 1)

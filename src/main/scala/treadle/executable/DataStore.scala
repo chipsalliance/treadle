@@ -67,7 +67,7 @@ extends HasDataArrays {
   def setExecutionEngine(executionEngine: ExecutionEngine): Unit = {
     executionEngineOption = Some(executionEngine)
 
-    executionEngine.optionsManager.treadleOptions.symbolsToWatch.foreach { symbolName =>
+    executionEngine.treadleOptions.symbolsToWatch.foreach { symbolName =>
       if (executionEngine.symbolTable.contains(symbolName)) {
         watchList += executionEngine.symbolTable(symbolName)
       }
@@ -81,7 +81,7 @@ extends HasDataArrays {
 
   def setAssignmentDisplayModes(): Unit = {
     executionEngineOption.foreach { executionEngine =>
-      val watchList = executionEngine.optionsManager.treadleOptions.symbolsToWatch.map { symbolName =>
+      val watchList = executionEngine.treadleOptions.symbolsToWatch.map { symbolName =>
         executionEngine.symbolTable.get(symbolName) match {
           case Some(symbol) =>
             symbol

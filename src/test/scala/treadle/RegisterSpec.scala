@@ -158,7 +158,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(setVerbose = false, writeVCD = false)
     }
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
     tester.poke("reset", 1)
     tester.step()
     tester.poke("reset", 0)
@@ -321,7 +321,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         writeVCD = false,
         rollbackBuffers = 15)
     }
-    val tester = new TreadleTester(input, manager)
+    val tester = TreadleTester(input, manager)
 
     tester.poke("io_in", 77)
     tester.poke("io_en", 0)

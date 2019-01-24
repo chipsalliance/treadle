@@ -596,7 +596,7 @@ object Memory {
 class MemoryInitializer(engine: ExecutionEngine) {
   case class MemoryMetadata(symbol: Symbol, fileName: String, radix: Int)
 
-  val memoryLoadAnnotations: Seq[LoadMemoryAnnotation] = engine.optionsManager.firrtlOptions.annotations.collect {
+  val memoryLoadAnnotations: Seq[LoadMemoryAnnotation] = engine.annotations.collect {
     case mla: LoadMemoryAnnotation => mla
   }
 

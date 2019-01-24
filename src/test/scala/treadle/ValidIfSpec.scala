@@ -21,7 +21,7 @@ import org.scalatest.{FreeSpec, Matchers}
 //    val options = new TreadleOptionsManager {
 //      treadleOptions = treadleOptions.copy(validIfIsRandom = false)
 //    }
-//    val tester = new TreadleTester(input, options)
+//    val tester = TreadleTester(input, options)
 //    tester.poke("in1", 42)
 //    tester.expect("out1", 42)
 //  }
@@ -42,7 +42,7 @@ import org.scalatest.{FreeSpec, Matchers}
 //        randomSeed = 0L
 //      )
 //    }
-//    val tester = new TreadleTester(input, options)
+//    val tester = TreadleTester(input, options)
 //    tester.poke("in1", 42)
 //    assert(tester.peek("out1") != 42)
 //  }

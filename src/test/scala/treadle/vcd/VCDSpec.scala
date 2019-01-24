@@ -129,7 +129,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       treadleOptions = treadleOptions.copy(writeVCD = true)
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
-    val engine = new TreadleTester(input, manager)
+    val engine = TreadleTester(input, manager)
     engine.poke("a", -1)
     engine.peek("a") should be (BigInt(-1))
     engine.poke("b", -7)
@@ -160,7 +160,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       commonOptions = CommonOptions(targetDirName = "test_run_dir")
     }
 
-    val engine = new TreadleTester(input, manager)
+    val engine = TreadleTester(input, manager)
     engine.step()
     engine.poke("io_a", 3)
     engine.poke("io_b", 5)
@@ -209,7 +209,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       commonOptions = CommonOptions(targetDirName = "test_run_dir/vcd_register_delay")
     }
     {
-      val engine = new TreadleTester(input, manager)
+      val engine = TreadleTester(input, manager)
       engine.poke("reset", 0)
 
       engine.step(50)
@@ -269,7 +269,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     val resourceFileName = manager.targetDirName + resourceName
     copyResourceToFile(resourceName, new File(resourceFileName))
-    val tester = new TreadleTester(input, manager)
+    val tester = TreadleTester(input, manager)
 
     tester.poke("io_a", 3)
     tester.poke("io_b", 5)

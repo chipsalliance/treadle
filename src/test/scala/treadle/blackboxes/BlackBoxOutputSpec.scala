@@ -115,7 +115,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
           blackBoxFactories = Seq(factory),
           randomSeed = 0L)
       }
-      val tester = new TreadleTester(adderInput, optionsManager)
+      val tester = TreadleTester(adderInput, optionsManager)
 
       for(i <- 0 until 10) {
         tester.poke("in", i)
@@ -159,7 +159,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
           blackBoxFactories = Seq(factory),
           randomSeed = 0L)
       }
-      val tester = new TreadleTester(input, optionsManager)
+      val tester = TreadleTester(input, optionsManager)
 
       tester.poke("clear", 1)
       tester.step()

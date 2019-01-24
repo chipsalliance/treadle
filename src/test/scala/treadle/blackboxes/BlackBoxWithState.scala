@@ -50,7 +50,7 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         clockInfo = Seq(ClockInfo("clock", 10, 8))
       )
     }
-    val tester = new TreadleTester(input, manager)
+    val tester = TreadleTester(input, manager)
 
     val initialValue = tester.peek("io_data")
     println(s"Initial value is $initialValue")

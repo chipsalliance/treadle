@@ -2,11 +2,13 @@
 
 package treadle.executable
 
-import firrtl.PortKind
+import firrtl.{AnnotationSeq, PortKind}
 import firrtl.ir.{Circuit, NoInfo}
+import firrtl.stage.FirrtlOptionsView
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
 import treadle.chronometry.{Timer, UTC}
+import treadle.stage.{TreadleConfig, TreadleConfigView}
 import treadle.utils.{Render, ToLoFirrtl}
 import treadle.vcd.VCD
 
@@ -15,7 +17,7 @@ import scala.collection.mutable
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
     val ast             : Circuit,
-    val optionsManager  : HasTreadleSuite,
+    val annotations     : AnnotationSeq,
     val symbolTable     : SymbolTable,
     val dataStore       : DataStore,
     val scheduler       : Scheduler,
@@ -36,7 +38,10 @@ class ExecutionEngine(
   val symbolsPokedSinceEvaluation: mutable.HashSet[Symbol] = new mutable.HashSet
 
   var verbose: Boolean = false
-  setVerbose(optionsManager.treadleOptions.setVerbose)
+
+  val treadleOptions: TreadleConfig = TreadleConfigView.view(annotations)
+
+  setVerbose(treadleOptions.setVerbose)
 
   var inputsChanged: Boolean = false
 
@@ -44,13 +49,13 @@ class ExecutionEngine(
 
   dataStore.addPlugin(
     "show-assigns", new ReportAssignments(this),
-    enable = optionsManager.treadleOptions.setVerbose
+    enable = treadleOptions.setVerbose
   )
 
   dataStore.addPlugin(
     "show-computation",
-    new RenderComputations(this, optionsManager.treadleOptions.symbolsToWatch),
-    enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
+    new RenderComputations(this, treadleOptions.symbolsToWatch),
+    enable = treadleOptions.symbolsToWatch.nonEmpty
   )
 
   def setLeanMode(): Unit = {
@@ -439,19 +444,19 @@ object ExecutionEngine {
   //scalastyle:off method.length
   /**
     * Construct a Firrtl Execution engine
-    * @param input           a Firrtl text file
-    * @param optionsManager  options that control configuration and behavior
+    * @param input           a Firrtl AST in text form
+    * @param annotationSeq   all the controls are here
     * @return                the constructed engine
     */
   def apply(
-    input          : String,
-    optionsManager : HasTreadleSuite = new TreadleOptionsManager,
+    input:         String,
+    annotationSeq: AnnotationSeq,
     wallTime       : UTC
   ): ExecutionEngine = {
 
     val t0 = System.nanoTime()
 
-    val treadleOptions: TreadleOptions = optionsManager.treadleOptions
+    val treadleOptions = TreadleConfigView.view(annotationSeq)
 
     val ast = firrtl.Parser.parse(input.split("\n").toIterator)
     val verbose: Boolean = treadleOptions.setVerbose
@@ -459,12 +464,7 @@ object ExecutionEngine {
     val timer = new Timer
 
     val loweredAst: Circuit = if(treadleOptions.lowCompileAtLoad) {
-      if(treadleOptions.allowCycles) {
-        optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-          annotations = optionsManager.firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation
-        )
-      }
-      ToLoFirrtl.lower(ast, optionsManager)
+      ToLoFirrtl.lower(ast, annotationSeq)
     } else {
       ast
     }
@@ -504,7 +504,7 @@ object ExecutionEngine {
     scheduler.organizeAssigners()
 
     val executionEngine =
-      new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews, wallTime)
+      new ExecutionEngine(ast, annotationSeq, symbolTable, dataStore, scheduler, expressionViews, wallTime)
 
     executionEngine.dataStore.setExecutionEngine(executionEngine)
 

@@ -7,8 +7,9 @@ import firrtl.options.Shell
 trait TreadleCli { this: Shell =>
   parser.note("Treadle Front End Options")
 
-  Seq(
-    WriteVcd
+  val commandLineAnnotations = Seq(
+    SetVerbose,
+    WriteVcd,
   )
-          .foreach(_.addOptions(parser))
+  commandLineAnnotations.foreach(_.addOptions(parser))
 }

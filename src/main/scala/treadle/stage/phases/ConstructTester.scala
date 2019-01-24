@@ -12,7 +12,7 @@ object ConstructTester extends Phase {
   def transform(a: AnnotationSeq): AnnotationSeq = {
     a.flatMap {
       case FirrtlSourceAnnotation(firrtlSource) =>
-        Seq(TreadleTesterAnnotation(new TreadleTester(firrtlSource)))
+        Seq(TreadleTesterAnnotation(TreadleTester(a)))
       case other => Seq(other)
     }
   }
