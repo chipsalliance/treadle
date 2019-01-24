@@ -6,6 +6,7 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasScoptOptions, Unserializable}
 import scopt.OptionParser
+import treadle.TreadleTester
 
 sealed trait TreadleOption extends Unserializable { this: Annotation => }
 
@@ -20,3 +21,5 @@ case object WriteVcd extends NoTargetAnnotation with TreadleOption with HasScopt
       .text("write vcd file during simulation")
   }
 }
+
+case class TreadleTesterAnnotation(val tester: TreadleTester) extends NoTargetAnnotation with Unserializable
