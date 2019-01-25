@@ -6,7 +6,7 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasScoptOptions, Unserializable}
 import scopt.OptionParser
-import treadle.TreadleTester
+import treadle.{ScalaBlackBoxFactory, TreadleTester}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation => }
 
@@ -178,6 +178,6 @@ object SymbolsToWatch extends HasScoptOptions {
   }
 }
 
-case class BlackBoxFactories(factories: BlackBoxFactories) extends NoTargetAnnotation
+case class BlackBoxFactories(factories: Seq[ScalaBlackBoxFactory]) extends NoTargetAnnotation
 
 case class TreadleTesterAnnotation(tester: TreadleTester) extends NoTargetAnnotation with Unserializable

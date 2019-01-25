@@ -25,6 +25,10 @@ case class ClockInfo(
   if(initialOffset <= 0) {
     throw TreadleException(s"initialOffset in ClockInfo for $name must be positive. Found value $initialOffset")
   }
+
+  override def toString: String = {
+    s"$name:$period:$initialOffset"
+  }
 }
 
 /**

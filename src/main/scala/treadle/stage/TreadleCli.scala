@@ -20,7 +20,7 @@ trait TreadleCli { this: Shell =>
     ClockInfoList,
     ResetName,
     CallResetAtStartup,
-    SymbolsToWatch,
+    SymbolsToWatch
   )
   commandLineAnnotations.foreach(_.addOptions(parser))
 }

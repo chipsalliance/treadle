@@ -14,9 +14,10 @@ object TreadleStage extends Stage {
   private val phases: Seq[Phase] = Seq(
     ConstructTester,
   )
+
   def run(annotations: AnnotationSeq): AnnotationSeq = {
     Logger.makeScope(annotations) {
-      annotations
+      phases.foldLeft(annotations) { (annos, phase) => phase.transform(annos) }
     }
   }
 }
