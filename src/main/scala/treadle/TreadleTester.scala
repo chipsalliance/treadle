@@ -426,10 +426,22 @@ object TreadleTester {
     * @param optionsManager  options manager
     * @return
     */
+  @deprecated("Use TreadleStage instead.")
   def apply(input : String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
-    new TreadleTester(Compatibility.toAnnotations(optionsManager) :+ FirrtlSourceAnnotation(input))
+
+    val annotations = Compatibility.toAnnotations(optionsManager) ++
+            optionsManager.firrtlOptions.toAnnotations ++
+            optionsManager.commonOptions.toAnnotations :+
+            FirrtlSourceAnnotation(input)
+
+    new TreadleTester(annotations)
   }
 
+  /**
+    * This is standard start point for getting a TreadleTester
+    * @param annotations all you need for a tester is here
+    * @return
+    */
   def apply(annotations: AnnotationSeq): TreadleTester = {
     new TreadleTester(annotations)
   }

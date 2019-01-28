@@ -4,8 +4,7 @@ package treadle.stage
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.HasScoptOptions
-import treadle.{HasTreadleSuite, TreadleOptionsManager}
+import treadle.HasTreadleSuite
 
 object Compatibility {
   def toAnnotations(optionsManager: HasTreadleSuite): AnnotationSeq = {

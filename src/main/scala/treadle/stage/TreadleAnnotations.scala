@@ -17,7 +17,7 @@ case object WriteVcd extends NoTargetAnnotation with TreadleOption with HasScopt
       .opt[Unit]("tr-write-vcd")
       .abbr("tiwv")
       .abbr("trwv")
-      .action( (x, c) => WriteVcd +: c )
+      .action( (_, c) => WriteVcd +: c )
       .unbounded()
       .text("write vcd file during simulation")
   }
@@ -29,7 +29,7 @@ case object VcdShowUnderscored extends NoTargetAnnotation with TreadleOption wit
     p
       .opt[Unit]("tr-vcd-show-underscored-vars")
       .abbr("trvsuv")
-      .action( (x, c) => VcdShowUnderscored +: c )
+      .action( (_, c) => VcdShowUnderscored +: c )
       .unbounded()
       .text("vcd output by default does not show var that start with _T_ or _Gen_, this overrides that")
   }
@@ -42,7 +42,7 @@ case object SetVerbose extends NoTargetAnnotation with HasScoptOptions {
             .opt[Unit]("tr-verbose")
             .abbr("tv")
             .abbr("trv")
-            .action( (x, c) => SetVerbose +: c )
+            .action( (_, c) => SetVerbose +: c )
             .unbounded()
             .text("makes engine very verbose")
   }
@@ -54,7 +54,7 @@ case object AllowCycles extends NoTargetAnnotation with TreadleOption with HasSc
     p
             .opt[Unit]("tr-allow-cycles")
             .abbr("trac")
-            .action( (x, c) => AllowCycles +: c )
+            .action( (_, c) => AllowCycles +: c )
             .unbounded()
             .text("allow combinational loops to be processed")
   }
@@ -80,7 +80,7 @@ case object ShowFirrtlAtLoad extends NoTargetAnnotation with TreadleOption with 
     p
             .opt[Unit]("tr-show-firrtl-at-load")
             .abbr("trsfal")
-            .action( (x, c) => ShowFirrtlAtLoad +: c )
+            .action( (_, c) => ShowFirrtlAtLoad +: c )
             .unbounded()
             .text("show the compiled low firrtl at tester load time")
   }
@@ -92,7 +92,7 @@ case object LowCompileAtLoad extends NoTargetAnnotation with TreadleOption with 
     p
             .opt[Unit]("tr-dont-run-lower-compiler-on-load")
             .abbr("trlcol")
-            .action( (x, c) => LowCompileAtLoad +: c )
+            .action( (_, c) => LowCompileAtLoad +: c )
             .unbounded()
             .text("disable running of lowering compiler when firrtl is ingested")
   }
@@ -104,7 +104,7 @@ case object ValidIfIsRandom extends NoTargetAnnotation with TreadleOption with H
     p
             .opt[Unit]("tr-valid-if-is-random")
             .abbr("trviir")
-            .action( (x, c) => ValidIfIsRandom +: c )
+            .action( (_, c) => ValidIfIsRandom +: c )
             .unbounded()
             .text("default validIf returns valid regardless of valid, this randomizes instead")
   }
@@ -158,7 +158,7 @@ case object CallResetAtStartup extends NoTargetAnnotation with HasScoptOptions {
     p
             .opt[Unit]("tr-call-reset-at-start")
             .abbr("trcras")
-            .action( (x, c) => CallResetAtStartup +: c )
+            .action( (_, c) => CallResetAtStartup +: c )
             .unbounded()
             .text("makes engine very verbose")
   }

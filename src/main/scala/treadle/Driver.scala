@@ -2,8 +2,10 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
 import treadle.executable.{ClockInfo, TreadleException}
+import treadle.stage.TreadleStage
 
 //scalastyle:off magic.number
 case class TreadleOptions(
@@ -160,6 +162,7 @@ trait HasTreadleOptions {
     .text("name of default reset")
 }
 
+@deprecated("Use TreadleStage instead")
 object Driver {
 
   def execute(firrtlInput: String, optionsManager: TreadleOptionsManager): Option[TreadleTester] = {
@@ -168,13 +171,13 @@ object Driver {
   }
 
   def execute(args: Array[String], firrtlInput: String): Option[TreadleTester] = {
-    val optionsManager = new TreadleOptionsManager
+    val annotations = TreadleStage.shell.parse(args) :+ FirrtlSourceAnnotation(firrtlInput)
+    Some(TreadleTester(annotations))
+  }
 
-    if (optionsManager.parser.parse(args)) {
-      execute(firrtlInput, optionsManager)
-    } else {
-      None
-    }
+  def execute(args: Array[String]): Option[TreadleTester] = {
+    val annotations = TreadleStage.shell.parse(args)
+    Some(TreadleTester(annotations))
   }
 }
 
