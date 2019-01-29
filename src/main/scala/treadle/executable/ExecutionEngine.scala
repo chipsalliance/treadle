@@ -8,7 +8,7 @@ import firrtl.stage.FirrtlOptionsView
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
 import treadle.chronometry.{Timer, UTC}
-import treadle.stage.{TreadleConfig, TreadleConfigView}
+import treadle.stage.{TreadleOptions, TreadleConfigView}
 import treadle.utils.{Render, ToLoFirrtl}
 import treadle.vcd.VCD
 
@@ -39,7 +39,7 @@ class ExecutionEngine(
 
   var verbose: Boolean = false
 
-  val treadleOptions: TreadleConfig = TreadleConfigView.view(annotations)
+  val treadleOptions: TreadleOptions = TreadleConfigView.view(annotations)
 
   setVerbose(treadleOptions.setVerbose)
 

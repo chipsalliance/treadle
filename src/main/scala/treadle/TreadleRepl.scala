@@ -24,7 +24,7 @@ import scala.util.matching.Regex
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.JsonDSL._
-import treadle.stage.Compatibility
+import treadle.stage.{Compatibility, TreadleOptions}
 
 
 //TODO: show inputs/outputs should show values also

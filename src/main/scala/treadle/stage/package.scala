@@ -7,14 +7,14 @@ import firrtl.options.OptionsView
 
 package object stage {
 
-  implicit object TreadleConfigView extends OptionsView[TreadleConfig] {
+  implicit object TreadleConfigView extends OptionsView[TreadleOptions] {
 
-    def view(options: AnnotationSeq): TreadleConfig = {
+    def view(options: AnnotationSeq): TreadleOptions = {
       options
               .collect { case a: TreadleOption => a }
-              .foldLeft(TreadleConfig()) { (c, x) =>
+              .foldLeft(TreadleOptions()) { (c, x) =>
                 x match {
-                  case WriteVcd => c.copy(writeVcd = true)
+                  case WriteVcd => c.copy(writeVCD = true)
                   case _ => c
                 }
               }

@@ -85,7 +85,11 @@ object StrawManAddTester extends StrawManTester {
     t.step()
     t.expect("io_out", 2)
   }
+
+
 }
+
+
 
 
 /**

@@ -5,38 +5,7 @@ package treadle
 import firrtl.stage.FirrtlSourceAnnotation
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
 import treadle.executable.{ClockInfo, TreadleException}
-import treadle.stage.TreadleStage
-
-//scalastyle:off magic.number
-case class TreadleOptions(
-                           writeVCD           : Boolean              = false,
-                           vcdShowUnderscored : Boolean              = false,
-                           setVerbose         : Boolean              = false,
-                           setOrderedExec     : Boolean              = false,
-                           allowCycles        : Boolean              = false,
-                           randomSeed        : Long                 = System.currentTimeMillis(),
-                           blackBoxFactories : Seq[ScalaBlackBoxFactory] = Seq.empty,
-                           maxExecutionDepth : Long                 = Int.MaxValue,
-                           showFirrtlAtLoad  : Boolean              = false,
-                           lowCompileAtLoad  : Boolean              = true,
-                           validIfIsRandom   : Boolean              = false,
-                           rollbackBuffers   : Int                  = 10,
-                           clockInfo         : Seq[ClockInfo]       = Seq.empty,
-                           resetName         : String               = "reset",
-                           callResetAtStartUp: Boolean              = false,
-                           symbolsToWatch    : Seq[String]          = Seq.empty
-  )
-  extends firrtl.ComposableOptions {
-
-  def vcdOutputFileName(optionsManager: ExecutionOptionsManager): String = {
-    if(writeVCD) {
-      s"${optionsManager.getBuildFileName("vcd")}"
-    }
-    else {
-      ""
-    }
-  }
-}
+import treadle.stage.{TreadleOptions, TreadleStage}
 
 trait HasTreadleOptions {
   self: ExecutionOptionsManager =>
@@ -65,13 +34,6 @@ trait HasTreadleOptions {
       treadleOptions = treadleOptions.copy(setVerbose = true)
     }
     .text("makes engine very verbose")
-
-  parser.opt[Unit]("tr-ordered-exec")
-    .abbr("tioe")
-    .foreach { _ =>
-      treadleOptions = treadleOptions.copy(setOrderedExec = true)
-    }
-    .text("operates on dependencies optimally, can increase overhead, makes verbose mode easier to read")
 
   parser.opt[Unit]("fr-allow-cycles")
     .abbr("tiac")

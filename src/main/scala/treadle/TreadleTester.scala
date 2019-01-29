@@ -11,7 +11,7 @@ import firrtl.transforms.DontCheckCombLoopsAnnotation
 import firrtl.options.{StageOptions, Viewer}
 import treadle.chronometry.UTC
 import treadle.executable._
-import treadle.stage.{AllowCycles, Compatibility, TreadleConfig, TreadleConfigView}
+import treadle.stage.{AllowCycles, Compatibility, TreadleOptions, TreadleConfigView}
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 
@@ -138,7 +138,7 @@ class TreadleTester(annotations: AnnotationSeq) {
 
   val topName = engine.ast.main
 
-  if(treadleOptions.writeVcd) {
+  if(treadleOptions.writeVCD) {
     //TODO: used to call makeTargetDir here, is this obviated
     engine.makeVCDLogger(
       stageOptions.getBuildFileName(filename = topName, suffix = Some("vcd")),

@@ -7,6 +7,7 @@ import java.io.File
 import firrtl.ExecutionOptionsManager
 import treadle.vcd.VCD
 import logger.LazyLogging
+import treadle.stage.TreadleOptions
 import treadle.utils.VcdRunner
 
 /**
