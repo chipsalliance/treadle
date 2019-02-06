@@ -86,29 +86,17 @@ trait HasTreadleOptions {
     }
     .text("number of rollback buffers, 0 is no buffers, default is 4")
 
-  def parseClockInfo(input: String): ClockInfo = {
-    input.split(":").map(_.trim).toList match {
-      case name :: Nil =>
-        ClockInfo(name)
-      case name :: period :: Nil =>
-        ClockInfo(name, period.toLong)
-      case name :: period :: offset :: Nil =>
-        ClockInfo(name, period.toLong, offset.toLong)
-      case _ =>
-        throw TreadleException(s"Bad clock info string $input, should be name[:period[:offset]]")
-    }
-  }
   parser.opt[String]("tr-clock-info")
     .abbr("tici")
     .unbounded()
     .valueName("<string>")
     .foreach { x =>
-      treadleOptions = treadleOptions.copy(clockInfo = treadleOptions.clockInfo ++ Seq(parseClockInfo(x)))
+      treadleOptions = treadleOptions.copy(clockInfo = treadleOptions.clockInfo ++ Seq(ClockInfo.parseClockInfo(x)))
     }
     .text("clock-name[:period[:initial-offset]]")
 
   parser.opt[Seq[String]]("tr-symbols-to-watch")
-    .abbr("tstw")
+    .abbr("trstw")
     .valueName("symbols]")
     .foreach { x =>
     treadleOptions = treadleOptions.copy(symbolsToWatch = x)

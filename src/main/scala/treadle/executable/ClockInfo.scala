@@ -38,4 +38,17 @@ object ClockInfo {
   val DefaultName: String = "clock"
   val DefaultPeriod: Long = 10L
   val DefaultOffset: Long = 1L
+
+  def parseClockInfo(input: String): ClockInfo = {
+    input.split(":").map(_.trim).toList match {
+      case name :: Nil =>
+        ClockInfo(name)
+      case name :: period :: Nil =>
+        ClockInfo(name, period.toLong)
+      case name :: period :: offset :: Nil =>
+        ClockInfo(name, period.toLong, offset.toLong)
+      case _ =>
+        throw TreadleException(s"Bad clock info string $input, should be name[:period[:offset]]")
+    }
+  }
 }

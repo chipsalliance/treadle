@@ -9,7 +9,7 @@ import logger.{Logger, LoggerCli}
 import treadle.stage.phases.ConstructTester
 
 object TreadleStage extends Stage {
-  val shell: Shell = new Shell("chisel") with TreadleCli with LoggerCli with FirrtlCli
+  val shell: Shell = new Shell("treadle") with TreadleCli with LoggerCli with FirrtlCli
 
   private val phases: Seq[Phase] = Seq(
     ConstructTester,

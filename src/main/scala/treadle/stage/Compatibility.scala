@@ -29,9 +29,11 @@ object Compatibility {
       to.showFirrtlAtLoad                 -> ShowFirrtlAtLoad,
       to.lowCompileAtLoad                 -> LowCompileAtLoad,
       to.validIfIsRandom                  -> ValidIfIsRandom,
+      to.callResetAtStartUp               -> CallResetAtStartup,
       (to.rollbackBuffers > 0)            -> RollbackBuffers(to.rollbackBuffers),
       to.clockInfo.nonEmpty               -> ClockInfoList(to.clockInfo.map(_.toString)),
-      (to.resetName != "reset")           -> ResetName(to.resetName)
+      (to.resetName != "reset")           -> ResetName(to.resetName),
+      to.symbolsToWatch.nonEmpty          -> SymbolsToWatch(to.symbolsToWatch)
 
     ).flatMap { case (condition, annotation) => makeOpt(condition)(annotation)}
 

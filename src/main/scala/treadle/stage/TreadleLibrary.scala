@@ -26,6 +26,8 @@ class TreadleLibrary extends RegisteredLibrary {
       SymbolsToWatch
     )
 
+    p.note("Treadle Front End Options")
+
     seq.foreach(_.addOptions(p))
   }
 }

@@ -15,12 +15,12 @@ class DriverSpec extends FreeSpec with Matchers {
           |    output y : UInt<1>
           |    y <= x
         """.stripMargin
-      //      val engine = Driver.execute(Array.empty[String], input)
-      val engine = Driver.execute(Array("--tr-verbose"), input)
+      //      val tester = Driver.execute(Array.empty[String], input)
+      val tester = Driver.execute(Array("--tr-verbose"), input)
 
-      engine should not be empty
+      tester should not be empty
 
-      engine.foreach { tester =>
+      tester.foreach { tester =>
         tester.poke("x", 1)
         tester.expect("y", 1)
       }

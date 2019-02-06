@@ -8,7 +8,6 @@ import firrtl.PrimOps.{Dshl, Shl}
 import firrtl._
 import firrtl.ir._
 import firrtl.transforms.BlackBoxSourceHelper
-import treadle.HasTreadleOptions
 
 /**
   * Use these lowering transforms to prepare circuit for compiling

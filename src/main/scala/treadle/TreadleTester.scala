@@ -8,10 +8,10 @@ import java.util.Calendar
 import firrtl.AnnotationSeq
 import firrtl.stage.{FirrtlOptionsView, FirrtlSourceAnnotation}
 import firrtl.transforms.DontCheckCombLoopsAnnotation
-import firrtl.options.{StageOptions, Viewer}
+import firrtl.options.{StageOptions, TargetDirAnnotation, Viewer}
 import treadle.chronometry.UTC
 import treadle.executable._
-import treadle.stage.{AllowCycles, Compatibility, TreadleOptions, TreadleConfigView}
+import treadle.stage.{AllowCycles, Compatibility, TreadleConfigView, TreadleOptions}
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 
@@ -36,16 +36,16 @@ class TreadleTester(annotations: AnnotationSeq) {
     .getOrElse(throw TreadleException("TreadleTester started with no firrtl source"))
     .source
 
-  val updatedAnnotations = annotations.flatMap {
+  val updatedAnnotations: AnnotationSeq = annotations.flatMap {
     case AllowCycles => Some(DontCheckCombLoopsAnnotation)
     case other => Some(other)
   }
 
-  val treadleOptions = TreadleConfigView.view(updatedAnnotations)
+  private val treadleOptions = TreadleConfigView.view(updatedAnnotations)
   treadle.random.setSeed(treadleOptions.randomSeed)
 
-  val firrtlOptions = FirrtlOptionsView.view(updatedAnnotations)
-  val stageOptions = Viewer.view[StageOptions](updatedAnnotations)
+  private val firrtlOptions = FirrtlOptionsView.view(updatedAnnotations)
+  private val stageOptions = Viewer.view[StageOptions](updatedAnnotations)
 
   val wallTime = UTC()
 
@@ -136,12 +136,10 @@ class TreadleTester(annotations: AnnotationSeq) {
     println(s"${"-"*60}\nStarting Treadle at ${Calendar.getInstance.getTime} WallTime: ${wallTime.currentTime}")
   }
 
-  val topName = engine.ast.main
-
   if(treadleOptions.writeVCD) {
     //TODO: used to call makeTargetDir here, is this obviated
     engine.makeVCDLogger(
-      stageOptions.getBuildFileName(filename = topName, suffix = Some("vcd")),
+      stageOptions.getBuildFileName(filename = engine.ast.main, suffix = Some(".vcd")),
       treadleOptions.vcdShowUnderscored
     )
   }
@@ -411,23 +409,13 @@ class TreadleTester(annotations: AnnotationSeq) {
 
 object TreadleTester {
   /**
-    * this convenience method avoids files laying around in current directory
-    * @return
-    */
-  def getDefaultManager: HasTreadleSuite = {
-    new TreadleOptionsManager {
-      commonOptions = commonOptions.copy(targetDirName = "test_run_dir")
-    }
-  }
-
-  /**
     * Create a treadle tester
     * @param input           the firrtl to parse
     * @param optionsManager  options manager
     * @return
     */
   @deprecated("Use TreadleStage instead.")
-  def apply(input : String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
+  def apply(input : String, optionsManager: HasTreadleSuite): TreadleTester = {
 
     val annotations = Compatibility.toAnnotations(optionsManager) ++
             optionsManager.firrtlOptions.toAnnotations ++
@@ -435,6 +423,15 @@ object TreadleTester {
             FirrtlSourceAnnotation(input)
 
     new TreadleTester(annotations)
+  }
+
+  /**
+    * convenience method for tests to get a tester for a firrtl input string
+    * @param input the firrtl
+    * @return
+    */
+  def apply(input: String): TreadleTester = {
+    new TreadleTester(Seq(FirrtlSourceAnnotation(input), TargetDirAnnotation("test_run_dir")))
   }
 
   /**
