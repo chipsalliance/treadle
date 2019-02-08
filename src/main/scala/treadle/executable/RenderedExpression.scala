@@ -191,7 +191,8 @@ class ExpressionViewRenderer(
             builder ++= " <= "
           }
 
-          if(symbolTable.isRegister(symbol.name)) {
+          // If not showing values then just don't worry about previous rollback buffer
+          if(symbolTable.isRegister(symbol.name) && showValues) {
             val clockSymbol = symbolTable.registerToClock(symbol)
             val clockIndex  = clockSymbol.index
             val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))

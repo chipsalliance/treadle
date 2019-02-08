@@ -87,7 +87,7 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         writeVCD = false,
         vcdShowUnderscored = false,
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = false,
         rollbackBuffers = 10,
         symbolsToWatch = Seq()

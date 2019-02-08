@@ -14,6 +14,8 @@ case class PrintfOp(
   condition       : IntExpressionResult
 ) extends Assigner {
 
+  private val formatString = string.escape
+
   def run: FuncUnit = {
     val conditionValue = condition.apply() > 0
     if (conditionValue && clockTransition.isPosEdge) {
@@ -22,7 +24,6 @@ case class PrintfOp(
         case e: LongExpressionResult => e.apply()
         case e: BigExpressionResult => e.apply()
       }
-      val formatString = string.escape
       val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
       print(instantiatedString.drop(1).dropRight(1))
     }
