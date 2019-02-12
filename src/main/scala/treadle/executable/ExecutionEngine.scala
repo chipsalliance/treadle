@@ -7,7 +7,7 @@ import firrtl.ir.{Circuit, NoInfo}
 import firrtl.transforms.DontCheckCombLoopsAnnotation
 import treadle._
 import treadle.chronometry.{Timer, UTC}
-import treadle.utils.{Render, ToLoFirrtl}
+import treadle.utils.{AugmentPrintf, Render, ToLoFirrtl}
 import treadle.vcd.VCD
 
 import scala.collection.mutable
@@ -458,7 +458,7 @@ object ExecutionEngine {
     val blackBoxFactories: Seq[ScalaBlackBoxFactory] = treadleOptions.blackBoxFactories
     val timer = new Timer
 
-    val loweredAst: Circuit = if(treadleOptions.lowCompileAtLoad) {
+    val oldLoweredAst: Circuit = if(treadleOptions.lowCompileAtLoad) {
       if(treadleOptions.allowCycles) {
         optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
           annotations = optionsManager.firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation
@@ -468,6 +468,8 @@ object ExecutionEngine {
     } else {
       ast
     }
+
+    val loweredAst: Circuit = AugmentPrintf(oldLoweredAst)
 
     if(treadleOptions.showFirrtlAtLoad) {
       println("LoFirrtl" + "=" * 120)

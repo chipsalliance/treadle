@@ -88,7 +88,7 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
 
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        setVerbose = true,
+        setVerbose = false,
         vcdShowUnderscored = true,
         writeVCD = true
       )

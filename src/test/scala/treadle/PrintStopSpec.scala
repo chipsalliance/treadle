@@ -221,11 +221,68 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |      node _T_3 = bits(reset, 0, 0) @[PrintfWrong.scala 19:11]
         |      node _T_4 = eq(_T_3, UInt<1>("h00")) @[PrintfWrong.scala 19:11]
         |      when _T_4 : @[PrintfWrong.scala 19:11]
-        |        printf(clock, UInt<1>(1), "+++ ry=%d rry=%d isZero=%x is480=%x\n", regY, regRegY, _T_1, _T_2) @[PrintfWrong.scala 19:11]
+        |        printf(clock, UInt<1>(1), "+++ y=%d ry=%d rry=%d isZero=%x is480=%x\n", y, regY, regRegY, _T_1, _T_2) @[PrintfWrong.scala 19:11]
         |        skip @[PrintfWrong.scala 19:11]
         |      skip @[PrintfWrong.scala 18:28]
         |    io.out <= regRegY @[PrintfWrong.scala 22:10]
         |
+        |
+      """.stripMargin
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = false,
+        showFirrtlAtLoad = false
+      )
+    }
+
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val tester = new TreadleTester(input, optionsManager)
+      tester.poke("io_in", 479)
+      tester.step()
+
+      tester.poke("io_in", 480)
+      tester.step()
+
+      tester.poke("io_in", 481)
+      tester.step()
+
+    }
+
+    output
+      .toString
+      .split("\n").count { line => line.contains("+++ y=481 ry=480 rry=479 isZero=0 is480=1") } should be (1)
+
+    output
+      .toString
+      .split("\n").count { line => line.contains("+++ y=") } should be (1)
+
+  }
+  it should "print register values that have not been advanced yet" in {
+    val input =
+      """
+        |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.7
+        |circuit BadPrintf :
+        |  module BadPrintf :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip in : UInt<10>, out : UInt<10>}
+        |
+        |    wire y : UInt<10> @[PrintfWrong.scala 12:15]
+        |    reg regY : UInt, clock @[PrintfWrong.scala 13:21]
+        |    regY <= y @[PrintfWrong.scala 13:21]
+        |    reg regRegY : UInt, clock @[PrintfWrong.scala 14:24]
+        |    regRegY <= regY @[PrintfWrong.scala 14:24]
+        |    y <= io.in @[PrintfWrong.scala 16:5]
+        |    node _T = eq(regRegY, UInt<1>("h00")) @[PrintfWrong.scala 19:84]
+        |    node _T_1 = eq(regRegY, UInt<9>("h01e0")) @[PrintfWrong.scala 19:101]
+        |    node _T_2 = bits(reset, 0, 0) @[PrintfWrong.scala 19:11]
+        |    node _T_3 = eq(_T_2, UInt<1>("h00")) @[PrintfWrong.scala 19:11]
+        |    when _T_3 : @[PrintfWrong.scala 19:11]
+        |      printf(clock, UInt<1>(1), "+++ y=%d ry=%d rry=%d isZero=%x is480=%x\n", y, regY, regRegY, _T, _T_1) @[PrintfWrong.scala 19:11]
+        |      skip @[PrintfWrong.scala 19:11]
+        |    io.out <= regRegY @[PrintfWrong.scala 22:10]
         |
       """.stripMargin
 
@@ -252,11 +309,70 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     output
       .toString
-      .split("\n").count { line => line.contains("+++ ry=481 rry=480 isZero=0 is480=1") } should be (1)
+      .split("\n").count { line => line.contains("+++ y=481 ry=480 rry=479 isZero=0 is480=1") } should be (1)
 
     output
       .toString
-      .split("\n").count { line => line.contains("+++ ry=") } should be (1)
+      .split("\n").count { line => line.contains("+++ y=") } should be (7)
 
+  }
+  it should "print swapping register values should show alternating" in {
+    val input =
+      """
+        |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.7
+        |circuit BadPrintf :
+        |  module BadPrintf :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip in : UInt<10>, out : UInt<10>}
+        |
+        |
+        |    reg r0 : UInt, clock with :
+        |      reset => (reset, UInt<8>("h0"))
+        |    reg r1 : UInt, clock with :
+        |      reset => (reset, UInt<8>("h1"))
+        |    r0 <= r1
+        |    r1 <= r0
+        |    io.out <= r1
+        |    printf(clock, UInt<1>(1), "+++ r0=%d r1=%d\n", r0, r1) @[PrintfWrong.scala 19:11]
+      """.stripMargin
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = false,
+        showFirrtlAtLoad = false
+      )
+    }
+
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val tester = new TreadleTester(input, optionsManager)
+      tester.poke("reset", 1)
+      tester.step()
+      tester.poke("reset", 0)
+
+      tester.step(10)
+
+    }
+
+    val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
+
+    printfLines.head.contains("+++ r0=0 r1=0") should be (true)
+
+    val linesCorrect = printfLines
+            .tail
+            .zipWithIndex
+            .map { case (line, lineNumber) =>
+              println(s"$lineNumber  $line")
+              if (lineNumber % 2 == 1) {
+                line.contains("+++ r0=1 r1=0")
+              }
+              else {
+                line.contains("+++ r0=0 r1=1")
+              }
+            }
+    println(linesCorrect.map(_.toString).mkString("-"))
+
+    linesCorrect.forall(b => b) should be (true)
   }
 }

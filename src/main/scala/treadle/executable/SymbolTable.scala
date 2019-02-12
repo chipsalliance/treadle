@@ -566,9 +566,6 @@ object SymbolTable extends LazyLogging {
       else if(symbol.name.startsWith("/stop")) {
         Int.MaxValue - 1
       }
-      else if(symbol.name.startsWith("/print")) {
-        Int.MaxValue - 2
-      }
       else {
         index
       }

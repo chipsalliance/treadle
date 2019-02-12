@@ -94,7 +94,7 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
         callResetAtStartUp = false,
-        setVerbose = true,
+        setVerbose = false,
         showFirrtlAtLoad = true
       )
     }
@@ -158,7 +158,7 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
       treadleOptions = treadleOptions.copy(
         blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
         callResetAtStartUp = false,
-        setVerbose = true
+        setVerbose = false
       )
     }
     val tester = TreadleTester(input, manager)
