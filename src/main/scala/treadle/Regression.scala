@@ -2,6 +2,10 @@
 
 package treadle
 
+import treadle.chronometry.Timer
+
+//scalastyle:off magic.number
+
 object Regression {
   def computeGcd(a: Int, b: Int): (Int, Int) = {
     var x = a
@@ -103,4 +107,100 @@ object Regression {
   def main(args: Array[String]): Unit = {
     manyValuesTest(20)
   }
+
+
 }
+
+
+
+/**
+  * This regression demonstrates that a bad initial setting has been fixed
+  * the default rollback buffer of 10 meant that large memories caused considerable slowing
+  * as buffers were copied.
+  */
+object MemoryUsageRegression {
+
+  /**
+    * Run a test by writing testSize numbers into a memory of memorySize, then
+    * reads the numbers back out again. With a fixed testSize the run times should
+    * be the same despite the size of the memory
+    * @param memorySize number of elements in memory
+    * @param testSize   number of values to write and read from memory
+    */
+  def memoryRegression(memorySize: Int, testSize: Int): Unit = {
+
+    val elementSize = 30
+
+    val input =
+      s"""
+         |circuit target_memory :
+         |  module target_memory :
+         |    input clock      : Clock
+         |    input index      : UInt<$elementSize>
+         |    input do_write   : UInt<1>
+         |    input do_enable  : UInt<1>
+         |    input write_data : UInt<$elementSize>
+         |    output read_data : UInt<$elementSize>
+         |
+         |    mem ram :
+         |      data-type => UInt<$elementSize>
+         |      depth => $memorySize
+         |      read-latency => 1
+         |      write-latency => 1
+         |      readwriter => RW_0
+         |      read-under-write => undefined
+         |
+         |    ram.RW_0.clk <= clock
+         |    ram.RW_0.addr <= index
+         |    ram.RW_0.en <= UInt<1>("h1")
+         |
+         |    ram.RW_0.wmode <= do_write
+         |    read_data <= ram.RW_0.rdata
+         |    ram.RW_0.wdata <= write_data
+         |    ram.RW_0.wmask <= UInt<1>("h1")
+      """.stripMargin
+
+    val timer = new Timer
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        setVerbose = false,
+        rollbackBuffers = 0,
+        showFirrtlAtLoad = false
+      )
+    }
+
+    val tester = timer("tester assembly")(new TreadleTester(input, optionsManager))
+
+    for(trial <- 0 until 4) {
+      timer(s"trial_${trial}_$testSize") {
+        tester.poke("do_write", 1)
+
+        for (i <- 0 until testSize) {
+          tester.poke("index", i)
+          tester.poke("write_data", i + 3)
+          tester.step()
+        }
+        tester.poke("do_write", 0)
+        tester.step(2)
+
+        for (i <- 0 until testSize) {
+          tester.poke("index", i)
+          tester.step()
+          tester.expect("read_data", i + 3)
+        }
+      }
+    }
+    println(timer.report())
+    tester.report()
+  }
+
+  def main(args: Array[String]): Unit = {
+    for(power <- 20 to 32) {
+      val memorySize = 1 << power
+      println(s"Memory size $memorySize")
+      memoryRegression(memorySize, 10000 )
+    }
+  }
+}
+

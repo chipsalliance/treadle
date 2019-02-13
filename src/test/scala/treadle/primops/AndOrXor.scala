@@ -188,4 +188,25 @@ class AndOrXor extends FreeSpec with Matchers {
       AndInts(() => a, () => b, bitWidth).apply() should be(expected)
     }
   }
+
+  "(7.U.asSInt & true.B.asSInt).asUInt => 7.U" in {
+    val input =
+      """
+        |circuit Check :
+        |  module Check :
+        |    input a : UInt<4>
+        |    input b : UInt<1>
+        |    output c : UInt<4>
+        |    c <= asUInt(and(asSInt(a), asSInt(b)))
+        |
+      """.stripMargin
+
+    val tester = new TreadleTester(input)
+
+    tester.poke("a", 7)
+    tester.poke("b", 1)
+    tester.expect("c", 7)
+
+  }
+
 }
