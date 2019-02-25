@@ -27,7 +27,9 @@ trait ScalaBlackBox {
 
   /**
     * getOutput is called to determine the value for the named output at the
-    * current state of the system.
+    * current state of the system. The proper way to do this is to not use the inputValues.
+    * Instead use[[inputChanged]] to supply a black box with its inputs.
+    *
     * @param inputValues This is a list of BigInt values that are in the same order
     *                    as the outputDependencies lists them
     * @param tpe         The concrete type of this output
@@ -50,6 +52,18 @@ trait ScalaBlackBox {
     * @return
     */
   def outputDependencies(outputName: String): Seq[String]
+
+  /**
+    * returns a list of dependencies between ports.
+    * @note There is one bit of hand-waving magic to make black boxes work when they have internal state.
+    * In order to satisfy the single pass assignment to every wire, black boxes with state must specify that
+    * their inputs depend on their outputs, in order to get the correct topological sort. See the AsyncResetBlackBox
+    * test to see an example of how this was done.
+    * @return
+    */
+  def getDependencies: Seq[(String, Set[String])] = {
+    Seq.empty
+  }
 
   /**
     * Add any parameters to the black box implementation

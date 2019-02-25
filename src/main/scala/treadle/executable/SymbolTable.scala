@@ -301,12 +301,20 @@ object SymbolTable extends LazyLogging {
             case extModule: ExtModule =>
               blackBoxImplementations.get(instanceSymbol) match {
                 case Some(implementation) =>
+
+                  def getSymbol(name: String): Symbol = nameToSymbol(expand(instanceName + "." + name))
+
+                  implementation.getDependencies.foreach { case (dependent, driving) =>
+                      val dependentSymbol = getSymbol(dependent)
+                      val drivers = driving.map(getSymbol).toSet
+                      addDependency(dependentSymbol, drivers)
+                  }
                   for (port <- extModule.ports) {
                     if(port.direction == Output) {
-                      val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))
+                      val portSymbol = getSymbol(port.name)
                       implementation.outputDependencies(port.name).foreach { inputName =>
-                        val inputSymbol = nameToSymbol(expand(instanceName + "." + inputName))
-                        addDependency(portSymbol, Set(inputSymbol, instanceSymbol))
+                        val inputSymbol = getSymbol(inputName)
+                        addDependency(portSymbol, Set(inputSymbol))
                       }
                     }
                     if(port.tpe == ClockType) {

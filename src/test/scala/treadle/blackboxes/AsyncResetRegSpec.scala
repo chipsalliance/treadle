@@ -197,4 +197,86 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
 
     tester.expect("io_out", 1)
   }
+
+  "mutually connected async registers should work" in {
+    val input =
+      """
+        |circuit AsyncResetFeedbackModule :
+        |  extmodule AsyncResetReg :
+        |    input io_d : UInt<1>
+        |    output io_q : UInt<1>
+        |    input io_en : UInt<1>
+        |    input clk : Clock
+        |    input rst : UInt<1>
+        |
+        |    defname = AsyncResetReg
+        |    parameter RESET_VALUE = 0
+        |
+        |  extmodule AsyncResetReg_1 :
+        |    input io_d : UInt<1>
+        |    output io_q : UInt<1>
+        |    input io_en : UInt<1>
+        |    input clk : Clock
+        |    input rst : UInt<1>
+        |
+        |    defname = AsyncResetReg
+        |    parameter RESET_VALUE = 1
+        |
+        |  module AsyncResetFeedbackModule :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io_out_0 : UInt<1>
+        |    output io_out_1 : UInt<1>
+        |
+        |    inst reg0 of AsyncResetReg @[AsyncResetRegTest.scala 39:20]
+        |    inst reg1 of AsyncResetReg_1 @[AsyncResetRegTest.scala 40:20]
+        |    io_out_0 <= reg0.io_q @[AsyncResetRegTest.scala 45:13]
+        |    io_out_1 <= reg1.io_q @[AsyncResetRegTest.scala 46:13]
+        |    reg0.io_d <= reg1.io_q @[AsyncResetRegTest.scala 42:10]
+        |    reg0.io_en <= UInt<1>("h1") @[AsyncResetRegTest.scala 52:11]
+        |    reg0.clk <= clock @[AsyncResetRegTest.scala 48:12]
+        |    reg0.rst <= reset @[AsyncResetRegTest.scala 50:12]
+        |    reg1.io_d <= reg0.io_q @[AsyncResetRegTest.scala 43:10]
+        |    reg1.io_en <= UInt<1>("h1") @[AsyncResetRegTest.scala 53:11]
+        |    reg1.clk <= clock @[AsyncResetRegTest.scala 49:12]
+        |    reg1.rst <= reset @[AsyncResetRegTest.scala 51:12]
+    """.stripMargin
+
+    val manager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
+        showFirrtlAtLoad = false,
+        writeVCD = true,
+        setVerbose = true
+      )
+      commonOptions = commonOptions.copy(
+        targetDirName = "test_run_dir/async_reg_to_reg",
+        topName = "async_reg_to_reg"
+      )
+    }
+    val tester = TreadleTester(input, manager)
+
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 0)
+    tester.step()
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 0)
+
+    tester.poke("reset", 1)
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 1)
+
+    tester.step()
+    tester.poke("reset", 0)
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 1)
+
+    tester.step()
+    tester.expect("io_out_0", 1)
+    tester.expect("io_out_1", 0)
+
+    tester.step()
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 1)
+  }
 }

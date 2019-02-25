@@ -345,4 +345,67 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.expect("reg2", 54)
 
   }
+
+  behavior of "mutually connected registers"
+
+  it should "alternate values" in {
+    val input =
+      """
+        |circuit AsyncResetRegTestanon6 :
+        |  module AsyncResetRegTestanon6 :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io_out_0 : UInt<1>
+        |    output io_out_1 : UInt<1>
+        |
+        |    reg reg0 : UInt<1>, clock with :
+        |      reset => (UInt<1>("h0"), reg0)
+        |    reg reg1 : UInt<1>, clock with :
+        |      reset => (UInt<1>("h0"), reg1)
+        |
+        |    io_out_0 <= reg0 @[AsyncResetRegTest.scala 162:16]
+        |    io_out_1 <= reg1 @[AsyncResetRegTest.scala 163:16]
+        |    reg0 <= mux(reset, UInt<1>("h0"), reg1) @[AsyncResetRegTest.scala 159:12]
+        |    reg1 <= mux(reset, UInt<1>("h1"), reg0) @[AsyncResetRegTest.scala 160:12]
+      """.stripMargin
+
+    val manager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        showFirrtlAtLoad = true,
+        setVerbose = false,
+        lowCompileAtLoad = true
+      )
+      firrtlOptions = firrtlOptions.copy(
+        noDCE = true,
+
+      )
+    }
+    val tester = TreadleTester(input, manager)
+
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 0)
+    tester.step()
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 0)
+
+    tester.poke("reset", 1)
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 0)
+
+    tester.step()
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 1)
+
+    tester.poke("reset", 0)
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 1)
+
+    tester.step()
+    tester.expect("io_out_0", 1)
+    tester.expect("io_out_1", 0)
+
+    tester.step()
+    tester.expect("io_out_0", 0)
+    tester.expect("io_out_1", 1)
+  }
 }
