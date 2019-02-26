@@ -376,8 +376,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         lowCompileAtLoad = true
       )
       firrtlOptions = firrtlOptions.copy(
-        noDCE = true,
-
+        noDCE = true
       )
     }
     val tester = TreadleTester(input, manager)
