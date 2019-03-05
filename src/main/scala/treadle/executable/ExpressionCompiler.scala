@@ -893,8 +893,6 @@ class ExpressionCompiler(
         throw TreadleException(s"Top level module is not the right kind of module $x")
     }
 
-    scheduler.registerClocks ++= FindRegisterClocks.run(module, circuit, symbolTable)
-
     processModule("", module, circuit)
   }
 }

@@ -25,10 +25,6 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   val registerClocks       : mutable.HashSet[Symbol] = new mutable.HashSet
 
-  def isTrigger(symbol: Symbol): Boolean = {
-    registerClocks.contains(symbol)
-  }
-
   val triggeredUnassigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
     new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
       override def default(key: Symbol): ArrayBuffer[Assigner] = {
