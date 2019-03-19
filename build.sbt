@@ -30,7 +30,7 @@ name := "treadle"
 
 organization := "edu.berkeley.cs"
 
-version := "1.0.4"
+version := "1.0.5"
 
 scalaVersion := "2.11.12"
 
@@ -43,7 +43,7 @@ resolvers ++= Seq(
 )
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.1.6")
+val defaultVersions = Map("firrtl" -> "1.1.7")
 
 libraryDependencies ++= (Seq("firrtl").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })
