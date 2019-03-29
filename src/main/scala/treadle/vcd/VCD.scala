@@ -714,11 +714,11 @@ case class Wire(name: String, id: String, width: Int, path: Array[String] = Arra
 }
 
 /**
-  * holds the information about
-  * hashCode and equals are overriden so that sets of changes can only
-  * hold one value for a specific wire
+  * A Record of a change to a wire.
+  *
+  * @note hashCode and equals are overridden so that sets of Change can only hold one value for a specific wire
  *
-  * @param wire wire who's status is being monitored
+  * @param wire  wire that was changed
   * @param value the value this wire now has
   */
 case class Change(wire: Wire, value: BigInt) {
