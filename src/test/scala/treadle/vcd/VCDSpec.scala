@@ -9,6 +9,8 @@ import java.io.File
 
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.util.Random
+
 // scalastyle:off magic.number
 class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
   private def getVcd = {
@@ -28,6 +30,26 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       ids += id
 
       id.forall { c => c.toInt >= 33 && c.toInt <= 126 } should be(true)
+    }
+  }
+
+  it should "only remember the last change added" in {
+    val vcd = getVcd
+    val rand = new Random()
+    var lastValue = 0
+
+    vcd.setTime(100)
+
+    for(_ <- 0 to 10) {
+      for (i <- 0 to 10) {
+        lastValue = rand.nextInt()
+        vcd.wireChanged("testWire1", lastValue)
+      }
+
+      vcd.valuesAtTime(vcd.timeStamp).size should be (1)
+      vcd.valuesAtTime(vcd.timeStamp).head.value should be(lastValue)
+
+      vcd.incrementTime(10)
     }
   }
 

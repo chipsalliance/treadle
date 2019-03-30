@@ -616,6 +616,7 @@ case class VCD(
       }
       else {
         val changeSet = valuesAtTime.getOrElseUpdate(timeStamp, new mutable.HashSet[Change])
+        changeSet -= change // This removes a previous value for the wire associated with this change, if there is one.
         changeSet += change
       }
     }
@@ -713,9 +714,11 @@ case class Wire(name: String, id: String, width: Int, path: Array[String] = Arra
 }
 
 /**
-  * holds the information about
+  * A Record of a change to a wire.
+  *
+  * @note hashCode and equals are overridden so that sets of Change can only hold one value for a specific wire
  *
-  * @param wire wire who's status is being monitored
+  * @param wire  wire that was changed
   * @param value the value this wire now has
   */
 case class Change(wire: Wire, value: BigInt) {
@@ -731,6 +734,23 @@ case class Change(wire: Wire, value: BigInt) {
   }
   def serializeUninitialized: String = {
     s"b${"x" * wire.width} ${wire.id}"
+  }
+
+  override def toString: String = {
+    s"Change(${wire.fullName}(${wire.id}), newValue=$value)"
+  }
+
+  override def hashCode(): Int = {
+    wire.id.hashCode
+  }
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case Change(w, _) =>
+        wire.id == w.id
+      case _ =>
+        false
+    }
   }
 }
 
