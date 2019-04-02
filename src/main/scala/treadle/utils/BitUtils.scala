@@ -4,7 +4,7 @@ package treadle.utils
 
 import treadle.executable.Big
 
-import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
 
 object BitUtils {
   //================= Int Section ======================
@@ -179,9 +179,9 @@ case class BitMasksBigs(bitWidth: Int) {
 }
 
 object BitMasks {
-  private val alreadyCreatedInts = new mutable.HashMap[Int, BitMasksInts]
-  private val alreadyCreatedLongs = new mutable.HashMap[Int, BitMasksLongs]
-  private val alreadyCreatedBigs = new mutable.HashMap[Int, BitMasksBigs]
+  private val alreadyCreatedInts  = new TrieMap[Int, BitMasksInts]
+  private val alreadyCreatedLongs = new TrieMap[Int, BitMasksLongs]
+  private val alreadyCreatedBigs  = new TrieMap[Int, BitMasksBigs]
 
   /** Factory for BitMasksInts
     * makes sure there is only one instance per bitWidth
@@ -189,7 +189,13 @@ object BitMasks {
     * @return
     */
   def getBitMasksInts(bitWidth: Int): BitMasksInts = {
-   alreadyCreatedInts.getOrElseUpdate(bitWidth, BitMasksInts(bitWidth))
+
+    alreadyCreatedInts.get(bitWidth) match {
+      case Some(v) => v
+      case None =>
+        val v = BitMasksInts(bitWidth)
+        alreadyCreatedInts.putIfAbsent(bitWidth, v).getOrElse(v)
+    }
   }
 
   /** Factory for BitMasksBigs
@@ -198,7 +204,12 @@ object BitMasks {
     * @return
     */
   def getBitMasksLongs(bitWidth: Int): BitMasksLongs = {
-   alreadyCreatedLongs.getOrElseUpdate(bitWidth, BitMasksLongs(bitWidth))
+    alreadyCreatedLongs.get(bitWidth) match {
+      case Some(v) => v
+      case None =>
+        val v = BitMasksLongs(bitWidth)
+        alreadyCreatedLongs.putIfAbsent(bitWidth, v).getOrElse(v)
+    }
   }
 
   /** Factory for BitMasksBigs
@@ -207,6 +218,11 @@ object BitMasks {
     * @return
     */
   def getBitMasksBigs(bitWidth: Int): BitMasksBigs = {
-   alreadyCreatedBigs.getOrElseUpdate(bitWidth, BitMasksBigs(bitWidth))
+    alreadyCreatedBigs.get(bitWidth) match {
+      case Some(v) => v
+      case None =>
+        val v = BitMasksBigs(bitWidth)
+        alreadyCreatedBigs.putIfAbsent(bitWidth, v).getOrElse(v)
+    }
   }
 }
