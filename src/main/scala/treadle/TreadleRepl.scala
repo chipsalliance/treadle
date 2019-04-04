@@ -252,7 +252,9 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         Some(argOption.get)
       }
       else {
-        error(failureMessage)
+        if(failureMessage.nonEmpty){
+          error(failureMessage)
+        }
         None
       }
     }
@@ -1249,6 +1251,54 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           }
         }
       },
+      new Command("history") {
+        private def peekableThings = engine.validNames.toSeq
+        def usage: (String, String) = ("history [pattern]", "show command history, with optional regex pattern")
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({
+                "history"
+              })
+            ))
+          }
+        }
+        //scalastyle:off cyclomatic.complexity
+        def run(args: Array[String]): Unit = {
+          def showHistory(regex: String): Unit = {
+            try {
+              val historyRegex = regex.r
+              var matches = 0
+              val iterator = console.getHistory.entries()
+
+              while(iterator.hasNext) {
+                val command = iterator.next()
+                if(historyRegex.findFirstIn(command.value()).isDefined) {
+                  matches += 1
+                  println(s"${command.index() + 1} ${command.value()}")
+                }
+              }
+              if(matches == 0) {
+                console.println(s"Sorry no wires matched regex $regex")
+              }
+            }
+            catch {
+              case e: Exception =>
+                error(s"exception ${e.getMessage} $e")
+              case a: AssertionError =>
+                error(s"exception ${a.getMessage}")
+            }
+          }
+
+          getOneArg("history pattern", Some(".")) match {
+            case Some(regex) => showHistory(regex)
+            case _           => showHistory(".")
+          }
+        }
+      },
       new Command("help") {
         def usage: (String, String) = ("help", "show available commands")
         def run(args: Array[String]): Unit = {
@@ -1301,6 +1351,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
             console.readLine()
         }
       case _ =>
+        console.setPrompt(s"${console.getHistory.index() + 1} treadle>> ")
+
         console.readLine()
     }
     if(rawLine == null) {
