@@ -24,8 +24,6 @@ import scala.tools.jline.{Terminal, TerminalFactory}
 import scala.util.matching.Regex
 
 
-//TODO: show inputs/outputs should show values also
-
 abstract class Command(val name: String) {
   def run(args: Array[String]): Unit
   def usage: (String, String)
@@ -95,6 +93,18 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       case "d" => value.toString
       case "h" | "x" => f"0x$value%x"
       case "b" => s"b${value.toString(2)}"
+    }
+  }
+
+  def showNameAndValue(symbolName: String, offset: Int = 0): String = {
+    engine.symbolTable.get(symbolName) match {
+      case Some(symbol) if symbol.forcedValue.isDefined =>
+        s"$symbolName ${formatOutput(symbol.forcedValue.get)} [forced]"
+      case Some(_) =>
+        s"$symbolName ${formatOutput(engine.getValue(symbolName, offset))}"
+      case _ =>
+        s"Could not find symbol $symbolName"
+
     }
   }
 
@@ -581,11 +591,10 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
             case (None, None) =>
               val forcedList = engine.symbolTable.nameToSymbol.keys.toSeq.sorted.flatMap { key =>
                 val symbol = engine.symbolTable(key)
-                symbol.forcedValue.map { x => s"$key forced to value ${formatOutput(symbol.forcedValue.get)}"
-                }
+                symbol.forcedValue.map { _ => showNameAndValue(symbol.name) }
               }
               if(forcedList.nonEmpty) {
-                console.println(forcedList.mkString(s"Forced wires (${forcedList.length})\n", "\n", ""))
+                console.println(forcedList.mkString("\n"))
               }
               else {
                 console.println("Currently no wires are forced")
@@ -671,14 +680,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                   case Some('h') => BigInt(offsetString.tail, 16).toInt
                   case _ => offsetString.toInt
                 }
-                if(offset > 0) {
-                  val value = engine.getValue(componentName, offset)
-                  console.println(s"peek $componentName($offset) ${formatOutput(value)}")
-                }
-                else {
-                  val value = engine.getValue(componentName)
-                  console.println(s"peek $componentName ${formatOutput(value)}")
-                }
+                console.println(s"peek ${showNameAndValue(componentName, offset)}")
               }
               catch {
                 case e: Exception =>
@@ -718,7 +720,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                     case Some(_) =>
                       try {
                         val value = engine.getValue(settableThing)
-                        console.println(s"rpeek $settableThing ${formatOutput(value)}")
+                        console.println(showNameAndValue(settableThing))
                         true
                       }
                       catch { case _: Exception => false}
@@ -727,7 +729,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                   }
                 }
                 if(numberOfThingsPeeked == 0) {
-                  console.println(s"Sorry now settable ports matched regex $peekRegex")
+                  console.println(s"Sorry no wires matched regex $peekRegex")
                 }
               }
               catch {
@@ -1003,15 +1005,20 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
 
         def run(args: Array[String]): Unit = {
-          getOneArg("", Some("lofirrtl")) match {
+          def showValue(symbolName: String): String = {
+            showNameAndValue(symbolName)
+          }
+          getOneArg("", None) match {
             case Some("lofirrtl") =>
               console.println(ToLoFirrtl.lower(engine.ast, optionsManager).serialize)
             case Some("input") | Some("firrtl") =>
               console.println(engine.ast.serialize)
             case Some("inputs") =>
-              console.println(engine.symbolTable.inputPortsNames.toSeq.sorted.mkString("\n"))
+              console.println(engine.symbolTable.inputPortsNames.toSeq.sorted.map(showValue).mkString("\n"))
             case Some("outputs") =>
-              console.println(engine.symbolTable.outputPortsNames.toSeq.sorted.mkString("\n"))
+              console.println(engine.symbolTable.outputPortsNames.toSeq.sorted.map(showValue).mkString("\n"))
+            case Some("state") =>
+              console.println(engine.symbolTable.keys.toSeq.sorted.map(showValue).mkString("\n"))
             case _ =>
               console.println(engine.getPrettyString)
           }

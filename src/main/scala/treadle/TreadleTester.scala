@@ -9,6 +9,7 @@ import treadle.chronometry.UTC
 import treadle.executable._
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
+//TODO: Force values should work with multi-slot symbols
 
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
