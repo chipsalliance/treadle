@@ -5,25 +5,23 @@ package treadle
 import java.io.{File, PrintWriter}
 
 import firrtl.graph.{CyclicException, DiGraph}
-import treadle.vcd.VCD
 import logger.Logger
+import org.json4s.native.JsonMethods._
 import treadle.chronometry.UTC
-import treadle.executable.{BigSize, ClockInfo, ExecutionEngine, IntSize, LongSize, Symbol, SymbolTable, TreadleException, WaveformValues}
+import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, SymbolTable, TreadleException, WaveformValues}
 import treadle.repl._
 import treadle.utils.ToLoFirrtl
+import treadle.vcd.VCD
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 import scala.tools.jline.console.ConsoleReader
+import scala.tools.jline.console.completer._
 import scala.tools.jline.console.history.FileHistory
 import scala.tools.jline.{Terminal, TerminalFactory}
-import scala.tools.jline.console.completer._
-import collection.JavaConverters._
-import scala.collection.mutable
-import scala.io.Source
 import scala.util.matching.Regex
-import org.json4s._
-import org.json4s.native.JsonMethods._
-import org.json4s.JsonDSL._
 
 
 //TODO: show inputs/outputs should show values also
@@ -539,6 +537,57 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
               catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
+              }
+            case _ =>
+          }
+        }
+      },
+      new Command("force") {
+        def usage: (String, String) =
+          ("force inputPortName value", "hold a wire to value (use value clear to clear forced wire)")
+
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({
+                "force"
+              }),
+              new StringsCompleter(
+                jlist(engine.getInputPorts ++ engine.getRegisterNames)
+              )
+            ))
+          }
+        }
+        def run(args: Array[String]): Unit = {
+          getTwoArgs("force wireName value (use value clear to clear forced wire)") match {
+            case (Some(portName), Some(valueString)) =>
+              try {
+                if(valueString.toLowerCase == "clear") {
+                  currentTreadleTester.clearForceValue(portName)
+                }
+                else {
+                  val numberValue = parseNumber(valueString)
+                  currentTreadleTester.forceValue(portName, numberValue)
+                }
+              }
+              catch {
+                case e: Exception =>
+                  error(s"exception ${e.getMessage} $e")
+              }
+            case (None, None) =>
+              val forcedList = engine.symbolTable.nameToSymbol.keys.toSeq.sorted.flatMap { key =>
+                val symbol = engine.symbolTable(key)
+                symbol.forcedValue.map { x => s"$key forced to value ${formatOutput(symbol.forcedValue.get)}"
+                }
+              }
+              if(forcedList.nonEmpty) {
+                console.println(forcedList.mkString(s"Forced wires (${forcedList.length})\n", "\n", ""))
+              }
+              else {
+                console.println("Currently no wires are forced")
               }
             case _ =>
           }

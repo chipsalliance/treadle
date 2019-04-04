@@ -167,7 +167,7 @@ extends HasDataArrays {
     }
 
     def runFull(): Unit = {
-      val value = expression()
+      val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
       intData(index) = value
       runPlugins(symbol)
     }
@@ -206,7 +206,8 @@ extends HasDataArrays {
     }
 
     def runFull(): Unit = {
-      val value = expression()
+      val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
+
       longData(index) = value
       runPlugins(symbol)
     }
@@ -232,7 +233,8 @@ extends HasDataArrays {
       bigData(index) = expression()
     }
     def runFull(): Unit = {
-      val value = expression()
+      val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
+
       bigData(index) = value
       runPlugins(symbol)
     }
@@ -295,7 +297,8 @@ extends HasDataArrays {
 
     def runFull(): Unit = {
       if(enable() > 0) {
-        val value = expression()
+        val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
+
         val memoryIndex = getMemoryIndex.apply()
         intData(index + (memoryIndex % memorySymbol.slots)) = value
         runPlugins(memorySymbol, memoryIndex)
@@ -326,7 +329,8 @@ extends HasDataArrays {
 
     def runFull(): Unit = {
       if(enable() > 0) {
-        val value = expression()
+        val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
+
         val memoryIndex = getMemoryIndex.apply()
         longData(index + (memoryIndex % memorySymbol.slots)) = value
         runPlugins(memorySymbol, memoryIndex)
@@ -357,7 +361,8 @@ extends HasDataArrays {
 
     def runFull(): Unit = {
       if(enable() > 0) {
-        val value = expression()
+        val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
+
         val memoryIndex = getMemoryIndex.apply()
         bigData(index + (memoryIndex % memorySymbol.slots)) = value
         runPlugins(memorySymbol, memoryIndex)

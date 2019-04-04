@@ -22,6 +22,8 @@ case class Symbol(
 
   val masks:          BitMasksBigs = BitMasks.getBitMasksBigs(bitWidth)
 
+  var forcedValue: Option[BigInt] = None
+
   def makeUInt(a: BigInt, bitWidth: Int): BigInt = {
     val b = a & masks.allBitsMask
     b
