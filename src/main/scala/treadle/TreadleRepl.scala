@@ -252,7 +252,9 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         Some(argOption.get)
       }
       else {
-        error(failureMessage)
+        if(failureMessage.nonEmpty){
+          error(failureMessage)
+        }
         None
       }
     }
@@ -333,7 +335,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           ))
         }
         def run(args: Array[String]): Unit = {
-          getOneArg("script filename") match {
+          getOneArg("script fileName") match {
             case Some(fileName) => loadScript(fileName)
 
             case _ =>
@@ -522,7 +524,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("poke") {
-        def usage: (String, String) = ("poke inputPortName value", "set an input port to the given integer value")
+        def usage: (String, String) = ("poke inputSymbol value", "set an input port to the given integer value")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -539,7 +541,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           }
         }
         def run(args: Array[String]): Unit = {
-          getTwoArgs("poke inputPortName value") match {
+          getTwoArgs("poke inputSymbol value") match {
             case (Some(portName), Some(valueString)) =>
               try {
                 val numberValue = parseNumber(valueString)
@@ -555,7 +557,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       },
       new Command("force") {
         def usage: (String, String) =
-          ("force inputPortName value", "hold a wire to value (use value clear to clear forced wire)")
+          ("force symbol value", "hold a wire to value (use value clear to clear forced wire)")
 
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
@@ -573,7 +575,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           }
         }
         def run(args: Array[String]): Unit = {
-          getTwoArgs("force wireName value (use value clear to clear forced wire)") match {
+          getTwoArgs("force symbol value (use value clear to clear forced wire)") match {
             case (Some(portName), Some(valueString)) =>
               try {
                 if(valueString.toLowerCase == "clear") {
@@ -607,7 +609,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         private def settableThings = {
           engine.getInputPorts ++ engine.getRegisterNames
         }
-        def usage: (String, String) = ("rpoke regex value", "poke value into ports that match regex")
+        def usage: (String, String) = ("rpoke regex value", "poke value into portSymbols that match regex")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -639,7 +641,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                   console.println(s"poking value $pokeValue into ${setThings.toList.sorted.mkString(", ")}")
                 }
                 else {
-                  console.println(s"Sorry now settable ports matched regex $pokeRegex")
+                  console.println(s"Sorry no inputSymbols matched regex $pokeRegex")
                 }
 
 
@@ -654,7 +656,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       },
       new Command("peek") {
         def usage: (String, String) =
-          ("peek componentName [offset]", "show the current value of the signal")
+          ("peek symbol [offset]", "show the current value of the signal")
 
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
@@ -670,8 +672,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           }
         }
         def run(args: Array[String]): Unit = {
-          getTwoArgs("peek componentName", arg2Option = Some("0")) match {
-            case (Some(componentName), Some(offsetString)) =>
+          getTwoArgs("peek symbol", arg2Option = Some("0")) match {
+            case (Some(symbol), Some(offsetString)) =>
               try {
                 val offset = offsetString.headOption match {
                   case Some('b') => BigInt(offsetString.tail, 2).toInt
@@ -680,7 +682,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                   case Some('h') => BigInt(offsetString.tail, 16).toInt
                   case _ => offsetString.toInt
                 }
-                console.println(s"peek ${showNameAndValue(componentName, offset)}")
+                console.println(s"peek ${showNameAndValue(symbol, offset)}")
               }
               catch {
                 case e: Exception =>
@@ -695,7 +697,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       },
       new Command("rpeek") {
         private def peekableThings = engine.validNames.toSeq
-        def usage: (String, String) = ("rpeek regex", "show the current value of signals matching the regex")
+        def usage: (String, String) = ("rpeek regex", "show the current value of symbols matching the regex")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -729,7 +731,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                   }
                 }
                 if(numberOfThingsPeeked == 0) {
-                  console.println(s"Sorry no wires matched regex $peekRegex")
+                  console.println(s"Sorry no symbols matched regex $peekRegex")
                 }
               }
               catch {
@@ -743,20 +745,18 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("randomize") {
-        def usage: (String, String) = ("randomize", "randomize all inputs except reset)")
+        def usage: (String, String) = ("randomize", "randomize all symbols except reset)")
         def run(args: Array[String]): Unit = {
           for(symbol <- engine.symbols) {
             try {
               val newValue = makeRandom(symbol.firrtlType)
               engine.setValue(symbol.name, newValue)
-              // console.println(s"setting ${symbol.name} to $newValue")
             }
             catch {
               case e: Exception =>
                 console.println(s"Error randomize: setting ${symbol.name}, error ${e.getMessage}")
             }
           }
-          console.println(engine.getPrettyString)
         }
       },
       new Command("reset") {
@@ -856,8 +856,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("waitfor") {
-        def usage: (String, String) = ("waitfor componentName value [maxNumberOfSteps]",
-          "wait for particular value (default 1) on component, up to maxNumberOfSteps (default 100)")
+        def usage: (String, String) = ("waitfor symbol value [maxNumberOfSteps]",
+          "wait for particular value (default 1) of symbol, up to maxNumberOfSteps (default 100)")
 
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
@@ -875,27 +875,27 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 
         def run(args: Array[String]): Unit = {
           getThreeArgs(
-            "waitfor componentName [value] [maxNumberOfSteps]",
+            "waitfor symbol [value] [maxNumberOfSteps]",
             arg2Option = Some("1"),
             arg3Option = Some("100")
           ) match {
-            case (Some(componentName), Some(valueString), Some(maxNumberOfStepsString)) =>
+            case (Some(symbol), Some(valueString), Some(maxNumberOfStepsString)) =>
               try {
                 val maxNumberOfSteps = maxNumberOfStepsString.toInt
                 val value = valueString.toInt
 
                 var tries = 0
-                while(tries < maxNumberOfSteps && engine.getValue(componentName) != BigInt(value)) {
+                while(tries < maxNumberOfSteps && engine.getValue(symbol) != BigInt(value)) {
                   step()
                   tries += 1
                 }
-                if(engine.getValue(componentName) != BigInt(value)) {
+                if(engine.getValue(symbol) != BigInt(value)) {
                   console.println(
-                    s"waitfor exhausted $componentName did not take on" +
+                    s"waitfor exhausted $symbol did not take on" +
                       s" value ${formatOutput(value)} in $maxNumberOfSteps cycles")
                 }
                 else {
-                  console.println(s"$componentName == value ${formatOutput(value)} in $tries cycles")
+                  console.println(s"$symbol == value ${formatOutput(value)} in $tries cycles")
                 }
               }
               catch {
@@ -907,8 +907,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("depend") {
-        def usage: (String, String) = ("depend [childrenOf|parentsOf] signal [depth] | depend compare signal1 signal2",
-          "show dependency relationship to signal or between to signal")
+        def usage: (String, String) = ("depend [childrenOf|parentsOf] signal [depth] | depend compare symbol1 symbol2",
+          "show dependency relationship to symbol or between two symbols")
 
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
@@ -950,7 +950,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 
           val showDepth = symbolsAtDepth.count(_.nonEmpty)
           for (depth <- 0 until showDepth) {
-            println(s"$direction signals at distance $depth")
+            println(s"$direction symbols at distance $depth")
             println(symbolsAtDepth(depth).toSeq.map(_.name).sorted.mkString("\n"))
           }
         }
@@ -959,27 +959,27 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           val table = engine.symbolTable
           val parsedArgs = getManyArgs(Some("parentsOf"), None, Some("4"))
           parsedArgs match {
-            case Some("parentsOf") :: Some(signal1) :: Some(depth) :: _ =>
-              showRelated("Parents", table.parentsOf, signal1, maxDepth = depth.toInt)
+            case Some("parentsOf") :: Some(symbol1) :: Some(depth) :: _ =>
+              showRelated("Parents", table.parentsOf, symbol1, maxDepth = depth.toInt)
             case Some("parentsOf") :: _ =>
-              console.println(s"""You must specify a signal with command "depend parentsOf" """)
-            case Some("childrenOf") :: Some(signal1) :: Some(depth) :: _ =>
-              showRelated("Children", table.childrenOf, signal1, maxDepth = depth.toInt)
+              console.println(s"""You must specify a symbol with command "depend parentsOf" """)
+            case Some("childrenOf") :: Some(symbol1) :: Some(depth) :: _ =>
+              showRelated("Children", table.childrenOf, symbol1, maxDepth = depth.toInt)
             case Some("childrenOf") :: _ =>
-              console.println(s"""You must specify a signal with command "depend childrenOf" """)
-            case Some("compare") :: Some(signal1) :: Some(signal2) :: _ =>
-              val (symbol1, symbol2) = (table(signal1), table(signal2))
+              console.println(s"""You must specify a symbol with command "depend childrenOf" """)
+            case Some("compare") :: Some(symbolName1) :: Some(symbolName2) :: _ =>
+              val (symbol1, symbol2) = (table(symbolName1), table(symbolName2))
               def showPath(direction: String, digraph: DiGraph[Symbol]) {
                 try {
                   val path = digraph.path(symbol1, symbol2)
-                  console.println(s"$signal1 is a $direction of $signal2 via")
+                  console.println(s"$symbol1 is a $direction of $symbol2 via")
                   path.foreach { symbol =>
                     console.println(f"${symbol.name}")
                   }
                 }
                 catch {
                   case _: firrtl.graph.PathNotFoundException =>
-                    console.println(s"$signal1 is not a $direction of $signal2")
+                    console.println(s"$symbol1 is not a $direction of $symbol2")
                 }
               }
               showPath("parent", table.parentsOf)
@@ -1025,7 +1025,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("display") {
-        def usage: (String, String) = ("display signal[, signal, ...]", "show computation of symbols")
+        def usage: (String, String) = ("display symbol[, symbol, ...]", "show computation of symbols")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -1164,7 +1164,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
       },
       new Command("restore") {
         def usage: (String, String) = ("restore",
-          "save state of engine")
+          "restore state of engine from snapshot file")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -1249,15 +1249,83 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           }
         }
       },
+      new Command("history") {
+        private def peekableThings = engine.validNames.toSeq
+        def usage: (String, String) = ("history [pattern]", "show command history, with optional regex pattern")
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({
+                "history"
+              })
+            ))
+          }
+        }
+        //scalastyle:off cyclomatic.complexity
+        def run(args: Array[String]): Unit = {
+          def showHistory(regex: String): Unit = {
+            try {
+              val historyRegex = regex.r
+              var matches = 0
+              val iterator = console.getHistory.entries()
+
+              while(iterator.hasNext) {
+                val command = iterator.next()
+                if(historyRegex.findFirstIn(command.value()).isDefined) {
+                  matches += 1
+                  println(s"${command.index() + 1} ${command.value()}")
+                }
+              }
+              if(matches == 0) {
+                console.println(s"Sorry no wires matched regex $regex")
+              }
+            }
+            catch {
+              case e: Exception =>
+                error(s"exception ${e.getMessage} $e")
+              case a: AssertionError =>
+                error(s"exception ${a.getMessage}")
+            }
+          }
+
+          getOneArg("history pattern", Some(".")) match {
+            case Some(regex) => showHistory(regex)
+            case _           => showHistory(".")
+          }
+        }
+      },
       new Command("help") {
         def usage: (String, String) = ("help", "show available commands")
         def run(args: Array[String]): Unit = {
-          val maxColumn1Width = Commands.commands.map(_.usage._1.length).max + 2
-          Commands.commands.foreach { command =>
-            val (column1, column2) = command.usage
-            terminal.getWidth
+          getOneArg("") match {
+            case Some("markdown") =>
+              console.println("| command | description |")
+              console.println("| ------- | ----------- |")
+              Commands.commands.foreach { command =>
+                val (column1, column2) = command.usage
+                val escapeColumn1 = column1
+                        .replaceAll(raw"\|", "&#124;")
+                        .replaceAll("<", raw"\<")
+                        .replaceAll(">", raw"\<")
 
-            console.println(s"$column1${" "*(maxColumn1Width - column1.length)} $column2")
+                val escapeColumn2 = column2
+                        .replaceAll(raw"\|", "&#124;")
+                        .replaceAll("<", raw"\<")
+                        .replaceAll(">", raw"\<")
+
+                console.println(s"| $escapeColumn1 | $escapeColumn2 |")
+              }
+            case _ =>
+              val maxColumn1Width = Commands.commands.map(_.usage._1.length).max + 2
+              Commands.commands.foreach { command =>
+                val (column1, column2) = command.usage
+                terminal.getWidth
+
+                console.println(s"$column1${" "*(maxColumn1Width - column1.length)} $column2")
+              }
           }
         }
       },
@@ -1301,6 +1369,8 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
             console.readLine()
         }
       case _ =>
+        console.setPrompt(s"${console.getHistory.index() + 1} treadle>> ")
+
         console.readLine()
     }
     if(rawLine == null) {
