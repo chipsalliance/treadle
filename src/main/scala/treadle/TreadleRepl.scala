@@ -55,10 +55,11 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
     if (!historyFile.exists()) {
       println(s"creating ${historyFile.getName}")
       historyFile.createNewFile()
-      history.load(historyFile)
-      console.setHistory(history)
     }
+    history.load(historyFile)
+    console.setHistory(history)
   }
+
   catch {
     case e: Exception =>
       // ignore problems with history file, better to run than freak out over this.
