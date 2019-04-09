@@ -151,6 +151,7 @@ class ExpressionViewBuilder(
               case AsUInt  => unaryOps(op, args, tpe)
               case AsSInt  => unaryOps(op, args, tpe)
               case AsClock => unaryOps(op, args, tpe)
+              case AsAsyncReset => unaryOps(op, args, tpe)
 
               case Shl => oneArgOneParamOps(op, args, const, tpe)
               case Shr => oneArgOneParamOps(op, args, const, tpe)
