@@ -32,7 +32,7 @@ class NativeAsyncResetSpec extends FreeSpec with Matchers {
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
-        rollbackBuffers = 0, showFirrtlAtLoad = true, setVerbose = true, writeVCD = false)
+        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
     }
     val tester = TreadleTester(firrtlSource, manager)
 

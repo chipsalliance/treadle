@@ -54,6 +54,21 @@ class ExpressionViewBuilder(
   def processModule(modulePrefix: String, myModule: DefModule, circuit: Circuit): Unit = {
     def expand(name: String): String = if(modulePrefix.isEmpty) name else modulePrefix + "." + name
 
+    def getDrivingClock(clockExpression: Expression): Option[Symbol] = {
+
+      clockExpression match {
+        case WRef(clockName, _, _, _) =>
+          for {
+            clockSym <- symbolTable.get(expand(clockName))
+            topClock <- symbolTable.findHighestClock(clockSym)
+          } yield {
+            topClock
+          }
+        case _ =>
+          None
+      }
+    }
+
     def processStatements(statement: firrtl.ir.Statement): Unit = {
 
       def binaryOps(opCode: PrimOp, args: Seq[Expression], tpe: Type): ExpressionView = {
@@ -210,7 +225,6 @@ class ExpressionViewBuilder(
             val processedExpression = processExpression(con.expr)
 
             expressionViews(registerIn) = processedExpression
-            expressionViews(registerOut) = expression"$registerIn"
           }
 
         case WDefInstance(info, instanceName, moduleName, _) =>
@@ -257,6 +271,28 @@ class ExpressionViewBuilder(
           val registerInput = symbolTable(registerInputName)
 
           expressionViews(symbolTable(registerName)) = expression"$registerInput"
+
+          getDrivingClock(clockExpression) match {
+            case Some(clockSymbol) =>
+              val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+
+              val mux1 = expression"Mux(And(Gt($clockSymbol, 0), Eq($prevClockSymbol, 0)), $registerInput, $name)"
+
+              if(resetExpression.tpe == AsyncResetType) {
+                val asyncResetCondition = processExpression(resetExpression)
+                val resetValue = processExpression(initValueExpression)
+
+                val mux2 = expression"Mux($asyncResetCondition, $resetValue, $mux1)"
+
+                expressionViews(symbolTable(registerName)) = mux2
+              }
+              else {
+                expressionViews(symbolTable(registerName)) = mux1
+              }
+            case _ =>
+              expressionViews(symbolTable(registerName)) = expression"$registerInput"
+          }
+
 
         case defMemory: DefMemory =>
           val expandedName = expand(defMemory.name)
