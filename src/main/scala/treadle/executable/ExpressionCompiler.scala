@@ -773,9 +773,37 @@ class ExpressionCompiler(
         val registerOut = symbolTable(expand(name))
         val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(registerOut.name))
 
-        val drivingClockOption = getDrivingClock(clockExpression)
+        getDrivingClock(clockExpression) match {
+          case Some(clockSymbol) =>
+            val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
 
-        makeAssigner(registerOut, makeGet(registerIn), drivingClockOption, info = info)
+            val clockValue     = dataStore.GetInt(clockSymbol.index)
+            val prevClockValue = dataStore.GetInt(prevClockSymbol.index)
+            val clockHigh   = GtInts(clockValue.apply, GetIntConstant(0).apply)
+            val clockWasLow = EqInts(prevClockValue.apply, GetIntConstant(0).apply)
+            val isPosEdge   = AndInts(clockHigh.apply, clockWasLow.apply, 1)
+
+            val posEdgeMux = processMux(isPosEdge, makeGet(registerIn), makeGet(registerOut))
+
+            if(resetExpression.tpe == AsyncResetType) {
+              val resetValue = processExpression(resetExpression) match {
+                case i: IntExpressionResult => i
+                case _ =>
+                  throw TreadleException(s"reset expression at $info, was not UInt<1>")
+              }
+              val asyncResetCondition = GtInts(resetValue.apply, GetIntConstant(0).apply)
+              val asyncResetMux = processMux(asyncResetCondition, processExpression(initExpression), posEdgeMux)
+
+              makeAssigner(registerOut, asyncResetMux, info = info)
+            }
+            else {
+              makeAssigner(registerOut, posEdgeMux, info = info)
+
+            }
+          case _ =>
+            makeAssigner(registerOut, makeGet(registerIn), info = info)
+        }
+
 
       case defMemory: DefMemory =>
         val expandedName = expand(defMemory.name)

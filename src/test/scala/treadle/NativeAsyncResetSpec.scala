@@ -4,6 +4,7 @@ package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
 
+//scalastyle:off magic.number
 class NativeAsyncResetSpec extends FreeSpec with Matchers {
   "native firrtl async reset should work" in {
     val firrtlSource =
@@ -13,12 +14,19 @@ class NativeAsyncResetSpec extends FreeSpec with Matchers {
         |    input clock : Clock
         |    input reset : UInt<1>
         |    input in : UInt<8>
-        |    output out : UInt<8>
-        |    wire areset : AsyncReset
-        |    reg r : UInt<8>, clock with : (reset => (areset, UInt(0)))
-        |    areset <= asAsyncReset(reset)
-        |    r <= in
-        |    out <= r
+        |    output out_reg : UInt<8>
+        |    output out_async_reg : UInt<8>
+        |
+        |    wire a_reset : AsyncReset
+        |    a_reset <= asAsyncReset(reset)
+        |
+        |    reg reg      : UInt<8>, clock with : (reset => (reset, UInt(17)))
+        |    reg asyncReg : UInt<8>, clock with : (reset => (a_reset, UInt(17)))
+        |
+        |    reg <= in
+        |    asyncReg <= in
+        |    out_reg <= reg
+        |    out_async_reg <= asyncReg
         |
       """.stripMargin
 
@@ -29,13 +37,34 @@ class NativeAsyncResetSpec extends FreeSpec with Matchers {
     val tester = TreadleTester(firrtlSource, manager)
 
     tester.poke("in", 7)
-    tester.expect("out", 0)
+    tester.expect("out_reg", 0)
+    tester.expect("out_async_reg", 0)
 
     tester.step()
 
+    tester.expect("out_reg", 7)
+    tester.expect("out_async_reg", 7)
+
     tester.poke("in", 23)
     tester.poke("reset", 1)
-    tester.expect("out", 23)
+
+    tester.expect("reg", 7)
+    tester.expect("out_async_reg", 17)
+
+    tester.step()
+
+    tester.expect("reg", 17)
+    tester.expect("out_async_reg", 17)
+
+    tester.poke("reset", 0)
+
+    tester.expect("out_reg", 17)
+    tester.expect("out_async_reg", 17)
+
+    tester.step()
+
+    tester.expect("out_reg", 23)
+    tester.expect("out_async_reg", 23)
 
     tester.report()
     tester.finish
