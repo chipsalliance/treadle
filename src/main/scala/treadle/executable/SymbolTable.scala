@@ -362,6 +362,9 @@ object SymbolTable extends LazyLogging {
 
           addDependency(registerOut, expressionToReferences(clockExpression))
           addDependency(registerIn, expressionToReferences(resetExpression))
+          if(resetExpression.tpe == AsyncResetType) {
+            addDependency(registerOut, expressionToReferences(resetExpression))
+          }
           addDependency(registerIn, Set(registerOut))
 
           registerToClock(registerOut) = expressionToReferences(clockExpression).head

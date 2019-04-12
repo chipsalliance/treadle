@@ -452,6 +452,7 @@ class ExpressionCompiler(
         case UIntType(IntWidth(n)) => n.toInt
         case SIntType(IntWidth(n)) => n.toInt
         case ClockType             => 1
+        case AsyncResetType        => 1
       }
 
       val sourceWidth = getWidth(expressions.head)
@@ -459,48 +460,51 @@ class ExpressionCompiler(
       arg1 match {
         case e1: IntExpressionResult =>
           op match {
-            case Pad     => e1
-            case AsUInt  => AsUIntInts(e1.apply, width)
-            case AsSInt  => AsSIntInts(e1.apply, width)
-            case AsClock => e1
+            case Pad            => e1
+            case AsUInt         => AsUIntInts(e1.apply, width)
+            case AsSInt         => AsSIntInts(e1.apply, width)
+            case AsClock        => e1
+            case AsAsyncReset   => e1
 
-            case Cvt     => e1
-            case Neg     => NegInts(e1.apply)
-            case Not     => NotInts(e1.apply, width)
+            case Cvt            => e1
+            case Neg            => NegInts(e1.apply)
+            case Not            => NotInts(e1.apply, width)
 
-            case Andr    => AndrInts(e1.apply, sourceWidth)
-            case Orr     => OrrInts(e1.apply,  sourceWidth)
-            case Xorr    => XorrInts(e1.apply, sourceWidth)
+            case Andr           => AndrInts(e1.apply, sourceWidth)
+            case Orr            => OrrInts(e1.apply,  sourceWidth)
+            case Xorr           => XorrInts(e1.apply, sourceWidth)
           }
         case e1: LongExpressionResult =>
           op match {
-            case Pad     => e1
-            case AsUInt  => AsUIntLongs(e1.apply, width)
-            case AsSInt  => AsSIntLongs(e1.apply, width)
-            case AsClock => e1
+            case Pad            => e1
+            case AsUInt         => AsUIntLongs(e1.apply, width)
+            case AsSInt         => AsSIntLongs(e1.apply, width)
+            case AsClock        => e1
+            case AsAsyncReset   => e1
 
-            case Cvt     => e1
-            case Neg     => NegLongs(e1.apply)
-            case Not     => NotLongs(e1.apply, width)
+            case Cvt            => e1
+            case Neg            => NegLongs(e1.apply)
+            case Not            => NotLongs(e1.apply, width)
 
-            case Andr    => AndrLongs(e1.apply, sourceWidth)
-            case Orr     => OrrLongs(e1.apply,  sourceWidth)
-            case Xorr    => XorrLongs(e1.apply, sourceWidth)
+            case Andr           => AndrLongs(e1.apply, sourceWidth)
+            case Orr            => OrrLongs(e1.apply,  sourceWidth)
+            case Xorr           => XorrLongs(e1.apply, sourceWidth)
           }
         case e1: BigExpressionResult =>
           op match {
-            case Pad     => e1
-            case AsUInt  => AsUIntBigs(e1.apply, width)
-            case AsSInt  => AsSIntBigs(e1.apply, width)
-            case AsClock => e1
+            case Pad            => e1
+            case AsUInt         => AsUIntBigs(e1.apply, width)
+            case AsSInt         => AsSIntBigs(e1.apply, width)
+            case AsClock        => e1
+            case AsAsyncReset   => e1
 
-            case Cvt     => e1
-            case Neg     => NegBigs(e1.apply)
-            case Not     => NotBigs(e1.apply, width)
+            case Cvt            => e1
+            case Neg            => NegBigs(e1.apply)
+            case Not            => NotBigs(e1.apply, width)
 
-            case Andr    => AndrBigs(e1.apply, sourceWidth)
-            case Orr     => OrrBigs(e1.apply,  sourceWidth)
-            case Xorr    => XorrBigs(e1.apply, sourceWidth)
+            case Andr           => AndrBigs(e1.apply, sourceWidth)
+            case Orr            => OrrBigs(e1.apply,  sourceWidth)
+            case Xorr           => XorrBigs(e1.apply, sourceWidth)
           }
       }
     }
@@ -603,9 +607,10 @@ class ExpressionCompiler(
 
             case Pad     => unaryOps(op, args, tpe)
 
-            case AsUInt  => unaryOps(op, args, tpe)
-            case AsSInt  => unaryOps(op, args, tpe)
-            case AsClock => unaryOps(op, args, tpe)
+            case AsUInt       => unaryOps(op, args, tpe)
+            case AsSInt       => unaryOps(op, args, tpe)
+            case AsClock      => unaryOps(op, args, tpe)
+            case AsAsyncReset => unaryOps(op, args, tpe)
 
             case Shl => oneArgOneParamOps(op, args, const, tpe)
             case Shr => oneArgOneParamOps(op, args, const, tpe)
@@ -631,6 +636,7 @@ class ExpressionCompiler(
 
             case Head => oneArgOneParamOps(op, args, const, tpe)
             case Tail => oneArgOneParamOps(op, args, const, tpe)
+
             case _ =>
               throw new Exception(s"processExpression:error: unhandled expression $expression")
           }
@@ -760,16 +766,48 @@ class ExpressionCompiler(
       case DefWire(_, name, _) =>
         logger.debug(s"declaration:DefWire:$name")
 
-      case DefRegister(info, name, _, clockExpression, _, _) =>
+      case DefRegister(info, name, tpe, clockExpression, resetExpression, initExpression) =>
 
         logger.debug(s"declaration:DefRegister:$name")
 
         val registerOut = symbolTable(expand(name))
         val registerIn  = symbolTable(SymbolTable.makeRegisterInputName(registerOut.name))
 
-        val drivingClockOption = getDrivingClock(clockExpression)
+        getDrivingClock(clockExpression) match {
+          case Some(clockSymbol) =>
+            val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
 
-        makeAssigner(registerOut, makeGet(registerIn), drivingClockOption, info = info)
+            val clockValue     = dataStore.GetInt(clockSymbol.index)
+            val prevClockValue = dataStore.GetInt(prevClockSymbol.index)
+            val clockHigh   = GtInts(clockValue.apply, GetIntConstant(0).apply)
+            val clockWasLow = EqInts(prevClockValue.apply, GetIntConstant(0).apply)
+            val isPosEdge   = AndInts(clockHigh.apply, clockWasLow.apply, 1)
+
+            val posEdgeMux = processMux(isPosEdge, makeGet(registerIn), makeGet(registerOut))
+
+            if(resetExpression.tpe == AsyncResetType) {
+              val resetValue = processExpression(resetExpression) match {
+                case i: IntExpressionResult => i
+                case _ =>
+                  throw TreadleException(s"reset expression at $info, was not UInt<1>")
+              }
+              val asyncResetCondition = GtInts(resetValue.apply, GetIntConstant(0).apply)
+              val asyncResetMux = processMux(asyncResetCondition, processExpression(initExpression), posEdgeMux)
+
+              makeAssigner(registerOut, asyncResetMux, info = info)
+            }
+            else {
+              //TODO: (Chick) We could use
+              // makeAssigner(registerOut, posEdgeMux, info = info)
+              // but it causes a slight performance regression
+              val drivingClockOption = getDrivingClock(clockExpression)
+
+              makeAssigner(registerOut, makeGet(registerIn), drivingClockOption, info = info)
+            }
+          case _ =>
+            makeAssigner(registerOut, makeGet(registerIn), info = info)
+        }
+
 
       case defMemory: DefMemory =>
         val expandedName = expand(defMemory.name)
