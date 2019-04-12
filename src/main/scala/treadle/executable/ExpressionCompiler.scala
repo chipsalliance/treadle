@@ -797,8 +797,12 @@ class ExpressionCompiler(
               makeAssigner(registerOut, asyncResetMux, info = info)
             }
             else {
-              makeAssigner(registerOut, posEdgeMux, info = info)
+              //TODO: (Chick) We could use
+              // makeAssigner(registerOut, posEdgeMux, info = info)
+              // but it causes a slight performance regression
+              val drivingClockOption = getDrivingClock(clockExpression)
 
+              makeAssigner(registerOut, makeGet(registerIn), drivingClockOption, info = info)
             }
           case _ =>
             makeAssigner(registerOut, makeGet(registerIn), info = info)
