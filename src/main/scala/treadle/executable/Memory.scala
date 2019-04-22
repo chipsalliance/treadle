@@ -28,8 +28,10 @@ object Memory {
     sensitivityGraphBuilder: SensitivityGraphBuilder,
     registerNames: mutable.HashSet[String]
   ): Seq[Symbol] = {
-
-    val memorySymbol = Symbol(expandedName, memory.dataType, MemKind, memory.depth)
+    if(memory.depth >= BigInt(Int.MaxValue)) {
+      throw TreadleException(s"Memory $expandedName size ${memory.depth} is too large for treadle")
+    }
+    val memorySymbol = Symbol(expandedName, memory.dataType, MemKind, memory.depth.toInt)
     val addrWidth    = IntWidth(requiredBitsForUInt(memory.depth - 1))
     val addrType     = firrtl.ir.UIntType(addrWidth)
     val dataType     = memory.dataType
