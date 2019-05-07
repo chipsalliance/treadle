@@ -9,6 +9,7 @@ import treadle.chronometry.UTC
 import treadle.executable._
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
+//TODO: Force values should work with multi-slot symbols
 
 /**
   * Works a lot like the chisel classic tester compiles a firrtl input string
@@ -204,6 +205,30 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
   def isOK: Boolean = failCode match {
     case None | Some(0) => true
     case _ => false
+  }
+
+  def forceValue(name: String, value: BigInt): Unit = {
+    engine.symbolTable.get(name) match {
+      case Some(symbol) =>
+        symbol.forcedValue = Some(value)
+        if(engine.symbolTable.isRegister(name)) {
+          engine.setValue(name, value, registerPoke = true)
+        }
+        engine.inputsChanged = true
+      case _ => println(s"Error: forceValue($name, $value) $name not found in symbol table")
+    }
+    if(engine.dataStore.leanMode) {
+      engine.scheduler.setLeanMode(false)
+    }
+  }
+
+  def clearForceValue(name: String): Unit = {
+    engine.symbolTable.get(name) match {
+      case Some(symbol) =>
+        symbol.forcedValue = None
+        engine.inputsChanged = true
+      case _ => println(s"Error: clearForceValue($name) $name not found in symbol table")
+    }
   }
 
   /**

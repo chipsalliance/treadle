@@ -37,12 +37,24 @@ class ReportAssignments(val executionEngine: ExecutionEngine) extends DataStoreP
 
   def run(symbol: Symbol, offset: Int = -1): Unit = {
     if(offset == -1) {
-      val showValue = symbol.normalize(dataStore(symbol))
-      println(s"${symbol.name} <= $showValue h${showValue.toString(16)}")
+      val valueMessage = if(symbol.forcedValue.isDefined) {
+        s" FORCED(${symbol.forcedValue.get}"
+      }
+      else {
+        val showValue = symbol.normalize(dataStore(symbol))
+        s"$showValue h${showValue.toString(16)}"
+      }
+      println(s"${symbol.name} <=$valueMessage")
     }
     else {
-      val showValue = symbol.normalize(dataStore(symbol, offset))
-      println(s"${symbol.name}($offset) <= $showValue")
+      val valueMessage = if(symbol.forcedValue.isDefined) {
+        s" FORCED(${symbol.forcedValue.get}"
+      }
+      else {
+        val showValue = symbol.normalize(dataStore(symbol, offset))
+        s"$showValue h${showValue.toString(16)}"
+      }
+      println(s"${symbol.name}($offset) <= $valueMessage")
     }
   }
 }
@@ -59,6 +71,9 @@ class RenderComputations(
 
   def run(symbol: Symbol, offset: Int = -1): Unit = {
     if(symbolsToWatch.contains(symbol)) {
+      if(symbol.forcedValue.isDefined) {
+        print(s"FORCED(${symbol.forcedValue.get} would have been: ")
+      }
       println(executionEngine.renderComputation(symbol.name))
     }
   }

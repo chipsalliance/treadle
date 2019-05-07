@@ -22,6 +22,8 @@ case class Symbol(
 
   val masks:          BitMasksBigs = BitMasks.getBitMasksBigs(bitWidth)
 
+  var forcedValue: Option[BigInt] = None
+
   def makeUInt(a: BigInt, bitWidth: Int): BigInt = {
     val b = a & masks.allBitsMask
     b
@@ -123,6 +125,7 @@ object DataSize {
       case firrtl.ir.SIntType(IntWidth(bitWidth)) => bitWidth.toInt
       case firrtl.ir.UIntType(IntWidth(bitWidth)) => bitWidth.toInt
       case firrtl.ir.ClockType                    => 1
+      case firrtl.ir.AsyncResetType               => 1
       case _ =>
         throw TreadleException(s"Error:DataSize doesn't know size of $firrtlType")
     }
@@ -161,9 +164,10 @@ object DataType {
 
   def apply(tpe: firrtl.ir.Type): DataType = {
     tpe match {
-      case _: firrtl.ir.SIntType => SignedInt
-      case _: firrtl.ir.UIntType => UnsignedInt
-      case firrtl.ir.ClockType   => UnsignedInt
+      case _: firrtl.ir.SIntType    => SignedInt
+      case _: firrtl.ir.UIntType    => UnsignedInt
+      case firrtl.ir.ClockType      => UnsignedInt
+      case firrtl.ir.AsyncResetType => UnsignedInt
       case t =>
         throw TreadleException(s"DataType does not know firrtl type $t")
     }
