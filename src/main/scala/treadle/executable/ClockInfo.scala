@@ -20,6 +20,10 @@ case class ClockInfo(
   period        : Long   = ClockInfo.DefaultPeriod,
   initialOffset : Long   = ClockInfo.DefaultOffset
 ) {
+  if(period % 2 != 0) {
+    throw TreadleException(s"Error: Clock period must be divisible by 2: Found $this")
+  }
+
   val upPeriod   : Long = period / 2
   val downPeriod : Long = period - upPeriod
   if(initialOffset <= 0) {
