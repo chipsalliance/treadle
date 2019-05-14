@@ -3,6 +3,7 @@
 package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.executable.{ClockInfo, TreadleException}
 
 
 // scalastyle:off magic.number
@@ -119,5 +120,101 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
 
     tester.step(100)
     tester.report()
+  }
+
+  "should work with two-clocks with different periods" in {
+    val input =
+      """
+        |circuit MultiClockMemTest :
+        |  module MultiClockMemTest :
+        |    input clock1 : Clock
+        |    input clock2 : Clock
+        |    input reset : UInt<1>
+        |    output out1 : UInt<16>
+        |    output out2 : UInt<16>
+        |
+        |    reg reg1 : UInt<16>, clock1 with : (reset => (reset, UInt<8>("h0")))
+        |    reg reg2 : UInt<16>, clock2 with : (reset => (reset, UInt<8>("h0")))
+        |
+        |    reg1 <= add(reg1, UInt<16>("h1"))
+        |    reg2 <= add(reg2, UInt<16>("h1"))
+        |
+        |    out1 <= reg1
+        |    out2 <= reg2
+      """.stripMargin
+
+    val optionsManager = new TreadleOptionsManager {
+      treadleOptions = treadleOptions.copy(
+        writeVCD           = true,
+        setVerbose         = false,
+        showFirrtlAtLoad   = false,
+        rollbackBuffers    = 4,
+        callResetAtStartUp = true,
+        clockInfo          = Seq(ClockInfo("clock1", 6), ClockInfo("clock2", 2)),
+        symbolsToWatch     = Seq()
+      )
+      commonOptions = commonOptions.copy(
+        targetDirName = "test_run_dir/two-clock-test",
+        topName = "two-clock-test"
+      )
+    }
+
+    val tester = new TreadleTester(input, optionsManager)
+
+    var r1 = 0
+    var r2 = 1
+
+    tester.poke("reset", 1)
+    tester.step()
+    tester.poke("reset", 0)
+
+    for(trial <- 1 to 6) {
+      tester.step()
+      println(f"trial $trial%3d -- ${tester.peek("out1")}%6d ${tester.peek("out2")}%6d")
+
+      tester.peek("out1") should be (r1)
+      tester.peek("out2") should be (r2)
+
+      if(trial % 3 == 1) r1 += 1
+      r2 += 1
+    }
+    tester.report()
+  }
+
+  "clock period must be divisible by two" in {
+    val input =
+      """
+        |circuit MultiClockMemTest :
+        |  module MultiClockMemTest :
+        |    input clock1 : Clock
+        |    input clock2 : Clock
+        |    input reset : UInt<1>
+        |    output out1 : UInt<16>
+        |    output out2 : UInt<16>
+        |
+        |    reg reg1 : UInt<16>, clock1 with : (reset => (reset, UInt<8>("h0")))
+        |    reg reg2 : UInt<16>, clock2 with : (reset => (reset, UInt<8>("h0")))
+        |
+        |    reg1 <= add(reg1, UInt<16>("h1"))
+        |    reg2 <= add(reg2, UInt<16>("h1"))
+        |
+        |    out1 <= reg1
+        |    out2 <= reg2
+      """.stripMargin
+
+    val thrown = intercept[TreadleException] {
+      val optionsManager = new TreadleOptionsManager {
+        treadleOptions = treadleOptions.copy(
+          clockInfo          = Seq(ClockInfo("clock1", 3), ClockInfo("clock2", 1)),
+        )
+        commonOptions = commonOptions.copy(
+          targetDirName = "test_run_dir/pad-clock-period",
+          topName = "pad-clock-period"
+        )
+      }
+
+      new TreadleTester(input, optionsManager)
+    }
+    thrown.message should be ("Error: Clock period must be divisible by 2: Found ClockInfo(clock1,3,1)")
   }
 }
