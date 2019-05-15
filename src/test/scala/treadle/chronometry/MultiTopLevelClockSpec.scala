@@ -2,9 +2,10 @@
 
 package treadle.chronometry
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
-import treadle.{TreadleOptionsManager, TreadleTester}
+import treadle.{CallResetAtStartupAnnotation, ClockInfoAnnotation, TreadleTester}
 
 
 // scalastyle:off magic.number
@@ -33,16 +34,15 @@ class MultiTopLevelClockSpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "ClockMadnessSpec should pass a basic test" in {
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        clockInfo = Seq(ClockInfo("clock1", period = 17, 1000), ClockInfo("clock2", period = 19, initialOffset = 1017)),
-        showFirrtlAtLoad = false,
-        callResetAtStartUp = true,
-        writeVCD = false
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+
+    val options = Seq(
+      CallResetAtStartupAnnotation,
+      ClockInfoAnnotation(Seq(
+        ClockInfo("clock1", period = 17, 1000), ClockInfo("clock2", period = 19, initialOffset = 1017)
+      ))
+    )
+
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     for(_ <- 0 until 17 * 19 + 10) {
 //    for(_ <- 0 until 30) {

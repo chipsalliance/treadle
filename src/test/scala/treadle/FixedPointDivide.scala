@@ -24,7 +24,7 @@ class FixedPointDivide extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = new TreadleTester(input)
+    val tester = TreadleTester(input)
 
     tester.poke("io_in", 256)
     tester.expect("io_out", 64)
@@ -56,7 +56,7 @@ class SignedAdder extends FreeSpec with Matchers {
           |    io_out <= _T_7
         """.stripMargin
 
-        val tester = new TreadleTester(input)
+        val tester = TreadleTester(input)
 
         for {
           i <- BigIntTestValuesGenerator(extremaOfSIntOfWidth(bitWidth))
@@ -157,9 +157,7 @@ class DynamicShiftRight extends FreeSpec with Matchers {
           |
         """.stripMargin
 
-        val tester = new
-
-        TreadleTester(input)
+        val tester = TreadleTester(input)
 
         val mask = BigInt("1" * bitWidth, 2)
 

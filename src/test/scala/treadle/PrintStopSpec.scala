@@ -163,7 +163,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
         """.stripMargin
 
-    val tester = new TreadleTester(input)
+    val tester = TreadleTester(input)
     tester.poke("enable", 0)
     tester.poke("in1", 1)
     println("before peek")
@@ -238,7 +238,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = new TreadleTester(input, optionsManager)
+      val tester = TreadleTester(input, optionsManager)
       tester.poke("io_in", 479)
       tester.step()
 
@@ -295,7 +295,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = new TreadleTester(input, optionsManager)
+      val tester = TreadleTester(input, optionsManager)
       tester.poke("io_in", 479)
       tester.step()
 
@@ -346,7 +346,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = new TreadleTester(input, optionsManager)
+      val tester = TreadleTester(input, optionsManager)
       tester.poke("reset", 1)
       tester.step()
       tester.poke("reset", 0)

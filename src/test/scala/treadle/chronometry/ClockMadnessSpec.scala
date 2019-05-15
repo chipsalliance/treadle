@@ -2,13 +2,13 @@
 
 package treadle.chronometry
 
-import treadle.TreadleTester
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.TreadleTester
 
 
 // scalastyle:off magic.number
 class ClockMadnessSpec extends FreeSpec with Matchers {
-  val input =
+  val input: String =
     """
       |circuit HasGatedCounter : @[:@2.0]
       |  module GatedCounter : @[:@3.2]
@@ -40,7 +40,7 @@ class ClockMadnessSpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "ClockMadnessSpec should pass a basic test" in {
-    val tester = new TreadleTester(input)
+    val tester = TreadleTester(input)
     //    tester.poke("reset", 0)
     //    tester.poke("io_enable", 1)
     //    for(_ <- 0 until 3) {

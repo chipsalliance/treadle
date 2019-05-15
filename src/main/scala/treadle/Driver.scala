@@ -2,8 +2,11 @@
 
 package treadle
 
-import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
+import firrtl.annotations.Annotation
+import firrtl.{AnnotationSeq, ExecutionOptionsManager, HasFirrtlOptions}
 import treadle.executable.{ClockInfo, TreadleException}
+
+import scala.collection.mutable
 
 //scalastyle:off magic.number
 case class TreadleOptions(
@@ -33,6 +36,30 @@ case class TreadleOptions(
     else {
       ""
     }
+  }
+
+  def toAnnotations: AnnotationSeq = {
+    var annotations = new mutable.ArrayBuffer[Annotation]
+
+    if(writeVCD) { annotations += WriteVcdAnnotation }
+    if(setVerbose) { annotations += VerboseAnnotation }
+    if(allowCycles) { annotations += AllowCyclesAnnotation }
+    if(showFirrtlAtLoad) { annotations += ShowFirrtlAtLoadAnnotation }
+    if(validIfIsRandom) { annotations += ValidIfIsRandomAnnotation }
+    if(callResetAtStartUp) { annotations += CallResetAtStartupAnnotation }
+    if(! lowCompileAtLoad) { annotations += DontRunLoweringCompilerLoadAnnotation }
+
+    if(rollbackBuffers != TreadleOptions().rollbackBuffers) {
+      annotations += RollBackBuffersAnnotation(rollbackBuffers)
+    }
+    annotations += RandomSeedAnnotation(randomSeed)
+    annotations += BlackBoxFactoriesAnnotation(blackBoxFactories)
+    annotations += BlackBoxFactoriesAnnotation(blackBoxFactories)
+    annotations += ClockInfoAnnotation(clockInfo)
+    annotations += ResetNameAnnotation(resetName)
+    annotations += SymbolsToWatchAnnotation(symbolsToWatch)
+
+    AnnotationSeq(annotations.toSeq)
   }
 }
 
@@ -163,7 +190,7 @@ trait HasTreadleOptions {
 object Driver {
 
   def execute(firrtlInput: String, optionsManager: TreadleOptionsManager): Option[TreadleTester] = {
-    val tester = new TreadleTester(firrtlInput, optionsManager)
+    val tester = TreadleTester(firrtlInput, optionsManager)
     Some(tester)
   }
 
@@ -182,4 +209,8 @@ class TreadleOptionsManager extends ExecutionOptionsManager("engine") with HasTr
 
 trait HasTreadleSuite extends ExecutionOptionsManager with HasFirrtlOptions with HasTreadleOptions {
   self : ExecutionOptionsManager =>
+
+  def toAnnotationSeq: AnnotationSeq = {
+    commonOptions.toAnnotations ++ firrtlOptions.toAnnotations ++ treadleOptions.toAnnotations
+  }
 }

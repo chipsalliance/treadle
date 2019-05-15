@@ -2,8 +2,10 @@
 
 package treadle.real
 
+import firrtl.stage.FirrtlSourceAnnotation
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
+import treadle.asyncreset.AsyncResetBlackBoxFactory
 
 
 class BlackBoxRealSpec extends FreeSpec with Matchers {
@@ -37,14 +39,12 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
 
     "addition should work expand instances as found" in {
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(new DspRealFactory),
-          randomSeed = 0L
-        )
-      }
-      val tester = new TreadleTester(adderInput, optionsManager)
+      val options = Seq(
+        RandomSeedAnnotation(),
+        BlackBoxFactoriesAnnotation(Seq(new DspRealFactory))
+      )
+
+      val tester = TreadleTester(FirrtlSourceAnnotation(adderInput) +: options)
 
       tester.poke("io_a1_node", doubleToBigIntBits(1.5))
       tester.poke("io_a2_node", doubleToBigIntBits(3.25))
@@ -80,7 +80,14 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
         randomSeed = 0L
       )
     }
-    val tester = new TreadleTester(input, optionsManager)
+//    val tester = TreadleTester(input, optionsManager)
+
+    val options = Seq(
+      RandomSeedAnnotation(),
+      BlackBoxFactoriesAnnotation(Seq(new DspRealFactory))
+    )
+
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     tester.poke("io_a_node", doubleToBigIntBits(3.14159))
 

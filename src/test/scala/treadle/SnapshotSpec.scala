@@ -46,7 +46,7 @@ class SnapshotSpec extends FreeSpec with Matchers {
       )
     }
 
-    val t = new TreadleTester(input, optionsManager)
+    val t = TreadleTester(input, optionsManager)
     t.poke("in0", 1)
     t.step()
     t.poke("in0", 2)
