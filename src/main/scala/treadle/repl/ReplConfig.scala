@@ -36,6 +36,7 @@ case object ReplConfig {
     annotationSeq.foldLeft(ReplConfig()) { case (config, annotation) =>
       annotation match {
         case TreadleScriptFile(s)            => config.copy(scriptName = s)
+        case TreadleReplRunScriptAtStartup   => config.copy(runScriptAtStart = true)
         case TreadleReplUseVcd               => config.copy(useVcdScript = true)
         case TreadleVcdScriptFileOverride(s) => config.copy(vcdScriptOverride = s)
         case TreadleReplDisplayFormat(s)     => config.copy(outputFormat = s)

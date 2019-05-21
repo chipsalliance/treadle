@@ -6,7 +6,7 @@ import firrtl.options.Shell
 import treadle._
 
 trait TreadleReplCli { this: Shell =>
-  parser.note("Treadle specific options")
+  parser.note("TreadleRepl specific options")
 
   Seq(
     FirrtlFileName,

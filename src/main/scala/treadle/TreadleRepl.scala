@@ -7,7 +7,7 @@ import java.io.{File, PrintWriter}
 import firrtl.AnnotationSeq
 import firrtl.graph.{CyclicException, DiGraph}
 import firrtl.options.Viewer.view
-import firrtl.options.{OptionsException, StageOptions, StageUtils}
+import firrtl.options.{OptionsException, StageOptions, StageUtils, TargetDirAnnotation}
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, OutputFileAnnotation}
 import org.json4s.native.JsonMethods._
 import treadle.chronometry.UTC
@@ -52,7 +52,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   }
 
   val terminal: Terminal = TerminalFactory.create()
-  val console = new ConsoleReader
+  val console: ConsoleReader = annotationSeq.collectFirst { case OverrideOutputStream(s) => s } match {
+    case Some(stream) => new ConsoleReader(System.in, stream)
+    case _ => new ConsoleReader
+  }
 
   // creates a treadle repl history in the current directory
   // makes it nicer when switching between projects
@@ -151,12 +154,27 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     loadSource()
   }
 
+  /**
+    * First try and read script file in the target dir, if that fails try opening it in place
+    * @param fileName name of script file
+    */
   def loadScript(fileName: String): Unit = {
-    currentScript = scriptFactory(fileName)
+    annotationSeq.collectFirst { case TargetDirAnnotation(t) => t } match {
+      case Some(targetDir) =>
+        if (!fileName.startsWith(targetDir)) {
+          currentScript = scriptFactory(targetDir + File.separator + fileName)
+        }
+        if(currentScript.isEmpty) {
+          currentScript = scriptFactory(fileName)
+        }
+      case _ =>
+    }
+
     currentScript match {
       case Some(script) =>
         console.println(s"loaded script file ${script.fileName} with ${script.length} lines")
       case _ =>
+        console.println(s"unable to open script file '$fileName")
     }
   }
 

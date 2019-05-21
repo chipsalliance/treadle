@@ -2,11 +2,15 @@
 
 package treadle.repl
 
+import java.io.OutputStream
+
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 import firrtl.stage.FirrtlFileAnnotation
 
 sealed trait ReplOption extends Unserializable { this: Annotation => }
+
+case class OverrideOutputStream(outputStream: OutputStream) extends NoTargetAnnotation
 
 /**
   *  The source file to load firrtl from for repl
@@ -30,7 +34,7 @@ case class DefaultFileNameWithOutSuffix(fileName: String)
 case class TreadleScriptFile(scriptName: String) extends NoTargetAnnotation with ReplOption
 
 /**
-  * Tells treadle to write a vcd file during simulation
+  * Tells treadle load the specified script file, basically a text file of treadle repl commands
   */
 case object TreadleScriptFile extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -38,7 +42,7 @@ case object TreadleScriptFile extends HasShellOptions {
       longOption = "tr-script-file",
       shortOption = Some("tsf"),
       toAnnotationSeq = (s: String) => Seq(TreadleScriptFile(s)),
-      helpText = "writes vcd executioin log, filename will be based on top-name"
+      helpText = "read a text file of treadle commands"
     )
   )
 }
