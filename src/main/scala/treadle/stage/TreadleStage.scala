@@ -7,23 +7,23 @@ import firrtl.options.{Phase, Shell, Stage}
 import firrtl.stage.FirrtlCli
 import treadle.stage.phases.{CreateTester, GetFirrtlAst, PrepareAst, SetImplicitOutputInfo}
 
-class TreadleCompatibilityStage extends Stage {
-  override val shell: Shell = new Shell("treadle") with FirrtlCli
-
+object TreadleCompatibilityPhase extends Phase {
   private val phases: Seq[Phase] = Seq(
     GetFirrtlAst,
     SetImplicitOutputInfo,
     PrepareAst
   )
 
-  override def run(annotations: AnnotationSeq): AnnotationSeq = {
+  override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     phases.foldLeft(annotations)( (a, f) => f.transform(a) )
   }
 }
 
-class TreadleStage extends Stage {
-  override val shell: Shell = new Shell("treadle") with FirrtlCli
-
+/**
+  * When returns the annotation list with a TreadleTester constructed
+  * from either a circuit, a file, or a string
+  */
+object TreadleTesterPhase extends Phase {
   private val phases: Seq[Phase] = Seq(
     GetFirrtlAst,
     SetImplicitOutputInfo,
@@ -31,7 +31,7 @@ class TreadleStage extends Stage {
     CreateTester
   )
 
-  override def run(annotations: AnnotationSeq): AnnotationSeq = {
+  override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     phases.foldLeft(annotations)( (a, f) => f.transform(a) )
   }
 }

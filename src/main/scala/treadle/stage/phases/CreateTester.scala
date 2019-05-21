@@ -4,11 +4,22 @@ package treadle.stage.phases
 
 import firrtl.AnnotationSeq
 import firrtl.options.Phase
-import treadle.{TreadleTester, TreadleTesterAnnotation}
+import firrtl.stage.FirrtlCircuitAnnotation
+import treadle.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
 
 object CreateTester extends Phase {
   override def transform(a: AnnotationSeq): AnnotationSeq = {
-    val tester = new TreadleTester(a)
-    a :+ TreadleTesterAnnotation(tester)
+    if(a.exists {
+      case FirrtlCircuitAnnotation(_) => true
+      case TreadleCircuitStateAnnotation(_) => true
+      case _ => false
+    }
+    ) {
+      val tester = new TreadleTester(a)
+      a :+ TreadleTesterAnnotation(tester)
+    }
+    else {
+      a
+    }
   }
 }
