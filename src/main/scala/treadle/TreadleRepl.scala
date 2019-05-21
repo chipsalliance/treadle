@@ -4,19 +4,21 @@ package treadle
 
 import java.io.{File, PrintWriter}
 
+import firrtl.AnnotationSeq
 import firrtl.graph.{CyclicException, DiGraph}
-import logger.Logger
+import firrtl.options.Viewer.view
+import firrtl.options.{OptionsException, StageOptions, StageUtils}
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, OutputFileAnnotation}
 import org.json4s.native.JsonMethods._
 import treadle.chronometry.UTC
-import treadle.executable.{ClockInfo, ExecutionEngine, Symbol, SymbolTable, TreadleException, WaveformValues}
+import treadle.executable.{ExecutionEngine, Symbol, SymbolTable, TreadleException, WaveformValues}
 import treadle.repl._
-import treadle.utils.ToLoFirrtl
+import treadle.stage.TreadleTesterPhase
 import treadle.vcd.VCD
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.io.Source
 import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer._
 import scala.tools.jline.console.history.FileHistory
@@ -34,11 +36,20 @@ abstract class Command(val name: String) {
   }
 }
 
-class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) {
-  val replConfig: ReplConfig = optionsManager.replConfig
-  def treadleOptions: TreadleOptions = optionsManager.treadleOptions
+/**
+  * Considered by many to be the world's best Treadle Repl
+  * @param initialAnnotations initial settings.
+  */
+class TreadleRepl(initialAnnotations: AnnotationSeq) {
+  var annotationSeq: AnnotationSeq = initialAnnotations
+  var stageOptions: StageOptions = view[StageOptions](annotationSeq)
+  var replConfig: ReplConfig = ReplConfig.fromAnnotations(annotationSeq)
 
-  treadle.random.setSeed(treadleOptions.randomSeed)
+  def mutateAnnotations(newAnnotations: AnnotationSeq): Unit = {
+    annotationSeq = newAnnotations
+    stageOptions = view[StageOptions](annotationSeq)
+    replConfig = ReplConfig.fromAnnotations(annotationSeq)
+  }
 
   val terminal: Terminal = TerminalFactory.create()
   val console = new ConsoleReader
@@ -61,7 +72,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   catch {
     case e: Exception =>
       // ignore problems with history file, better to run than freak out over this.
-      println(s"Error creating history file: message is ${e.getMessage}")
+      println(s"Error creating history file: message is ${e.getMessage}. History of commands will not be saved")
   }
 
   var currentTreadleTesterOpt: Option[TreadleTester] = None
@@ -86,7 +97,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   var currentVcdScript: Option[VCD] = None
   var replVcdController: Option[ReplVcdController] = None
 
-  var outputFormat: String = optionsManager.replConfig.outputFormat
+  var outputFormat: String = replConfig.outputFormat
 
   def formatOutput(value: BigInt): String = {
     outputFormat match {
@@ -108,13 +119,10 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
     }
   }
 
-  def loadSource(input: String): Unit = {
-    currentTreadleTesterOpt = Some(TreadleTester(input, optionsManager))
-    currentTreadleTesterOpt.foreach { _ =>
-      engine.setVerbose(treadleOptions.setVerbose)
-    }
+  def loadSource(): Unit = {
+
+    currentTreadleTesterOpt = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }
     buildCompletions()
-    buildClockInfoList()
   }
 
   def loadFile(fileName: String): Unit = {
@@ -125,8 +133,22 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         throw new Exception(s"file $fileName does not exist")
       }
     }
-    val input = io.Source.fromFile(file).mkString
-    loadSource(input)
+    val sourceReader = io.Source.fromFile(file)
+    val input = sourceReader.mkString
+    sourceReader.close()
+
+    annotationSeq = TreadleTesterPhase.transform(annotationSeq.filter {
+      case _: OutputFileAnnotation => false
+      case _: FirrtlCircuitAnnotation => false
+      case _: FirrtlSourceAnnotation => false
+      case _: TreadleTesterAnnotation => false
+      case _: TreadleCircuitAnnotation => false
+      case _: TreadleCircuitStateAnnotation => false
+      case _ => true
+    } :+ FirrtlSourceAnnotation(input))
+
+    currentTreadleTesterOpt = None
+    loadSource()
   }
 
   def loadScript(fileName: String): Unit = {
@@ -166,63 +188,20 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
     else                                  { parseWithRadix(numberString, 10) }
   }
 
-  val resetName: String = treadleOptions.resetName
-
   val wallTime = UTC()
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
       vcd.setTime(wallTime.currentTime)}
   }
 
-  var clockInfoList: Seq[ClockInfo] = Seq.empty
-
-  def buildClockInfoList(): Unit = {
-    clockInfoList = if (treadleOptions.clockInfo.isEmpty) {
-      if (engine.symbolTable.contains("clock")) {
-        Seq(ClockInfo())
-      }
-      else if (engine.symbolTable.contains("clk")) {
-        Seq(ClockInfo("clk"))
-      }
-      else {
-        Seq()
-      }
-    }
-    else {
-      treadleOptions.clockInfo
-    }
-
-    clockInfoList.foreach { clockInfo =>
-      engine.symbolTable.get(clockInfo.name) match {
-        case Some(clockSymbol) =>
-          val downOffset = clockInfo.initialOffset + (clockInfo.period / 2)
-
-          wallTime.addRecurringTask(clockInfo.period, clockInfo.initialOffset, taskName = s"${clockInfo.name}/up") {
-            () =>
-            engine.makeUpToggler(clockSymbol).run()
-            engine.inputsChanged = true
-          }
-
-          wallTime.addRecurringTask(clockInfo.period, downOffset, taskName = s"${clockInfo.name}/down") { () =>
-            engine.makeDownToggler(clockSymbol).run()
-            engine.inputsChanged = true
-          }
-
-        case _ =>
-          throw TreadleException(s"Could not find specified clock ${clockInfo.name}")
-
-      }
-    }
-  }
-
   val combinationalDelay: Long = 10
 
   def reset(timeRaised: Long): Unit = {
-    engine.setValue(resetName, 1)
+    engine.setValue(currentTreadleTester.resetName, 1)
     engine.inputsChanged = true
 
     wallTime.addOneTimeTask(wallTime.currentTime + timeRaised, "reset-task") { () =>
-      engine.setValue(resetName, 0)
+      engine.setValue(currentTreadleTester.resetName, 0)
       if(engine.verbose) {
         println(s"reset dropped at ${wallTime.currentTime}")
       }
@@ -462,7 +441,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
               engine.disableVCD()
             case Some(fileName) =>
               engine.makeVCDLogger(
-                fileName, showUnderscored = optionsManager.treadleOptions.vcdShowUnderscored)
+                fileName, showUnderscored = currentTreadleTester.vcdShowUnderscored)
             case _ =>
               engine.disableVCD()
           }
@@ -721,7 +700,6 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
                   portRegex.findFirstIn(settableThing) match {
                     case Some(_) =>
                       try {
-                        val value = engine.getValue(settableThing)
                         console.println(showNameAndValue(settableThing))
                         true
                       }
@@ -778,7 +756,7 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           getOneArg("reset [numberOfSteps]", Some("1")) match {
             case Some(numberOfStepsString) =>
               try {
-                clockInfoList.headOption match {
+                currentTreadleTester.clockInfoList.headOption match {
                   case Some(clockInfo) =>
                     val extraTime = clockInfo.period * numberOfStepsString.toInt
                     reset(clockInfo.initialOffset + extraTime)
@@ -1008,11 +986,28 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
           def showValue(symbolName: String): String = {
             showNameAndValue(symbolName)
           }
+
+          def getSource: String = {
+            annotationSeq.collectFirst {
+              case FirrtlSourceAnnotation(firrtl) => firrtl
+            }.getOrElse {
+              annotationSeq.collectFirst {
+                case FirrtlCircuitAnnotation(circuit) => circuit.serialize
+              }.getOrElse {
+                annotationSeq.collectFirst {
+                  case TreadleCircuitStateAnnotation(state) => state.circuit.serialize
+                }.getOrElse {
+                  "Can't find initial firrtl. Working low firrtl is\n" + engine.ast.serialize
+                }
+              }
+            }
+          }
+
           getOneArg("", None) match {
             case Some("lofirrtl") =>
-              console.println(ToLoFirrtl.lower(engine.ast, optionsManager).serialize)
-            case Some("input") | Some("firrtl") =>
               console.println(engine.ast.serialize)
+            case Some("input") | Some("firrtl") =>
+              console.println(getSource)
             case Some("inputs") =>
               console.println(engine.symbolTable.inputPortsNames.toSeq.sorted.map(showValue).mkString("\n"))
             case Some("outputs") =>
@@ -1179,7 +1174,9 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         def run(args: Array[String]): Unit = {
           getOneArg("snapshot requires a file name") match {
             case Some(fileName) =>
-              val jsonSource = Source.fromFile(new File(fileName)).getLines().mkString("\n")
+              val ioSource = io.Source.fromFile(fileName)
+              val jsonSource = ioSource.mkString
+              ioSource.close
               engine.dataStore.deserialize(jsonSource)
             case _ =>
           }
@@ -1250,7 +1247,6 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
         }
       },
       new Command("history") {
-        private def peekableThings = engine.validNames.toSeq
         def usage: (String, String) = ("history [pattern]", "show command history, with optional regex pattern")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
@@ -1393,18 +1389,20 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
   def run(): Unit = {
     console.setPrompt("treadle>> ")
 
+    mutateAnnotations(annotationSeq)
+
     try {
-      if (replConfig.firrtlSource.nonEmpty) {
-        loadSource(replConfig.firrtlSource)
-      }
-      else if (replConfig.firrtlSourceName.nonEmpty) {
+      loadSource()
+
+      if (replConfig.firrtlSourceName.nonEmpty) {
         loadFile(replConfig.firrtlSourceName)
       }
       if (replConfig.scriptName.nonEmpty) {
         loadScript(replConfig.scriptName)
       }
       if (replConfig.useVcdScript) {
-        loadVcdScript(optionsManager.getVcdFileName)
+        val fileName = replConfig.getVcdInputFileName
+        loadVcdScript(fileName)
       }
     }
     catch {
@@ -1486,19 +1484,23 @@ class TreadleRepl(val optionsManager: TreadleOptionsManager with HasReplConfig) 
 }
 
 object TreadleRepl {
+  def apply(annotationSeq: AnnotationSeq): TreadleRepl = {
+    val newAnnos = TreadleTesterPhase.transform(annotationSeq)
+    new TreadleRepl(newAnnos)
+  }
+
   def execute(optionsManager: TreadleOptionsManager with HasReplConfig): Unit = {
-    val repl = new TreadleRepl(optionsManager)
+    val repl = TreadleRepl(optionsManager.toAnnotationSeq)
     repl.run()
   }
 
   def main(args: Array[String]): Unit = {
-    val optionsManager = new TreadleOptionsManager with HasReplConfig
-
-    if(optionsManager.parse(args)) {
-      Logger.makeScope(optionsManager) {
-        val repl = new TreadleRepl(optionsManager)
-        repl.run()
-      }
+    try {
+      (new TreadleReplStage).execute(args, Seq.empty)
+    } catch {
+      case a: OptionsException =>
+        StageUtils.dramaticUsageError(a.message)
+        System.exit(1)
     }
   }
 }

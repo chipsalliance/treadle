@@ -6,7 +6,7 @@ import firrtl.CircuitState
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import treadle.executable.{ClockInfo, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation => }
@@ -86,7 +86,7 @@ object RandomSeedAnnotation extends HasShellOptions {
 /**
   *  Tells treadle to show the low firrtl it is starting out with
   */
-case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOption {
+case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-show-firrtl-at-load",
@@ -100,7 +100,7 @@ case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOp
 /**
   *  Tells treadle to not run its own lowering pass on firrtl input (not recommended)
   */
-case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation with TreadleOption {
+case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-dont-run-lower-compiler-on-load",
@@ -246,6 +246,20 @@ object TreadleFirrtlString extends HasShellOptions {
       shortOption = Some("trns"),
       toAnnotationSeq = (firrtl: String) => Seq(FirrtlSourceAnnotation(firrtl)),
       helpText = "a serialized firrtl circuit, mostly used internally"
+    )
+  )
+}
+
+/**
+  * Factory for TreadleFirrtlString annotation
+  */
+object TreadleFirrtlFile extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[String](
+      longOption = "tr-firrtl-file-name",
+      shortOption = Some("tffn"),
+      toAnnotationSeq = (firrtl: String) => Seq(FirrtlFileAnnotation(firrtl)),
+      helpText = "specifies a file containing a firrtl circuit in serialized text form"
     )
   )
 }

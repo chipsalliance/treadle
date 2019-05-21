@@ -225,9 +225,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
       case fileName :: _ =>
         repl.loadVcdScript(fileName)
       case Nil =>
-        if(repl.optionsManager.getVcdFileName.nonEmpty) {
-          repl.loadVcdScript(repl.optionsManager.getVcdFileName)
-        }
+        repl.replConfig.getVcdInputFileName
     }
   }
 
