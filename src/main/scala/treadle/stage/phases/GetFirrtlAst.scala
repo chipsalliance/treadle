@@ -2,19 +2,14 @@
 
 package treadle.stage.phases
 
-import firrtl.annotations.Annotation
-import firrtl.{AnnotationSeq, Parser}
 import firrtl.options.Phase
-import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
-import treadle.TreadleCircuitAnnotation
-import treadle.executable.TreadleException
-
-import scala.collection.mutable
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import firrtl.{AnnotationSeq, Parser}
 
 /**
   * There are multiple ways to get a FirrtlCircuit into treadle.
   * There is a priority to these methods
-  * 1. Specify a Firrtl AST with the TreadleCircuitAnnotation
+  * 1. Specify a Firrtl AST with the FirrtlCircuitAnnotation
   * 2. Specify Firrtl text with a FirrtlSourceAnnotation
   * 3. Specify a file containing Firrtl with the FirrtlFileAnnotation
   */
@@ -23,7 +18,7 @@ object GetFirrtlAst extends Phase {
 
     /* first priority, does circuit already exist */
     def handleTreadleCircuit(): Option[AnnotationSeq] = {
-      if(annotationSeq.exists { case TreadleCircuitAnnotation(_) => true ; case _ => false}) {
+      if(annotationSeq.exists { case FirrtlCircuitAnnotation(_) => true ; case _ => false}) {
         Some(annotationSeq)
       }
       else {
@@ -36,7 +31,7 @@ object GetFirrtlAst extends Phase {
       annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtlText) => firrtlText } match {
         case Some(text) =>
           val circuit = Parser.parse(text)
-          Some(TreadleCircuitAnnotation(circuit) +: annotationSeq)
+          Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
         case _ =>
           None
       }
@@ -50,7 +45,7 @@ object GetFirrtlAst extends Phase {
           val text = file.mkString
           file.close()
           val circuit = Parser.parse(text)
-          Some(TreadleCircuitAnnotation(circuit) +: annotationSeq)
+          Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
         case _ =>
           None
       }

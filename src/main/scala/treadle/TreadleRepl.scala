@@ -145,7 +145,6 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       case _: FirrtlCircuitAnnotation => false
       case _: FirrtlSourceAnnotation => false
       case _: TreadleTesterAnnotation => false
-      case _: TreadleCircuitAnnotation => false
       case _: TreadleCircuitStateAnnotation => false
       case _ => true
     } :+ FirrtlSourceAnnotation(input))

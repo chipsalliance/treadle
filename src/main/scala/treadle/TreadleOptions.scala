@@ -4,7 +4,6 @@ package treadle
 
 import firrtl.CircuitState
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import treadle.executable.{ClockInfo, TreadleException}
@@ -217,12 +216,6 @@ case object CallResetAtStartupAnnotation extends NoTargetAnnotation with Treadle
     )
   )
 }
-
-/**
-  * The circuit used to build a [[TreadleTester]]
-  * @param circuit a firrtl ast
-  */
-case class TreadleCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with TreadleOption
 
 /**
   * used to pass parsed firrtl to the TreadleTester

@@ -4,9 +4,9 @@ package treadle.stage.phases
 
 import firrtl.AnnotationSeq
 import firrtl.options.{Phase, TargetDirAnnotation}
-import firrtl.stage.OutputFileAnnotation
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
-import treadle.{TreadleCircuitStateAnnotation, TreadleCircuitAnnotation}
+import firrtl.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
+import treadle.TreadleCircuitStateAnnotation
 
 /**
   * Set a default output stuff
@@ -20,7 +20,7 @@ object SetImplicitOutputInfo extends Phase {
         topName
     }.getOrElse {
       annotationSeq.collectFirst {
-        case TreadleCircuitAnnotation(circuit) =>
+        case FirrtlCircuitAnnotation(circuit) =>
           circuit.main
         case TreadleCircuitStateAnnotation(state) =>
           state.circuit.main

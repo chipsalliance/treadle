@@ -4,12 +4,13 @@ package treadle.stage.phases
 
 import firrtl.AnnotationSeq
 import firrtl.options.Phase
-import treadle.{TreadleCircuitAnnotation, TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
+import firrtl.stage.FirrtlCircuitAnnotation
+import treadle.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnotation}
 
 object CreateTester extends Phase {
   override def transform(a: AnnotationSeq): AnnotationSeq = {
     if(a.exists {
-      case TreadleCircuitAnnotation(_) => true
+      case FirrtlCircuitAnnotation(_) => true
       case TreadleCircuitStateAnnotation(_) => true
       case _ => false
     }
