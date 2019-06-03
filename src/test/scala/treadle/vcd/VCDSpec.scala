@@ -151,12 +151,6 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
         |    c <= add(a, b)
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-    }
-//    val engine = TreadleTester(input, manager)
-
     val options = Seq(
       WriteVcdAnnotation
     )
@@ -203,7 +197,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     engine.step()
     engine.peek("io_c") should be (BigInt(8))
 
-    //    engine.poke("io_a", -1)
+//    engine.poke("io_a", -1)
 //    engine.poke("io_b", -7)
 //    engine.peek("io_a") should be (BigInt(-1))
 //    engine.peek("io_b") should be (BigInt(-7))
@@ -236,12 +230,6 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
         |    io.testReg <= testReg @[RegisterVCDSpec.scala 32:14]
         |
       """.stripMargin
-
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = true, vcdShowUnderscored = hasTempWires)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir/vcd_register_delay")
-    }
-//      val engine = TreadleTester(input, manager)
 
     val options = Seq(
       Some(WriteVcdAnnotation),

@@ -238,20 +238,6 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
         |    reg1.rst <= reset @[AsyncResetRegTest.scala 51:12]
     """.stripMargin
 
-//    val manager = new TreadleOptionsManager {
-//      treadleOptions = treadleOptions.copy(
-//        blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
-//        showFirrtlAtLoad = false,
-//        writeVCD = true,
-//        setVerbose = true
-//      )
-//      commonOptions = commonOptions.copy(
-//        targetDirName = "test_run_dir/async_reg_to_reg",
-//        topName = "async_reg_to_reg"
-//      )
-//    }
-//    val tester = TreadleTester(input, manager)
-
     val options = Seq(
       WriteVcdAnnotation,
       BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory)),

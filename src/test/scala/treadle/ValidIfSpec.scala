@@ -1,11 +1,12 @@
-// See LICENSE for license details.
-
-package treadle
-
-import org.scalatest.{FreeSpec, Matchers}
-
-
-// scalastyle:off magic.number
+//// See LICENSE for license details.
+//
+//package treadle
+//
+//import firrtl.stage.FirrtlSourceAnnotation
+//import org.scalatest.{FreeSpec, Matchers}
+//
+//
+////scalastyle:off magic.number
 //class ValidIfSpec extends FreeSpec with Matchers {
 //  "ValidIf should return expression when not random" in {
 //    val input =
@@ -18,10 +19,7 @@ import org.scalatest.{FreeSpec, Matchers}
 //        |    out1 <= validif(enable, in1)
 //      """.stripMargin
 //
-//    val options = new TreadleOptionsManager {
-//      treadleOptions = treadleOptions.copy(validIfIsRandom = false)
-//    }
-//    val tester = TreadleTester(input, options)
+//    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 //    tester.poke("in1", 42)
 //    tester.expect("out1", 42)
 //  }
@@ -36,13 +34,7 @@ import org.scalatest.{FreeSpec, Matchers}
 //        |    out1 <= validif(enable, in1)
 //      """.stripMargin
 //
-//    val options = new TreadleOptionsManager {
-//      treadleOptions = treadleOptions.copy(
-//        validIfIsRandom = true,
-//        randomSeed = 0L
-//      )
-//    }
-//    val tester = TreadleTester(input, options)
+//    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), ValidIfIsRandomAnnotation))
 //    tester.poke("in1", 42)
 //    assert(tester.peek("out1") != 42)
 //  }

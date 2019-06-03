@@ -32,7 +32,7 @@ To do so, in your project `build.sbt` add a dependency on
 ```
 There are a number of different ways to specify this dependency in the build.sbt file. If you have based your circuit on the 
 [Chisel-template](https://github.com/freechipsproject/chisel-template.git) the addition should look like
-```
+```scala
 libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3" % chiselVersion,
   "edu.berkeley.cs" %% "chisel-iotesters" % "1.0",

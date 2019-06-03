@@ -73,18 +73,10 @@ class BlackBoxRealSpec extends FreeSpec with Matchers {
         |    BBFIntPart_1.in <= io_a_node
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        blackBoxFactories = Seq(new DspRealFactory),
-        randomSeed = 0L
-      )
-    }
-//    val tester = TreadleTester(input, optionsManager)
-
     val options = Seq(
       RandomSeedAnnotation(),
-      BlackBoxFactoriesAnnotation(Seq(new DspRealFactory))
+      BlackBoxFactoriesAnnotation(Seq(new DspRealFactory)),
+      RandomSeedAnnotation(0L)
     )
 
     val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)

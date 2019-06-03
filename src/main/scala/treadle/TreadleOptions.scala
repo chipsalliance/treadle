@@ -5,7 +5,7 @@ package treadle
 import firrtl.CircuitState
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
-import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
+import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.FirrtlSourceAnnotation
 import treadle.executable.{ClockInfo, TreadleException}
 
@@ -18,7 +18,6 @@ case object WriteVcdAnnotation extends NoTargetAnnotation with TreadleOption wit
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-write-vcd",
-      shortOption = Some("tiwv"),
       toAnnotationSeq = _ => Seq(WriteVcdAnnotation),
       helpText = "writes vcd executioin log, filename will be based on top-name"
     )
@@ -32,7 +31,6 @@ case object VcdShowUnderScoredAnnotation extends NoTargetAnnotation with Treadle
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-vcd-show-underscored-vars",
-      shortOption = Some("tivsu"),
       toAnnotationSeq = _ => Seq(VcdShowUnderScoredAnnotation),
       helpText = "vcd output by default does not show var that start with underscore, this overrides that"
     )
@@ -46,7 +44,6 @@ case object VerboseAnnotation extends NoTargetAnnotation with TreadleOption with
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-verbose",
-      shortOption = Some("tv"),
       toAnnotationSeq = _ => Seq(VerboseAnnotation),
       helpText = "makes the treadle very verbose"
     )
@@ -60,7 +57,6 @@ case object AllowCyclesAnnotation extends NoTargetAnnotation with TreadleOption 
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-allow-cycle",
-      shortOption = Some("tac"),
       toAnnotationSeq = _ => Seq(AllowCyclesAnnotation),
       helpText = "will try to run when firrtl contains combinational loops"
     )
@@ -76,7 +72,6 @@ object RandomSeedAnnotation extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Long](
       longOption = "tr-random-seed",
-      shortOption = Some("trc"),
       toAnnotationSeq = (seed: Long) => Seq(RandomSeedAnnotation(seed)),
       helpText = "sets the seed for Treadle's random number generator"
     )
@@ -86,11 +81,10 @@ object RandomSeedAnnotation extends HasShellOptions {
 /**
   *  Tells treadle to show the low firrtl it is starting out with
   */
-case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOption {
+case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-show-firrtl-at-load",
-      shortOption = Some("tsfal"),
       toAnnotationSeq = _ => Seq(),
       helpText = "show the low firrtl source treadle is using to build simulator"
     )
@@ -100,11 +94,10 @@ case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOp
 /**
   *  Tells treadle to not run its own lowering pass on firrtl input (not recommended)
   */
-case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation with TreadleOption {
+case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-dont-run-lower-compiler-on-load",
-      shortOption = Some("tdrlcol"),
       toAnnotationSeq = _ => Seq(),
       helpText = "do not run its own lowering pass on firrtl input (not recommended)"
     )
@@ -118,7 +111,6 @@ case object ValidIfIsRandomAnnotation extends NoTargetAnnotation with TreadleOpt
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-validif-random",
-      shortOption = Some("tvir"),
       toAnnotationSeq = _ => Seq(ValidIfIsRandomAnnotation),
       helpText = "validIf returns random value when condition is false"
     )
@@ -128,16 +120,15 @@ case object ValidIfIsRandomAnnotation extends NoTargetAnnotation with TreadleOpt
 /**
   *  Sets the number of rollback buffers in simulator, useful to see why wires have their values
   */
-//scalastyle:off magic.number
-case class RollBackBuffersAnnotation(rollbackBufferDepth: Int = 0) extends NoTargetAnnotation with TreadleOption
+case class RollBackBuffersAnnotation(rollbackBufferDepth: Int = TreadleDefaults.RollbackBuffers)
+        extends NoTargetAnnotation with TreadleOption
 
 case object RollBackBuffersAnnotation extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Int](
       longOption = "tr-rollback-buffers",
-      shortOption = Some("trb"),
       toAnnotationSeq = (buffers: Int) => Seq(RollBackBuffersAnnotation(buffers)),
-      helpText = "number of rollback buffers, 0 is no buffers, default is 4"
+      helpText = s"number of rollback buffers, 0 is no buffers, default is ${TreadleDefaults.RollbackBuffers}"
     )
   )
 }
@@ -152,7 +143,6 @@ case object ClockInfoAnnotation extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Seq[String]](
       longOption = "tr-clock-info",
-      shortOption = Some("tci"),
       toAnnotationSeq = (s: Seq[String]) => Seq(ClockInfoAnnotation(s.map(parseClockInfo))),
       helpText = "comma separated list of clock-name[:period[:initial-offset]]"
     )
@@ -181,7 +171,6 @@ case object SymbolsToWatchAnnotation extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Seq[String]](
       longOption = "tr-symbols-to-watch",
-      shortOption = Some("tstw"),
       toAnnotationSeq = (names: Seq[String]) => Seq(SymbolsToWatchAnnotation(names)),
       helpText = "symbol[,symbol[...]"
     )
@@ -197,7 +186,6 @@ case object ResetNameAnnotation extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "tr-reset-name",
-      shortOption = Some("trn"),
       toAnnotationSeq = (resetName: String) => Seq(ResetNameAnnotation(resetName)),
       helpText = "name of the default reset signal"
     )
@@ -211,7 +199,6 @@ case object CallResetAtStartupAnnotation extends NoTargetAnnotation with Treadle
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-call-reset-at-startup",
-      shortOption = Some("tcras"),
       toAnnotationSeq = _ => Seq(CallResetAtStartupAnnotation),
       helpText = "makes treadle do it's own reset at startup, usually for internal use only"
     )
@@ -243,7 +230,6 @@ object TreadleFirrtlString extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "tr-firrtl-source-string",
-      shortOption = Some("trns"),
       toAnnotationSeq = (firrtl: String) => Seq(FirrtlSourceAnnotation(firrtl)),
       helpText = "a serialized firrtl circuit, mostly used internally"
     )
@@ -253,29 +239,29 @@ object TreadleFirrtlString extends HasShellOptions {
 case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFactory])
         extends NoTargetAnnotation with TreadleOption
 
-////class TreadleLibrary extends RegisteredLibrary {
-////  val name: String = "treadle"
-////  override def addOptions(parser: OptionParser[AnnotationSeq]): Unit = {
-////    val seq: AnnotationSeq = Seq(
-////      WriteVcdAnnotation,
-////      VcdShowUnderScoredAnnotation,
-////      VerboseAnnotation,
-////      AllowCyclesAnnotation,
-////      RandomSeedAnnotation(),
-////      ShowFirrtlAtLoadAnnotation,
-////      DontRunLoweringCompilerLoadAnnotation,
-////      ValidIfIsRandomAnnotation,
-////      RollBackBuffersAnnotation(),
-////      ClockInfoAnnotation(),
-////      SymbolsToWatchAnnotation(),
-////      ResetNameAnnotation(),
-////      CallResetAtStartupAnnotation,
-////      TreadleFirrtlString()
-////    )
-////
-//////    seq.flatMap(_.options)
-////  }
-//}
+/** Constructs this as a registered library that will be auto-detected by
+  * projects who have a dependency on Treadle
+  */
+class TreadleLibrary extends RegisteredLibrary {
+  val name: String = "treadle"
+
+  val options: Seq[ShellOption[_]] = Seq(
+    WriteVcdAnnotation,
+    VcdShowUnderScoredAnnotation,
+    VerboseAnnotation,
+    AllowCyclesAnnotation,
+    RandomSeedAnnotation,
+    ShowFirrtlAtLoadAnnotation,
+    DontRunLoweringCompilerLoadAnnotation,
+    ValidIfIsRandomAnnotation,
+    RollBackBuffersAnnotation,
+    ClockInfoAnnotation,
+    SymbolsToWatchAnnotation,
+    ResetNameAnnotation,
+    CallResetAtStartupAnnotation,
+    TreadleFirrtlString
+  ).flatMap(_.options)
+}
 
 object TreadleDefaults {
   val RollbackBuffers = 0
