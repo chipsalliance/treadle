@@ -7,11 +7,9 @@ import firrtl.options.{Shell, Stage, StageMain}
 import firrtl.stage.FirrtlCli
 import logger.Logger
 import treadle.TreadleRepl
-import treadle.stage.TreadleCli
 
 class TreadleReplStage extends Stage {
-  override val shell: Shell = new Shell("treadle-repl")
-          with TreadleReplCli with TreadleCli with FirrtlCli
+  override val shell: Shell = new Shell("treadle-repl") with TreadleReplCli with FirrtlCli
 
   override def run(annotations: AnnotationSeq): AnnotationSeq = {
     Logger.makeScope(annotations) {
