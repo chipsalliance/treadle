@@ -6,7 +6,7 @@ import firrtl.CircuitState
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import treadle.executable.{ClockInfo, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation => }
@@ -224,7 +224,7 @@ case class TreadleCircuitStateAnnotation(state: CircuitState) extends NoTargetAn
 case class TreadleTesterAnnotation(tester: TreadleTester) extends NoTargetAnnotation with TreadleOption
 
 /**
-  * Factory for TreadleFirrtlString annotation
+  * Factory for [[FirrtlSourceAnnotation]], this is an alias for FirrtlCli
   */
 object TreadleFirrtlString extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -232,6 +232,20 @@ object TreadleFirrtlString extends HasShellOptions {
       longOption = "tr-firrtl-source-string",
       toAnnotationSeq = (firrtl: String) => Seq(FirrtlSourceAnnotation(firrtl)),
       helpText = "a serialized firrtl circuit, mostly used internally"
+    )
+  )
+}
+
+/**
+  * Factory for [[FirrtlFileAnnotation]] annotation, this is an alias for Firrtl Cli
+  */
+object TreadleFirrtlFile extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[String](
+      longOption = "tr-firrtl-source-file",
+      shortOption = Some("tfsf"),
+      toAnnotationSeq = (firrtl: String) => Seq(FirrtlFileAnnotation(firrtl)),
+      helpText = "specify treadle repl source file"
     )
   )
 }
@@ -259,7 +273,8 @@ class TreadleLibrary extends RegisteredLibrary {
     SymbolsToWatchAnnotation,
     ResetNameAnnotation,
     CallResetAtStartupAnnotation,
-    TreadleFirrtlString
+    TreadleFirrtlString,
+    TreadleFirrtlFile
   ).flatMap(_.options)
 }
 

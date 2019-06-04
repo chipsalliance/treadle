@@ -1,3 +1,6 @@
+import java.io.File
+
+import treadle.executable.TreadleException
 // See LICENSE for license details.
 
 //scalastyle:off treadle.object.name
