@@ -91,7 +91,7 @@ class StackSpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     tester.poke("io_en", 1)
     tester.poke("io_push", 1)

@@ -11,7 +11,7 @@ class ModuleInLineSpec extends FlatSpec with Matchers {
     val stream = getClass.getResourceAsStream("/three_deep.fir")
     val input = io.Source.fromInputStream(stream).mkString
 
-    val tester = new TreadleTester(input)
+    val tester = TreadleTester(input)
 
     tester.engine.symbolTable.outputPortsNames.size should be > 0
   }

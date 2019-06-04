@@ -5,6 +5,7 @@ package treadle.executable
 import org.scalatest.{FreeSpec, Matchers}
 
 
+//scalastyle:off magic.number
 class ApplySugarProblemSpec extends FreeSpec with Matchers {
   type IntFunc = () => Int
 
@@ -37,6 +38,4 @@ class ApplySugarProblemSpec extends FreeSpec with Matchers {
     addv.apply() should be (8)
     println(s"after apply")
   }
-
-
 }

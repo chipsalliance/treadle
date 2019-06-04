@@ -54,7 +54,7 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
         setVerbose = false
       )
     }
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     tester.poke("reset", 0)
     tester.poke("io_wrData", (0 << 24) + (255 << 16))

@@ -4,10 +4,14 @@ package treadle
 
 import java.io.File
 
-import firrtl.ExecutionOptionsManager
-import treadle.vcd.VCD
+import firrtl.AnnotationSeq
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.options.{HasShellOptions, Shell, ShellOption, Stage, StageMain, Unserializable}
+import firrtl.stage.{FirrtlCli, FirrtlSourceAnnotation}
 import logger.LazyLogging
+import treadle.executable.TreadleException
 import treadle.utils.VcdRunner
+import treadle.vcd.VCD
 
 /**
   * This tester runs a VCD file against a circuit expressed in a firrtl file.  The VCD file should
@@ -20,9 +24,9 @@ import treadle.utils.VcdRunner
   * sbt 'runMain treadle.VcdReplayTester -fs src/test/resources/VcdAdder.fir -vcd src/test/resources/VcdAdder.vcd'
   * }}}
   *
-  * @param optionsManager Used to set various options
+  * @param annotationSeq Used to set various options
   */
-class VcdReplayTester(optionsManager: VcdReplayTesterOptions) extends LazyLogging {
+class VcdReplayTester(annotationSeq: AnnotationSeq) extends LazyLogging {
 
   private def getInput(fileName: String): String = {
     var file = new File(fileName)
@@ -32,15 +36,20 @@ class VcdReplayTester(optionsManager: VcdReplayTesterOptions) extends LazyLoggin
         throw new Exception(s"file $fileName does not exist")
       }
     }
-    io.Source.fromFile(file).mkString
+    // this is a bit of boiler plate to not leave source hanging open
+    val source = io.Source.fromFile(file)
+    val text = source.mkString
+    source.close()
+    text
   }
 
-  val vcdTesterOptions: VcdReplayOptions = optionsManager.goldenVcdOptions
-  val treadleOptions  : TreadleOptions   = optionsManager.treadleOptions
+  val vcdFileName: String = annotationSeq.collectFirst { case VcdReplayVcdFile(fileName) => fileName }.getOrElse(
+    throw TreadleException(s"You must specify VcdFile to compare to treadle execution")
+  )
 
-  val tester: TreadleTester = new TreadleTester(getInput(vcdTesterOptions.firrtlSourceName), optionsManager)
+  val tester: TreadleTester = TreadleTester(annotationSeq)
 
-  val vcd: VCD = VCD.read(vcdTesterOptions.vcdSourceName, tester.engine.ast.main)
+  val vcd: VCD = VCD.read(vcdFileName, tester.engine.ast.main)
 
   val vcdRunner: VcdRunner = new VcdRunner(tester, vcd)
 
@@ -50,8 +59,8 @@ class VcdReplayTester(optionsManager: VcdReplayTesterOptions) extends LazyLoggin
   def run(): Unit = {
     vcdRunner.setInitialValues()
 
-    val start = vcdTesterOptions.skipEvents
-    val end = if(vcdTesterOptions.eventsToRun > 0) start + vcdTesterOptions.eventsToRun else vcdRunner.events.length
+    val start = annotationSeq.collectFirst { case VcdReplaySkipEvents(n) => n }.getOrElse(0)
+    val end = annotationSeq.collectFirst { case VcdReplaySkipEvents(n) => start + n }.getOrElse(vcdRunner.events.length)
 
     vcdRunner.setNextEvent(start)
 
@@ -82,61 +91,90 @@ class VcdReplayTester(optionsManager: VcdReplayTesterOptions) extends LazyLoggin
   }
 }
 
-object VcdReplayTester {
-  def main(args: Array[String]) {
-    val optionsManager = new VcdReplayTesterOptions
+trait VcdReplayTesterCli { this: Shell =>
+  parser.note("VcdReplayTester Front End Options")
 
-    if (optionsManager.parse(args)) {
-      val repl = new VcdReplayTester(optionsManager)
-      repl.run()
-    }
+
+}
+
+class VcdReplayTesterStage extends Stage {
+  val shell = new Shell("vcd_replay_tester") with VcdReplayTesterCli with FirrtlCli
+
+  def apply(annotationSeq: AnnotationSeq): VcdReplayTester = {
+    new VcdReplayTester(annotationSeq)
+  }
+
+  override def run(annotations: AnnotationSeq): AnnotationSeq = {
+    new VcdReplayTester(annotations)
+    annotations
   }
 }
 
-case class VcdReplayOptions(
-    firrtlSourceName:     String = "",
-    vcdSourceName:        String = "",
-    skipEvents:           Int = 0,
-    eventsToRun:          Int = -1,
-    testAliasedWires:     Boolean = false)
-  extends firrtl.ComposableOptions
+object VcdReplayTester extends StageMain(new VcdReplayTesterStage)
 
-trait HasVcdReplayOptions {
-  self: ExecutionOptionsManager =>
+sealed trait VcdReplayTesterOptions extends Unserializable { this: Annotation => }
 
-  var goldenVcdOptions = VcdReplayOptions()
+case class VcdReplayVcdFile(fileName: String) extends NoTargetAnnotation with VcdReplayTesterOptions
 
-  parser.note("golden-vcd")
+case class VcdReplaySkipEvents(count: Int) extends NoTargetAnnotation with VcdReplayTesterOptions
 
-  parser.opt[String]("firrtl-source")
-    .abbr("fs")
-    .valueName("<firrtl-source-file>")
-    .foreach { x => goldenVcdOptions = goldenVcdOptions.copy(firrtlSourceName = x) }
-    .text("firrtl source file to load on startup")
+case class VcdReplayEventsToRun(count: Int) extends NoTargetAnnotation with VcdReplayTesterOptions
 
-  parser.opt[String]("vcd-file")
-    .abbr("vcd")
-    .valueName("<vcd-file>")
-    .foreach { x => goldenVcdOptions = goldenVcdOptions.copy(vcdSourceName = x) }
-    .text("firrtl source file to load on startup")
-
-  parser.opt[Int]("skip-events")
-    .abbr("se")
-    .valueName("<number>")
-    .foreach { x => goldenVcdOptions = goldenVcdOptions.copy(skipEvents = x) }
-    .text("number of events to skip before starting")
-
-  parser.opt[Int]("events-to-run")
-    .abbr("etr")
-    .valueName("<number>")
-    .foreach { x => goldenVcdOptions = goldenVcdOptions.copy(eventsToRun = x) }
-    .text("number of events to run")
-
-  parser.opt[Unit]("test-aliased-wires")
-    .abbr("taw")
-    .foreach { _ => goldenVcdOptions = goldenVcdOptions.copy(testAliasedWires = true) }
-    .text("number of events to run")
+/**
+  * makes a more convenient way of specifying firrtl source
+  */
+case object VcdReplayFirrtlSource extends NoTargetAnnotation with VcdReplayTesterOptions with HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "firrtl-source",
+      shortOption = Some("fs"),
+      toAnnotationSeq = (s: String) => Seq(FirrtlSourceAnnotation(s)),
+      helpText = "firrtl source file to load on startup"
+    )
+  )
 }
 
-class VcdReplayTesterOptions extends TreadleOptionsManager with HasVcdReplayOptions
+case object VcdReplayVcdFile extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "vcd-file",
+      shortOption = Some("vcd"),
+      toAnnotationSeq = (s: String) => Seq(VcdReplayVcdFile(s)),
+      helpText = "firrtl source file to load on startup"
+    )
+  )
+}
+
+case object VcdReplaySkipEvents extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[Int](
+      longOption = "skip-events",
+      shortOption = Some("se"),
+      toAnnotationSeq = (n: Int) => Seq(VcdReplaySkipEvents(n)),
+      helpText = "number of events to skip before starting"
+    )
+  )
+}
+
+case object VcdReplayEventsToRun extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[Int](
+      longOption = "events-to-run",
+      shortOption = Some("etr"),
+      toAnnotationSeq = (n: Int) => Seq(VcdReplayEventsToRun(n)),
+      helpText = "number of events to run"
+    )
+  )
+}
+
+case object VcdReplayTestAliasedWires extends NoTargetAnnotation with VcdReplayTesterOptions with HasShellOptions {
+  val options = Seq(
+    new ShellOption[Int](
+      longOption = "test-aliased-wires",
+      shortOption = Some("taw"),
+      toAnnotationSeq = _ => Seq(VcdReplayTestAliasedWires),
+      helpText = "test values of internal intermediate wires against vcd"
+    )
+  )
+}
 

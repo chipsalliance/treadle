@@ -3,8 +3,9 @@
 package treadle.blackboxes
 
 import firrtl.ir.Type
-import treadle._
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
+import treadle._
 import treadle.executable._
 
 //scalastyle:off magic.number
@@ -107,15 +108,12 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
     "each output should hold a different values" in {
 
-      val factory = new FanOutAdderFactory
+      val options = Seq(
+        BlackBoxFactoriesAnnotation(Seq(new FanOutAdderFactory)),
+        RandomSeedAnnotation(1L)
+      )
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(factory),
-          randomSeed = 0L)
-      }
-      val tester = new TreadleTester(adderInput, optionsManager)
+      val tester = TreadleTester(FirrtlSourceAnnotation(adderInput) +: options)
 
       for(i <- 0 until 10) {
         tester.poke("in", i)
@@ -151,15 +149,12 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
     "each output should hold a different values" in {
 
-      val factory = new BlackBoxCounterFactory
+      val options = Seq(
+        BlackBoxFactoriesAnnotation(Seq(new BlackBoxCounterFactory)),
+        RandomSeedAnnotation(1L)
+      )
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          setVerbose = false,
-          blackBoxFactories = Seq(factory),
-          randomSeed = 0L)
-      }
-      val tester = new TreadleTester(input, optionsManager)
+      val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
       tester.poke("clear", 1)
       tester.step()

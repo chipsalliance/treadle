@@ -4,8 +4,9 @@ package treadle.primops
 
 import firrtl.ir
 import firrtl.ir.Type
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.{ScalaBlackBox, ScalaBlackBoxFactory, TreadleOptionsManager, TreadleTester}
+import treadle._
 
 class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
   var returnValue: BigInt = 0
@@ -55,15 +56,12 @@ class EqOpsTester extends FreeSpec with Matchers {
         |    out <= eq(blackBoxTypeParamWord.out, UInt<32>("hdeadbeef"))
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true,
-        showFirrtlAtLoad = false,
-        blackBoxFactories = Seq(factory)
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val options = Seq(
+      CallResetAtStartupAnnotation,
+      BlackBoxFactoriesAnnotation(Seq(factory))
+    )
+
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     tester.peek("out") should be (1)
   }
@@ -85,18 +83,7 @@ class EqOpsTester extends FreeSpec with Matchers {
         |
           """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     tester.peek("out") should be (BigInt(0))
     println(s"peek out ${tester.peek("out") != BigInt(0)}")
     tester.report()

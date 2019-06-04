@@ -2,6 +2,8 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
+import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -31,20 +33,13 @@ class VecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 20
-      )
-      commonOptions = commonOptions.copy(
-        targetDirName = "test_run_dir/vec_spec1",
-        topName = "vec_spec"
-      )
-    }
+    val options = Seq(
+      WriteVcdAnnotation,
+      RollBackBuffersAnnotation(20),
+      TopNameAnnotation("vec_spec_1")
+    )
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     def show(): Unit = {
       println("Rendering register assignments")
@@ -124,14 +119,9 @@ class VecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        setVerbose = false
-      )
-    }
+    val options = Seq(WriteVcdAnnotation)
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     tester.poke("reset", 1)
     tester.step()

@@ -69,7 +69,7 @@ object Regression {
            y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = new TreadleTester(gcdFirrtl, manager)
+    val tester = TreadleTester(gcdFirrtl, manager)
 
     val startTime = System.nanoTime()
     tester.poke("clock", 1)
@@ -170,7 +170,7 @@ object MemoryUsageRegression {
       )
     }
 
-    val tester = timer("tester assembly")(new TreadleTester(input, optionsManager))
+    val tester = timer("tester assembly")(TreadleTester(input, optionsManager))
 
     for(trial <- 0 until 4) {
       timer(s"trial_${trial}_$testSize") {
