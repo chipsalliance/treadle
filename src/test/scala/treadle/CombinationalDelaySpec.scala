@@ -2,6 +2,8 @@
 
 package treadle
 
+import firrtl.options.TargetDirAnnotation
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
 
@@ -27,19 +29,15 @@ class CombinationalDelaySpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "combinational delay takes 100th of period to execute" in {
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        clockInfo = Seq(ClockInfo("clock", period = 1000L, initialOffset = 500L)),
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
 
-    val t = new TreadleTester(input, optionsManager)
+    val options = Seq(
+      ClockInfoAnnotation(Seq(ClockInfo("clock", period = 1000L, initialOffset = 500L)))
+    )
+
+    val t = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+
+
+
     t.poke("in_0", 20)
     t.poke("in_1", 11)
     t.expect("add_out", 31)

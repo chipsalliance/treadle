@@ -39,7 +39,7 @@ class Performance extends FreeSpec with Matchers {
         rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
     }
 
-    val tester = new TreadleTester(junkFirrtl, manager)
+    val tester = TreadleTester(junkFirrtl, manager)
 
     val startTime = System.nanoTime()
 

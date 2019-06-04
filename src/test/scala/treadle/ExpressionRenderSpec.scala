@@ -4,7 +4,6 @@ package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
 
-
 // scalastyle:off magic.number
 class ExpressionRenderSpec extends FreeSpec with Matchers {
   "ExpressionRenderSpec should pass a basic test" in {
@@ -43,7 +42,7 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
       )
     }
 
-    val t = new TreadleTester(input, optionsManager)
+    val t = TreadleTester(input, optionsManager)
     t.poke("in0", 10)
     t.poke("in1", 11)
     t.poke("in2", 12)
@@ -94,7 +93,7 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
       )
     }
 
-    val t = new TreadleTester(input, optionsManager)
+    val t = TreadleTester(input, optionsManager)
     t.poke("in0", 1)
     t.step()
     t.poke("in0", 2)

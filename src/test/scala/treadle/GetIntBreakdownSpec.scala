@@ -5,6 +5,14 @@ package treadle
 import org.scalatest.{FreeSpec, Matchers}
 
 
+/**
+  * The author of this fine test, does not quite remember what it is designed to do.
+  * As it currently stands it is a decent demonstration of dead code removal. All but one
+  * of the nodes generated at line 36 are dead-ends and do not contribute to the output.
+  * To see this uncomment the println at line 44 and set showFirrtlAtLoad to true at line 48
+  *
+  * The other point of this test is to verify that the older form of writing a test using anonymous subclasses works
+  */
 // scalastyle:off magic.number
 class GetIntBreakdownSpec extends FreeSpec with Matchers {
   def getIntBreakDown(n: Int): Boolean = {
@@ -33,7 +41,7 @@ class GetIntBreakdownSpec extends FreeSpec with Matchers {
 
     val firrtlString = input ++ s.toString()
 
-//    println(firrtlString.split("\n").zipWithIndex.map { case (l,n) => f"$n%5d $l"}.mkString("\n"))
+    // println(firrtlString.split("\n").zipWithIndex.map { case (l,n) => f"$n%5d $l"}.mkString("\n"))
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
@@ -43,17 +51,18 @@ class GetIntBreakdownSpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(firrtlString, manager)
-
-    for(i <- 0 to 1000) {
-      tester.poke("io_in", 4)
-      tester.step(1000)
-      tester.peek("io_out")
-//      tester.expect("io_out", 4)
+    new TreadleTester(firrtlString, manager) {
+      for (i <- 0 to 1000) {
+        poke("io_in", 4)
+        step(1000)
+        peek("io_out")
+        expect("io_out", 5)
+      }
     }
     true
   }
-  "GetIntBreakdownSpec should pass a basic test" ignore {
+
+  "GetIntBreakdownSpec should pass a basic test" in {
     getIntBreakDown(1000) should be(true)
   }
 }

@@ -91,7 +91,7 @@ class TreadleUsageSpec extends FlatSpec with Matchers {
   "GCD" should "return correct values for a range of inputs" in {
     val s = Driver.emit(() => new GCD)
 
-    val tester = new TreadleTester(s)
+    val tester = TreadleTester(s)
 
     for {
       i <- 1 to 100

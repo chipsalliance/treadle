@@ -2,12 +2,10 @@
 
 package treadle.chronometry
 
-import firrtl.{Driver, ExecutionOptionsManager}
-import firrtl.{FirrtlExecutionSuccess, HasFirrtlOptions, Parser}
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
-import treadle.{TreadleOptionsManager, TreadleTester}
-import treadle.utils.ToLoFirrtl
+import treadle.{ClockInfoAnnotation, TreadleTester}
 
 //noinspection ScalaStyle
 class ClockCrossingSpec extends FreeSpec with Matchers {
@@ -37,35 +35,23 @@ class ClockCrossingSpec extends FreeSpec with Matchers {
         |    io.mainOut <= mainReg @[ClockCrossingTest.scala 40:18:@18.4]
       """.stripMargin
 
-    val firrtlOptionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
-      firrtlOptions = firrtlOptions.copy(firrtlSource = Some(chirrtlString), compilerName = "low")
-    }
+    val options = Seq(
+      ClockInfoAnnotation(Seq(ClockInfo(name = "clock", period = 2, initialOffset = 1)))
+    )
 
-    Driver.execute(firrtlOptionsManager) match {
-      case FirrtlExecutionSuccess(_, highFirrtl) =>
-        val optionsManager = new TreadleOptionsManager {
-          commonOptions = commonOptions.copy(targetDirName = "test_run_dir/clock_crossing", topName = "clock_crossing")
-          treadleOptions = treadleOptions.copy(
-            setVerbose = false, writeVCD = false, callResetAtStartUp = false,
-            showFirrtlAtLoad = false,
-            clockInfo = Seq(ClockInfo(name = "clock", period = 2, initialOffset = 1)))
-        }
+    val tester = TreadleTester(FirrtlSourceAnnotation(chirrtlString) +: options)
 
-        val tester = new TreadleTester(highFirrtl, optionsManager)
+    tester.reset(8)
 
-        tester.reset(8)
-
-        tester.poke("io_divIn", 0x42)
-        tester.expect("io_mainOut", 0)  // initial register value
-        tester.step()
-        tester.expect("io_mainOut", 1)  // initial value of divReg
-        tester.step()  // for divided clock to have a rising edge
-        tester.expect("io_mainOut", 1)  // one-cycle-delay divReg
-        tester.step()  // for main clock register to propagate
-        tester.expect("io_mainOut", 0x42)  // updated value propagates
-        tester.finish
-      case _ =>
-
-    }
+    tester.poke("io_divIn", 0x42)
+    tester.expect("io_mainOut", 0)  // initial register value
+    tester.step()
+    tester.expect("io_mainOut", 1)  // initial value of divReg
+    tester.step()  // for divided clock to have a rising edge
+    tester.expect("io_mainOut", 1)  // one-cycle-delay divReg
+    tester.step()  // for main clock register to propagate
+    tester.expect("io_mainOut", 0x42)  // updated value propagates
+    tester.finish
   }
+
 }

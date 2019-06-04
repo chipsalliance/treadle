@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -43,15 +44,7 @@ class ClockSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        vcdShowUnderscored = true,
-        writeVCD = false
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     intercept[StopException] {
       tester.step(100)
@@ -110,7 +103,7 @@ class ClockSpec extends FreeSpec with Matchers {
       )
     }
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(input, optionsManager)
 
     // load memory
     tester.poke("write_en", 1)

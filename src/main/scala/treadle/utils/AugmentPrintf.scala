@@ -2,6 +2,7 @@
 
 package treadle.utils
 
+import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
 import firrtl.ir.Circuit
 
 import scala.collection.mutable
@@ -10,7 +11,7 @@ import scala.collection.mutable
   * Printf statements that print registers will show wrong values
   * unless this pass adds a delay for each register
   */
-object AugmentPrintf {
+object AugmentPrintf extends Transform {
   def apply(circuit: Circuit): Circuit = {
     import firrtl.ir._
     import firrtl._
@@ -46,4 +47,11 @@ object AugmentPrintf {
     }
   }
 
+  override def inputForm: CircuitForm = LowForm
+
+  override def outputForm: CircuitForm = LowForm
+
+  override protected def execute(state: CircuitState): CircuitState = {
+    state.copy(circuit = apply(state.circuit))
+  }
 }
