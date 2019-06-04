@@ -2,9 +2,15 @@
 
 package treadle.repl
 
-import firrtl.ExecutionOptionsManager
+import java.io.File
+
+import firrtl.stage.FirrtlFileAnnotation
+import firrtl.{AnnotationSeq, ExecutionOptionsManager}
 
 case class ReplConfig(
+  basePath         : String = "",
+  baseName         : String = "",
+  suffix           : String = "",
   firrtlSourceName : String = "",
   scriptName       : String = "",
   firrtlSource     : String = "",
@@ -12,8 +18,44 @@ case class ReplConfig(
   vcdScriptOverride: String = "",
   runScriptAtStart : Boolean = false,
   outputFormat     : String = "d"
-)
-        extends firrtl.ComposableOptions
+) {
+  def getVcdInputFileName: String = {
+    if(vcdScriptOverride.nonEmpty) {
+      vcdScriptOverride
+    }
+    else {
+      basePath + File.pathSeparator + baseName + suffix
+    }
+  }
+}
+
+
+//scalastyle:off cyclomatic.complexity
+case object ReplConfig {
+  def fromAnnotations(annotationSeq: AnnotationSeq): ReplConfig = {
+    annotationSeq.foldLeft(ReplConfig()) { case (config, annotation) =>
+      annotation match {
+        case TreadleScriptFile(s)            => config.copy(scriptName = s)
+        case TreadleReplRunScriptAtStartup   => config.copy(runScriptAtStart = true)
+        case TreadleReplUseVcd               => config.copy(useVcdScript = true)
+        case TreadleVcdScriptFileOverride(s) => config.copy(vcdScriptOverride = s)
+        case TreadleReplDisplayFormat(s)     => config.copy(outputFormat = s)
+        case FirrtlFileAnnotation(s)               =>
+          val f = new File(s)
+          val basePath = f.getCanonicalFile.getParentFile.getAbsolutePath
+          val name = f.getName
+          val (baseName, suffix) = name.split(".+?/(?=[^/]+$)").toList match {
+            case a :: Nil => (a, "")
+            case a :: b :: Nil => ("", "")
+            case _ => ("", "")
+          }
+          config.copy(basePath = basePath, baseName = baseName, suffix = suffix, firrtlSourceName = s)
+        case other =>
+          config
+      }
+    }
+  }
+}
 
 trait HasReplConfig {
   self: ExecutionOptionsManager =>

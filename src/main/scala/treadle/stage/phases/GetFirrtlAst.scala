@@ -2,32 +2,62 @@
 
 package treadle.stage.phases
 
-import firrtl.annotations.Annotation
-import firrtl.{AnnotationSeq, Parser}
 import firrtl.options.Phase
-import firrtl.stage.FirrtlSourceAnnotation
-import treadle.TreadleCircuitAnnotation
-import treadle.executable.TreadleException
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import firrtl.{AnnotationSeq, Parser}
 
-import scala.collection.mutable
-
+/**
+  * There are multiple ways to get a FirrtlCircuit into treadle.
+  * There is a priority to these methods
+  * 1. Specify a Firrtl AST with the FirrtlCircuitAnnotation
+  * 2. Specify Firrtl text with a FirrtlSourceAnnotation
+  * 3. Specify a file containing Firrtl with the FirrtlFileAnnotation
+  */
 object GetFirrtlAst extends Phase {
   override def transform(annotationSeq: AnnotationSeq): AnnotationSeq = {
-    var sourcesFound = new mutable.ArrayBuffer[Annotation]()
 
-    val newAnnotationSeq = annotationSeq.flatMap {
-      case fs @ FirrtlSourceAnnotation(firrtlText) =>
-        sourcesFound += fs
-        val circuit = Parser.parse(firrtlText)
-        Some(TreadleCircuitAnnotation(circuit))
-
-      case other => Some(other)
+    /* first priority, does circuit already exist */
+    def handleTreadleCircuit(): Option[AnnotationSeq] = {
+      if(annotationSeq.exists { case FirrtlCircuitAnnotation(_) => true ; case _ => false}) {
+        Some(annotationSeq)
+      }
+      else {
+        None
+      }
     }
 
-    if(sourcesFound.length > 1) {
-      throw TreadleException(s"Multiple sources of firrtl found for Treadle" + sourcesFound.mkString("\n", "\n", ""))
+    /* second priority, does firrtl source exist */
+    def handleFirrtlSource(): Option[AnnotationSeq] = {
+      annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtlText) => firrtlText } match {
+        case Some(text) =>
+          val circuit = Parser.parse(text)
+          Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
+        case _ =>
+          None
+      }
     }
 
-    newAnnotationSeq
+    /* third priority, does firrtl file exist */
+    def handleFirrtlFile(): Option[AnnotationSeq] = {
+      annotationSeq.collectFirst { case FirrtlFileAnnotation(fileName) => fileName } match {
+        case Some(fileName) =>
+          val file = io.Source.fromFile(fileName)
+          val text = file.mkString
+          file.close()
+          val circuit = Parser.parse(text)
+          Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
+        case _ =>
+          None
+      }
+    }
+
+    val newAnnotations = handleTreadleCircuit().getOrElse {
+      handleFirrtlSource().getOrElse {
+        handleFirrtlFile().getOrElse {
+          annotationSeq
+        }
+      }
+    }
+    newAnnotations
   }
 }

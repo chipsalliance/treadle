@@ -11,7 +11,7 @@ import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import treadle.chronometry.UTC
 import treadle.executable._
-import treadle.stage.{TreadleCompatibilityStage, TreadleStage}
+import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
@@ -32,7 +32,7 @@ import treadle.stage.{TreadleCompatibilityStage, TreadleStage}
 class TreadleTester(annotationSeq: AnnotationSeq) {
 
   def this(input: String, optionsManager: HasTreadleSuite) = {
-    this((new TreadleCompatibilityStage).run(optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input)))
+    this(TreadleCompatibilityPhase.transform(optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input)))
   }
 
   var expectationsMet = 0
@@ -48,10 +48,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
       vcd.setTime(wallTime.currentTime)}
   }
 
-  private val resetName = annotationSeq.collectFirst{ case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
+  val resetName: String = annotationSeq.collectFirst{ case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
   private val clockInfo = annotationSeq.collectFirst{ case ClockInfoAnnotation(cia) => cia }.getOrElse(Seq.empty)
   private val writeVcd  = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
-  private val vcdShowUnderscored  = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
+  val vcdShowUnderscored: Boolean  = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
   private val callResetAtStartUp = annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }
   private val topName = annotationSeq.collectFirst{ case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
   private val verbose  = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
@@ -448,13 +448,14 @@ object TreadleTester {
     * @param optionsManager  options manager
     * @return
     */
+  @deprecated("Use TreadleTester(annotationSeq) instead")
   def apply(input : String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
     val sourceAnnotation = FirrtlSourceAnnotation(input)
     TreadleTester(sourceAnnotation +: optionsManager.toAnnotationSeq)
   }
 
   def apply(annotations: AnnotationSeq): TreadleTester = {
-    val newAnnotations = (new TreadleStage).run(annotations)
+    val newAnnotations = TreadleTesterPhase.transform(annotations)
     newAnnotations.collectFirst { case TreadleTesterAnnotation(tester) => tester }.getOrElse(
       throw TreadleException(s"Could not create a TreadleTester")
     )
