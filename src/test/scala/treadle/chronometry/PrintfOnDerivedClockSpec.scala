@@ -41,7 +41,7 @@ class PrintfOnDerivedClockSpec extends FreeSpec with Matchers {
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
       val options = Seq(
-        TopNameAnnotation("printf_on_derived_clock"),
+        TopNameAnnotation("printf_on_derived_clock")
       )
 
       val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)

@@ -7,7 +7,6 @@ import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
 import treadle.{CallResetAtStartupAnnotation, ClockInfoAnnotation, TreadleTester}
 
-
 // scalastyle:off magic.number
 class MultiTopLevelClockSpec extends FreeSpec with Matchers {
   val input : String =
@@ -35,17 +34,17 @@ class MultiTopLevelClockSpec extends FreeSpec with Matchers {
 
   "ClockMadnessSpec should pass a basic test" in {
 
+    val (period1, period2) = (34, 38)
     val options = Seq(
       CallResetAtStartupAnnotation,
       ClockInfoAnnotation(Seq(
-        ClockInfo("clock1", period = 17, 1000), ClockInfo("clock2", period = 19, initialOffset = 1017)
+        ClockInfo("clock1", period = period1, 1000), ClockInfo("clock2", period = period2, initialOffset = 1017)
       ))
     )
 
     val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
-    for(_ <- 0 until 17 * 19 + 10) {
-//    for(_ <- 0 until 30) {
+    for(_ <- 0 until period1 * period2 + 10) {
       println(s"state = ${tester.peek("out1")}, ${tester.peek("out2")}")
       tester.step()
     }

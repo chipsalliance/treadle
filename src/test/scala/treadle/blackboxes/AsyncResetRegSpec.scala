@@ -240,7 +240,7 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
 
     val options = Seq(
       WriteVcdAnnotation,
-      BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory)),
+      BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
     )
 
     val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
