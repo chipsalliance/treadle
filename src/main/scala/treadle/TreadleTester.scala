@@ -5,7 +5,7 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
-import firrtl.AnnotationSeq
+import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
@@ -31,8 +31,8 @@ import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
 //class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
 class TreadleTester(annotationSeq: AnnotationSeq) {
 
-  def this(input: String, optionsManager: HasTreadleSuite) = {
-    this(TreadleCompatibilityPhase.transform(optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input)))
+  def this(input: String, optionsManager: HasTreadleSuite, circuitForm: CircuitForm = ChirrtlForm) = {
+    this(TreadleCompatibilityPhase.checkFormTransform(circuitForm, optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input)))
   }
 
   var expectationsMet = 0
