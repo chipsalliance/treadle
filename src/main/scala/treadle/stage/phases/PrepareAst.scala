@@ -10,12 +10,8 @@ import firrtl.{AnnotationSeq, ChirrtlForm, CircuitState, HighForm, LowFirrtlOpti
 import treadle.TreadleCircuitStateAnnotation
 import treadle.utils.{AugmentPrintf, FixupOps}
 
-/**
-  * Call a bunch of transforms so TreadleTester can operate
-  */
-object PrepareAst extends Phase {
-  val transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, LowForm) ++
-          Seq(new LowFirrtlOptimization, new BlackBoxSourceHelper, new FixupOps, AugmentPrintf)
+trait TreadlePhase extends Phase {
+  val transforms: Seq[Transform]
 
   override def transform(annotationSeq: AnnotationSeq): AnnotationSeq = {
     annotationSeq.flatMap {
@@ -27,4 +23,18 @@ object PrepareAst extends Phase {
         Some(other)
     }
   }
+}
+
+/** Prepare the AST from low FIRRTL.
+  *
+  */
+object PrepareAstFromLowFIRRTL extends TreadlePhase {
+  val transforms: Seq[Transform] = Seq(new FixupOps, AugmentPrintf)
+}
+/**
+  * Call a bunch of transforms so TreadleTester can operate
+  */
+object PrepareAst extends TreadlePhase {
+  val transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, LowForm) ++
+    Seq(new LowFirrtlOptimization, new BlackBoxSourceHelper, new FixupOps, AugmentPrintf)
 }
