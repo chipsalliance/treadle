@@ -472,7 +472,7 @@ object ExecutionEngine {
 
     val dataStoreAllocator = new DataStoreAllocator
 
-    symbolTable.allocateData(dataStoreAllocator)
+    symbolTable.allocateData(sym => dataStoreAllocator.getIndex(sym.dataSize, sym.slots))
 
     val dataStore = DataStore(rollbackBuffers, dataStoreAllocator)
 
@@ -489,7 +489,7 @@ object ExecutionEngine {
     }
 
     val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(
-      symbolTable, dataStore, scheduler,
+      symbolTable, scheduler,
       validIfIsRandom,
       circuit, blackBoxFactories)
 

@@ -90,7 +90,6 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
       SimpleSingleClockStepper(
         engine,
-        engine.dataStore,
         engine.symbolTable(clockInfo.name),
         engine.symbolTable.get(resetName),
         clockInfo.period,

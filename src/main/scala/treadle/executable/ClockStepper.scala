@@ -31,7 +31,6 @@ case class ClockAssigners(upAssigner: Assigner, downAssigner: Assigner)
 
 case class SimpleSingleClockStepper(
   engine: ExecutionEngine,
-  dataStore: DataStore,
   clockSymbol: Symbol,
   resetSymbolOpt: Option[Symbol],
   clockPeriod: Long,
@@ -177,7 +176,6 @@ case class SimpleSingleClockStepper(
   * @param wallTime       handle to top level wall time
   */
 class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], wallTime: UTC) extends ClockStepper {
-  val dataStore: DataStore = engine.dataStore
   val scheduler: Scheduler = engine.scheduler
   val hasRollBack: Boolean = engine.dataStore.numberOfBuffers > 0
 

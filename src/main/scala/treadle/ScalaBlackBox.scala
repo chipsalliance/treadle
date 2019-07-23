@@ -3,7 +3,7 @@
 package treadle
 
 import firrtl.ir.{Param, Type}
-import treadle.executable.{DataStore, Symbol, Transition}
+import treadle.executable.Transition
 
 import scala.collection._
 

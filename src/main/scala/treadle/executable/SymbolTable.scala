@@ -27,10 +27,8 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
     toBlackBoxImplementation(symbol) = blackBoxImplementation
   }
 
-  def allocateData(dataStoreAllocator: DataStoreAllocator): Unit = {
-    nameToSymbol.values.foreach { symbol =>
-      symbol.index = dataStoreAllocator.getIndex(symbol.dataSize, symbol.slots)
-    }
+  def allocateData(getIndex: Symbol => Int): Unit = {
+    nameToSymbol.values.foreach { symbol => symbol.index = getIndex(symbol) }
   }
 
   def size: Int = nameToSymbol.size
@@ -53,15 +51,6 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
   def isTopLevelInput(name: String): Boolean = inputPortsNames.contains(name)
 
   def apply(name: String): Symbol = nameToSymbol(name)
-
-  def getSymbolFromGetter(expressionResult: ExpressionResult, dataStore: DataStore): Option[Symbol] = {
-    expressionResult match {
-      case dataStore.GetInt(index)  => symbols.find { symbol => symbol.dataSize == IntSize && symbol.index == index}
-      case dataStore.GetLong(index) => symbols.find { symbol => symbol.dataSize == LongSize && symbol.index == index}
-      case dataStore.GetBig(index)  => symbols.find { symbol => symbol.dataSize == BigSize && symbol.index == index}
-      case _ => None
-    }
-  }
 
   def findHighestClock(symbol: Symbol): Option[Symbol] = {
     parentsOf.getEdges(symbol).toList match {
