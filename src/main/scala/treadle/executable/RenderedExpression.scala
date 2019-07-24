@@ -17,10 +17,10 @@ object RenderHelper {
 
 class ExpressionView(val sc: StringContext, val args: Seq[Any])
 
-class SymbolAtDepth(val symbol: Symbol, val displayDepth: Int, val dataTime: Long, val dataArrays: HasDataArrays)
+class SymbolAtDepth(val symbol: Symbol, val displayDepth: Int, val dataTime: Long, val dataArrays: DataReader)
 
 object SymbolAtDepth {
-  def apply(symbol: Symbol, displayDepth: Int, dataTime: Long, dataArrays: HasDataArrays): SymbolAtDepth = {
+  def apply(symbol: Symbol, displayDepth: Int, dataTime: Long, dataArrays: DataReader): SymbolAtDepth = {
     new SymbolAtDepth(symbol, displayDepth, dataTime, dataArrays)
   }
 }
@@ -66,7 +66,7 @@ class ExpressionViewRenderer(
       }
     }
 
-    def renderView(view: ExpressionView, displayDepth: Int, dataTime: Long, dataArrays: HasDataArrays): String = {
+    def renderView(view: ExpressionView, displayDepth: Int, dataTime: Long, dataArrays: DataReader): String = {
       val builder = new StringBuilder()
 
       val sc = view.sc

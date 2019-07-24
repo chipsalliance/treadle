@@ -605,7 +605,12 @@ object DataStore {
   }
 }
 
-trait HasDataArrays {
+trait DataReader {
+  def apply(symbol: Symbol): Big
+  def apply(symbol: Symbol, offset: Int): Big
+}
+
+trait HasDataArrays extends DataReader {
   def intData  : Array[Int]
   def longData : Array[Long]
   def bigData  : Array[Big]
