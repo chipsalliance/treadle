@@ -1,6 +1,6 @@
 ;buildInfoPackage: chisel3, version: 3.0-SNAPSHOT, scalaVersion: 2.11.11, sbtVersion: 0.13.15, builtAtString: 2017-08-25 22:51:12.887, builtAtMillis: 1503701472887
-circuit SqDist : 
-  module SqDist : 
+circuit SqDist :
+  module SqDist :
     input clock : Clock
     input reset : UInt<1>
     output io : {flip in1 : Fixed<32><<16>>[10], flip in2 : Fixed<32><<16>>[10], out : Fixed<32><<16>>}
