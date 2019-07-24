@@ -20,7 +20,7 @@ import scala.collection.mutable
   */
 //scalastyle:off number.of.methods
 class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator)
-extends HasDataArrays {
+extends HasDataArrays with AbstractDataStore {
   assert(numberOfBuffers >= 0, s"DataStore: numberOfBuffers $numberOfBuffers must be >= 0")
 
   var leanMode      : Boolean = true
@@ -112,6 +112,9 @@ extends HasDataArrays {
 
   val rollBackBufferManager = new RollBackBufferManager(this)
 
+  def findBufferBeforeClockTransition(time: Long, clockIndex: Int, prevClockIndex: Int): Option[RollBackBuffer] =
+    rollBackBufferManager.findBufferBeforeClockTransition(time, clockIndex, prevClockIndex)
+
   def saveData(time: Long): Unit = {
     if(numberOfBuffers > 0) {
       rollBackBufferManager.saveData(time)
@@ -127,6 +130,14 @@ extends HasDataArrays {
 
   def runPlugins(symbol: Symbol, offset: Int = -1): Unit = {
     activePlugins.foreach { _.run(symbol, offset) }
+  }
+
+def makeConstantAssigner(symbol: Symbol, value: Big, info: Info) : Assigner = {
+    symbol.dataSize match {
+      case IntSize  => AssignInt(symbol,  GetIntConstant(value.toInt).apply _, info)
+      case LongSize => AssignLong(symbol, GetLongConstant(value.toLong).apply _, info)
+      case BigSize  => AssignBig(symbol,  GetBigConstant(value).apply _, info)
+    }
   }
 
   def showAssignment(symbol: Symbol): Unit = {
@@ -405,7 +416,7 @@ extends HasDataArrays {
     val symbolValues = Array.ofDim[BigInt](symbols.length, n)
 
     buffers.zipWithIndex.foreach { case (buffer, i) =>
-      clockValues(i) = buffer.time
+      clockValues(i) = buffer.getTime
       symbols.zipWithIndex.foreach { case (symbol, j) =>
         symbol.dataSize match {
           case IntSize => symbolValues(j)(i) = buffer.intData(symbol.index)
@@ -608,6 +619,39 @@ object DataStore {
 trait DataReader {
   def apply(symbol: Symbol): Big
   def apply(symbol: Symbol, offset: Int): Big
+}
+
+trait DataWriter {
+  def update(symbol: Symbol, value: Big): Unit
+  def update(symbol: Symbol, offset: Int, value: Big): Unit
+}
+
+trait DataSerializer {
+  def serialize: String
+  def deserialize(jsonString: String): Unit
+}
+
+trait DataPluginHost {
+  def addPlugin(name: String, plugin: DataStorePlugin, enable: Boolean): Unit
+  def removePlugin(name: String): Unit
+  def hasEnabledPlugins: Boolean
+  val plugins : mutable.HashMap[String, DataStorePlugin]   // TODO: change to getter
+  val activePlugins : mutable.ArrayBuffer[DataStorePlugin] // TODO: change to getter
+
+}
+
+trait DataBuffer extends DataReader {
+  def getTime: Long
+}
+
+trait AbstractDataStore extends DataReader with DataWriter with DataSerializer with DataPluginHost {
+  var leanMode : Boolean
+  val numberOfBuffers: Int
+  def setExecutionEngine(executionEngine: ExecutionEngine): Unit
+  def saveData(time: Long): Unit
+  def findBufferBeforeClockTransition(time: Long, clockIndex: Int, prevClockIndex: Int): Option[DataBuffer]
+  def makeConstantAssigner(symbol: Symbol, value: Big, info: Info) : Assigner
+  def getWaveformValues(symbols: Array[Symbol], startCycle: Int = 0, endCycle: Int = -1): WaveformValues
 }
 
 trait HasDataArrays extends DataReader {

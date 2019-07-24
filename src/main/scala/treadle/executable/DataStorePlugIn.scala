@@ -6,7 +6,7 @@ import treadle.vcd.VCD
 
 abstract class DataStorePlugin {
   def executionEngine: ExecutionEngine
-  def dataStore: DataStore
+  def dataStore: AbstractDataStore
   var isEnabled: Boolean = false
 
   def setEnabled(enabled: Boolean): Unit = {
@@ -33,7 +33,7 @@ abstract class DataStorePlugin {
 }
 
 class ReportAssignments(val executionEngine: ExecutionEngine) extends DataStorePlugin {
-  val dataStore: DataStore = executionEngine.dataStore
+  val dataStore: AbstractDataStore = executionEngine.dataStore
 
   def run(symbol: Symbol, offset: Int = -1): Unit = {
     if(offset == -1) {
@@ -64,7 +64,7 @@ class RenderComputations(
   symbolNamesToWatch: Seq[String]
 ) extends DataStorePlugin {
 
-  val dataStore: DataStore = executionEngine.dataStore
+  val dataStore: AbstractDataStore = executionEngine.dataStore
   val symbolsToWatch: Set[Symbol] = symbolNamesToWatch.flatMap { name =>
     executionEngine.symbolTable.get(name)
   }.toSet
@@ -80,7 +80,7 @@ class RenderComputations(
 }
 
 class VcdHook(val executionEngine: ExecutionEngine, val vcd: VCD) extends DataStorePlugin {
-  val dataStore: DataStore = executionEngine.dataStore
+  val dataStore: AbstractDataStore = executionEngine.dataStore
 
   override def run(symbol: Symbol, offset: Int = -1): Unit = {
     if(offset == -1) {

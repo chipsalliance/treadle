@@ -10,7 +10,7 @@ case class StopOp(
   returnValue        : Int,
   condition          : IntExpressionResult,
   hasStopped         : Symbol,
-  dataStore          : DataStore,
+  dataStore          : DataWriter,
   clockTransition    : ClockTransitionGetter
 ) extends Assigner {
 
@@ -20,7 +20,7 @@ case class StopOp(
       if (isVerbose) {
         println(s"clock ${symbol.name} has fired")
       }
-      dataStore(hasStopped) = returnValue + 1
+      dataStore.update(hasStopped, returnValue + 1)
     }
 
     () => Unit

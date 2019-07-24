@@ -38,7 +38,7 @@ object SymbolAtDepth {
   * @param expressionViews  expression information
   */
 class ExpressionViewRenderer(
-  dataStore:          DataStore,
+  dataStore:          AbstractDataStore,
   symbolTable:        SymbolTable,
   expressionViews:    Map[Symbol, ExpressionView],
   maxDependencyDepth: Int = 8
@@ -198,12 +198,10 @@ class ExpressionViewRenderer(
             val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
             val prevClockIndex = prevClockSymbol.index
 
-            dataStore
-                    .rollBackBufferManager
-                    .findBufferBeforeClockTransition(dataTime, clockIndex, prevClockIndex) match {
+            dataStore.findBufferBeforeClockTransition(dataTime, clockIndex, prevClockIndex) match {
 
               case Some(buffer) =>
-                builder ++= renderView(view, symbolAtDepth.displayDepth, buffer.time, buffer)
+                builder ++= renderView(view, symbolAtDepth.displayDepth, buffer.getTime, buffer)
 
               case _ =>
             }

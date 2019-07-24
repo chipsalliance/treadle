@@ -16,7 +16,7 @@ class ExecutionEngine(
     val ast             : Circuit,
     val annotationSeq   : AnnotationSeq,
     val symbolTable     : SymbolTable,
-    val dataStore       : DataStore,
+    val dataStore       : AbstractDataStore,
     val scheduler       : Scheduler,
     val expressionViews : Map[Symbol, ExpressionView],
     val wallTime        : UTC
@@ -295,7 +295,7 @@ class ExecutionEngine(
       }
       println(s"${symbol.name} <= $value")
     }
-    dataStore.intData(symbol.index) = value
+    dataStore.update(symbol, value)
     vcdOption.foreach { vcd =>
       vcd.wireChanged(symbol.name, adjustedValue, symbol.bitWidth)
     }
@@ -424,7 +424,7 @@ class ExecutionEngine(
   class NullToggler extends ClockToggle
 
   def makeUpToggler(symbol: Symbol): Assigner = {
-    val assigner = dataStore.AssignInt(symbol, GetIntConstant(1).apply _, NoInfo)
+    val assigner = dataStore.makeConstantAssigner(symbol, 1, NoInfo)
 
     if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
@@ -432,7 +432,7 @@ class ExecutionEngine(
   }
 
   def makeDownToggler(symbol: Symbol): Assigner = {
-    val assigner = dataStore.AssignInt(symbol, GetIntConstant(0).apply _, NoInfo)
+    val assigner = dataStore.makeConstantAssigner(symbol, 0, NoInfo)
 
     if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)

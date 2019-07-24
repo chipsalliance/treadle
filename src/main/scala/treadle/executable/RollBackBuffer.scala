@@ -8,8 +8,9 @@ import scala.collection.mutable
   * A RollBackBuffer is the an image of [[DataStore]] at a particular time.
   * @param dataStore the dataStore to be backed up.
   */
-class RollBackBuffer(dataStore: DataStore) extends HasDataArrays {
-  var time: Long = 0L
+class RollBackBuffer(dataStore: DataStore) extends HasDataArrays with DataBuffer {
+  private var time: Long = 0L
+  override def getTime: Long = time
 
   val intData    : Array[Int]  = Array.fill(dataStore.numberOfInts)(0)
   val longData   : Array[Long] = Array.fill(dataStore.numberOfLongs)(0)
@@ -72,11 +73,11 @@ class RollBackBufferRing(dataStore: DataStore) {
     * @return
     */
   def advanceAndGetNextBuffer(time: Long): RollBackBuffer = {
-    if(currentNumberOfBuffers > 0 && time < ringBuffer(latestBufferIndex).time) {
+    if(currentNumberOfBuffers > 0 && time < ringBuffer(latestBufferIndex).getTime) {
       // It's an error to record something earlier in time
       throw TreadleException(s"rollback buffer requested has earlier time that last used buffer")
     }
-    else if(currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time)) {
+    else if(currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).getTime)) {
       // time has advanced so get a new buffer or re-use the oldest one
       // if time did not advance just fall through and newest buffer to be used again
       latestBufferIndex += 1
@@ -117,7 +118,7 @@ class RollBackBufferManager(dataStore: DataStore) {
     */
   def findEarlierBuffer(time: Long): Option[RollBackBuffer] = {
     rollBackBufferRing.newestToOldestBuffers.find { buffer =>
-      buffer.time < time
+      buffer.getTime < time
     }
   }
 
@@ -133,7 +134,7 @@ class RollBackBufferManager(dataStore: DataStore) {
     var foundHighClock = false
 
     rollBackBufferRing.newestToOldestBuffers.find { buffer =>
-      if(buffer.time >= time) {
+      if(buffer.getTime >= time) {
         false
       }
       else if(foundHighClock && buffer.intData(prevClockIndex) == 0) {
