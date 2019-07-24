@@ -187,7 +187,7 @@ class ExecutionEngine(
       if(offset - 1 > symbol.slots) {
         throw TreadleException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
       }
-      symbol.normalize(dataStore.getValueAtIndex(symbol.dataSize, index = symbol.index + offset))
+      symbol.normalize(dataStore(symbol, offset))
     }
   }
 
@@ -257,7 +257,7 @@ class ExecutionEngine(
 
         println(s"${symbol.name}($offset) <= $value from tester")
       }
-      dataStore.setValueAtIndex(symbol.dataSize, symbol.index + offset, value)
+      dataStore.update(symbol, offset, value)
     }
 
     value

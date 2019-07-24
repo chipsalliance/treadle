@@ -139,7 +139,7 @@ class ExpressionViewRenderer(
             }
           }
 
-          val value = symbol.normalize(dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))
+          val value = symbol.normalize(dataArrays(symbol))
 
           val string = s"${symbol.name}" + (if(showValues) {
              " <= " +
@@ -181,7 +181,7 @@ class ExpressionViewRenderer(
             if (dataTime < startTime) {
               builder ++= Console.RED
             }
-            val currentValue = symbol.normalize(symbolAtDepth.dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))
+            val currentValue = symbol.normalize(symbolAtDepth.dataArrays(symbol))
             builder ++= s"${formatOutput(currentValue)} : "
             if (dataTime < startTime) {
               builder ++= Console.RESET

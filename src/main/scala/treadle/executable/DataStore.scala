@@ -392,22 +392,6 @@ extends HasDataArrays {
     }
   }
 
-  def apply(symbol: Symbol): Big = {
-    symbol.dataSize match {
-      case IntSize  => intData(symbol.index)
-      case LongSize => longData(symbol.index)
-      case BigSize  => bigData(symbol.index)
-    }
-  }
-
-  def apply(symbol: Symbol, offset: Int): Big = {
-    symbol.dataSize match {
-      case IntSize  => intData(symbol.index + offset)
-      case LongSize => longData(symbol.index + offset)
-      case BigSize  => bigData(symbol.index + offset)
-    }
-  }
-
   def getWaveformValues(symbols: Array[Symbol], startCycle: Int = 0, endCycle: Int = -1): WaveformValues = {
     var buffers: Seq[RollBackBuffer] = rollBackBufferManager.newestToOldestBuffers.reverse
 
@@ -625,20 +609,20 @@ trait HasDataArrays {
   def intData  : Array[Int]
   def longData : Array[Long]
   def bigData  : Array[Big]
-
-  def setValueAtIndex(dataSize: DataSize, index: Int, value: Big): Unit = {
-    dataSize match {
-      case IntSize  => intData(index)  = value.toInt
-      case LongSize => longData(index) = value.toLong
-      case BigSize  => bigData(index)  = value
+  
+  def apply(symbol: Symbol): Big = {
+    symbol.dataSize match {
+      case IntSize  => intData(symbol.index)
+      case LongSize => longData(symbol.index)
+      case BigSize  => bigData(symbol.index)
     }
   }
 
-  def getValueAtIndex(dataSize: DataSize, index: Int): BigInt = {
-    dataSize match {
-      case IntSize  => intData(index)
-      case LongSize => longData(index)
-      case BigSize  => bigData(index)
+  def apply(symbol: Symbol, offset: Int): Big = {
+    symbol.dataSize match {
+      case IntSize  => intData(symbol.index + offset)
+      case LongSize => longData(symbol.index + offset)
+      case BigSize  => bigData(symbol.index + offset)
     }
   }
 }
