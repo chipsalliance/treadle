@@ -390,7 +390,6 @@ object Memory {
   ): Unit = {
     val symbolTable  = scheduler.symbolTable
     val memorySymbol = symbolTable(expandedName)
-    val dataStore    = compiler.dataStore
 
     /*
       * construct a pipeline of registers based on the latency
@@ -527,8 +526,8 @@ object Memory {
       val valid  = symbolTable(s"$writerName.valid")
 
       // compute a valid so we only have to carry a single boolean up the write queue
-      compiler.makeAssigner(
-        valid, AndInts(dataStore.GetInt(enable.index).apply _, dataStore.GetInt(mask.index).apply _, 1), info = memory.info)
+      compiler.makeAssigner(valid, compiler.makeAnd(compiler.makeGet(enable), compiler.makeGet(mask), 1),
+        info = memory.info)
 
       val endOfValidPipeline = buildWritePipelineAssigners(clock, valid, writerName, "valid")
       val endOfAddrPipeline  = buildWritePipelineAssigners(clock, addr, writerName, "addr")
@@ -570,11 +569,8 @@ object Memory {
       // compute a valid so we only have to carry a single boolean up the write queue
       compiler.makeAssigner(
         valid,
-        AndInts(
-          AndInts(dataStore.GetInt(enable.index).apply _, dataStore.GetInt(mask.index).apply _, 1).apply _,
-          dataStore.GetInt(mode.index).apply _,
-          1
-        ),
+        compiler.makeAnd(compiler.makeAnd(compiler.makeGet(enable), compiler.makeGet(mask), 1),
+          compiler.makeGet(mode), 1),
         info = memory.info
       )
 

@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 class ExpressionCompiler(
     val symbolTable  : SymbolTable,
-    val dataStore    : DataStore,
+    private val dataStore : DataStore,
     scheduler        : Scheduler,
     validIfIsRandom  : Boolean,
     blackBoxFactories: Seq[ScalaBlackBoxFactory]
@@ -176,6 +176,14 @@ class ExpressionCompiler(
           s"Error:assignment size mismatch ($size)${memorySymbol.name} <= ($expressionSize)$expressionResult")
     }
     addAssigner(assigner)
+  }
+
+  // this function is used by the memory compiler to combine some boolean signals
+  def makeAnd(e1: ExpressionResult, e2: ExpressionResult, resultWidth: Int): ExpressionResult = (e1, e2) match {
+    case (a: IntExpressionResult, b: IntExpressionResult) => {
+      AndInts(a.apply _, b.apply _, resultWidth)
+    }
+    case _=> throw new RuntimeException("makeAnd only implemented for Int & Int!")
   }
 
   //scalastyle:off method.length
