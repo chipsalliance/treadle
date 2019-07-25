@@ -18,7 +18,7 @@ case class BlackBoxCycler(
   symbol:                Symbol,
   blackBox:              ScalaBlackBox,
   clockSymbol:           Symbol,
-  clockTransitionGetter: ClockTransitionGetter,
+  clockTransitionGetter: AbstractClockTransitionGetter,
   info:                  Info
 )
 extends Assigner {

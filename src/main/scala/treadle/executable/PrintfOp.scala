@@ -10,7 +10,7 @@ case class PrintfOp(
   info            : Info,
   string          : StringLit,
   args            : Seq[ExpressionResult],
-  clockTransition : ClockTransitionGetter,
+  clockTransition : AbstractClockTransitionGetter,
   condition       : IntExpressionResult
 ) extends Assigner {
 

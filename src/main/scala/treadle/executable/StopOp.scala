@@ -11,7 +11,7 @@ case class StopOp(
   condition          : IntExpressionResult,
   hasStopped         : Symbol,
   dataStore          : DataWriter,
-  clockTransition    : ClockTransitionGetter
+  clockTransition    : AbstractClockTransitionGetter
 ) extends Assigner {
 
   def run: FuncUnit = {

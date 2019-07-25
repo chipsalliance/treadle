@@ -82,6 +82,16 @@ class ExpressionCompiler(
     }
   }
 
+  case class ClockTransitionGetter(clockSymbol: Symbol, prevClockSymbol: Symbol) extends AbstractClockTransitionGetter {
+    private val clockIndex = clockSymbol.index
+    private val prevClockIndex = prevClockSymbol.index
+    private val intData = dataStore.intData
+
+    def getClockSymbol: Symbol = clockSymbol
+    def isPosEdge: Boolean = intData(clockIndex) > 0 && intData(prevClockIndex) == 0
+    def isNegEdge: Boolean = intData(clockIndex) == 0 && intData(prevClockIndex) > 0
+  }
+
   //scalastyle:off cyclomatic.complexity method.length
   def makeAssigner(
     symbol                : Symbol,
@@ -119,7 +129,8 @@ class ExpressionCompiler(
     conditionalClockSymbol match {
       case Some(clockSymbol) =>
         val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
-        addAssigner(ClockBasedAssigner(assigner, clockSymbol, prevClockSymbol, dataStore, PositiveEdge))
+        val getter = ClockTransitionGetter(clockSymbol, prevClockSymbol)
+        addAssigner(ClockBasedAssigner(assigner, getter, PositiveEdge))
       case _ =>
         addAssigner(assigner)
     }
@@ -732,7 +743,7 @@ class ExpressionCompiler(
                     val clockSymbol = symbolTable(expand(instanceName + "." + port.name))
                     val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
 
-                    val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
+                    val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol)
 
                     val blackBoxCycler = BlackBoxCycler(
                       instanceSymbol, implementation, clockSymbol, clockTransitionGetter, info)
@@ -839,7 +850,7 @@ class ExpressionCompiler(
               case Some(clockSymbol) =>
                 val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
 
-                val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
+                val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol)
                 val stopOp = StopOp(
                   symbol = stopInfo.stopSymbol,
                   info = info,
@@ -874,7 +885,7 @@ class ExpressionCompiler(
               case Some(clockSymbol) =>
                 val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
 
-                val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
+                val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol)
                 val printOp = PrintfOp(
                   printInfo.printSymbol,
                   info, stringLiteral,
