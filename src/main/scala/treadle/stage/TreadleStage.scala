@@ -29,7 +29,7 @@ object TreadleCompatibilityPhase extends Phase {
   def checkFormTransform(circuitForm: CircuitForm, annotations: AnnotationSeq): AnnotationSeq = {
     val phases = circuitForm match {
       case ChirrtlForm => chirrtlPhases
-      case LowForm => lowFIRRTLPhases
+      case _ => lowFIRRTLPhases
     }
     phases.foldLeft(annotations)( (a, f) => f.transform(a) )
   }

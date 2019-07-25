@@ -448,7 +448,7 @@ object TreadleTester {
     * @param optionsManager  options manager
     * @return
     */
-  @deprecated("Use TreadleTester(annotationSeq) instead")
+  @deprecated("Use TreadleTester(annotationSeq) instead", "since ")
   def apply(input : String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
     val sourceAnnotation = FirrtlSourceAnnotation(input)
     TreadleTester(sourceAnnotation +: optionsManager.toAnnotationSeq)
