@@ -2,10 +2,10 @@
 
 package treadle.executable
 
-import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /**
-  * A RollBackBuffer is the an image of [[DataStore]] at a particular time.
+  * [[DataBuffer]] implementation for the default [[DataStore]].
   * @param dataStore the dataStore to be backed up.
   */
 class RollBackBuffer(dataStore: DataStore) extends HasDataArrays with DataBuffer {
@@ -27,11 +27,11 @@ class RollBackBuffer(dataStore: DataStore) extends HasDataArrays with DataBuffer
 /**
   * Maintains a ring buffer of dataStore images
   * The only real complexity here is that the number of populated buffers is zero.
-  * @param dataStore dataStore of project, used to determine size of ring
+  * @param numberOfBuffers      size of ring
+  * @param uninitializedBuffer  prototype for all uninitialized buffers in the ring
   */
-class RollBackBufferRing(dataStore: DataStore) {
-  val numberOfBuffers: Int = dataStore.numberOfBuffers
-  val ringBuffer: Array[RollBackBuffer] = Array.fill(numberOfBuffers)(new RollBackBuffer(dataStore))
+class RollBackBufferRing[B <: DataBuffer](numberOfBuffers: Int, uninitializedBuffer: B)(implicit m: ClassTag[B]) {
+  val ringBuffer: Array[B] = Array.fill[B](numberOfBuffers)(uninitializedBuffer)
 
   var oldestBufferIndex: Int = 0
   var latestBufferIndex: Int = 0
@@ -49,8 +49,8 @@ class RollBackBufferRing(dataStore: DataStore) {
     * Return the buffers as a list in reverse time order.
     * @return
     */
-  def newestToOldestBuffers: Seq[RollBackBuffer] = {
-    var list = List.empty[RollBackBuffer]
+  def newestToOldestBuffers: Seq[B] = {
+    var list = List.empty[B]
     if(currentNumberOfBuffers > 0) {
       var index = latestBufferIndex
       while (index != oldestBufferIndex) {
@@ -72,7 +72,7 @@ class RollBackBufferRing(dataStore: DataStore) {
     * @param time the time that the returned buffer will be used to store d
     * @return
     */
-  def advanceAndGetNextBuffer(time: Long): RollBackBuffer = {
+  def advanceAndGetNextBuffer(time: Long): B = {
     if(currentNumberOfBuffers > 0 && time < ringBuffer(latestBufferIndex).getTime) {
       // It's an error to record something earlier in time
       throw TreadleException(s"rollback buffer requested has earlier time that last used buffer")
@@ -97,10 +97,12 @@ class RollBackBufferRing(dataStore: DataStore) {
 
 /**
   * Manage the allocation of the rollback buffers
+  * @param numberOfBuffers size of ring
+  * @param uninitializedBuffer  prototype for all uninitialized buffers in the ring
   */
-class RollBackBufferManager(dataStore: DataStore) {
+class RollBackBufferManager[B <: DataBuffer](numberOfBuffers: Int, uninitializedBuffer: B)(implicit m: ClassTag[B]) {
 
-  val rollBackBufferRing = new RollBackBufferRing(dataStore)
+  val rollBackBufferRing = new RollBackBufferRing(numberOfBuffers, uninitializedBuffer)
 
   /**
     * save current system state for a specific clock.
@@ -116,7 +118,7 @@ class RollBackBufferManager(dataStore: DataStore) {
     * @param time      a time that the buffer must be older than
     * @return
     */
-  def findEarlierBuffer(time: Long): Option[RollBackBuffer] = {
+  def findEarlierBuffer(time: Long): Option[B] = {
     rollBackBufferRing.newestToOldestBuffers.find { buffer =>
       buffer.getTime < time
     }
@@ -125,22 +127,22 @@ class RollBackBufferManager(dataStore: DataStore) {
   /**
     * Finds a buffer where a previous buffer has a high clock and this one has a low clock,then return this.
     *
-    * @param time             buffer time must be earlier (<) than time
-    * @param clockIndex       where to find value of clock at time rollback buffer's time
-    * @param prevClockIndex   same as above but index is prevClock value
+    * @param time        buffer time must be earlier (<) than time
+    * @param clock       the value of the clock at time rollback buffer's time
+    * @param prevClock   the previous value of the clock
     * @return
     */
-  def findBufferBeforeClockTransition(time: Long, clockIndex: Int, prevClockIndex: Int): Option[RollBackBuffer] = {
+  def findBufferBeforeClockTransition(time: Long, clock: Symbol, prevClock: Symbol): Option[B] = {
     var foundHighClock = false
 
     rollBackBufferRing.newestToOldestBuffers.find { buffer =>
       if(buffer.getTime >= time) {
         false
       }
-      else if(foundHighClock && buffer.intData(prevClockIndex) == 0) {
+      else if(foundHighClock && buffer(prevClock) == 0) {
         true
       }
-      else if(buffer.intData(clockIndex) > 0) {
+      else if(buffer(clock) > 0) {
         foundHighClock = true
         false
       }
@@ -155,5 +157,5 @@ class RollBackBufferManager(dataStore: DataStore) {
     * returns a Seq of rollback buffers
     * @return
     */
-  def newestToOldestBuffers: Seq[RollBackBuffer] = rollBackBufferRing.newestToOldestBuffers
+  def newestToOldestBuffers: Seq[B] = rollBackBufferRing.newestToOldestBuffers
 }

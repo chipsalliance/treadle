@@ -110,10 +110,10 @@ extends HasDataArrays with AbstractDataStore {
   val longData:  Array[Long] = Array.fill(numberOfLongs)(0L)
   val bigData:   Array[Big]  = Array.fill(numberOfBigs)(Big(0))
 
-  val rollBackBufferManager = new RollBackBufferManager(this)
+  val rollBackBufferManager = new RollBackBufferManager(numberOfBuffers, new RollBackBuffer(this))
 
-  def findBufferBeforeClockTransition(time: Long, clockIndex: Int, prevClockIndex: Int): Option[RollBackBuffer] =
-    rollBackBufferManager.findBufferBeforeClockTransition(time, clockIndex, prevClockIndex)
+  def findBufferBeforeClockTransition(time: Long, clock: Symbol, prevClock: Symbol): Option[DataBuffer] =
+    rollBackBufferManager.findBufferBeforeClockTransition(time, clock, prevClock)
 
   def saveData(time: Long): Unit = {
     if(numberOfBuffers > 0) {
@@ -640,8 +640,10 @@ trait DataPluginHost {
 
 }
 
+/** A DataBuffer is the a snapshot of a [[AbstractDataStore]] at a particular time. */
 trait DataBuffer extends DataReader {
   def getTime: Long
+  def dump(dumpTime: Long): Unit
 }
 
 trait AbstractDataStore extends DataReader with DataWriter with DataSerializer with DataPluginHost {
@@ -649,7 +651,7 @@ trait AbstractDataStore extends DataReader with DataWriter with DataSerializer w
   val numberOfBuffers: Int
   def setExecutionEngine(executionEngine: ExecutionEngine): Unit
   def saveData(time: Long): Unit
-  def findBufferBeforeClockTransition(time: Long, clockIndex: Int, prevClockIndex: Int): Option[DataBuffer]
+  def findBufferBeforeClockTransition(time: Long, clock: Symbol, prevClock: Symbol): Option[DataBuffer]
   def makeConstantAssigner(symbol: Symbol, value: Big, info: Info) : Assigner
   def getWaveformValues(symbols: Array[Symbol], startCycle: Int = 0, endCycle: Int = -1): WaveformValues
 }
