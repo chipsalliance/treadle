@@ -386,7 +386,7 @@ object Memory {
     * @param compiler     needed for assigner generation
     */
   def buildMemoryInternals(
-    memory: DefMemory, expandedName: String, scheduler: Scheduler, compiler: ExpressionCompiler
+    memory: DefMemory, expandedName: String, scheduler: Scheduler, compiler: AbstractExpressionCompiler
   ): Unit = {
     val symbolTable  = scheduler.symbolTable
     val memorySymbol = symbolTable(expandedName)
@@ -536,8 +536,8 @@ object Memory {
       compiler.makeIndirectAssigner(
         portSymbol,
         memorySymbol,
-        memoryIndex      = endOfAddrPipeline.index,
-        enableIndex      = endOfValidPipeline.index,
+        addr             = endOfAddrPipeline,
+        enable           = endOfValidPipeline,
         expressionResult = compiler.makeGet(endOfDataPipeline),
         clock,
         memory.info
@@ -581,8 +581,8 @@ object Memory {
       compiler.makeIndirectAssigner(
         portSymbol,
         memorySymbol,
-        endOfAddrPipeline.index,
-        endOfValidPipeline.index,
+        endOfAddrPipeline,
+        endOfValidPipeline,
         compiler.makeGet(endOfDataPipeline),
         clock,
         info = memory.info
