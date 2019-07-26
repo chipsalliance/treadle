@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 // scalastyle:off magic.number
@@ -31,18 +32,7 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
         |    out <= node0
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
-
-    val t = TreadleTester(input, optionsManager)
+    val t = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     t.poke("in0", 10)
     t.poke("in1", 11)
     t.poke("in2", 12)
@@ -82,18 +72,7 @@ class ExpressionRenderSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 10,
-        symbolsToWatch = Seq()
-      )
-    }
-
-    val t = TreadleTester(input, optionsManager)
+    val t = TreadleTester(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(10)))
     t.poke("in0", 1)
     t.step()
     t.poke("in0", 2)

@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 package treadle
 
-import firrtl.CommonOptions
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 
 class LifeCellSpec extends FlatSpec with Matchers {
@@ -47,152 +47,146 @@ class LifeCellSpec extends FlatSpec with Matchers {
         |    io.is_alive <= T_36
         |      """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(writeVCD = false)
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
+    tester.step()
+
+    def setAlive(alive: Boolean): Unit = {
+      tester.poke("reset", 1)
+      tester.step()
+      tester.poke("reset", 0)
+      tester.poke("io_running", 0)
+      tester.poke("io_set_alive", if(alive) 1 else 0)
+      tester.poke("io_set_dead",  if(alive) 0 else 1)
+      tester.step()
+      tester.poke("io_running", 1)
+      tester.poke("io_set_alive", 0)
+      tester.poke("io_set_dead",  0)
     }
 
-    val tester = TreadleTester(input, optionsManager)
-      // setVerbose()
-      tester.step()
+    // scalastyle:off parameter.number
+    def setNeighborsIgnoreCenter(
+                       ntl: Int, ntc: Int, ntr: Int,
+                       nml: Int, nmc: Int, nmr: Int,
+                       nbl: Int, nbc: Int, nbr: Int): Unit = {
+      // center "neighbor" is the value of the cell itself
+      //        tester.poke("io_set_alive", nmc)
+      tester.poke("io_top_left", ntl)
+      tester.poke("io_top_center", ntc)
+      tester.poke("io_top_right", ntr)
+      tester.poke("io_mid_left", nml)
 
-      def setAlive(alive: Boolean): Unit = {
-        tester.poke("reset", 1)
-        tester.step()
-        tester.poke("reset", 0)
-        tester.poke("io_running", 0)
-        tester.poke("io_set_alive", if(alive) 1 else 0)
-        tester.poke("io_set_dead",  if(alive) 0 else 1)
-        tester.step()
-        tester.poke("io_running", 1)
-        tester.poke("io_set_alive", 0)
-        tester.poke("io_set_dead",  0)
-      }
+      tester.poke("io_mid_right", nmr)
+      tester.poke("io_bot_left", nbl)
+      tester.poke("io_bot_center", nbc)
+      tester.poke("io_bot_right", nbr)
+    }
+    // scalastyle:on parameter.number
 
-      // scalastyle:off parameter.number
-      def setNeighborsIgnoreCenter(
-                         ntl: Int, ntc: Int, ntr: Int,
-                         nml: Int, nmc: Int, nmr: Int,
-                         nbl: Int, nbc: Int, nbr: Int): Unit = {
-        // center "neighbor" is the value of the cell itself
-        //        tester.poke("io_set_alive", nmc)
-        tester.poke("io_top_left", ntl)
-        tester.poke("io_top_center", ntc)
-        tester.poke("io_top_right", ntr)
-        tester.poke("io_mid_left", nml)
+    setAlive(true)
+    // dead cell with no neighbors stays dead
+    setNeighborsIgnoreCenter(
+      0,0,0,
+      0,0,0,
+      0,0,0
+    )
+    tester.step()
+    tester.expect("io_is_alive", 0)
 
-        tester.poke("io_mid_right", nmr)
-        tester.poke("io_bot_left", nbl)
-        tester.poke("io_bot_center", nbc)
-        tester.poke("io_bot_right", nbr)
-      }
-      // scalastyle:on parameter.number
+    // dead cell with > 3 neighbors stays dead
+    setNeighborsIgnoreCenter(
+      1,1,1,
+      1,0,1,
+      1,1,1
+    )
+    tester.step()
+    tester.expect("io_is_alive", 0)
 
-      setAlive(true)
-      // dead cell with no neighbors stays dead
-      setNeighborsIgnoreCenter(
-        0,0,0,
-        0,0,0,
-        0,0,0
-      )
-      tester.step()
-      tester.expect("io_is_alive", 0)
+    // live cell with > 3 neighbors stays dead
+    setNeighborsIgnoreCenter(
+      1,1,1,
+      1,1,1,
+      1,1,1
+    )
+    tester.step()
+    tester.expect("io_is_alive", 0)
 
-      // dead cell with > 3 neighbors stays dead
-      setNeighborsIgnoreCenter(
-        1,1,1,
-        1,0,1,
-        1,1,1
-      )
-      tester.step()
-      tester.expect("io_is_alive", 0)
+    // dead cell with exactly three neighbors becomes alive
+    setAlive(false)
+    setNeighborsIgnoreCenter(
+      1,0,0,
+      1,0,0,
+      1,0,0
+    )
+    tester.step()
+    tester.expect("io_is_alive", 1)
+    setNeighborsIgnoreCenter(
+      1,0,0,
+      0,0,1,
+      0,1,0
+    )
+    tester.step()
+    tester.expect("io_is_alive", 1)
 
-      // live cell with > 3 neighbors stays dead
-      setNeighborsIgnoreCenter(
-        1,1,1,
-        1,1,1,
-        1,1,1
-      )
-      tester.step()
-      tester.expect("io_is_alive", 0)
+    // live cell with one neighbor dies
+    setNeighborsIgnoreCenter(
+      0,0,0,
+      0,1,1,
+      0,0,0
+    )
+    tester.step()
+    tester.expect("io_is_alive", 0)
 
-      // dead cell with exactly three neighbors becomes alive
-      setAlive(false)
-      setNeighborsIgnoreCenter(
-        1,0,0,
-        1,0,0,
-        1,0,0
-      )
-      tester.step()
-      tester.expect("io_is_alive", 1)
-      setNeighborsIgnoreCenter(
-        1,0,0,
-        0,0,1,
-        0,1,0
-      )
-      tester.step()
-      tester.expect("io_is_alive", 1)
+    // live cell with exactly three neighbors stays alive
+    setNeighborsIgnoreCenter(
+      1,0,0,
+      1,1,0,
+      1,0,0
+    )
+    tester.step()
+    tester.expect("io_is_alive", 1)
 
-      // live cell with one neighbor dies
-      setNeighborsIgnoreCenter(
-        0,0,0,
-        0,1,1,
-        0,0,0
-      )
-      tester.step()
-      tester.expect("io_is_alive", 0)
+    // live cell with exactly four neighbors dies
+    setNeighborsIgnoreCenter(
+      1,0,0,
+      1,1,1,
+      1,0,0
+    )
+    tester.step()
+    tester.expect("io_is_alive", 0)
 
-      // live cell with exactly three neighbors stays alive
-      setNeighborsIgnoreCenter(
-        1,0,0,
-        1,1,0,
-        1,0,0
-      )
-      tester.step()
-      tester.expect("io_is_alive", 1)
+    // test set_alive
+    setNeighborsIgnoreCenter(
+      0,0,0,
+      0,0,0,
+      0,0,0
+    )
 
-      // live cell with exactly four neighbors dies
-      setNeighborsIgnoreCenter(
-        1,0,0,
-        1,1,1,
-        1,0,0
-      )
-      tester.step()
-      tester.expect("io_is_alive", 0)
+    tester.step()
+    tester.poke("io_set_alive", 1)
+    tester.poke("io_set_dead", 0)
+    tester.poke("io_running", 1)
+    tester.step()
+    tester.expect("io_is_alive", 1)
 
-      // test set_alive
-      setNeighborsIgnoreCenter(
-        0,0,0,
-        0,0,0,
-        0,0,0
-      )
+    tester.poke("io_set_alive", 1)
+    tester.poke("io_set_dead", 0)
+    tester.poke("io_running", 0)
+    tester.step()
+    tester.expect("io_is_alive", 1)
 
-      tester.step()
-      tester.poke("io_set_alive", 1)
-      tester.poke("io_set_dead", 0)
-      tester.poke("io_running", 1)
-      tester.step()
-      tester.expect("io_is_alive", 1)
+    tester.poke("io_set_dead", 1)
+    tester.poke("io_set_alive", 0)
+    tester.poke("io_running", 1)
+    tester.step()
+    tester.expect("io_is_alive", 0)
 
-      tester.poke("io_set_alive", 1)
-      tester.poke("io_set_dead", 0)
-      tester.poke("io_running", 0)
-      tester.step()
-      tester.expect("io_is_alive", 1)
+    tester.poke("io_set_dead", 1)
+    tester.poke("io_set_alive", 0)
+    tester.poke("io_running", 0)
+    tester.step()
+    tester.expect("io_is_alive", 0)
 
-      tester.poke("io_set_dead", 1)
-      tester.poke("io_set_alive", 0)
-      tester.poke("io_running", 1)
-      tester.step()
-      tester.expect("io_is_alive", 0)
-
-      tester.poke("io_set_dead", 1)
-      tester.poke("io_set_alive", 0)
-      tester.poke("io_running", 0)
-      tester.step()
-      tester.expect("io_is_alive", 0)
-
-//      engine.circuitState.vcdLoggerOption.get.write(optionsManager.targetDirName + "/" + "life.vcd")
-      tester.report()
+    tester.report()
   }
 }

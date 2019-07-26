@@ -4,8 +4,8 @@ package treadle.chronometry
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
-import firrtl.stage.FirrtlSourceAnnotation
-import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
+import firrtl.options.TargetDirAnnotation
+import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.TreadleTester
 
@@ -41,7 +41,8 @@ class PrintfOnDerivedClockSpec extends FreeSpec with Matchers {
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
       val options = Seq(
-        TopNameAnnotation("printf_on_derived_clock")
+        TargetDirAnnotation("test_run_dir/print_on_derived_clock"),
+        OutputFileAnnotation("printf_on_derived_clock")
       )
 
       val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)

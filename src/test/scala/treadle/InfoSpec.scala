@@ -3,6 +3,7 @@ package treadle
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.TreadleException
 
@@ -27,7 +28,7 @@ class InfoSpec extends FreeSpec with Matchers {
     val outputBuffer = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputBuffer)) {
 
-      val tester = TreadleTester(input)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
       tester.poke("in1", 7)
 
       try {

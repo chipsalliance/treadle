@@ -3,6 +3,7 @@ package treadle
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 import treadle.executable.StopException
 
@@ -19,8 +20,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
-
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     for (cycle_number <- 0 to 10) {
       tester.step(2)
       tester.engine.stopped should be (false)
@@ -37,8 +37,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
-
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     intercept[StopException] {
       tester.step(2)
     }
@@ -56,8 +55,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
-
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     intercept[StopException] {
       tester.step(2)
     }
@@ -80,13 +78,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |
       """.stripMargin
 
-      val manager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          showFirrtlAtLoad = false,
-          setVerbose = false
-        )
-      }
-      val tester = TreadleTester(input, manager)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
       tester.step(2)
       tester.finish
@@ -109,8 +101,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |
       """.stripMargin
 
-      val tester = TreadleTester(input)
-
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
       tester.step(2)
     }
 
@@ -133,8 +124,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |
         """.stripMargin
 
-      val tester = TreadleTester(input)
-
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
       tester.step(2)
     }
     output.toString().contains("char M int 7 hex ff SIint -2 111") should be (true)
@@ -163,7 +153,8 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
         """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
     tester.poke("enable", 0)
     tester.poke("in1", 1)
     println("before peek")
@@ -229,16 +220,10 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        showFirrtlAtLoad = false
-      )
-    }
-
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(input, optionsManager)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
       tester.poke("io_in", 479)
       tester.step()
 
@@ -286,16 +271,10 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        showFirrtlAtLoad = false
-      )
-    }
-
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(input, optionsManager)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
       tester.poke("io_in", 479)
       tester.step()
 
@@ -337,16 +316,10 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |    printf(clock, UInt<1>(1), "+++ r0=%d r1=%d\n", r0, r1) @[PrintfWrong.scala 19:11]
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        showFirrtlAtLoad = false
-      )
-    }
-
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(input, optionsManager)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
       tester.poke("reset", 1)
       tester.step()
       tester.poke("reset", 0)

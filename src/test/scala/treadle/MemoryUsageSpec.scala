@@ -5,6 +5,7 @@ import java.io.{File, PrintWriter}
 
 import firrtl.FileUtils
 import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 /**
@@ -70,10 +71,8 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         |    waddr <= bits(GEN_18, 3, 0)
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false, setVerbose = false)
-    }
-    val tester = TreadleTester(chirrtlMemInput, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(chirrtlMemInput)))
+
     tester.poke("reset", 1)
     tester.step()
     tester.poke("reset", 0)
@@ -116,14 +115,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         |    c <= a
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        callResetAtStartUp = true
-      )
-    }
-    val tester: TreadleTester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
     tester.poke("a", 1)
     tester.poke("b", 0)
     tester.poke("select", 0)
@@ -171,23 +163,22 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
-    val tester = TreadleTester(input)
-      // setVerbose(true)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
-      tester.poke("do_write", 1)
-      for(i <- 0 until depth) {
-        tester.poke("index", i)
-        tester.poke("write_data", i + 3)
-        tester.step()
-      }
-      tester.poke("do_write", 0)
-      tester.step(2)
+    tester.poke("do_write", 1)
+    for(i <- 0 until depth) {
+      tester.poke("index", i)
+      tester.poke("write_data", i + 3)
+      tester.step()
+    }
+    tester.poke("do_write", 0)
+    tester.step(2)
 
-      for(i <- 0 until depth) {
-        tester.poke("index", i)
-        tester.step()
-        tester.expect("read_data", i + 3)
-      }
+    for(i <- 0 until depth) {
+      tester.poke("index", i)
+      tester.step()
+      tester.expect("read_data", i + 3)
+    }
 
     tester.report()
   }
@@ -246,11 +237,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(showFirrtlAtLoad = false, setVerbose = false)
-    }
-    val tester = TreadleTester(input, optionsManager)
-      // tester.setVerbose(true)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.poke("outer_write_en", 1)
     for(i <- 0 until 10) {
@@ -300,14 +287,8 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         |    out1 <= m.read.data
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        callResetAtStartUp = true
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
     tester.poke("in1", 11)
     tester.poke("addr", 3)
     tester.poke("write_en", 1)
@@ -364,15 +345,8 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
           |    out1 <= m.read.data
         """.stripMargin
 
-      val optionsManager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          writeVCD = true,
-          setVerbose = false,
-          showFirrtlAtLoad = false,
-          callResetAtStartUp = true
-        )
-      }
-      val tester = TreadleTester(input, optionsManager)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
       tester.poke("in1", 11)
       tester.poke("addr", 3)
       tester.poke("write_en", 1)
@@ -435,17 +409,6 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
         ComponentName("memory", ModuleName("UsesMemLow", CircuitName("UsesMem"))), s"$targetDirName/mem2"
       )
     )
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        callResetAtStartUp = true
-      )
-      firrtlOptions = firrtlOptions.copy(
-        annotations = firrtlOptions.annotations ++ memoryAnnotations
-      )
-      commonOptions = commonOptions.copy(targetDirName = "test_run_dir", topName = "load_mem_test")
-    }
 
     val writer = new PrintWriter(new File(s"$targetDirName/mem1"))
     for(i <- 0 until 8) {
@@ -459,7 +422,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     }
     writer2.close()
 
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)) ++ memoryAnnotations)
 
     for(i <- 0 until 8) {
       tester.expectMemory("memory", i, i)

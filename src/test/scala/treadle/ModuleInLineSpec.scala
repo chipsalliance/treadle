@@ -2,7 +2,8 @@
 
 package treadle
 
-import org.scalatest.{Matchers, FlatSpec}
+import firrtl.stage.FirrtlSourceAnnotation
+import org.scalatest.{FlatSpec, Matchers}
 
 class ModuleInLineSpec extends FlatSpec with Matchers {
   behavior of "multiple modes"
@@ -11,7 +12,7 @@ class ModuleInLineSpec extends FlatSpec with Matchers {
     val stream = getClass.getResourceAsStream("/three_deep.fir")
     val input = io.Source.fromInputStream(stream).mkString
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.engine.symbolTable.outputPortsNames.size should be > 0
   }
@@ -20,13 +21,7 @@ class ModuleInLineSpec extends FlatSpec with Matchers {
     val stream = getClass.getResourceAsStream("/NestedModsWithReg.fir")
     val input = io.Source.fromInputStream(stream).mkString
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = false
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.poke("in1", 3)
     tester.step()

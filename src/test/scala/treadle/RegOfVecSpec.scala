@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -91,15 +92,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false
-      )
-    }
-
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.poke("reset", 1)
     tester.step(3)
@@ -138,17 +131,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |    stop(clock, and(and(and(UInt<1>("h1"), done), _T_18), UInt<1>("h1")), 0) @[Reg.scala 61:9]
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = true,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        callResetAtStartUp = true
-      )
-    }
-
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     def show(): Unit = {
       tester.step()

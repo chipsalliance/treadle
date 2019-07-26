@@ -2,6 +2,7 @@
 
 package treadle.primops
 
+import firrtl.stage.FirrtlSourceAnnotation
 import treadle.executable._
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
@@ -140,14 +141,6 @@ class AndrOrrXorr extends FreeSpec with Matchers {
           |    io_out_xorr <= _T_5 @[XorReducer.scala 15:11]
         """.stripMargin
 
-      val manager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          showFirrtlAtLoad = false,
-          setVerbose = false,
-          rollbackBuffers = 0
-        )
-      }
-
       def scalaXorReduce(x: BigInt, width: Int): Int = {
         if(x.bitCount % 2 == 0) 0 else 1
       }
@@ -160,7 +153,8 @@ class AndrOrrXorr extends FreeSpec with Matchers {
         if((0 until width).exists(i => x.testBit(i))) 1 else 0
       }
 
-      val t = TreadleTester(input, manager)
+      val t = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
       for {
         i0 <- 0 to 1
         i1 <- 0 to 1
