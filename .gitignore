@@ -257,3 +257,8 @@ hs_err_pid*
 /*.firrtl_interpreter.vcd
 
 /lib
+
+# generated when running "sbt test"
+/.treadle_repl_history
+/test_run_dir/
+
