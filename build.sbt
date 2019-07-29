@@ -114,12 +114,25 @@ publishTo := {
   }
 }
 
+//
+// This is for regular compilation
+//
+scalacOptions in Compile ++= Seq(
+  "-deprecation",
+  "-unchecked"
+)
+
+//
+// This is for doc building
+//
 scalacOptions in Compile in doc ++= Seq(
+  "-deprecation",
   "-diagrams",
   "-diagrams-max-classes", "25",
   "-doc-version", version.value,
+  "-doc-source-url", "https://github.com/freechipsproject/chisel-testers/tree/master/€{FILE_PATH}.scala",
   "-sourcepath", baseDirectory.value.getAbsolutePath,
-  "-doc-source-url", "https://github.com/freechipsproject/chisel-testers/tree/master/€{FILE_PATH}.scala"
+  "-unchecked"
 ) ++ scalacOptionsVersion(scalaVersion.value)
 
 javacOptions ++= javacOptionsVersion(scalaVersion.value)
