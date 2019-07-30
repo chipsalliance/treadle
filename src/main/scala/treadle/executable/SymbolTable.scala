@@ -191,6 +191,7 @@ object SymbolTable extends LazyLogging {
     val registerToClock   = new mutable.HashMap[Symbol, Symbol]
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
+    var printfCardinal: Int = 0
 
     val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]] {
       override def default(key: String): mutable.HashSet[Symbol] = {
@@ -382,7 +383,7 @@ object SymbolTable extends LazyLogging {
           moduleMemoryToMemorySymbol(moduleMemory) += memorySymbols.head
 
 
-        case stop @ Stop(info, args, clockExpression, enableExpression)   =>
+        case stop @ Stop(info, _, clockExpression, enableExpression)   =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
               val stopSymbolName = makeStopName()
@@ -412,7 +413,8 @@ object SymbolTable extends LazyLogging {
                 printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(printSymbol)
 
-              printToPrintInfo(print) = PrintInfo(printSymbol)
+              printfCardinal += 1
+              printToPrintInfo(print) = PrintInfo(printSymbol, printfCardinal)
               addDependency(printSymbol, expressionToReferences(clockExpression))
               addDependency(printSymbol, expressionToReferences(enableExpression))
               args.foreach { arg =>
@@ -542,8 +544,10 @@ object SymbolTable extends LazyLogging {
 
     symbolTable.moduleMemoryToMemorySymbol ++= moduleMemoryToMemorySymbol
 
+
     val sorted: Seq[Symbol] = try {
-      symbolTable.childrenOf.linearize
+      val orderedPrintfs = symbolTable.printToPrintInfo.values.toSeq.sorted.map(_.printSymbol)
+      symbolTable.childrenOf.seededLinearize(Some(orderedPrintfs))
     }
     catch {
       case e: firrtl.graph.CyclicException =>
