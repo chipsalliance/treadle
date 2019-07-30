@@ -52,7 +52,7 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
     intercept[StopException] {
       tester.step(8)
     }
-    tester.engine.lastStopResult should be (Some(0))
+    tester.engine.lastStopResult should be (Some(1))
     tester.report()
   }
 }
