@@ -191,6 +191,7 @@ object SymbolTable extends LazyLogging {
     val registerToClock   = new mutable.HashMap[Symbol, Symbol]
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
+    val lastPrintfInMOdule = new mutable.HashMap[Module, Symbol]
 
     val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]] {
       override def default(key: String): mutable.HashSet[Symbol] = {
@@ -382,7 +383,7 @@ object SymbolTable extends LazyLogging {
           moduleMemoryToMemorySymbol(moduleMemory) += memorySymbols.head
 
 
-        case stop @ Stop(info, args, clockExpression, enableExpression)   =>
+        case stop @ Stop(info, _, clockExpression, enableExpression)   =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
               val stopSymbolName = makeStopName()
@@ -418,6 +419,12 @@ object SymbolTable extends LazyLogging {
               args.foreach { arg =>
                 addDependency(printSymbol, expressionToReferences(arg))
               }
+              lastPrintfInMOdule.get(module) match {
+                case Some(lastPrintfSymbol) =>
+                  addDependency(printSymbol, Set(lastPrintfSymbol))
+                case _ =>
+              }
+              lastPrintfInMOdule(module) = printSymbol
 
             case _ =>
               throw TreadleException(s"Can't find clock for $print")

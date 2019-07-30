@@ -3,9 +3,11 @@ package treadle
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 import treadle.executable.StopException
 
+//scalastyle:off magic.number
 class PrintStopSpec extends FlatSpec with Matchers {
   behavior of "stop"
 
@@ -374,5 +376,89 @@ class PrintStopSpec extends FlatSpec with Matchers {
     println(linesCorrect.map(_.toString).mkString("-"))
 
     linesCorrect.forall(b => b) should be (true)
+  }
+
+  it should "have printf's print in order" in {
+    val input =
+      """
+        |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.7
+        |circuit ManyPrintfs :
+        |  module ManyPrintfs :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip in : UInt<10>, out : UInt<10>}
+        |
+        |    io.out <= io.in
+        |    printf(clock, UInt<1>(1), "+++ 0  printf\n") @[ManyPrintf.scala 19:11]
+        |    printf(clock, UInt<1>(1), "+++ 1  printf\n") @[ManyPrintf.scala 19:11]
+        |    printf(clock, UInt<1>(1), "+++ 2  printf\n") @[ManyPrintf.scala 19:11]
+        |    printf(clock, UInt<1>(1), "+++ 3  printf\n") @[ManyPrintf.scala 19:11]
+      """.stripMargin
+
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
+      tester.step(3)
+
+    }
+
+    val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
+
+    for {
+      i <- 0 until 3
+      j <- 0 until 4
+      line = (i * 4) + j
+    } {
+      printfLines(line).contains(s"+++ $j") should be (true)
+    }
+  }
+
+  it should "have printf's print in order taking triggers into account" in {
+    val input =
+      """
+        |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.7
+        |circuit ManyPrintfs :
+        |  module ManyPrintfs :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip in : UInt<10>, out : UInt<10>}
+        |
+        |    node T1 = io.in
+        |    node T2 = eq(T1, UInt<1>(1))
+        |    node T3 = eq(T2, UInt<1>(1))
+        |    node T4 = eq(T3, UInt<1>(1))
+        |
+        |    io.out <= io.in
+        |    printf(clock, T4, "+++ 0  printf\n") @[ManyPrintf.scala 19:11]
+        |    printf(clock, T3, "+++ 1  printf\n") @[ManyPrintf.scala 19:11]
+        |    printf(clock, T2, "+++ 2  printf\n") @[ManyPrintf.scala 19:11]
+        |    printf(clock, T1, "+++ 3  printf\n") @[ManyPrintf.scala 19:11]
+      """.stripMargin
+
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
+      tester.poke("io_in", 1)
+      tester.step()
+      tester.poke("io_in", 0)
+      tester.step()
+      tester.poke("io_in", 1)
+      tester.step()
+      tester.poke("io_in", 1)
+      tester.step()
+    }
+
+    val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
+
+    for {
+      i <- 0 until 2
+      j <- 0 until 4
+      line = (i * 4) + j
+    } {
+      printfLines(line).contains(s"+++ $j") should be (true)
+    }
+
   }
 }
