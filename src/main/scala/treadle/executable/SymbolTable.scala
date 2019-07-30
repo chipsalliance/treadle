@@ -383,7 +383,7 @@ object SymbolTable extends LazyLogging {
           moduleMemoryToMemorySymbol(moduleMemory) += memorySymbols.head
 
 
-        case stop @ Stop(info, _, clockExpression, enableExpression)   =>
+        case stop @ Stop(info, args, clockExpression, enableExpression)   =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
               val stopSymbolName = makeStopName()
