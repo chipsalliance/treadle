@@ -17,10 +17,17 @@ case class StopOp(
   def run: FuncUnit = {
     val conditionValue = condition.apply() > 0
     if (conditionValue && clockTransition.isPosEdge) {
-      if (isVerbose) {
-        println(s"clock ${symbol.name} has fired")
+      if(dataStore(hasStopped) > 0) {
+        if (isVerbose) {
+          println(s"previous stop has fired with result ${dataStore(hasStopped)}")
+        }
       }
-      dataStore(hasStopped) = returnValue + 1
+      else {
+        if (isVerbose) {
+          println(s"stop ${symbol.name} has fired")
+        }
+        dataStore(hasStopped) = returnValue + 1
+      }
     }
 
     () => Unit

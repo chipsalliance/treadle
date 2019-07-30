@@ -190,6 +190,9 @@ object SymbolTable extends LazyLogging {
 
     val registerToClock   = new mutable.HashMap[Symbol, Symbol]
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
+
+    val lastStopStymbol   = new mutable.HashMap[Module, Symbol]
+
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
 
     val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]] {
@@ -392,6 +395,11 @@ object SymbolTable extends LazyLogging {
 
               addDependency(stopSymbol, expressionToReferences(clockExpression))
               addDependency(stopSymbol, expressionToReferences(enableExpression))
+              lastStopStymbol.get(module) match {
+                case Some(lastSymbol) => addDependency(stopSymbol, Set(lastSymbol))
+                case _ =>
+              }
+              lastStopStymbol(module) = stopSymbol
 
               if(! nameToSymbol.contains(StopOp.stopHappenedName)) {
                 addSymbol(

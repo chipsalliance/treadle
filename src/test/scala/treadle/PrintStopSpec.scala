@@ -3,6 +3,7 @@ package treadle
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 import treadle.executable.StopException
 
@@ -64,6 +65,37 @@ class PrintStopSpec extends FlatSpec with Matchers {
     tester.engine.stopped should be (true)
     tester.engine.lastStopResult.get should be (0)
   }
+
+  it should "have stops happen in order they appear in a module" in {
+    val input =
+      """
+        |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.7
+        |circuit ManyPrintfs :
+        |  module ManyPrintfs :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip in : UInt<10>, out : UInt<10>}
+        |
+        |    io.out <= io.in
+        |    stop(clock, UInt<1>(1), 0) @[ManyPrintf.scala 19:11]
+        |    stop(clock, UInt<1>(1), 1) @[ManyPrintf.scala 19:11]
+        |    stop(clock, UInt<1>(1), 2) @[ManyPrintf.scala 19:11]
+        |    stop(clock, UInt<1>(1), 3) @[ManyPrintf.scala 19:11]
+      """.stripMargin
+
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
+      intercept[StopException] {
+        tester.step(2)
+      }
+      tester.engine.stopped should be (true)
+      tester.engine.lastStopResult.get should be (0)
+
+    }
+  }
+
 
   behavior of "Print statement"
 
