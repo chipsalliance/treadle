@@ -2,12 +2,11 @@
 
 package treadle.executable
 
-import firrtl.PortKind
 import firrtl.ir.{Circuit, NoInfo}
-import firrtl.transforms.DontCheckCombLoopsAnnotation
+import firrtl.{AnnotationSeq, PortKind}
 import treadle._
 import treadle.chronometry.{Timer, UTC}
-import treadle.utils.{AugmentPrintf, Render, ToLoFirrtl}
+import treadle.utils.Render
 import treadle.vcd.VCD
 
 import scala.collection.mutable
@@ -15,7 +14,7 @@ import scala.collection.mutable
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
     val ast             : Circuit,
-    val optionsManager  : HasTreadleSuite,
+    val annotationSeq   : AnnotationSeq,
     val symbolTable     : SymbolTable,
     val dataStore       : DataStore,
     val scheduler       : Scheduler,
@@ -33,10 +32,14 @@ class ExecutionEngine(
     expressionViews
   )
 
+  if(annotationSeq.collectFirst { case ShowFirrtlAtLoadAnnotation => ShowFirrtlAtLoadAnnotation }.isDefined) {
+    println(ast.serialize)
+  }
+
   val symbolsPokedSinceEvaluation: mutable.HashSet[Symbol] = new mutable.HashSet
 
   var verbose: Boolean = false
-  setVerbose(optionsManager.treadleOptions.setVerbose)
+  setVerbose(annotationSeq.exists { case VerboseAnnotation => true; case _ => false })
 
   var inputsChanged: Boolean = false
 
@@ -44,13 +47,17 @@ class ExecutionEngine(
 
   dataStore.addPlugin(
     "show-assigns", new ReportAssignments(this),
-    enable = optionsManager.treadleOptions.setVerbose
+    enable = verbose
   )
+
+  val symbolsToWatch: Seq[String] = annotationSeq.collectFirst{ case SymbolsToWatchAnnotation(stw) => stw }.getOrElse {
+    Seq.empty
+  }
 
   dataStore.addPlugin(
     "show-computation",
-    new RenderComputations(this, optionsManager.treadleOptions.symbolsToWatch),
-    enable = optionsManager.treadleOptions.symbolsToWatch.nonEmpty
+    new RenderComputations(this, symbolsToWatch),
+    enable = symbolsToWatch.nonEmpty
   )
 
   def setLeanMode(): Unit = {
@@ -436,55 +443,38 @@ class ExecutionEngine(
 object ExecutionEngine {
 
   val VCDHookName = "log-vcd"
+
   //scalastyle:off method.length
   /**
-    * Construct a Firrtl Execution engine
-    * @param input           a Firrtl text file
-    * @param optionsManager  options that control configuration and behavior
-    * @return                the constructed engine
+    * Factory to create an execution engine
+    * @param annotationSeq  annotations control all
+    * @param wallTime       external synthetic simple time
+    * @return
     */
-  def apply(
-    input          : String,
-    optionsManager : HasTreadleSuite = new TreadleOptionsManager,
-    wallTime       : UTC
-  ): ExecutionEngine = {
-
+  def apply(annotationSeq: AnnotationSeq, wallTime: UTC): ExecutionEngine = {
+    val timer = new Timer
     val t0 = System.nanoTime()
 
-    val treadleOptions: TreadleOptions = optionsManager.treadleOptions
-
-    val ast = firrtl.Parser.parse(input.split("\n").toIterator)
-    val verbose: Boolean = treadleOptions.setVerbose
-    val blackBoxFactories: Seq[ScalaBlackBoxFactory] = treadleOptions.blackBoxFactories
-    val timer = new Timer
-
-    val oldLoweredAst: Circuit = if(treadleOptions.lowCompileAtLoad) {
-      if(treadleOptions.allowCycles) {
-        optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-          annotations = optionsManager.firrtlOptions.annotations :+ DontCheckCombLoopsAnnotation
-        )
-      }
-      ToLoFirrtl.lower(ast, optionsManager)
-    } else {
-      ast
-    }
-
-    val loweredAst: Circuit = AugmentPrintf(oldLoweredAst)
-
-    if(treadleOptions.showFirrtlAtLoad) {
-      println("LoFirrtl" + "=" * 120)
-      println(loweredAst.serialize)
-    }
+    val circuit = annotationSeq.collectFirst{ case TreadleCircuitStateAnnotation(c) => c }.get.circuit
+    val blackBoxFactories = annotationSeq.collectFirst{ case BlackBoxFactoriesAnnotation(bbf) => bbf }.getOrElse(
+      Seq.empty
+    )
+    val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation => true; case _ => false }
+    val rollbackBuffers = annotationSeq.collectFirst{ case RollBackBuffersAnnotation(rbb) => rbb }.getOrElse(
+      TreadleDefaults.RollbackBuffers
+    )
+    val validIfIsRandom  = annotationSeq.exists { case ValidIfIsRandomAnnotation => true; case _ => false }
+    val verbose  = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
 
     val symbolTable: SymbolTable = timer("Build Symbol Table") {
-      SymbolTable(loweredAst, blackBoxFactories, treadleOptions.allowCycles)
+      SymbolTable(circuit, blackBoxFactories, allowCycles)
     }
 
     val dataStoreAllocator = new DataStoreAllocator
 
     symbolTable.allocateData(dataStoreAllocator)
 
-    val dataStore = DataStore(treadleOptions.rollbackBuffers, dataStoreAllocator)
+    val dataStore = DataStore(rollbackBuffers, dataStoreAllocator)
 
     if(verbose) {
       println(s"Symbol table:\n${symbolTable.render}")
@@ -492,21 +482,21 @@ object ExecutionEngine {
 
     val scheduler = new Scheduler(symbolTable)
 
-    val compiler = new ExpressionCompiler(symbolTable, dataStore, scheduler, treadleOptions, blackBoxFactories)
+    val compiler = new ExpressionCompiler(symbolTable, dataStore, scheduler, validIfIsRandom, blackBoxFactories)
 
     timer("Build Compiled Expressions") {
-      compiler.compile(loweredAst, blackBoxFactories)
+      compiler.compile(circuit, blackBoxFactories)
     }
 
     val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(
       symbolTable, dataStore, scheduler,
-      treadleOptions.validIfIsRandom,
-      loweredAst, blackBoxFactories)
+      validIfIsRandom,
+      circuit, blackBoxFactories)
 
     scheduler.organizeAssigners()
 
     val executionEngine =
-      new ExecutionEngine(ast, optionsManager, symbolTable, dataStore, scheduler, expressionViews, wallTime)
+      new ExecutionEngine(circuit, annotationSeq, symbolTable, dataStore, scheduler, expressionViews, wallTime)
 
     executionEngine.dataStore.setExecutionEngine(executionEngine)
 
@@ -521,7 +511,7 @@ object ExecutionEngine {
     val t1 = System.nanoTime()
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
     println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
-      s"${scheduler.combinationalAssigns.size} statements")
+            s"${scheduler.combinationalAssigns.size} statements")
 
     executionEngine.memoryInitializer.initializeMemoriesFromFiles()
 

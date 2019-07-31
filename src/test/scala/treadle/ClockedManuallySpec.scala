@@ -2,6 +2,8 @@
 
 package treadle
 
+import firrtl.options.TargetDirAnnotation
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 
@@ -36,20 +38,13 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
       """.stripMargin
 
   "Circuit can be run, just with poking and time advance" in {
+    val options = Seq(
+      WriteVcdAnnotation,
+      VcdShowUnderScoredAnnotation,
+      TargetDirAnnotation("test_run_dir/manually_clocked_pos")
+    )
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        vcdShowUnderscored = true,
-        writeVCD = true
-      )
-      commonOptions = commonOptions.copy(
-        targetDirName = "test_run_dir/manually_clocked_pos",
-        topName = "manually_clocked_pos"
-      )
-    }
-
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     tester.advanceTime(300)
 
@@ -86,19 +81,13 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
 
   "clock up should advance registers off negative edge" in {
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        vcdShowUnderscored = true,
-        writeVCD = true
-      )
-      commonOptions = commonOptions.copy(
-        targetDirName = "test_run_dir/manually_clocked_neg",
-        topName = "neg_reg"
-      )
-    }
+    val options = Seq(
+      WriteVcdAnnotation,
+      VcdShowUnderScoredAnnotation,
+      TargetDirAnnotation("test_run_dir/manually_clocked_neg")
+    )
 
-    val tester = new TreadleTester(input, optionsManager)
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     tester.advanceTime(10)
 

@@ -47,7 +47,7 @@ class ForceValueSpec extends FreeSpec with Matchers {
           rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
       }
 
-      val tester = new TreadleTester(simpleCircuit, manager)
+      val tester = TreadleTester(simpleCircuit, manager)
 
       val bigNum = BigInt("1" * 66, 2)
 
@@ -70,7 +70,7 @@ class ForceValueSpec extends FreeSpec with Matchers {
           rollbackBuffers = 0, showFirrtlAtLoad = true, setVerbose = false, writeVCD = false)
       }
 
-      val tester = new TreadleTester(simpleCircuit, manager)
+      val tester = TreadleTester(simpleCircuit, manager)
 
       val bigNum = BigInt("1" * 66, 2)
 
@@ -95,7 +95,7 @@ class ForceValueSpec extends FreeSpec with Matchers {
           rollbackBuffers = 0, showFirrtlAtLoad = true, setVerbose = true, writeVCD = false)
       }
 
-      val tester = new TreadleTester(simpleCircuit, manager)
+      val tester = TreadleTester(simpleCircuit, manager)
 
       val bigNum = BigInt("1" * 66, 2)
 

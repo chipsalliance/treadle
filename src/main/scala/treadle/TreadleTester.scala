@@ -5,8 +5,13 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
+import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
+import firrtl.options.StageOptions
+import firrtl.options.Viewer.view
+import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import treadle.chronometry.UTC
 import treadle.executable._
+import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
@@ -21,25 +26,38 @@ import treadle.executable._
   * Important note: port names in LoFirrtl have replaced dot notation with underscore notation
   * so that io.a.b must be referenced as io_a_b
   *
-  * @param input              a firrtl program contained in a string
-  * @param optionsManager     collection of options for the engine
+  * @param annotationSeq   firrtl circuit and parameters for tester are to be found here
   */
-class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
+//class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
+class TreadleTester(annotationSeq: AnnotationSeq) {
+
+  def this(input: String, optionsManager: HasTreadleSuite, circuitForm: CircuitForm = ChirrtlForm) = {
+    this(TreadleCompatibilityPhase.checkFormTransform(circuitForm, optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input)))
+  }
+
   var expectationsMet = 0
 
-  treadle.random.setSeed(optionsManager.treadleOptions.randomSeed)
+  treadle.random.setSeed(annotationSeq.collectFirst{ case RandomSeedAnnotation(seed) => seed }.getOrElse(0L))
 
   val wallTime = UTC()
 
-  val engine         : ExecutionEngine  = ExecutionEngine(input, optionsManager, wallTime)
-  val treadleOptions : TreadleOptions   = optionsManager.treadleOptions
+  val engine         : ExecutionEngine  = ExecutionEngine(annotationSeq, wallTime)
 
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
       vcd.setTime(wallTime.currentTime)}
   }
 
-  val resetName: String = treadleOptions.resetName
+  val resetName: String = annotationSeq.collectFirst{ case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
+  private val clockInfo = annotationSeq.collectFirst{ case ClockInfoAnnotation(cia) => cia }.getOrElse(Seq.empty)
+  private val writeVcd  = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
+  val vcdShowUnderscored: Boolean  = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
+  private val callResetAtStartUp = annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }
+  private val topName = annotationSeq.collectFirst{ case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
+  private val verbose  = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
+  private val stageOptions = view[StageOptions](annotationSeq)
+
+
   def setVerbose(value: Boolean = true): Unit = {
     wallTime.isVerbose = value
     engine.setVerbose(value)
@@ -47,7 +65,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
 
   val startTime: Long = System.nanoTime()
 
-  val clockInfoList: Seq[ClockInfo] = if(treadleOptions.clockInfo.isEmpty) {
+  val clockInfoList: Seq[ClockInfo] = if(clockInfo.isEmpty) {
     if(engine.symbolTable.contains("clock")) {
       Seq(ClockInfo())
     }
@@ -59,7 +77,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
     }
   }
   else {
-    treadleOptions.clockInfo
+    clockInfo
   }
 
   val clockStepper: ClockStepper = clockInfoList.length match {
@@ -111,7 +129,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
     }
   }
 
-  setVerbose(treadleOptions.setVerbose)
+  setVerbose(verbose)
 
   wallTime.setTime(0L)
 
@@ -119,16 +137,14 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
     println(s"${"-"*60}\nStarting Treadle at ${Calendar.getInstance.getTime} WallTime: ${wallTime.currentTime}")
   }
 
-  if(treadleOptions.writeVCD) {
-    optionsManager.setTopNameIfNotSet(engine.ast.main)
-    optionsManager.makeTargetDir()
+  if(writeVcd) {
     engine.makeVCDLogger(
-      treadleOptions.vcdOutputFileName(optionsManager),
-      treadleOptions.vcdShowUnderscored
+      stageOptions.getBuildFileName(topName, Some(".vcd")),
+      vcdShowUnderscored
     )
   }
 
-  if(optionsManager.treadleOptions.callResetAtStartUp && engine.symbolTable.contains(resetName)) {
+  if(callResetAtStartUp && engine.symbolTable.contains(resetName)) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
     }
@@ -169,7 +185,7 @@ class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTest
   }
 
   def makeSnapshot(): Unit = {
-    val snapshotName = optionsManager.getBuildFileName(".datastore.snapshot.json")
+    val snapshotName = stageOptions.getBuildFileName(topName, Some(".datastore.snapshot.json"))
     val writer = new PrintWriter(snapshotName)
     writer.write(engine.dataStore.serialize)
     writer.close()
@@ -432,7 +448,16 @@ object TreadleTester {
     * @param optionsManager  options manager
     * @return
     */
+  @deprecated("Use TreadleTester(annotationSeq) instead")
   def apply(input : String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
-    new TreadleTester(input, optionsManager)
+    val sourceAnnotation = FirrtlSourceAnnotation(input)
+    TreadleTester(sourceAnnotation +: optionsManager.toAnnotationSeq)
+  }
+
+  def apply(annotations: AnnotationSeq): TreadleTester = {
+    val newAnnotations = TreadleTesterPhase.transform(annotations)
+    newAnnotations.collectFirst { case TreadleTesterAnnotation(tester) => tester }.getOrElse(
+      throw TreadleException(s"Could not create a TreadleTester")
+    )
   }
 }

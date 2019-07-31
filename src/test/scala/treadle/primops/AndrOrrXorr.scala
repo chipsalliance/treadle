@@ -160,7 +160,7 @@ class AndrOrrXorr extends FreeSpec with Matchers {
         if((0 until width).exists(i => x.testBit(i))) 1 else 0
       }
 
-      val t = new TreadleTester(input, manager)
+      val t = TreadleTester(input, manager)
       for {
         i0 <- 0 to 1
         i1 <- 0 to 1

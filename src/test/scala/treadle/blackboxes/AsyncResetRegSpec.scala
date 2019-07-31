@@ -2,9 +2,10 @@
 
 package treadle.blackboxes
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.asyncreset.AsyncResetBlackBoxFactory
-import treadle.{TreadleOptionsManager, TreadleTester}
+import treadle.{BlackBoxFactoriesAnnotation, ShowFirrtlAtLoadAnnotation, TreadleTester, WriteVcdAnnotation}
 
 // scalastyle:off magic.number
 class AsyncResetRegSpec extends FreeSpec with Matchers {
@@ -90,15 +91,12 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
-        callResetAtStartUp = false,
-        setVerbose = false,
-        showFirrtlAtLoad = true
-      )
-    }
-    val tester = TreadleTester(input, manager)
+    val options = Seq(
+      ShowFirrtlAtLoadAnnotation,
+      BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
+    )
+
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     // poke a value and it should not appear as reg output until after step
     tester.poke("io_in", 7)
@@ -154,14 +152,12 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
         |
     """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
-        callResetAtStartUp = false,
-        setVerbose = false
-      )
-    }
-    val tester = TreadleTester(input, manager)
+    val options = Seq(
+      WriteVcdAnnotation,
+      BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
+    )
+
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     // test that setting the input is only seen after step
     tester.poke("io_in", 1)
@@ -242,19 +238,12 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
         |    reg1.rst <= reset @[AsyncResetRegTest.scala 51:12]
     """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        blackBoxFactories = Seq(new AsyncResetBlackBoxFactory),
-        showFirrtlAtLoad = false,
-        writeVCD = true,
-        setVerbose = true
-      )
-      commonOptions = commonOptions.copy(
-        targetDirName = "test_run_dir/async_reg_to_reg",
-        topName = "async_reg_to_reg"
-      )
-    }
-    val tester = TreadleTester(input, manager)
+    val options = Seq(
+      WriteVcdAnnotation,
+      BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
+    )
+
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     tester.expect("io_out_0", 0)
     tester.expect("io_out_1", 0)

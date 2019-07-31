@@ -3,9 +3,10 @@
 package treadle.blackboxes
 
 import firrtl.ir.Type
-import treadle.{ScalaBlackBox, ScalaBlackBoxFactory, TreadleOptionsManager, TreadleTester}
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable._
+import treadle._
 
 
 // scalastyle:off magic.number
@@ -40,17 +41,14 @@ class BlackBoxWithState extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        writeVCD = false,
-        symbolsToWatch = Seq("io_data"),
-        blackBoxFactories = Seq(new AccumBlackBoxFactory),
-        callResetAtStartUp = true,
-        clockInfo = Seq(ClockInfo("clock", 10, 8))
-      )
-    }
-    val tester = new TreadleTester(input, manager)
+    val options = Seq(
+      SymbolsToWatchAnnotation(Seq("io_data")),
+      BlackBoxFactoriesAnnotation(Seq(new AccumBlackBoxFactory)),
+      ClockInfoAnnotation(Seq(ClockInfo("clock", 10, 8))),
+      CallResetAtStartupAnnotation
+    )
+
+    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     val initialValue = tester.peek("io_data")
     println(s"Initial value is $initialValue")

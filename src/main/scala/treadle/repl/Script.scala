@@ -15,11 +15,17 @@ case class ScriptFactory(parent: TreadleRepl) {
   def apply(fileName: String): Option[Script] = {
     val file = new File(fileName)
     if(! file.exists()) {
-      throw new Exception(s"file $fileName does not exist")
+      console.println(s"Unable to open script file $fileName")
+      None
     }
-    val scriptLines = io.Source.fromFile(file).mkString.split("\n")
-    val script = new Script(fileName, scriptLines)
-    Some(script)
+    else {
+      val scriptFile = io.Source.fromFile(file)
+      val scriptLines = scriptFile.getLines().toArray
+      scriptFile.close()
+
+      val script = new Script(fileName, scriptLines)
+      Some(script)
+    }
   }
 }
 

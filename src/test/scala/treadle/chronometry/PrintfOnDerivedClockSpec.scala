@@ -4,8 +4,10 @@ package treadle.chronometry
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
+import firrtl.stage.FirrtlSourceAnnotation
+import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.{TreadleOptionsManager, TreadleTester}
+import treadle.TreadleTester
 
 class PrintfOnDerivedClockSpec extends FreeSpec with Matchers {
   "Printf in submodule in scope of withClock should appear in output" in {
@@ -36,21 +38,13 @@ class PrintfOnDerivedClockSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        writeVCD = false
-      )
-      commonOptions = commonOptions.copy(
-        targetDirName = "test_run_dir/printf_on_derived_clock",
-        topName = "printf_clock"
-      )
-    }
-
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(input, manager)
+      val options = Seq(
+        TopNameAnnotation("printf_on_derived_clock")
+      )
 
+      val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
       tester.poke("io_in", 1)
       tester.step()
       tester.poke("io_in", 0)

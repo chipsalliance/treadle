@@ -14,7 +14,7 @@ class ExpressionCompiler(
     val symbolTable  : SymbolTable,
     val dataStore    : DataStore,
     scheduler        : Scheduler,
-    treadleOptions   : TreadleOptions,
+    validIfIsRandom  : Boolean,
     blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {
@@ -570,7 +570,7 @@ class ExpressionCompiler(
           makeGet(expand(subIndex.serialize))
 
         case ValidIf(condition, value, tpe) =>
-          if(treadleOptions.validIfIsRandom) {
+          if(validIfIsRandom) {
             processExpression(condition) match {
               case c: IntExpressionResult =>
                 processExpression(value) match {
