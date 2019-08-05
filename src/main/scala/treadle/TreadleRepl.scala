@@ -111,6 +111,9 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   }
 
   def showNameAndValue(symbolName: String, offset: Int = 0): String = {
+    if(engine.inputsChanged) {
+      engine.evaluateCircuit()
+    }
     engine.symbolTable.get(symbolName) match {
       case Some(symbol) if symbol.forcedValue.isDefined =>
         s"$symbolName ${formatOutput(symbol.forcedValue.get)} [forced]"
@@ -986,7 +989,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("show") {
-        def usage: (String, String) = ("show [state|inputs|outputs|firrtl|lofirrtl]", "show useful things")
+        def usage: (String, String) = ("show [state|inputs|outputs|clocks|firrtl|lofirrtl]", "show useful things")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -994,7 +997,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           else {
             Some(new ArgumentCompleter(
               new StringsCompleter({ "show"}),
-              new StringsCompleter(jlist(Seq("state", "inputs", "outputs", "firrtl", "lofirrtl")))
+              new StringsCompleter(jlist(Seq("state", "inputs", "outputs", "clocks", "firrtl", "lofirrtl")))
             ))
           }
         }
@@ -1029,6 +1032,8 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               console.println(engine.symbolTable.inputPortsNames.toSeq.sorted.map(showValue).mkString("\n"))
             case Some("outputs") =>
               console.println(engine.symbolTable.outputPortsNames.toSeq.sorted.map(showValue).mkString("\n"))
+            case Some("clocks") =>
+              console.println(currentTreadleTester.clockInfoList.map(_.prettyString).mkString("\n"))
             case Some("state") =>
               console.println(engine.symbolTable.keys.toSeq.sorted.map(showValue).mkString("\n"))
             case _ =>
@@ -1067,64 +1072,37 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           console.println(engine.getInfoString)
         }
       },
-//      new Command("timing") {
-//        def usage: (String, String) = ("timing [clear|bin]", "show the current timing state")
-//        override def completer: Option[ArgumentCompleter] = {
-//          if(currentTreadleTesterOpt.isEmpty) {
-//            None
-//          }
-//          else {
-//            Some(new ArgumentCompleter(
-//              new StringsCompleter({ "timing"}),
-//              new StringsCompleter(jlist(Seq("clear", "bin")))
-//            ))
-//          }
-//        }
-//        // scalastyle:off cyclomatic.complexity
-//        def run(args: Array[String]): Unit = {
-//          getOneArg("", Some("")) match {
-//            case Some("clear") => engine.timer.clear()
-//            case Some("bin") =>
-//              val names = engine.dependencyGraph.validNames -- engine.dependencyGraph.inputPorts
-//
-//              val countPerName = new scala.collection.mutable.HashMap[Long, Long]
-//              names.foreach { name =>
-//                engine.timer.timingLog.get(name).foreach { t =>
-//                  if(! countPerName.contains(t.events)) {
-//                    countPerName(t.events) = 1
-//                  }
-//                  else {
-//                    countPerName(t.events) = countPerName(t.events) + 1
-//                  }
-//                }
-//              }
-//              countPerName.keys.toSeq.sorted.foreach { count: Long =>
-//                console.println(f"$count ${countPerName(count)}")
-//              }
-//            case _ =>
-//              val names = engine.dependencyGraph.validNames -- engine.dependencyGraph.inputPorts
-//
-//              val sortedNames = names.toSeq.sortWith { case (a, b) =>
-//                (engine.timer.timingLog.get(a), engine.timer.timingLog.get(b)) match {
-//                  case (Some(t1), Some(t2)) =>
-//                    if(t1.events == t2.events) {
-//                      a < b
-//                    }
-//                    else {
-//                      t1.events < t2.events
-//                    }
-//                  case (Some(_), None)      => false
-//                  case (None, Some(_))      => true
-//                  case _                    => a < b
-//                }
-//              }
-//              for (name <- sortedNames) {
-//                console.println(f"$name%-20s ${engine.timer.prettyEntryForTag(name)}")
-//              }
-//              console.println(f"${"Total"}%-20s ${engine.timer.prettyEntry(engine.timer.totalEvent)}")
-//          }
-//        }
-//      },
+      new Command("walltime") {
+        def usage: (String, String) = ("walltime <advance>]", "operate on wall time")
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({ "walltime"})
+            ))
+          }
+        }
+        // scalastyle:off cyclomatic.complexity
+        def run(args: Array[String]): Unit = {
+          getOneArg("") match {
+            case Some(numberString) =>
+              val advance = numberString.toLong
+              if(advance < 1) {
+                console.println("walltime advance must be > 0")
+              }
+              else {
+                currentTreadleTester.advanceTime(advance)
+                console.println(s"Current Wall Time is ${currentTreadleTester.wallTime.currentTime}" +
+                  s" incremented by $advance")
+              }
+
+            case _ =>
+              console.println(s"Current Wall Time is ${currentTreadleTester.wallTime.currentTime}")
+          }
+        }
+      },
       new Command("verbose") {
         def usage: (String, String) = ("verbose [true|false|toggle]",
           "set evaluator verbose mode (default toggle) during dependency evaluation")
@@ -1311,7 +1289,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("help") {
-        def usage: (String, String) = ("help", "show available commands")
+        def usage: (String, String) = ("help [markdown]", "show repl commands (in markdown format if desired)")
         def run(args: Array[String]): Unit = {
           getOneArg("") match {
             case Some("markdown") =>

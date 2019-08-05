@@ -29,6 +29,11 @@ case class ClockInfo(
   if(initialOffset <= 0) {
     throw TreadleException(s"initialOffset in ClockInfo for $name must be positive. Found value $initialOffset")
   }
+
+  def prettyString: String = {
+    def detail = s"(up: $upPeriod, down: $downPeriod)"
+    f"$name%-40.40s period $period%5d,  $detail%15s, first up at $initialOffset"
+  }
 }
 
 /**
