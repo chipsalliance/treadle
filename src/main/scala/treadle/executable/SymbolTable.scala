@@ -190,8 +190,12 @@ object SymbolTable extends LazyLogging {
 
     val registerToClock   = new mutable.HashMap[Symbol, Symbol]
     val stopToStopInfo    = new mutable.HashMap[Stop, StopInfo]
+
+    val lastStopStymbol   = new mutable.HashMap[Module, Symbol]
+
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
     var printfCardinal: Int = 0
+    val lastPrintfInMOdule = new mutable.HashMap[Module, Symbol]
 
     val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]] {
       override def default(key: String): mutable.HashSet[Symbol] = {
@@ -393,6 +397,11 @@ object SymbolTable extends LazyLogging {
 
               addDependency(stopSymbol, expressionToReferences(clockExpression))
               addDependency(stopSymbol, expressionToReferences(enableExpression))
+              lastStopStymbol.get(module) match {
+                case Some(lastSymbol) => addDependency(stopSymbol, Set(lastSymbol))
+                case _ =>
+              }
+              lastStopStymbol(module) = stopSymbol
 
               if(! nameToSymbol.contains(StopOp.stopHappenedName)) {
                 addSymbol(
@@ -420,6 +429,12 @@ object SymbolTable extends LazyLogging {
               args.foreach { arg =>
                 addDependency(printSymbol, expressionToReferences(arg))
               }
+              lastPrintfInMOdule.get(module) match {
+                case Some(lastPrintfSymbol) =>
+                  addDependency(printSymbol, Set(lastPrintfSymbol))
+                case _ =>
+              }
+              lastPrintfInMOdule(module) = printSymbol
 
             case _ =>
               throw TreadleException(s"Can't find clock for $print")
@@ -544,10 +559,8 @@ object SymbolTable extends LazyLogging {
 
     symbolTable.moduleMemoryToMemorySymbol ++= moduleMemoryToMemorySymbol
 
-
     val sorted: Seq[Symbol] = try {
-      val orderedPrintfs = symbolTable.printToPrintInfo.values.toSeq.sorted.map(_.printSymbol)
-      symbolTable.childrenOf.seededLinearize(Some(orderedPrintfs))
+      symbolTable.childrenOf.linearize
     }
     catch {
       case e: firrtl.graph.CyclicException =>

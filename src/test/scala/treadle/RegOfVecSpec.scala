@@ -94,7 +94,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
     val optionsManager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
         writeVCD = false,
-        setVerbose = false,
+        setVerbose = true,
         showFirrtlAtLoad = false
       )
     }
@@ -134,6 +134,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
         |    sr <= mux(reset, UInt<1>("h1"), _GEN_0)
         |    printf(clock, UInt<1>("h1"), "XXXXXXXXXXXXXXXX     clock %d, done %d, sr %d, reset %d\n", asUInt(clock), done, sr, asUInt(reset))
         |    printf(clock, and(and(and(UInt<1>("h1"), done), _T_15), UInt<1>("h1")), "Assertion failed\n    at Reg.scala:60 assert(sr === 1.U)\n") @[Reg.scala 60:11]
+        |    printf(clock, UInt<1>("h1"), "XXXXXXXXXX _T_15 %d and _T_18 %d\n", _T_15, _T_18);
         |    stop(clock, and(and(and(UInt<1>("h1"), done), _T_15), UInt<1>("h1")), 1) @[Reg.scala 60:11]
         |    stop(clock, and(and(and(UInt<1>("h1"), done), _T_18), UInt<1>("h1")), 0) @[Reg.scala 61:9]
       """.stripMargin
@@ -163,6 +164,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
       show()
       show()
     }
-    tester.engine.lastStopResult should be (Some(0))
+    // The first stop to fire, based on the conditions and the order within the module
+    tester.engine.lastStopResult should be (Some(1))
   }
 }
