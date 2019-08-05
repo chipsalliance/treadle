@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 
 class FailSpec extends FlatSpec with Matchers {
@@ -16,7 +17,7 @@ class FailSpec extends FlatSpec with Matchers {
         |    output c : Fixed
         |    c <= mul(a, b)""".stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.fail(3)
     tester.report()

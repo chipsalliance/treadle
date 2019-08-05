@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -35,19 +36,8 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 4,
-        callResetAtStartUp = true,
-        symbolsToWatch = Seq() // Seq("sr", "sr/in")
-      )
-    }
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(4)))
 
-    val tester = TreadleTester(input, optionsManager)
 
     intercept[StopException] {
       tester.step(8)

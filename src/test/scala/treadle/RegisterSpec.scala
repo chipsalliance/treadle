@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
+import firrtl.transforms.NoDCEAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 
 // scalastyle:off magic.number
@@ -23,14 +25,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true,
-        showFirrtlAtLoad = false
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
 
     tester.poke("reset1", 1)
     tester.step()
@@ -79,13 +74,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
 
     tester.poke("reset1", 1)
     tester.poke("reset2", 0)
@@ -155,10 +144,8 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(setVerbose = false, writeVCD = false)
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
     tester.poke("reset", 1)
     tester.step()
     tester.poke("reset", 0)
@@ -185,13 +172,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true,
-        writeVCD = false)
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
 
     tester.poke("reset1", 1)
     tester.step()
@@ -248,15 +229,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        callResetAtStartUp = true,
-        showFirrtlAtLoad = false,
-        writeVCD = false
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
 
     tester.poke("in", 7)
     tester.step()
@@ -313,15 +286,9 @@ class RegisterSpec extends FlatSpec with Matchers {
         |
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = false,
-        setVerbose = false,
-        callResetAtStartUp = true,
-        writeVCD = false,
-        rollbackBuffers = 15)
-    }
-    val tester = TreadleTester(input, manager)
+    val tester = TreadleTester(
+      Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation, RollBackBuffersAnnotation(15))
+    )
 
     tester.poke("io_in", 77)
     tester.poke("io_en", 0)
@@ -369,17 +336,7 @@ class RegisterSpec extends FlatSpec with Matchers {
         |    reg1 <= mux(reset, UInt<1>("h1"), reg0) @[AsyncResetRegTest.scala 160:12]
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = true,
-        setVerbose = false,
-        lowCompileAtLoad = true
-      )
-      firrtlOptions = firrtlOptions.copy(
-        noDCE = true
-      )
-    }
-    val tester = TreadleTester(input, manager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), ShowFirrtlAtLoadAnnotation, NoDCEAnnotation))
 
     tester.expect("io_out_0", 0)
     tester.expect("io_out_1", 0)

@@ -93,17 +93,7 @@ class ClockSpec extends FreeSpec with Matchers {
         |    out1 <= m.read.data
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        vcdShowUnderscored = true,
-        showFirrtlAtLoad = false,
-        writeVCD = false,
-        validIfIsRandom = false
-      )
-    }
-
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), ValidIfIsRandomAnnotation))
 
     // load memory
     tester.poke("write_en", 1)

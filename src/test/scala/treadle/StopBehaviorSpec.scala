@@ -3,6 +3,7 @@
 package treadle
 
 import firrtl.CommonOptions
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -48,13 +49,8 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "Stop should abort engine immediately" in {
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        callResetAtStartUp = true,
-        setVerbose = false
-      )
-    }
-    val tester = TreadleTester(input, optionsManager)
+
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
 
     tester.poke("reset", 0)
     tester.poke("io_wrData", (0 << 24) + (255 << 16))

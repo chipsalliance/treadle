@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 
@@ -24,7 +25,7 @@ class FixedPointDivide extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.poke("io_in", 256)
     tester.expect("io_out", 64)
@@ -56,7 +57,7 @@ class SignedAdder extends FreeSpec with Matchers {
           |    io_out <= _T_7
         """.stripMargin
 
-        val tester = TreadleTester(input)
+        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
         for {
           i <- BigIntTestValuesGenerator(extremaOfSIntOfWidth(bitWidth))
@@ -157,7 +158,7 @@ class DynamicShiftRight extends FreeSpec with Matchers {
           |
         """.stripMargin
 
-        val tester = TreadleTester(input)
+        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
         val mask = BigInt("1" * bitWidth, 2)
 

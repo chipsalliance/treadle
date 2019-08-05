@@ -2,6 +2,7 @@
 
 package treadle.primops
 
+import firrtl.stage.FirrtlSourceAnnotation
 import treadle.executable.{AndInts, OrInts, XorInts}
 import treadle.{BitTwiddlingUtils, TreadleTester, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
 import org.scalatest.{FreeSpec, Matchers}
@@ -156,7 +157,8 @@ class AndOrXor extends FreeSpec with Matchers {
         |
       """.stripMargin
     val bitWidth = 4
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
     val (lo, hi) = extremaOfSIntOfWidth(bitWidth)
     for {
       a <- lo to hi
