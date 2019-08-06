@@ -9,7 +9,6 @@ trait TreadleReplCli { this: Shell =>
   parser.note("TreadleRepl specific options")
 
   Seq(
-    FirrtlFileName,
     TreadleScriptFile,
     TreadleReplUseVcd,
     TreadleVcdScriptFileOverride,
