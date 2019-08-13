@@ -5,6 +5,7 @@ import java.io.{File, PrintWriter}
 
 import firrtl.FileUtils
 import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 /**
@@ -468,5 +469,76 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     }
     tester.report()
     tester.finish
+  }
+
+  val simpleMem =
+    s"""
+       |circuit a :
+       |  module a :
+       |    input clock : Clock
+       |    output io_r_data : UInt<8>
+       |    input  io_r_addr : UInt<3>
+       |    input  io_r_en   : UInt<1>
+       |    input  io_w_data : UInt<8>
+       |    input  io_w_addr : UInt<3>
+       |    input  io_w_en   : UInt<1>
+       |    input  io_w_mask : UInt<1>
+       |
+       |    mem m :
+       |      data-type => UInt<8>
+       |      depth => 5
+       |      read-latency => 1
+       |      write-latency => 1
+       |      reader => r
+       |      writer => w
+       |
+       |    io_r_data   <= m.r.data
+       |    m.r.addr    <= io_r_addr
+       |    m.r.en      <= io_r_en
+       |    m.r.clk     <= clock
+       |
+       |    m.w.data <= io_w_data
+       |    m.w.addr <= io_w_addr
+       |    m.w.en   <= io_w_en
+       |    m.w.mask <= io_w_mask
+       |    m.w.clk  <= clock
+       |
+       |""".stripMargin
+
+  def simpleMemTester: TreadleTester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleMem)))
+
+  "write port: en and masks should be respected" in {
+    val tester = simpleMemTester
+
+    // (en == 0) should prevent a write
+    tester.pokeMemory("m", 3,  123)
+    tester.poke("io_w_data", 0)
+    tester.poke("io_w_addr", 3)
+    tester.poke("io_w_en", 0)
+    tester.poke("io_w_mask", 1)
+    tester.step()
+    tester.peekMemory("m", 3) should be (123)
+
+    // (mask == 0) should prevent a write
+    tester.poke("io_w_en", 1)
+    tester.poke("io_w_mask", 0)
+    tester.step()
+    tester.peekMemory("m", 3) should be (123)
+  }
+
+  "read port: enable should be pipelined correctly" in {
+    val tester = simpleMemTester
+
+    tester.poke("io_r_en", 0)
+    tester.step()
+    tester.peek("m.r.en") should be (0)
+
+    tester.poke("io_r_en", 1)
+    tester.step()
+    tester.peek("m.r.en") should be (1)
+
+    tester.poke("io_r_en", 0)
+    tester.step()
+    tester.peek("m.r.en") should be (0)
   }
 }
