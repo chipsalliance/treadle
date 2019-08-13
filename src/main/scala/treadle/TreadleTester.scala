@@ -110,6 +110,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   def advanceTime(interval: Long): Unit = {
     assert(interval >= 0L, "TreadleTester#advanceTime called with negative value")
     wallTime.setTime(wallTime.currentTime + interval)
+    engine.evaluateCircuit()
   }
 
   /*

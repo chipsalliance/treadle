@@ -417,33 +417,26 @@ object Memory {
       }
     }
 
-    /*
-      * Makes a read chain of pipeline registers.  These must be ordered reg0/in, reg0, reg1/in ... regN/in, regN
+    /**
+      * Makes a chain of pipeline registers.
+      * These must be ordered reg0/in, reg0, reg1/in ... regN/in, regN
       * This will advance the registers on the specified clock,
       * and combinationally pass the register value to the next register's input down the chain
       * Data flows from low indexed pipeline elements to high ones
 
-      * @param clock          trigger
-      * @param portName       port name
-      * @param pipelineName   element being pipelined
-      * @param data           data where memory data will go
-      * @param addr           address of data in memory
-      * @param enable         memory enabled
+      * @param clock         used to create execution based on this trigger.
+      * @param rootSymbol    the head element of the pipeline, this is one of the mem ports
+      * @param portString    name of the writer
+      * @param pipelineName  string representing the name of the root port
+      * @param latency       pipeline latency
       */
-    def buildReadPipelineAssigners(
-      clock       : Symbol,
-      portName    : String,
-      pipelineName: String,
-      data        : Symbol,
-      addr        : Symbol,
-      enable      : Symbol,
-      info        : Info
-    ): Symbol = {
+    def buildPipelineAssigners(clock: Symbol, rootSymbol: Symbol, portString: String,
+                               pipelineName: String, latency: Int, info: Info): Symbol = {
 
       val drivingClock = symbolTable.findHighestClock(clock)
 
-      val pipelineReadSymbols = buildPipeLine(portName, pipelineName, memory.readLatency, drivingClock)
-      val chain = Seq(addr) ++ pipelineReadSymbols
+      val pipelineSymbols = buildPipeLine(portString, pipelineName, latency, drivingClock)
+      val chain = Seq(rootSymbol) ++ pipelineSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
       chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
@@ -463,76 +456,39 @@ object Memory {
     }
 
     memory.readers.foreach { readerString =>
-      val readerName = s"$expandedName.$readerString"
-      val enable = symbolTable(s"$readerName.en")
-      val clock  = symbolTable(s"$readerName.clk")
-      val addr   = symbolTable(s"$readerName.addr")
-      val data   = symbolTable(s"$readerName.data")
+      val name = s"$expandedName.$readerString"
+      val enable = symbolTable(s"$name.en")
+      val clock  = symbolTable(s"$name.clk")
+      val addr   = symbolTable(s"$name.addr")
+      val data   = symbolTable(s"$name.data")
 
-      val endOfAddrPipeline = buildReadPipelineAssigners(clock, readerName, "raddr", data, addr, enable, memory.info)
-      val endOfEnablePipeline = buildReadPipelineAssigners(clock, readerName, "ren", data, addr, enable, memory.info)
+      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", memory.readLatency, memory.info)
+      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", memory.readLatency, memory.info)
 
       compiler.makeAssigner(
         data, compiler.makeGetIndirect(memorySymbol, data, endOfEnablePipeline, endOfAddrPipeline), info = memory.info
       )
     }
 
-    /*
-      * compile the necessary assignments to complete a latency chain
-      * If latency is zero, this basically returns the root memorySymbol.
-      * @param clockSymbol   used to create execution based on this trigger.
-      * @param rootSymbol    the head element of the pipeline, this is one of the mem ports
-      * @param writerString  name of the writer
-      * @param pipelineName  string representing the name of the root port
-      * @return
-      */
-    def buildWritePipelineAssigners(clockSymbol:     Symbol,
-                                    rootSymbol:      Symbol,
-                                    writerString:    String,
-                                    pipelineName:    String
-                                   ): Symbol = {
-
-      val drivingClock = symbolTable.findHighestClock(clockSymbol)
-
-      val pipelineSymbols = buildPipeLine(writerString, pipelineName, memory.writeLatency, drivingClock)
-      val chain = Seq(rootSymbol) ++ pipelineSymbols
-
-      // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
-      chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
-        case source :: target :: Nil =>
-          compiler.makeAssigner(target, compiler.makeGet(source), drivingClock, info = memory.info)
-        case _ =>
-      }
-
-      // This produces reg0/in <= root, reg1/in <= reg0 etc.
-      chain.grouped(2).withFilter(_.length == 2).toList.foreach {
-        case source :: target :: Nil =>
-          compiler.makeAssigner(target, compiler.makeGet(source), info = memory.info)
-        case _ =>
-      }
-
-      chain.last
-    }
-
     memory.writers.foreach { writerString =>
-      val writerName = s"$expandedName.$writerString"
+      val name = s"$expandedName.$writerString"
 
-      val portSymbol = symbolTable(writerName)
+      val portSymbol = symbolTable(name)
 
-      val enable = symbolTable(s"$writerName.en")
-      val clock  = symbolTable(s"$writerName.clk")
-      val addr   = symbolTable(s"$writerName.addr")
-      val mask   = symbolTable(s"$writerName.mask")
-      val data   = symbolTable(s"$writerName.data")
-      val valid  = symbolTable(s"$writerName.valid")
+      val enable = symbolTable(s"$name.en")
+      val clock  = symbolTable(s"$name.clk")
+      val addr   = symbolTable(s"$name.addr")
+      val mask   = symbolTable(s"$name.mask")
+      val data   = symbolTable(s"$name.data")
+      val valid  = symbolTable(s"$name.valid")
 
       // compute a valid so we only have to carry a single boolean up the write queue
       compiler.makeAssigner(
         valid, AndInts(dataStore.GetInt(enable.index).apply, dataStore.GetInt(mask.index).apply, 1), info = memory.info)
 
-      val endOfValidPipeline = buildWritePipelineAssigners(clock, valid, writerName, "valid")
-      val endOfAddrPipeline  = buildWritePipelineAssigners(clock, addr, writerName, "addr")
-      val endOfDataPipeline  = buildWritePipelineAssigners(clock, data, writerName, "data")
+      val endOfValidPipeline = buildPipelineAssigners(clock, valid, name, "valid", memory.writeLatency, memory.info)
+      val endOfAddrPipeline  = buildPipelineAssigners(clock, addr, name, "addr", memory.writeLatency, memory.info)
+      val endOfDataPipeline  = buildPipelineAssigners(clock, data, name, "data", memory.writeLatency, memory.info)
 
       compiler.makeIndirectAssigner(
         portSymbol,
@@ -546,21 +502,21 @@ object Memory {
     }
 
     memory.readwriters.foreach { readWriterString =>
-      val writerName = s"$expandedName.$readWriterString"
+      val name = s"$expandedName.$readWriterString"
 
-      val portSymbol = symbolTable(writerName)
+      val portSymbol = symbolTable(name)
 
-      val enable = symbolTable(s"$writerName.en")
-      val clock  = symbolTable(s"$writerName.clk")
-      val addr   = symbolTable(s"$writerName.addr")
-      val rdata  = symbolTable(s"$writerName.rdata")
-      val mode   = symbolTable(s"$writerName.wmode")
-      val mask   = symbolTable(s"$writerName.wmask")
-      val wdata  = symbolTable(s"$writerName.wdata")
-      val valid  = symbolTable(s"$writerName.valid")
+      val enable = symbolTable(s"$name.en")
+      val clock  = symbolTable(s"$name.clk")
+      val addr   = symbolTable(s"$name.addr")
+      val rdata  = symbolTable(s"$name.rdata")
+      val mode   = symbolTable(s"$name.wmode")
+      val mask   = symbolTable(s"$name.wmask")
+      val wdata  = symbolTable(s"$name.wdata")
+      val valid  = symbolTable(s"$name.valid")
 
-      val endOfRaddrPipeline = buildReadPipelineAssigners(clock, writerName, "raddr", rdata, addr, enable, memory.info)
-      val endOfEnablePipeline = buildReadPipelineAssigners(clock, writerName, "ren", rdata, addr, enable, memory.info)
+      val endOfRaddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", memory.readLatency, memory.info)
+      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", memory.readLatency, memory.info)
 
       compiler.makeAssigner(
         rdata, compiler.makeGetIndirect(memorySymbol, rdata, endOfEnablePipeline, endOfRaddrPipeline),
@@ -578,9 +534,9 @@ object Memory {
         info = memory.info
       )
 
-      val endOfValidPipeline = buildWritePipelineAssigners(clock, valid, writerName, "valid")
-      val endOfAddrPipeline  = buildWritePipelineAssigners(clock, addr,  writerName, "addr")
-      val endOfDataPipeline  = buildWritePipelineAssigners(clock, wdata, writerName, "wdata")
+      val endOfValidPipeline = buildPipelineAssigners(clock, valid, name, "valid", memory.writeLatency, memory.info)
+      val endOfAddrPipeline  = buildPipelineAssigners(clock, addr,  name, "addr", memory.writeLatency, memory.info)
+      val endOfDataPipeline  = buildPipelineAssigners(clock, wdata, name, "wdata", memory.writeLatency, memory.info)
 
       compiler.makeIndirectAssigner(
         portSymbol,

@@ -12,20 +12,6 @@ sealed trait ReplOption extends Unserializable { this: Annotation => }
 
 case class OverrideOutputStream(outputStream: OutputStream) extends NoTargetAnnotation
 
-/**
-  *  The source file to load firrtl from for repl
-  */
-case object FirrtlFileName extends HasShellOptions {
-  val options: Seq[ShellOption[_]] = Seq(
-    new ShellOption[String](
-      longOption = "tr-firrtl-source-file",
-      shortOption = Some("tfsf"),
-      toAnnotationSeq = (fileName: String) => Seq(FirrtlFileAnnotation(fileName)),
-      helpText = "file containing the Firrtl source to be used in Repl"
-    )
-  )
-}
-
 case class DefaultFileNameWithOutSuffix(fileName: String)
 
 /**
