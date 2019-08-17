@@ -88,7 +88,9 @@ object BitTwiddlingUtils {
   }
 
   def cat(a: Big, aWidth: Int, b: Big, bWidth: Int): Big = {
-    var x = b
+    val mask2 = BitMasks.getBitMasksBigs(bWidth).allBitsMask
+
+    var x = b & mask2   // we have to mask to avoid sign extension
     for(i <- 0 until aWidth) {
       if(a.testBit(i)) x = x.setBit(i + bWidth)
     }
