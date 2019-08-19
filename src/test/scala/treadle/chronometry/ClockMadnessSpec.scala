@@ -2,6 +2,7 @@
 
 package treadle.chronometry
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.TreadleTester
 
@@ -40,14 +41,8 @@ class ClockMadnessSpec extends FreeSpec with Matchers {
     """.stripMargin
 
   "ClockMadnessSpec should pass a basic test" in {
-    val tester = TreadleTester(input)
-    //    tester.poke("reset", 0)
-    //    tester.poke("io_enable", 1)
-    //    for(_ <- 0 until 3) {
-    //      println(s">>>>>>>>>>>>>counter = ${tester.peek("io_count")}")
-    //      tester.step()
-    //    }
 
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     tester.poke("io_enable", 0)
     for(_ <- 0 until 10) {
       println(s"counter = ${tester.peek("io_count")}")

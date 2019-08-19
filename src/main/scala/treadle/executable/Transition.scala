@@ -60,10 +60,10 @@ case class ClockBasedAssigner(
     }
   }
 
-  var run: FuncUnit = runLean
+  var run: FuncUnit = runLean _
 
   override def setLeanMode(isLean: Boolean): Unit = {
     assigner.setLeanMode(isLean)
-    run = if(isLean) runLean else runFull
+    run = if(isLean) runLean _ else runFull _
   }
 }

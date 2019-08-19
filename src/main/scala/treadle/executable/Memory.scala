@@ -484,7 +484,7 @@ object Memory {
 
       // compute a valid so we only have to carry a single boolean up the write queue
       compiler.makeAssigner(
-        valid, AndInts(dataStore.GetInt(enable.index).apply, dataStore.GetInt(mask.index).apply, 1), info = memory.info)
+        valid, AndInts(dataStore.GetInt(enable.index).apply _, dataStore.GetInt(mask.index).apply _, 1), info = memory.info)
 
       val endOfValidPipeline = buildPipelineAssigners(clock, valid, name, "valid", memory.writeLatency, memory.info)
       val endOfAddrPipeline  = buildPipelineAssigners(clock, addr, name, "addr", memory.writeLatency, memory.info)
@@ -527,8 +527,8 @@ object Memory {
       compiler.makeAssigner(
         valid,
         AndInts(
-          AndInts(dataStore.GetInt(enable.index).apply, dataStore.GetInt(mask.index).apply, 1).apply,
-          dataStore.GetInt(mode.index).apply,
+          AndInts(dataStore.GetInt(enable.index).apply _, dataStore.GetInt(mask.index).apply _, 1).apply _,
+          dataStore.GetInt(mode.index).apply _,
           1
         ),
         info = memory.info

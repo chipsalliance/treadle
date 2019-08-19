@@ -4,6 +4,7 @@ package treadle
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 //scalastyle:off magic.number
@@ -42,8 +43,7 @@ class RegisterCycleTest extends FreeSpec with Matchers {
       for(i <- 0 to 10) {
         println(s"experiment $i")
         scala.util.Random.setSeed(i.toLong)
-        val tester = TreadleTester(input)
-//        tester.setVerbose(true)
+        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
         tester.poke("reset", 1)
         tester.step()
@@ -90,7 +90,10 @@ class RegisterCycleTest extends FreeSpec with Matchers {
         val optionsManager = new TreadleOptionsManager
         optionsManager.parser.parse(Array("-tstw", "io_Out,mySubModule_1.io_Out"))
 
-        val tester = TreadleTester(input, optionsManager)
+        val tester = TreadleTester(
+          Seq(FirrtlSourceAnnotation(input), SymbolsToWatchAnnotation(Seq("io_Out", "mySubModule_1.io_Out")))
+        )
+
         tester.poke("io_In", 1)
         tester.step(3)
         tester.expect("io_Out", 1)

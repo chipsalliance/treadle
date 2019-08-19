@@ -194,6 +194,7 @@ object SymbolTable extends LazyLogging {
     val lastStopStymbol   = new mutable.HashMap[Module, Symbol]
 
     val printToPrintInfo  = new mutable.HashMap[Print, PrintInfo]
+    var printfCardinal: Int = 0
     val lastPrintfInMOdule = new mutable.HashMap[Module, Symbol]
 
     val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]] {
@@ -421,7 +422,8 @@ object SymbolTable extends LazyLogging {
                 printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(printSymbol)
 
-              printToPrintInfo(print) = PrintInfo(printSymbol)
+              printfCardinal += 1
+              printToPrintInfo(print) = PrintInfo(printSymbol, printfCardinal)
               addDependency(printSymbol, expressionToReferences(clockExpression))
               addDependency(printSymbol, expressionToReferences(enableExpression))
               args.foreach { arg =>

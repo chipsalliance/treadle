@@ -118,7 +118,7 @@ extends HasDataArrays {
     }
   }
 
-  @deprecated("Use saveData(time: Long), clock based rollback buffers are no longer supported")
+  @deprecated("Use saveData(time: Long), clock based rollback buffers are no longer supported", "since 1.0")
   def saveData(clockName: String, time: Long): Unit = {
     if(numberOfBuffers > 0) {
       rollBackBufferManager.saveData(time)
@@ -173,9 +173,9 @@ extends HasDataArrays {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
+      run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = runLean
+    var run: FuncUnit = runLean _
   }
 
   case class ExternalModuleInputAssigner(
@@ -214,12 +214,12 @@ extends HasDataArrays {
 
     override def setLeanMode(isLean: Boolean): Unit = {
       run = if(isLean) {
-        runLean
+        runLean _
       } else {
-        runFull
+        runFull _
       }
     }
-    var run: FuncUnit = runLean
+    var run: FuncUnit = runLean _
   }
 
   case class GetBig(index: Int) extends BigExpressionResult {
@@ -240,9 +240,9 @@ extends HasDataArrays {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
+      run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = runLean
+    var run: FuncUnit = runLean _
   }
 
   /** for memory implementations */
@@ -306,9 +306,9 @@ extends HasDataArrays {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
+      run = if(isLean) runLean _  else runFull _
     }
-    var run: FuncUnit = runLean
+    var run: FuncUnit = runLean _
   }
 
   case class AssignLongIndirect(
@@ -338,9 +338,9 @@ extends HasDataArrays {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
+      run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = runLean
+    var run: FuncUnit = runLean _
   }
 
   case class AssignBigIndirect(
@@ -370,9 +370,9 @@ extends HasDataArrays {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean else runFull
+      run = if(isLean) runLean _ else runFull _
     }
-    var run: FuncUnit = runLean
+    var run: FuncUnit = runLean _
   }
 
   case class BlackBoxShim(

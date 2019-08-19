@@ -4,11 +4,9 @@ package treadle.vcd
 
 import java.io.File
 
-import firrtl.CommonOptions
-import firrtl.options.{StageOptions, TargetDirAnnotation}
 import firrtl.options.Viewer.view
-import firrtl.stage.FirrtlSourceAnnotation
-import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
+import firrtl.options.{StageOptions, TargetDirAnnotation}
+import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import firrtl.util.BackendCompilationUtilities
 import org.scalatest.{FlatSpec, Matchers}
 import treadle._
@@ -152,7 +150,9 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       """.stripMargin
 
     val options = Seq(
-      WriteVcdAnnotation
+      WriteVcdAnnotation,
+      TargetDirAnnotation("test_run_dir/vcd_reader_1"),
+      OutputFileAnnotation("vcd_reader_1")
     )
 
     val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
@@ -183,7 +183,9 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
     val options = Seq(
-      WriteVcdAnnotation
+      WriteVcdAnnotation,
+      TargetDirAnnotation("test_run_dir/vcd_reader_2"),
+      OutputFileAnnotation("vcd_reader_2")
     )
 
     val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
@@ -235,7 +237,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       Some(WriteVcdAnnotation),
       if(hasTempWires) { Some(VcdShowUnderScoredAnnotation) } else { None },
       Some(TargetDirAnnotation("test_run_dir/vcd_register_delay/")),
-      Some(TopNameAnnotation("pwminCount"))
+      Some(OutputFileAnnotation("pwminCount"))
     ).flatten
 
     val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
@@ -294,7 +296,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       FirrtlSourceAnnotation(input),
       WriteVcdAnnotation,
       TargetDirAnnotation(targetDir),
-      TopNameAnnotation("VcdAdder"),
+      OutputFileAnnotation("VcdAdder"),
       VcdReplayVcdFile(s"$targetDir/VcdAdder.vcd")
     )
 

@@ -268,15 +268,14 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
       "tail ops should drop leading bits from expression" in {
         TailInts(() => -22, toDrop = 1, originalWidth = 16)() should be(32746)
 
-        TailInts(f1, toDrop = 1, originalWidth = 2)() should be(1)
-        TailInts(f2, toDrop = 1, originalWidth = 3)() should be(2)
-        TailInts(f3, toDrop = 1, originalWidth = 3)() should be(3)
-        TailInts(f3, toDrop = 1, originalWidth = 2)() should be(1)
-        TailInts(fMinus3, toDrop = 1, originalWidth = 4)() should be(5)
-        TailInts(fMinus4, toDrop = 1, originalWidth = 4)() should be(4)
+        TailInts(() => f1(), toDrop = 1, originalWidth = 2)() should be(1)
+        TailInts(() => f2(), toDrop = 1, originalWidth = 3)() should be(2)
+        TailInts(() => f3(), toDrop = 1, originalWidth = 3)() should be(3)
+        TailInts(() => f3(), toDrop = 1, originalWidth = 2)() should be(1)
+        TailInts(() => fMinus3(), toDrop = 1, originalWidth = 4)() should be(5)
+        TailInts(() => fMinus4(), toDrop = 1, originalWidth = 4)() should be(4)
 
-        val tailOps = TailInts(val1, toDrop = 9, originalWidth = 17)
-        // println(f"TailInts(${val1()}%x, toDrop = 8) -> ${tailOps()}%x")
+        val tailOps = TailInts(() => val1(), toDrop = 9, originalWidth = 17)
         tailOps() should be(Integer.parseInt("cd", 16))
       }
     }

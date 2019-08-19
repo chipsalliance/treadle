@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 //scalastyle:off magic.number
@@ -42,12 +43,7 @@ class ForceValueSpec extends FreeSpec with Matchers {
   "force value operates on any internal wire" - {
     "no forces should work as expected" in {
 
-      val manager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
-      }
-
-      val tester = TreadleTester(simpleCircuit, manager)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleCircuit)))
 
       val bigNum = BigInt("1" * 66, 2)
 
@@ -65,12 +61,7 @@ class ForceValueSpec extends FreeSpec with Matchers {
     }
     "force register should work" in {
 
-      val manager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          rollbackBuffers = 0, showFirrtlAtLoad = true, setVerbose = false, writeVCD = false)
-      }
-
-      val tester = TreadleTester(simpleCircuit, manager)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleCircuit)))
 
       val bigNum = BigInt("1" * 66, 2)
 
@@ -90,12 +81,7 @@ class ForceValueSpec extends FreeSpec with Matchers {
     }
     "force wire should work" in {
 
-      val manager = new TreadleOptionsManager {
-        treadleOptions = treadleOptions.copy(
-          rollbackBuffers = 0, showFirrtlAtLoad = true, setVerbose = true, writeVCD = false)
-      }
-
-      val tester = TreadleTester(simpleCircuit, manager)
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleCircuit)))
 
       val bigNum = BigInt("1" * 66, 2)
 

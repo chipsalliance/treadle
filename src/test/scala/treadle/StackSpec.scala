@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 
@@ -80,18 +81,7 @@ class StackSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq()
-      )
-    }
-
-    val tester = TreadleTester(input, optionsManager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.poke("io_en", 1)
     tester.poke("io_push", 1)
