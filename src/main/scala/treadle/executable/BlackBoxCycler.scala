@@ -13,7 +13,6 @@ import treadle.ScalaBlackBox
   * @param clockSymbol clock used by instance
   * @param info source location
   */
-//TODO: This should be called everytime something hanppens to clock and should indicate all possible transitions
 case class BlackBoxCycler(
   symbol:                Symbol,
   blackBox:              ScalaBlackBox,

@@ -44,7 +44,7 @@ class ReportAssignments(val executionEngine: ExecutionEngine) extends DataStoreP
         val showValue = symbol.normalize(dataStore(symbol))
         s"$showValue h${showValue.toString(16)}"
       }
-      println(s"${symbol.name} <=$valueMessage")
+      println(s"${symbol.name} <= $valueMessage")
     }
     else {
       val valueMessage = if(symbol.forcedValue.isDefined) {

@@ -6,15 +6,13 @@ import firrtl.ir.{Info, NoInfo}
 import logger.LazyLogging
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 /**
-  * The scheduler holds the assignment statements of the entire circuit.
-  * Clocks introduce a level of complexity, in that when they flip registers
-  * who use those clocks must copy there inputs to their outputs.
-  * Also since registers are triggered by the derived highest level clock
-  * that can be found, child clocks must be separately driven.  This is
-  * what the triggeredUnassigns are for.
+  * The scheduler holds the ordered assignment statements of the entire circuit.
+  * Clocks have magic shadow symbols "clockName/prev". These shadows are
+  * used to make the circuit evaluation idempotent, i.e. evaluating the
+  * circuit at the moment of an positive clock transition can be done
+  * repeatedly and registers will only be advanced on the first call.
   *
   * @param symbolTable symbol table is used to find orphans
   */
@@ -22,16 +20,6 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
   val endOfCycleAssigns    : mutable.HashSet[Assigner] = new mutable.HashSet
-
-  val registerClocks       : mutable.HashSet[Symbol] = new mutable.HashSet
-
-  val triggeredUnassigns     : mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] =
-    new mutable.HashMap[Symbol,mutable.ArrayBuffer[Assigner]] {
-      override def default(key: Symbol): ArrayBuffer[Assigner] = {
-        this(key) = new mutable.ArrayBuffer[Assigner]()
-        this(key)
-      }
-    }
 
   val orphanedAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
