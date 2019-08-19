@@ -215,8 +215,9 @@ case class XorrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
 
 case class CatInts(f1: FuncInt, f1Width: Int, f2: FuncInt, f2Width: Int) extends IntExpressionResult {
   private val mask1 = BitMasks.getBitMasksInts(f1Width).allBitsMask
+  private val mask2 = BitMasks.getBitMasksInts(f2Width).allBitsMask
   def apply(): Int = {
-    ((f1() & mask1) << f2Width) | f2()
+    ((f1() & mask1) << f2Width) | (f2() & mask2)
   }
 }
 

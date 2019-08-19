@@ -193,8 +193,9 @@ case class XorrLongs(f1: FuncLong, width: Int) extends IntExpressionResult {
 
 case class CatLongs(f1: FuncLong, f1Width: Int, f2: FuncLong, f2Width: Int) extends LongExpressionResult {
   private val mask1 = BitMasks.getBitMasksLongs(f1Width).allBitsMask
+  private val mask2 = BitMasks.getBitMasksLongs(f2Width).allBitsMask
   def apply(): Long = {
-    ((f1() & mask1) << f2Width) | f2()
+    ((f1() & mask1) << f2Width) | (f2() & mask2)
   }
 }
 
