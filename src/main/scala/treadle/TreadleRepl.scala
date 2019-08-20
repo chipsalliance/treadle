@@ -1073,7 +1073,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("walltime") {
-        def usage: (String, String) = ("walltime <advance>]", "operate on wall time")
+        def usage: (String, String) = ("walltime [advance]", "show current wall time, or advance it")
         override def completer: Option[ArgumentCompleter] = {
           if(currentTreadleTesterOpt.isEmpty) {
             None
@@ -1086,20 +1086,25 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
         // scalastyle:off cyclomatic.complexity
         def run(args: Array[String]): Unit = {
-          getOneArg("") match {
-            case Some(numberString) =>
-              val advance = numberString.toLong
-              if(advance < 1) {
-                console.println("walltime advance must be > 0")
-              }
-              else {
-                currentTreadleTester.advanceTime(advance)
-                console.println(s"Current Wall Time is ${currentTreadleTester.wallTime.currentTime}" +
-                  s" incremented by $advance")
-              }
+          currentTreadleTesterOpt match {
+            case Some(tester) =>
+              getOneArg("") match {
+                case Some(numberString) =>
+                  val advance = numberString.toLong
+                  if (advance < 1) {
+                    console.println("walltime advance must be > 0")
+                  }
+                  else {
+                    currentTreadleTester.advanceTime(advance)
+                    console.println(s"Current Wall Time is ${currentTreadleTester.wallTime.currentTime}" +
+                      s" incremented by $advance")
+                  }
 
+                case _ =>
+                  console.println(s"Current Wall Time is ${currentTreadleTester.wallTime.currentTime}")
+              }
             case _ =>
-              console.println(s"Current Wall Time is ${currentTreadleTester.wallTime.currentTime}")
+              console.println(s"You must have a firrtl file loaded to use walltime")
           }
         }
       },
