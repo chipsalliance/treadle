@@ -130,7 +130,7 @@ scalacOptions in Compile in doc ++= Seq(
   "-diagrams",
   "-diagrams-max-classes", "25",
   "-doc-version", version.value,
-  "-doc-source-url", "https://github.com/freechipsproject/chisel-testers/tree/master/€{FILE_PATH}.scala",
+  "-doc-source-url", "https://github.com/freechipsproject/treadle/tree/master/€{FILE_PATH}.scala",
   "-sourcepath", baseDirectory.value.getAbsolutePath,
   "-unchecked"
 ) ++ scalacOptionsVersion(scalaVersion.value)
