@@ -424,7 +424,7 @@ class ExecutionEngine(
   class NullToggler extends ClockToggle
 
   def makeUpToggler(symbol: Symbol): Assigner = {
-    val assigner = dataStore.AssignInt(symbol, GetIntConstant(1).apply, NoInfo)
+    val assigner = dataStore.AssignInt(symbol, GetIntConstant(1).apply _, NoInfo)
 
     if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
@@ -432,7 +432,7 @@ class ExecutionEngine(
   }
 
   def makeDownToggler(symbol: Symbol): Assigner = {
-    val assigner = dataStore.AssignInt(symbol, GetIntConstant(0).apply, NoInfo)
+    val assigner = dataStore.AssignInt(symbol, GetIntConstant(0).apply _, NoInfo)
 
     if(vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)

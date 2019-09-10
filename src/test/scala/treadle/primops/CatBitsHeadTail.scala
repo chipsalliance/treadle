@@ -74,6 +74,59 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
         }
       }
 
+      "show sign extension doesn't happen when right hand side is negative" in {
+        val input =
+          """
+            |circuit CatProblem :
+            |  module CatProblem :
+            |    input clock : Clock
+            |    input reset : UInt<1>
+            |    input int_input_1   : SInt<4>
+            |    input int_input_2   : SInt<4>
+            |    output int_output   : UInt<8>
+            |
+            |    input long_input_1  : SInt<20>
+            |    input long_input_2  : SInt<20>
+            |    output long_output  : UInt<40>
+            |
+            |    input big_input_1   : SInt<68>
+            |    input big_input_2   : SInt<68>
+            |    output big_output   : UInt<136>
+            |
+            |    int_output   <= cat(int_input_1, int_input_2)
+            |
+            |    long_output  <= cat(long_input_1, long_input_2)
+            |
+            |    big_output   <= cat(big_input_1, big_input_2)
+          """.stripMargin
+
+        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
+        tester.poke("int_input_1", 1)
+        tester.poke("int_input_2", -1)
+
+        val int_output   = tester.peek("int_output")
+        println(s"peek int_output   0x${int_output.toString(16)}  $int_output")
+
+        tester.expect("int_output", BigInt("1F", 16))
+
+        tester.poke("long_input_1", 3)
+        tester.poke("long_input_2", -1)
+
+        val long_output   = tester.peek("long_output")
+        println(s"peek long_output   0x${long_output.toString(16)}  $long_output")
+
+        tester.expect("long_output", BigInt("3fffff", 16))
+
+        tester.poke("big_input_1", 7)
+        tester.poke("big_input_2", -1)
+
+        val big_output   = tester.peek("big_output")
+        println(s"peek big_output   0x${big_output.toString(16)}  $big_output")
+
+        tester.expect("big_output", BigInt("7fffffffffffffffff", 16))
+      }
+
       "sign extension should not happen" in {
         val input =
           """
@@ -215,15 +268,14 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
       "tail ops should drop leading bits from expression" in {
         TailInts(() => -22, toDrop = 1, originalWidth = 16)() should be(32746)
 
-        TailInts(f1, toDrop = 1, originalWidth = 2)() should be(1)
-        TailInts(f2, toDrop = 1, originalWidth = 3)() should be(2)
-        TailInts(f3, toDrop = 1, originalWidth = 3)() should be(3)
-        TailInts(f3, toDrop = 1, originalWidth = 2)() should be(1)
-        TailInts(fMinus3, toDrop = 1, originalWidth = 4)() should be(5)
-        TailInts(fMinus4, toDrop = 1, originalWidth = 4)() should be(4)
+        TailInts(() => f1(), toDrop = 1, originalWidth = 2)() should be(1)
+        TailInts(() => f2(), toDrop = 1, originalWidth = 3)() should be(2)
+        TailInts(() => f3(), toDrop = 1, originalWidth = 3)() should be(3)
+        TailInts(() => f3(), toDrop = 1, originalWidth = 2)() should be(1)
+        TailInts(() => fMinus3(), toDrop = 1, originalWidth = 4)() should be(5)
+        TailInts(() => fMinus4(), toDrop = 1, originalWidth = 4)() should be(4)
 
-        val tailOps = TailInts(val1, toDrop = 9, originalWidth = 17)
-        // println(f"TailInts(${val1()}%x, toDrop = 8) -> ${tailOps()}%x")
+        val tailOps = TailInts(() => val1(), toDrop = 9, originalWidth = 17)
         tailOps() should be(Integer.parseInt("cd", 16))
       }
     }

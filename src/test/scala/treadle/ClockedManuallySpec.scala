@@ -119,4 +119,40 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
     tester.report()
   }
 
+  private val circuit2 =
+    """
+      |circuit a :
+      |  module a :
+      |    input clock : UInt<1>
+      |    input reset : UInt<1>
+      |    input inp : UInt<8>
+      |    output out : UInt<8>
+      |
+      |    reg r : UInt<8>, asClock(clock) with : (reset => (reset, UInt<8>("h03")))
+      |    r   <= inp
+      |    out <= r
+      |
+      """.stripMargin
+
+  "should support (basic) UInt<1> clocks" in {
+    val options = Seq(TargetDirAnnotation("test_run_dir/manually_clocked_neg"))
+    val tester = TreadleTester(FirrtlSourceAnnotation(circuit2) +: options)
+
+    // init
+    tester.poke("clock", 0)
+    tester.poke("reset", 0)
+    tester.poke("inp", 0)
+    tester.step()
+    tester.peek("out") should be (0)
+
+    // no matter how often we poke r/in, r should never take on a new value unless we step the clock
+    tester.poke("inp", 7)
+    tester.peek("out") should be (0)
+    tester.poke("inp", 5)
+    tester.peek("out") should be (0)
+
+    // step
+    tester.step()
+    tester.peek("out") should be (5)
+  }
 }

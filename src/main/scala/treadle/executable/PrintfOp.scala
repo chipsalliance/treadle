@@ -74,4 +74,6 @@ object PrintfOp {
   val PrintfOpSymbol = Symbol("printfop", IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
 }
 
-case class PrintInfo(printSymbol: Symbol)
+case class PrintInfo(printSymbol: Symbol, cardinal: Int) extends Ordered[PrintInfo] {
+  override def compare(that: PrintInfo): Int = that.cardinal - this.cardinal
+}

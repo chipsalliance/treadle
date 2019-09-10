@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -150,18 +151,8 @@ class SimpleVendingMachineSpec extends FreeSpec with Matchers{
         |
       """.stripMargin
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        symbolsToWatch = Seq("dut.state", "dut.state/in")
-      )
-    }
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
-    val tester = TreadleTester(input, optionsManager)
 
     intercept[StopException] {
       tester.step(80)

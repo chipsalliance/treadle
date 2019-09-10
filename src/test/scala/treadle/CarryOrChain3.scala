@@ -2,7 +2,8 @@
 
 package treadle
 
-import org.scalatest.{Matchers, FreeSpec}
+import firrtl.stage.FirrtlSourceAnnotation
+import org.scalatest.{FreeSpec, Matchers}
 
 class CarryOrChain3 extends FreeSpec with Matchers {
   private val input =
@@ -50,7 +51,7 @@ class CarryOrChain3 extends FreeSpec with Matchers {
       bin.toList.map( "01".indexOf(_)).map( BigInt(_)).reverse.toArray
     }
 
-    val tester = TreadleTester(input)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     val lst = List( (v("001"),v("111")))
     for ( (a,co) <- lst) {

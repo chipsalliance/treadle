@@ -2,7 +2,8 @@
 
 package treadle.blackboxes
 
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl.options.TargetDirAnnotation
+import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.asyncreset.AsyncResetBlackBoxFactory
 import treadle.{BlackBoxFactoriesAnnotation, ShowFirrtlAtLoadAnnotation, TreadleTester, WriteVcdAnnotation}
@@ -154,6 +155,8 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
 
     val options = Seq(
       WriteVcdAnnotation,
+      TargetDirAnnotation("test_run_dir/async_reset_1"),
+      OutputFileAnnotation("async_reset_1"),
       BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
     )
 
@@ -240,6 +243,8 @@ class AsyncResetRegSpec extends FreeSpec with Matchers {
 
     val options = Seq(
       WriteVcdAnnotation,
+      TargetDirAnnotation("test_run_dir/async_reset_2"),
+      OutputFileAnnotation("async_reset_2"),
       BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
     )
 

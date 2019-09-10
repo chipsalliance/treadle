@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 //scalastyle:off magic.number
@@ -30,11 +31,7 @@ class NativeAsyncResetSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
-    }
-    val tester = TreadleTester(firrtlSource, manager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(firrtlSource)))
 
     tester.poke("in", 7)
     tester.expect("out_reg", 0)
@@ -93,11 +90,7 @@ class NativeAsyncResetSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
-    }
-    val tester = TreadleTester(firrtlSource, manager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(firrtlSource)))
 
     tester.poke("in", 7)
     tester.expect("out_reg", 0)

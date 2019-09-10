@@ -2,8 +2,8 @@
 
 package treadle
 
-import firrtl.stage.FirrtlSourceAnnotation
-import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
+import firrtl.options.TargetDirAnnotation
+import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
@@ -36,7 +36,8 @@ class VecSpec extends FreeSpec with Matchers {
     val options = Seq(
       WriteVcdAnnotation,
       RollBackBuffersAnnotation(20),
-      TopNameAnnotation("vec_spec_1")
+      TargetDirAnnotation("test_run_dir/vec_spec_1"),
+      OutputFileAnnotation("vec_spec_1")
     )
 
     val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
@@ -119,7 +120,11 @@ class VecSpec extends FreeSpec with Matchers {
         |
       """.stripMargin
 
-    val options = Seq(WriteVcdAnnotation)
+    val options = Seq(
+      WriteVcdAnnotation,
+      TargetDirAnnotation("test_run_dir/vec_spec_2"),
+      OutputFileAnnotation("vec_spec_2")
+    )
 
     val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 

@@ -67,11 +67,11 @@ libraryDependencies ++= (Seq("firrtl").map {
 // An explicit dependency on junit seems to alleviate this.
 libraryDependencies ++= Seq(
   "junit" % "junit" % "4.12" % "test",
-  "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
-  "com.github.scopt" %% "scopt" % "3.7.0",
+  "com.github.scopt" %% "scopt" % "3.7.1",
   "org.scala-lang.modules" % "scala-jline" % "2.12.1",
-  "org.json4s" %% "json4s-native" % "3.6.1"
+  "org.json4s" %% "json4s-native" % "3.6.7"
 )
 
 //javaOptions in run ++= Seq(
@@ -114,12 +114,25 @@ publishTo := {
   }
 }
 
+//
+// This is for regular compilation
+//
+scalacOptions in Compile ++= Seq(
+  "-deprecation",
+  "-unchecked"
+)
+
+//
+// This is for doc building
+//
 scalacOptions in Compile in doc ++= Seq(
+  "-deprecation",
   "-diagrams",
   "-diagrams-max-classes", "25",
   "-doc-version", version.value,
+  "-doc-source-url", "https://github.com/freechipsproject/treadle/tree/master/€{FILE_PATH}.scala",
   "-sourcepath", baseDirectory.value.getAbsolutePath,
-  "-doc-source-url", "https://github.com/freechipsproject/chisel-testers/tree/master/€{FILE_PATH}.scala"
+  "-unchecked"
 ) ++ scalacOptionsVersion(scalaVersion.value)
 
 javacOptions ++= javacOptionsVersion(scalaVersion.value)

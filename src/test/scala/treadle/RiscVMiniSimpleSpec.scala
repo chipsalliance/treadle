@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.{ClockInfo, StopException}
 
@@ -10,28 +11,22 @@ class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
   "riscv-mini simple core test should run then stop" in {
 
     val stream = getClass.getResourceAsStream("/core-simple.lo.fir")
-    val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
+    val input =
+      scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        writeVCD = false,
-        vcdShowUnderscored = false,
-        setVerbose = false,
-        showFirrtlAtLoad = false,
-        rollbackBuffers = 0,
-        clockInfo = Seq(ClockInfo("clock", period = 10, initialOffset = 1)),
-        symbolsToWatch = Seq()
+    val tester = TreadleTester(
+      Seq(
+        FirrtlSourceAnnotation(input),
+        ClockInfoAnnotation(
+          Seq(ClockInfo("clock", period = 10, initialOffset = 1))
+        )
       )
-    }
-
-    val tester = TreadleTester(input, optionsManager)
+    )
 
     intercept[StopException] {
       tester.step(400)
     }
     tester.report()
-    tester.engine.writeVCD()
-    tester.engine.lastStopResult should be (Some(0))
+    tester.engine.lastStopResult should be(Some(0))
   }
 }
-

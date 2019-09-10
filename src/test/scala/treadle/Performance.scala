@@ -2,6 +2,7 @@
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 /**
@@ -34,12 +35,7 @@ class Performance extends FreeSpec with Matchers {
     """
               .stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        rollbackBuffers = 0, showFirrtlAtLoad = false, setVerbose = false, writeVCD = false)
-    }
-
-    val tester = TreadleTester(junkFirrtl, manager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(junkFirrtl)))
 
     val startTime = System.nanoTime()
 
