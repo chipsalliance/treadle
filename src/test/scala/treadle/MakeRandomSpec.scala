@@ -11,9 +11,9 @@ class MakeRandomSpec extends FlatSpec with Matchers {
   behavior of "random sint generator"
 
   they should "work over all possible values of given width" in {
-    var count = 0
-
     for(width <- 1 to 8) {
+      var count = 0
+
       val (low, high) = TestUtils.extremaOfSIntOfWidth(width)
       val range = new mutable.HashSet[BigInt]
 
