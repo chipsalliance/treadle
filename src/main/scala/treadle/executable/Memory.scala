@@ -92,7 +92,7 @@ object Memory {
       sensitivityGraphBuilder.addSensitivity(clk, data)
 
       val pipelineRaddrSymbols = (0 until memory.readLatency).flatMap { n =>
-        buildRegisterTriple(s"$expandedName.$readerString.pipeline_raddr_", n, dataType)
+        buildRegisterTriple(s"$expandedName.$readerString.pipeline_raddr_", n, addrType)
       }
       val pipelineEnableSymbols = (0 until memory.readLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readerString.pipeline_ren_", n, booleanType)
@@ -163,12 +163,12 @@ object Memory {
       sensitivityGraphBuilder.addSensitivity(mask, valid)
 
       val pipelineReadDataSymbols = (0 until memory.readLatency).flatMap { n =>
-        buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_raddr_", n, dataType)
+        buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_raddr_", n, addrType)
       }
       buildPipelineDependencies(addr, pipelineReadDataSymbols, Some(rdata), clockSymbol = Some(clk))
 
       val pipelineReadEnableSymbols = (0 until memory.readLatency).flatMap { n =>
-        buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_ren_", n, dataType)
+        buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_ren_", n, booleanType)
       }
       buildPipelineDependencies(addr, pipelineReadEnableSymbols, Some(rdata), clockSymbol = Some(clk))
 
