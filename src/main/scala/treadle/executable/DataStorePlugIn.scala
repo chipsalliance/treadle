@@ -2,6 +2,8 @@
 
 package treadle.executable
 
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.Unserializable
 import treadle.vcd.VCD
 
 abstract class DataStorePlugin {
@@ -29,13 +31,13 @@ abstract class DataStorePlugin {
     }
   }
 
-  def run(symbol: Symbol, offset: Int = -1): Unit
+  def run(symbol: Symbol, offset: Int = -1, previousValue: Big): Unit
 }
 
 class ReportAssignments(val executionEngine: ExecutionEngine) extends DataStorePlugin {
   val dataStore: DataStore = executionEngine.dataStore
 
-  def run(symbol: Symbol, offset: Int = -1): Unit = {
+  def run(symbol: Symbol, offset: Int = -1, previousValue: BigInt): Unit = {
     if(offset == -1) {
       val valueMessage = if(symbol.forcedValue.isDefined) {
         s" FORCED(${symbol.forcedValue.get}"
@@ -69,7 +71,7 @@ class RenderComputations(
     executionEngine.symbolTable.get(name)
   }.toSet
 
-  def run(symbol: Symbol, offset: Int = -1): Unit = {
+  def run(symbol: Symbol, offset: Int = -1, previousValue: BigInt): Unit = {
     if(symbolsToWatch.contains(symbol)) {
       if(symbol.forcedValue.isDefined) {
         print(s"FORCED(${symbol.forcedValue.get} would have been: ")
@@ -82,7 +84,7 @@ class RenderComputations(
 class VcdHook(val executionEngine: ExecutionEngine, val vcd: VCD) extends DataStorePlugin {
   val dataStore: DataStore = executionEngine.dataStore
 
-  override def run(symbol: Symbol, offset: Int = -1): Unit = {
+  override def run(symbol: Symbol, offset: Int = -1, previousValue: BigInt): Unit = {
     if(offset == -1) {
       val value = dataStore(symbol)
       vcd.wireChanged(symbol.name, value, width = symbol.bitWidth)

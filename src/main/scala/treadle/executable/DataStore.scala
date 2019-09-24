@@ -125,8 +125,8 @@ extends HasDataArrays {
     }
   }
 
-  def runPlugins(symbol: Symbol, offset: Int = -1): Unit = {
-    activePlugins.foreach { _.run(symbol, offset) }
+  def runPlugins(symbol: Symbol, offset: Int = -1, previousValue: BigInt): Unit = {
+    activePlugins.foreach { _.run(symbol, offset, previousValue) }
   }
 
   def showAssignment(symbol: Symbol): Unit = {
@@ -167,9 +167,10 @@ extends HasDataArrays {
     }
 
     def runFull(): Unit = {
+      val previousValue = apply(symbol)
       val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
       intData(index) = value
-      runPlugins(symbol)
+      runPlugins(symbol, previousValue = previousValue)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -206,10 +207,11 @@ extends HasDataArrays {
     }
 
     def runFull(): Unit = {
+      val previousValue = apply(symbol)
       val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
 
       longData(index) = value
-      runPlugins(symbol)
+      runPlugins(symbol, previousValue = previousValue)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -233,10 +235,11 @@ extends HasDataArrays {
       bigData(index) = expression()
     }
     def runFull(): Unit = {
+      val previousValue = apply(symbol)
       val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
 
       bigData(index) = value
-      runPlugins(symbol)
+      runPlugins(symbol, previousValue = previousValue)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
@@ -300,8 +303,9 @@ extends HasDataArrays {
         val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
+        val previousValue = intData(index + (memoryIndex % memorySymbol.slots))
         intData(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(memorySymbol, memoryIndex)
+        runPlugins(memorySymbol, memoryIndex, previousValue)
       }
     }
 
@@ -332,8 +336,9 @@ extends HasDataArrays {
         val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
+        val previousValue = longData(index + (memoryIndex % memorySymbol.slots))
         longData(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(memorySymbol, memoryIndex)
+        runPlugins(memorySymbol, memoryIndex, previousValue)
       }
     }
 
@@ -364,8 +369,9 @@ extends HasDataArrays {
         val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
+        val previousValue = bigData(index + (memoryIndex % memorySymbol.slots))
         bigData(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(memorySymbol, memoryIndex)
+        runPlugins(memorySymbol, memoryIndex, previousValue)
       }
     }
 

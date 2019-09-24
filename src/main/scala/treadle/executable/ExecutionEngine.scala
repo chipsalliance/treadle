@@ -60,6 +60,10 @@ class ExecutionEngine(
     enable = symbolsToWatch.nonEmpty
   )
 
+  annotationSeq.collect { case a: DataStorePlugInAnnotation => a }.foreach { a =>
+    dataStore.addPlugin(a.name, a.getPlugin(this), enable = true)
+  }
+
   def setLeanMode(): Unit = {
     val canBeLean = ! (verbose || dataStore.hasEnabledPlugins)
     scheduler.setLeanMode(canBeLean)
