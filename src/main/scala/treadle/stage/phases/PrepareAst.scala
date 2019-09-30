@@ -77,8 +77,7 @@ object PrepareAst extends TreadlePhase {
       Seq(
         new TreadleLowFirrtlOptimization,
         new BlackBoxSourceHelper,
-        new FixupOps,
-        AugmentPrintf
+        new FixupOps
       )
   }
 }

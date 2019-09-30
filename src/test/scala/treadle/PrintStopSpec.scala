@@ -269,7 +269,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     output
       .toString
-      .split("\n").count { line => line.contains("+++ y=481 ry=480 rry=479 isZero=0 is480=1") } should be (1)
+      .split("\n").count { line => line.contains("+++ y=481 ry=481 rry=480 isZero=0 is480=1") } should be (1)
 
     output
       .toString
@@ -297,7 +297,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |    node _T_2 = bits(reset, 0, 0) @[PrintfWrong.scala 19:11]
         |    node _T_3 = eq(_T_2, UInt<1>("h00")) @[PrintfWrong.scala 19:11]
         |    when _T_3 : @[PrintfWrong.scala 19:11]
-        |      printf(clock, UInt<1>(1), "+++ y=%d ry=%d rry=%d isZero=%x is480=%x\n", y, regY, regRegY, _T, _T_1) @[PrintfWrong.scala 19:11]
+        |      printf(clock, UInt<1>(1), "+++ y=%d ry=%d rry=%d isZero=%x rry_is_480=%x\n", y, regY, regRegY, _T, _T_1) @[PrintfWrong.scala 19:11]
         |      skip @[PrintfWrong.scala 19:11]
         |    io.out <= regRegY @[PrintfWrong.scala 22:10]
         |
@@ -318,9 +318,11 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     }
 
+    println(output.toString)
     output
       .toString
-      .split("\n").count { line => line.contains("+++ y=481 ry=480 rry=479 isZero=0 is480=1") } should be (1)
+      .split("\n")
+      .count { line => line.contains("+++ y=481 ry=481 rry=480 isZero=0 rry_is_480=1") } should be (1)
 
     output
       .toString
@@ -337,15 +339,18 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |    input reset : UInt<1>
         |    output io : {flip in : UInt<10>, out : UInt<10>}
         |
-        |
+        |    reg count : UInt<10>, clock with :
+        |      reset => (reset, UInt<8>("h0"))
         |    reg r0 : UInt, clock with :
         |      reset => (reset, UInt<8>("h0"))
         |    reg r1 : UInt, clock with :
         |      reset => (reset, UInt<8>("h1"))
         |    r0 <= r1
         |    r1 <= r0
+        |    count <= add(count, UInt<1>(1))
+        |
         |    io.out <= r1
-        |    printf(clock, UInt<1>(1), "+++ r0=%d r1=%d\n", r0, r1) @[PrintfWrong.scala 19:11]
+        |    printf(clock, UInt<1>(1), "+++ count=%d r0=%d r1=%d\n", count, r0, r1) @[PrintfWrong.scala 19:11]
       """.stripMargin
 
     val output = new ByteArrayOutputStream()
@@ -362,21 +367,19 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
 
-    printfLines.head.contains("+++ r0=0 r1=0") should be (true)
+    printfLines.head.contains("+++ count=0 r0=0 r1=1") should be (true)
 
     val linesCorrect = printfLines
             .tail
             .zipWithIndex
             .map { case (line, lineNumber) =>
-              println(s"$lineNumber  $line")
-              if (lineNumber % 2 == 1) {
-                line.contains("+++ r0=1 r1=0")
+              if (lineNumber % 2 == 0) {
+                line.contains("r0=1 r1=0")
               }
               else {
-                line.contains("+++ r0=0 r1=1")
+                line.contains("r0=0 r1=1")
               }
             }
-    println(linesCorrect.map(_.toString).mkString("-"))
 
     linesCorrect.forall(b => b) should be (true)
   }
