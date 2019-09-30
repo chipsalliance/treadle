@@ -1459,8 +1459,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     try {
       loadSource()
 
-      if (replConfig.firrtlSourceName.nonEmpty) {
-        loadFile(replConfig.firrtlSourceName)
+      if(! annotationSeq.exists(_.isInstanceOf[TreadleTesterAnnotation])) {
+        if (replConfig.firrtlSourceName.nonEmpty) {
+          loadFile(replConfig.firrtlSourceName)
+        }
       }
       if (replConfig.scriptName.nonEmpty) {
         loadScript(replConfig.scriptName)
