@@ -1531,6 +1531,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       console.flush()
       history.flush()
       console.shutdown()
+      TerminalFactory.get.restore()
     }
     catch {
       case e: Exception =>
