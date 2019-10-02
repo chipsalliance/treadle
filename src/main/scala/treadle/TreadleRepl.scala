@@ -11,7 +11,7 @@ import firrtl.options.{OptionsException, StageOptions, StageUtils, TargetDirAnno
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, OutputFileAnnotation}
 import org.json4s.native.JsonMethods._
 import treadle.chronometry.UTC
-import treadle.executable.{ExecutionEngine, Symbol, SymbolTable, TreadleException, WaveformValues}
+import treadle.executable.{ExecutionEngine, RenderComputations, Symbol, SymbolTable, TreadleException, WaveformValues}
 import treadle.repl._
 import treadle.stage.TreadleTesterPhase
 import treadle.vcd.VCD
@@ -519,6 +519,71 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                   error(s"exception ${a.getMessage}")
               }
             case _ =>
+          }
+        }
+      },
+      new Command("watch") {
+        private def peekableThings: Seq[String] = engine.validNames.toSeq
+        def usage: (String, String) = ("watch [+|-] regex [regex ...]", "watch (+) or unwatch (-) signals")
+
+        override def completer: Option[ArgumentCompleter] = {
+          if(currentTreadleTesterOpt.isEmpty) {
+            None
+          }
+          else {
+            Some(new ArgumentCompleter(
+              new StringsCompleter({"watch"}),
+              new StringsCompleter(jlist(peekableThings))
+            ))
+          }
+        }
+
+        //scalastyle:off cyclomatic.complexity
+        def run(args: Array[String]): Unit = {
+          var isAdding = true
+
+          engine.dataStore.plugins.get("show-computation") match {
+            case Some(plugin: RenderComputations) =>
+              args.foreach {
+                case "-" => isAdding = false
+                case "+" => isAdding = true
+                case symbolPattern =>
+                  try {
+                    val portRegex = symbolPattern.r
+                    peekableThings.foreach { signalName =>
+                      portRegex.findFirstIn(signalName) match {
+                        case Some(_) =>
+                          try {
+                            val value = engine.getValue(signalName)
+                            val symbol = engine.symbolTable(signalName)
+                            if (isAdding) {
+                              plugin.symbolsToWatch += symbol
+                              console.println(s"add watch for ${symbol.render} ${formatOutput(value)}")
+                            } else {
+                              plugin.symbolsToWatch -= symbol
+                              console.println(s"removing watch for ${symbol.render} ${formatOutput(value)}")
+                            }
+                          }
+                          catch {
+                            case _: Exception => false
+                          }
+                        case _ =>
+                          false
+                      }
+                    }
+                  }
+                  catch {
+                    case e: Exception =>
+                      error(s"exception ${e.getMessage} $e")
+                    case a: AssertionError =>
+                      error(s"exception ${a.getMessage}")
+                  }
+              }
+              plugin.setEnabled(plugin.symbolsToWatch.nonEmpty)
+              engine.setLeanMode()
+
+            case None =>
+              console.println(s"Can't find watch plugin-in")
           }
         }
       },
@@ -1394,8 +1459,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     try {
       loadSource()
 
-      if (replConfig.firrtlSourceName.nonEmpty) {
-        loadFile(replConfig.firrtlSourceName)
+      if(! annotationSeq.exists(_.isInstanceOf[TreadleTesterAnnotation])) {
+        if (replConfig.firrtlSourceName.nonEmpty) {
+          loadFile(replConfig.firrtlSourceName)
+        }
       }
       if (replConfig.scriptName.nonEmpty) {
         loadScript(replConfig.scriptName)
@@ -1464,6 +1531,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       console.flush()
       history.flush()
       console.shutdown()
+      TerminalFactory.get.restore()
     }
     catch {
       case e: Exception =>
