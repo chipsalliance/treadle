@@ -1,51 +1,90 @@
-//// See LICENSE for license details.
-//
-//treadle treadle.executable
-//
-//import firrtl.WireKind
-//import org.scalatest.{FreeSpec, Matchers}
-//
-//class DataStoreSpec extends FreeSpec with Matchers {
-//  def makeSymbol(index: Int): Symbol = {
-//    val s = new Symbol(s"n$index", IntSize, UnsignedInt, WireKind, 32, 1)
-//    s.index = index
-//    s
-//  }
-//  "DataStore holds all state information" - {
-//    "can store data and retrieve for ints with 1 buffer" in {
-//      val numInts = 10
-//      val ds = new DataStore(numberOfBuffers = 1)
-//      for(i <- 0 until numInts) ds.getIndex(IntSize)
-//      ds.allocateBuffers()
-//
-//      val assigns = Seq.tabulate(numInts){ n => ds.AssignInt(makeSymbol(n), () => n).apply }
-//      assigns.foreach { assign => assign() }
-//
-//      val gets  = Seq.tabulate(numInts){ n => ds.GetInt(n) }
-//      gets.zipWithIndex.foreach { case (get, index) =>
-//        get() should be (index)
-//      }
-//      for(index <- 0 until numInts) {
-//        println(f"$index%4d" + ds.getIntRow(index).map { n => f"$n%5d" }.mkString(","))
-//      }
-//    }
-//
-//    "can store data and retrieve for ints with 4 buffer" in {
-//      val numInts = 10
-//      val buffers = 4
-//      val ds = new DataStore(numberOfBuffers = buffers)
-//      for(i <- 0 until numInts) ds.getIndex(IntSize)
-//      ds.allocateBuffers()
-//
-//      for(pass <- 0 until 20) {
-//        val assigns = Seq.tabulate(numInts) { n => ds.AssignInt(makeSymbol(n), () => n * 7 + pass) }
-//        assigns.foreach { assign => assign.apply() }
-//        ds.advanceBuffers()
-//      }
-//
-//      for(index <- 0 until numInts) {
-//        println(f"$index%4d" + ds.getIntRow(index).map { n => f"$n%5d" }.mkString(","))
-//      }
-//    }
-//  }
-//}
+// See LICENSE for license details.
+
+package treadle.executable
+
+import treadle._
+import firrtl.stage.FirrtlSourceAnnotation
+import org.scalatest.{FreeSpec, Matchers}
+import treadle.{
+  BigIntTestValuesGenerator,
+  DataStorePlugInAnnotation,
+  TreadleTester
+}
+
+import scala.collection.mutable
+
+class DataStoreSpec extends FreeSpec with Matchers {
+
+  info( "this")
+
+  "DataStore Plugins can be added via an annotation" - {
+    "They can be useful for analytics on a circuit simulation" in {
+      val input =
+        """
+          |circuit PassThrough :
+          |  module PassThrough :
+          |    input clock : Clock
+          |    input a : SInt<8>
+          |    input b : SInt<8>
+          |    output c: SInt<9>
+          |    output d: SInt<10>
+          |
+          |    reg r : SInt<9>, clock
+          |    r <= add(a, b)
+          |    c <= add(a, b)
+          |    d <= add(r, a)
+          |""".stripMargin
+
+      case class Extrema(low: BigInt, high: BigInt) {
+        def update(value: BigInt): Extrema = {
+          if (value < low) { Extrema(value, high) }
+          else if (value > high) { Extrema(low, value) }
+          else { this }
+        }
+      }
+
+      class DataCollector {
+        val extrema = new mutable.HashMap[String, Extrema]
+
+        def getPlugin(executionEngine: ExecutionEngine): DataStorePlugin = {
+          PlugIn(executionEngine)
+        }
+
+        case class PlugIn(executionEngine: ExecutionEngine)
+            extends DataStorePlugin {
+          override def dataStore: DataStore = executionEngine.dataStore
+
+          override def run(symbol: Symbol,
+                           offset: Int,
+                           previousValue: Big): Unit = {
+            extrema(symbol.name) = extrema.get(symbol.name) match {
+              case Some(extrema) => extrema.update(dataStore(symbol))
+              case None          => Extrema(dataStore(symbol), dataStore(symbol))
+            }
+          }
+        }
+      }
+
+      val dataCollector = new DataCollector
+      val annos = Seq(
+        DataStorePlugInAnnotation("DataCollector", dataCollector.getPlugin)
+      )
+      val tester = TreadleTester(annos :+ FirrtlSourceAnnotation(input))
+
+      val extremes = extremaOfSIntOfWidth(8)
+      for {
+        a <- BigIntTestValuesGenerator(extremes)
+        b <- BigIntTestValuesGenerator(extremes)
+      } {
+        tester.poke("a", a)
+        tester.poke("b", b)
+        tester.step()
+      }
+      tester.finish
+
+      dataCollector.extrema("c") should be (Extrema(-256, 254))
+      dataCollector.extrema("d") should be (Extrema(-384, 381))
+      dataCollector.extrema("r") should be (Extrema(-256, 254))
+    }
+  }
+}
