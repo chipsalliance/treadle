@@ -7,7 +7,7 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
-import treadle.executable.{ClockInfo, TreadleException}
+import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation => }
 
@@ -252,6 +252,19 @@ object TreadleFirrtlFile extends HasShellOptions {
 
 case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFactory])
         extends NoTargetAnnotation with TreadleOption
+
+/**
+  * Using this annotation allows external users of a TreadleTester to supply their own custom
+  * [[DataStorePlugin]]s. See that code for examples of use.
+  *
+  * @note this annotation cannot be generated from the command line
+  * @param name      A unique name for this plugin
+  * @param getPlugin A function that returns a DataStorePlugin subclass
+  */
+case class DataStorePlugInAnnotation(
+                                      name: String,
+                                      getPlugin: ExecutionEngine => DataStorePlugin
+                                    ) extends NoTargetAnnotation with TreadleOption
 
 /** Constructs this as a registered library that will be auto-detected by
   * projects who have a dependency on Treadle
