@@ -73,7 +73,6 @@ object PrepareAstFromLowFIRRTL extends TreadlePhase {
   */
 object PrepareAst extends TreadlePhase {
   val transforms: Seq[Transform] = {
-    getLoweringTransforms(ChirrtlForm, LowForm) ++
       Seq(
         new TreadleLowFirrtlOptimization,
         new BlackBoxSourceHelper,

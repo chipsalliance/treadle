@@ -58,6 +58,7 @@ object GetFirrtlAst extends Phase {
         }
       }
     }
-    newAnnotations
+    /** add default [[firrtl.LowFirrtlCompiler]] for [[firrtl.stage.phases.Compiler]]*/
+    newAnnotations :+ firrtl.stage.CompilerAnnotation(new firrtl.LowFirrtlCompiler)
   }
 }

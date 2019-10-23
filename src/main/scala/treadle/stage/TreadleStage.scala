@@ -43,6 +43,7 @@ object TreadleTesterPhase extends Phase {
   private val phases: Seq[Phase] = Seq(
     GetFirrtlAst,
     SetImplicitOutputInfo,
+    new firrtl.stage.phases.Compiler,
     PrepareAst,
     CreateTester
   )
