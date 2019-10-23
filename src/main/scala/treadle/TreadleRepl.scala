@@ -1554,7 +1554,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 object TreadleRepl {
   def apply(annotationSeq: AnnotationSeq): TreadleRepl = {
     val newAnnos = TreadleTesterPhase.transform(annotationSeq)
-    new TreadleRepl(newAnnos)
+    new TreadleRepl(annotationSeq ++ newAnnos)
   }
 
   def execute(optionsManager: TreadleOptionsManager with HasReplConfig): Unit = {
