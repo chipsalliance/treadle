@@ -66,7 +66,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    output io : {flip in : Fixed<6><<2>>, out : Fixed}
         |
         |    io is invalid
-        |    node T_2 = bpset(io.in, 0)
+        |    node T_2 = setp(io.in, 0)
         |    io.out <= T_2
       """.stripMargin
 
