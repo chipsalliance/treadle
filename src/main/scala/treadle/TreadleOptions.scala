@@ -2,7 +2,7 @@
 
 package treadle
 
-import firrtl.CircuitState
+import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
@@ -217,8 +217,36 @@ case class TreadleCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation
   */
 case class TreadleCircuitStateAnnotation(state: CircuitState) extends NoTargetAnnotation
 
+/** Provides an input form hint to treadle to know how to best handle the input it receives
+  *
+  * @param form the input form
+  */
+case class TreadleFirrtlFormHint(form: CircuitForm) extends NoTargetAnnotation
+
+object TreadleFirrtlFormHint extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[String](
+      longOption = "tr-firrtl-input-form",
+      toAnnotationSeq = (firrtl: String) => {
+        val form = firrtl match {
+          case "low" => LowForm
+          case "high" => HighForm
+          case "chirrtl" => ChirrtlForm
+          case "unknown" => UnknownForm
+          case _ =>
+            throw TreadleException(
+              s"--tr-firrtl-input-form $firrtl is invalid, should be one of high,low,chirrtl,unknown")
+        }
+        Seq(TreadleFirrtlFormHint(form))
+      },
+      helpText = "provides firrtl form hint to treadle, should be one of high,low,chirrtl,unknown"
+    )
+  )
+}
+
 /**
   * Used to pass a tester on to a test harness
+  *
   * @param tester The [[TreadleTester]] to be passed on
   */
 case class TreadleTesterAnnotation(tester: TreadleTester) extends NoTargetAnnotation with TreadleOption
