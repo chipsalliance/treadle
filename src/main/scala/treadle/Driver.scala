@@ -25,7 +25,8 @@ case class TreadleOptions(
                            clockInfo         : Seq[ClockInfo]       = Seq.empty,
                            resetName         : String               = "reset",
                            callResetAtStartUp: Boolean              = false,
-                           symbolsToWatch    : Seq[String]          = Seq.empty
+                           symbolsToWatch    : Seq[String]          = Seq.empty,
+                           extraAnnotations  : AnnotationSeq        = Seq.empty
   )
   extends firrtl.ComposableOptions {
 
@@ -59,7 +60,7 @@ case class TreadleOptions(
     annotations += ResetNameAnnotation(resetName)
     annotations += SymbolsToWatchAnnotation(symbolsToWatch)
 
-    AnnotationSeq(annotations.toSeq)
+    AnnotationSeq(annotations ++ extraAnnotations)
   }
 }
 
