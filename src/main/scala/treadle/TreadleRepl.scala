@@ -582,7 +582,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               plugin.setEnabled(plugin.symbolsToWatch.nonEmpty)
               engine.setLeanMode()
 
-            case None =>
+            case _ =>
               console.println(s"Can't find watch plugin-in")
           }
         }
