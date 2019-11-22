@@ -33,7 +33,7 @@ class VcdDiffStage extends Stage {
       case ProgramArgsAnnotation(fileName) =>
         VCD.read(fileName)
     }
-    if(vcds.length != 2) {
+    if (vcds.length != 2) {
       println("Error: Two files must be specifed for diff to run\nUsage: VCDDiff options <file1> <file2>")
       System.exit(1)
     }
