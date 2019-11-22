@@ -243,12 +243,7 @@ object VCD extends LazyLogging {
         Some(name)
       }
       else if(name.startsWith(varPrefix)) {
-        if(newVarPrefix.nonEmpty) {
-          Some(newVarPrefix + name.drop(varPrefix.length))
-        }
-        else {
-          Some(name)
-        }
+        Some(name)
       }
       else {
         None
@@ -258,7 +253,7 @@ object VCD extends LazyLogging {
     def addVar(s: String): Unit = {
       s match {
         case VarSpec("wire", sizeString, idString, referenceString) =>
-          checkName(referenceString.split(" +").head) match {
+          checkName(referenceString.split(""" +""").head) match {
             case Some(varName) =>
               if(desiredScopeFound) {
                 val wire: Wire = Wire(varName, idString, sizeString.toInt, scopePath(currentScope).toArray)
