@@ -11,6 +11,20 @@ case class VcdClassAnnotation(fileName: String) {
 
 }
 
+case class V1StartTime(v1StartTime: Long) extends NoTargetAnnotation with VcdDiffOption
+
+case object V1StartTime extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[Long](
+      longOption = "v1-start-time",
+      toAnnotationSeq = a => Seq(V1StartTime(a)),
+      helpText = "when to start in vcd1, vcd2 can be offset from this",
+      shortOption = Some("vst"),
+      helpValueName = Some("set start time for v1")
+    )
+  )
+}
+
 case class MaxDiffLines(linesToShow: Int) extends NoTargetAnnotation with VcdDiffOption
 
 case object MaxDiffLines extends HasShellOptions {

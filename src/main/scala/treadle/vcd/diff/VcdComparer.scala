@@ -26,6 +26,10 @@ class VcdComparer(annotationSeq: AnnotationSeq) {
     case MaxDiffLines(lines) => lines
   }.getOrElse(100)
 
+  val startTime = annotationSeq.collectFirst {
+    case V1StartTime(time) => time
+  }.getOrElse(0L)
+
 
   def isTempWire(name: String): Boolean = {
     val result = name == "_T" || name.contains("_T_") ||  name == "_GEN" || name.contains("_GEN_")
@@ -154,12 +158,12 @@ class VcdComparer(annotationSeq: AnnotationSeq) {
               if (change1.value != change2.value) {
                 showTime()
                 linesShown += 1
-                println(f"${change1.value}%32d  ${change2.value}%32d ${vcd1.wires(key1)}  ${vcd2.wires(key2)}")
+                println(f"${change1.value}%32d  ${change2.value}%32d ${vcd1.wires(key1).fullName}%-40s  ${vcd2.wires(key2).fullName}")
               }
             case None =>
               showTime()
               linesShown += 1
-              println(f"${change1.value}%32d  ${"---"}%32s ${vcd1.wires(key1)}  ${vcd2.wires(key2)}")
+              println(f"${change1.value}%32d  ${"---"}%32s ${vcd1.wires(key1).fullName}%-40s  ${vcd2.wires(key2).fullName}")
 
           }
           case _ =>
@@ -176,7 +180,7 @@ class VcdComparer(annotationSeq: AnnotationSeq) {
             case None =>
               showTime()
               linesShown += 1
-              println(f"${"---"}%32s  ${change2.value}%16d ${vcd1.wires(key1)}  ${vcd2.wires(key2)}")
+              println(f"${"---"}%32s  ${change2.value}%16d ${vcd1.wires(key1).fullName}%-40s  ${vcd2.wires(key2).fullName}")
           }
           case _ =>
           // key1 not in matched wires so ignore it
@@ -235,9 +239,9 @@ class VcdComparer(annotationSeq: AnnotationSeq) {
 
       val maxTime = vcd1.valuesAtTime.keys.max.min(vcd2.valuesAtTime.keys.max)
 
-      val startTime = if (timeOffset < 0) -timeOffset else 0L
+      val beginTime = if (startTime + timeOffset < 0) -timeOffset else startTime
 
-      for (currentTime <- startTime to maxTime if linesShown < maxDiffLines) {
+      for (currentTime <- beginTime to maxTime if linesShown < maxDiffLines) {
         if (vcd1.valuesAtTime.contains(currentTime) || vcd2.valuesAtTime.contains(currentTime + timeOffset)) {
           compareChangeSets(
             vcd1.valuesAtTime.getOrElse(currentTime, Seq.empty).toList,
