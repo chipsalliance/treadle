@@ -38,7 +38,7 @@ class VcdDiffStage extends Stage {
       System.exit(1)
     }
 
-    val vcdDiff = new VcdComparer(annotations)
+    val vcdDiff = new VcdComparator(annotations)
     vcdDiff.compare(vcds.head, vcds.tail.head)
 
     annotations

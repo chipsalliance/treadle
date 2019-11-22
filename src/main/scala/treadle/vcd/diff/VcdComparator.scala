@@ -7,7 +7,7 @@ import treadle.vcd.{Change, VCD}
 
 import scala.collection.mutable
 
-object VcdComparer {
+object VcdComparator {
   val DisplayColumns: Int = 32
 }
 
@@ -17,7 +17,7 @@ object VcdComparer {
   * @param annotationSeq contains annotations used to control behavior
   */
 //scalastyle:off magic.number
-class VcdComparer(annotationSeq: AnnotationSeq) {
+class VcdComparator(annotationSeq: AnnotationSeq) {
   val ignoreTempWires:      Boolean = annotationSeq.exists { case IgnoreTempWires => true; case _ => false }
   val doCompareDirectories: Boolean = annotationSeq.exists { case CompareWires => true; case _ => false }
   val dontDiffValues:       Boolean = annotationSeq.exists { case DontDiffValues => true; case _ => false }
@@ -129,17 +129,17 @@ class VcdComparer(annotationSeq: AnnotationSeq) {
 
       def showValue(value: BigInt): String = {
         val fullString = value.toString(displayRadix).toUpperCase
-        val adjustedString = if (fullString.length > VcdComparer.DisplayColumns) {
-          val toRemove = (fullString.length - VcdComparer.DisplayColumns) + 3
+        val adjustedString = if (fullString.length > VcdComparator.DisplayColumns) {
+          val toRemove = (fullString.length - VcdComparator.DisplayColumns) + 3
           val startPosition = (fullString.length + 1 - toRemove) / 2
           fullString.patch(startPosition, "...", toRemove)
         } else {
           fullString
         }
-        (" " * (VcdComparer.DisplayColumns - adjustedString.length)) + adjustedString
+        (" " * (VcdComparator.DisplayColumns - adjustedString.length)) + adjustedString
       }
 
-      def showMissingValue: String = (" " * (VcdComparer.DisplayColumns - 3)) + "---"
+      def showMissingValue: String = (" " * (VcdComparator.DisplayColumns - 3)) + "---"
 
       changeCodes1.keys.toSeq.sorted.foreach { key1 =>
         val change1 = changeCodes1(key1)
