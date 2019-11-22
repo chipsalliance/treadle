@@ -6,27 +6,27 @@ import firrtl.AnnotationSeq
 import treadle.vcd.{Change, VCD, Wire}
 
 import scala.collection.mutable
-import scala.util.matching.Regex
 
+//scalastyle:off magic.number
 class VcdComparer(annotationSeq: AnnotationSeq) {
-  val ignoreTempWires = true
-  val ignoreUniqueWires = true
-  val doCompareDirectories = annotationSeq.exists { case CompareWires => true; case _ => false }
-  val dontDiffValues = annotationSeq.exists { case DontDiffValues => true; case _ => false }
+  val ignoreTempWires: Boolean = true
+  val ignoreUniqueWires: Boolean = true
+  val doCompareDirectories: Boolean = annotationSeq.exists { case CompareWires => true; case _ => false }
+  val dontDiffValues: Boolean = annotationSeq.exists { case DontDiffValues => true; case _ => false }
 
-  val (removePrefix1, addPrefix1) = annotationSeq.collectFirst {
+  private val (removePrefix1, addPrefix1) = annotationSeq.collectFirst {
     case wp: WirePrefix1 => (wp.removePrefix, wp.addPrefix)
   }.getOrElse(("", ""))
 
-  val (removePrefix2, addPrefix2) = annotationSeq.collectFirst {
+  private val (removePrefix2, addPrefix2) = annotationSeq.collectFirst {
     case wp: WirePrefix2 => (wp.removePrefix, wp.addPrefix)
   }.getOrElse(("", ""))
 
-  val maxDiffLines = annotationSeq.collectFirst {
+  private val maxDiffLines = annotationSeq.collectFirst {
     case MaxDiffLines(lines) => lines
   }.getOrElse(100)
 
-  val startTime = annotationSeq.collectFirst {
+  private val startTime = annotationSeq.collectFirst {
     case V1StartTime(time) => time
   }.getOrElse(0L)
 
@@ -75,10 +75,10 @@ class VcdComparer(annotationSeq: AnnotationSeq) {
         }
       }
 
-      val v1Tov2 = matchedWires.map { case a =>
+      val v1Tov2 = matchedWires.map { a =>
         map1(a) -> map2(a)
       }.toMap
-      val v2Tov1 = matchedWires.map { case a =>
+      val v2Tov1 = matchedWires.map { a =>
         map2(a) -> map1(a)
       }.toMap
 
