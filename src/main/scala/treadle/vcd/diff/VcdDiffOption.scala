@@ -7,14 +7,10 @@ import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
 trait VcdDiffOption extends Unserializable { this: Annotation => }
 
-case class VcdClassAnnotation(fileName: String) {
-
-}
-
 case class V1StartTime(v1StartTime: Long) extends NoTargetAnnotation with VcdDiffOption
 
 case object V1StartTime extends HasShellOptions {
-  val options = Seq(
+  val options: Seq[ShellOption[Long]] = Seq(
     new ShellOption[Long](
       longOption = "v1-start-time",
       toAnnotationSeq = a => Seq(V1StartTime(a)),
@@ -25,10 +21,24 @@ case object V1StartTime extends HasShellOptions {
   )
 }
 
+case class DisplayRadix(linesToShow: Int) extends NoTargetAnnotation with VcdDiffOption
+
+case object DisplayRadix extends HasShellOptions {
+  val options: Seq[ShellOption[Int]] = Seq(
+    new ShellOption[Int](
+      longOption = "display-radix",
+      toAnnotationSeq = a => Seq(DisplayRadix(a)),
+      helpText = "display radix for values shown",
+      shortOption = Some("dr"),
+      helpValueName = Some("show values in arbitrary radix")
+    )
+  )
+}
+
 case class MaxDiffLines(linesToShow: Int) extends NoTargetAnnotation with VcdDiffOption
 
 case object MaxDiffLines extends HasShellOptions {
-  val options = Seq(
+  val options: Seq[ShellOption[Int]] = Seq(
     new ShellOption[Int](
       longOption = "max-lines",
       toAnnotationSeq = a => Seq(MaxDiffLines(a)),
@@ -42,7 +52,7 @@ case object MaxDiffLines extends HasShellOptions {
 case class TimeOffset(offset: Long) extends NoTargetAnnotation with VcdDiffOption
 
 case object TimeOffset extends HasShellOptions {
-  val options = Seq(
+  val options: Seq[ShellOption[Long]] = Seq(
     new ShellOption[Long](
       longOption = "time-offset",
       toAnnotationSeq = a => Seq(TimeOffset(a)),
@@ -57,13 +67,13 @@ trait PrefixMap {
   val string: String
   private val fields = string.split(":")
   val removePrefix: String = fields.head
-  val addPrefix: String = fields.tail.head
+  val addPrefix:    String = fields.tail.head
 }
 case class WirePrefix1(string: String) extends NoTargetAnnotation with VcdDiffOption with PrefixMap
 case class WirePrefix2(string: String) extends NoTargetAnnotation with VcdDiffOption with PrefixMap
 
 case object WirePrefix1 extends HasShellOptions {
-  val options = Seq(
+  val options: Seq[ShellOption[String]] = Seq(
     new ShellOption[String](
       longOption = "prefix1",
       toAnnotationSeq = a => Seq(WirePrefix1(a)),
@@ -75,7 +85,7 @@ case object WirePrefix1 extends HasShellOptions {
 }
 
 case object WirePrefix2 extends HasShellOptions {
-  val options = Seq(
+  val options: Seq[ShellOption[String]] = Seq(
     new ShellOption[String](
       longOption = "prefix2",
       toAnnotationSeq = a => Seq(WirePrefix2(a)),
@@ -87,7 +97,7 @@ case object WirePrefix2 extends HasShellOptions {
 }
 
 case object IgnoreTempWires extends NoTargetAnnotation with VcdDiffOption with HasShellOptions {
-  val options = Seq(
+  val options: Seq[ShellOption[Unit]] = Seq(
     new ShellOption[Unit](
       longOption = "ignore-temp-wires",
       toAnnotationSeq = _ => Seq(IgnoreTempWires),
@@ -99,7 +109,7 @@ case object IgnoreTempWires extends NoTargetAnnotation with VcdDiffOption with H
 }
 
 case object CompareWires extends NoTargetAnnotation with VcdDiffOption with HasShellOptions {
-  val options = Seq(
+  val options: Seq[ShellOption[Unit]] = Seq(
     new ShellOption[Unit](
       longOption = "compare-wires",
       toAnnotationSeq = _ => Seq(CompareWires),
@@ -111,7 +121,7 @@ case object CompareWires extends NoTargetAnnotation with VcdDiffOption with HasS
 }
 
 case object DontDiffValues extends NoTargetAnnotation with VcdDiffOption with HasShellOptions {
-  val options = Seq(
+  val options: Seq[ShellOption[Unit]] = Seq(
     new ShellOption[Unit](
       longOption = "dont-do-values",
       toAnnotationSeq = _ => Seq(DontDiffValues),
@@ -121,4 +131,3 @@ case object DontDiffValues extends NoTargetAnnotation with VcdDiffOption with Ha
     )
   )
 }
-

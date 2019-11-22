@@ -12,6 +12,7 @@ import treadle.vcd.VCD
 trait VcdDiffCli { this: Shell =>
   parser.note("VCDDiff Command Line Options")
   Seq(
+    DisplayRadix,
     V1StartTime,
     MaxDiffLines,
     TimeOffset,
