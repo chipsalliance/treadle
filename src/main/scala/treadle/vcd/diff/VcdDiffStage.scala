@@ -2,11 +2,8 @@
 
 package treadle.vcd.diff
 
-import java.io.File
-
 import firrtl.AnnotationSeq
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasShellOptions, ProgramArgsAnnotation, Shell, ShellOption, Stage, Unserializable}
+import firrtl.options.{ProgramArgsAnnotation, Shell, Stage}
 import treadle.vcd.VCD
 
 trait VcdDiffCli { this: Shell =>
@@ -17,6 +14,7 @@ trait VcdDiffCli { this: Shell =>
     MaxDiffLines,
     TimeOffset,
     CompareWires,
+    UnmatchedWires,
     DontDiffValues,
     IgnoreTempWires,
     WirePrefix1,

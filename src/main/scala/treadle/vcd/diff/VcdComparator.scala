@@ -2,6 +2,8 @@
 
 package treadle.vcd.diff
 
+import java.io.{File, PrintStream}
+
 import firrtl.AnnotationSeq
 import treadle.vcd.{Change, VCD}
 
@@ -20,6 +22,7 @@ object VcdComparator {
 class VcdComparator(annotationSeq: AnnotationSeq) {
   val ignoreTempWires:      Boolean = annotationSeq.exists { case IgnoreTempWires => true; case _ => false }
   val doCompareDirectories: Boolean = annotationSeq.exists { case CompareWires => true; case _ => false }
+  val doUnmatchedWires:     Boolean = annotationSeq.exists { case UnmatchedWires => true; case _ => false }
   val dontDiffValues:       Boolean = annotationSeq.exists { case DontDiffValues => true; case _ => false }
 
   private val (removePrefix1, addPrefix1) = annotationSeq.collectFirst {
@@ -51,6 +54,17 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
     result
   }
 
+  def getWireList(vcd: VCD, removePrefix: String, addPrefix: String): Map[String, String] = {
+    vcd.wires.map {
+      case (id, wire) =>
+        var name = wire.fullName
+        if (removePrefix.nonEmpty && name.startsWith(removePrefix)) { name = name.drop(removePrefix1.length) }
+        if (addPrefix.nonEmpty) { name = addPrefix + name }
+        name = name.replaceAll("""\.""", "_")
+        (name, id)
+    }.toMap
+  }
+
   /** This does the work of comparing two vcd files.
     * - It matches all the names it can from the directory
     * - goes through every time increment (allowing one vcd to be offset in time from the other)
@@ -62,38 +76,27 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
   def compare(vcd1: VCD, vcd2: VCD): Unit = {
     var linesShown = 0
 
+    val wireList1 = getWireList(vcd1, removePrefix1, addPrefix1)
+    val wireList2 = getWireList(vcd2, removePrefix2, addPrefix2)
+
     /** Computes a mapping between the codes in vcd1 to the codes in vcd2
       * Unmatched entries are ignored
       */
     def buildVcd1CodeToVcd2Code(): (Map[String, String], Map[String, String]) = {
-      def getWireList(vcd: VCD, removePrefix: String, addPrefix: String): Map[String, String] = {
-        vcd.wires.map {
-          case (key, value) =>
-            var name = value.fullName
-            if (removePrefix.nonEmpty && name.startsWith(removePrefix)) { name = name.drop(removePrefix1.length) }
-            if (addPrefix.nonEmpty) { name = addPrefix + name }
-            name = name.replaceAll("""\.""", "_")
-            (name, key)
-        }.toMap
-      }
-
-      val map1 = getWireList(vcd1, removePrefix1, addPrefix1)
-      val map2 = getWireList(vcd2, removePrefix2, addPrefix2)
-
-      val list1 = map1.keys.toSeq.sorted
+      val list1 = wireList1.keys.toSeq.sorted
 
       val matchedWires = list1.flatMap { name1 =>
-        map2.get(name1) match {
+        wireList2.get(name1) match {
           case Some(_) => Some(name1)
           case _       => None
         }
       }
 
       val v1Tov2 = matchedWires.map { a =>
-        map1(a) -> map2(a)
+        wireList1(a) -> wireList2(a)
       }.toMap
       val v2Tov1 = matchedWires.map { a =>
-        map2(a) -> map1(a)
+        wireList2(a) -> wireList1(a)
       }.toMap
 
       (v1Tov2, v2Tov1)
@@ -102,11 +105,57 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
     val (vcd1CodeToVcd2Code, vcd2CodeToVcd1Code) = buildVcd1CodeToVcd2Code()
 
     def showMatchedCodes(): Unit = {
-      vcd1CodeToVcd2Code.foreach {
-        case (tag1, tag2) =>
-          val name1 = vcd1.wires(tag1).fullName
-          val name2 = vcd2.wires(tag2).fullName
+      vcd1CodeToVcd2Code
+        .toSeq
+        .map {
+          case (tag1, tag2) =>
+            val name1 = vcd1.wires(tag1).fullName
+            val name2 = vcd2.wires(tag2).fullName
+            (tag1, tag2, name1, name2)
+      }.sortWith { case ((_, _, a, _), (_, _, b, _)) => a < b}
+        .foreach { case (tag1, tag2, name1, name2) =>
           println(f"$tag1%5s $tag2%5s --- $name1 $name2")
+        }
+    }
+
+    trait NextOption[T] { self: Iterator[T] =>
+      def nextOption: Option[T] = if(hasNext) {Some(next())} else {None}
+    }
+
+    def showUnmatchedWires(): Unit = {
+      def nextOption(i: Iterator[String]): Option[String] = if(i.hasNext) {Some(i.next())} else {None}
+
+      def show(nameOpt1: Option[String], nameOpt2: Option[String]): Unit = {
+        println(f"${nameOpt1.getOrElse("---")}%60s ${nameOpt2.getOrElse("---")}%-60s")
+      }
+      val i1 = wireList1.keys.toSeq.sorted.toIterator
+      val i2 = wireList2.keys.toSeq.sorted.toIterator
+
+      var name1: Option[String] = nextOption(i1)
+      var name2: Option[String] = nextOption(i2)
+      while (name1.isDefined || name2.isDefined) {
+        (name1, name2) match {
+          case (Some(n1), Some(n2)) =>
+            if(n1 == n2) {
+              show(name1, name2)
+              name1 = nextOption(i1)
+              name2 = nextOption(i2)
+            } else if(n1 < n2) {
+              show(name1, None)
+              name1 = nextOption(i1)
+            } else {
+              show(None, name2)
+              name2 = nextOption(i2)
+            }
+          case (Some(_), None) =>
+            show(name1, name2)
+            name1 = nextOption(i1)
+          case (None, Some(_)) =>
+            show(name1, name2)
+            name2 = nextOption(i2)
+          case _ =>
+
+        }
       }
     }
 
@@ -209,6 +258,21 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
 
     if (doCompareDirectories) {
       showMatchedCodes()
+    }
+
+    if (doUnmatchedWires) {
+      showUnmatchedWires()
+
+      def dumpWires(wires: Seq[String], fileName: String) {
+        val out = new PrintStream(new File(fileName))
+        for(name <- wires) {
+          out.println(name)
+        }
+        out.close()
+      }
+
+      dumpWires(wireList1.keys.toSeq.sorted, "vcd1.names.txt")
+      dumpWires(wireList2.keys.toSeq.sorted, "vcd2.names.txt")
     }
 
     if (!dontDiffValues) {
