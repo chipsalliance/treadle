@@ -387,28 +387,51 @@ class ExpressionCompiler(
       val arg1Width = getWidth(expressions.head)
       val param1 = ints.head.toInt
 
-      arg1 match {
-        case e1: IntExpressionResult =>
-          op match {
-            case Head => HeadInts(e1.apply _, takeBits = param1, arg1Width)
-            case Tail => TailInts(e1.apply _, toDrop = param1, arg1Width)
-            case Shl  => ShlInts(e1.apply _, GetIntConstant(param1).apply _)
-            case Shr  => ShrInts(e1.apply _, GetIntConstant(param1).apply _)
-          }
-        case e1: LongExpressionResult =>
-          op match {
-            case Head => HeadLongs(e1.apply _, takeBits = param1, arg1Width)
-            case Tail => TailLongs(e1.apply _, toDrop = param1, arg1Width)
-            case Shl  => ShlLongs(e1.apply _, GetLongConstant(param1).apply _)
-            case Shr  => ShrLongs(e1.apply _, GetLongConstant(param1).apply _)
-          }
-        case e1: BigExpressionResult =>
-          op match {
-            case Head => HeadBigs(e1.apply _, takeBits = param1, arg1Width)
-            case Tail => TailBigs(e1.apply _, toDrop = param1, arg1Width)
-            case Shl  => ShlBigs(e1.apply _, GetBigConstant(param1).apply _)
-            case Shr  => ShrBigs(e1.apply _, GetBigConstant(param1).apply _)
-          }
+      if(op == Shl) {
+        (DataSize(getWidth(tpe)), arg1) match {
+          case (IntSize, e1: IntExpressionResult) =>
+            ShlInts(e1.apply _, GetIntConstant(param1).apply _)
+          case (IntSize, e1: LongExpressionResult) =>
+            ShlLongs(e1.apply, GetIntConstant(param1).apply _)
+          case (IntSize, e1: BigExpressionResult) =>
+            ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
+
+          case (LongSize, e1: IntExpressionResult) =>
+            ShlLongs(ToLong(e1.apply _).apply _, GetIntConstant(param1).apply _)
+          case (LongSize, e1: LongExpressionResult) =>
+            ShlLongs(e1.apply _, GetIntConstant(param1).apply _)
+          case (LongSize, e1: BigExpressionResult) =>
+            ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
+
+          case (BigSize, e1: IntExpressionResult) =>
+            ShlBigs(ToBig(e1.apply _).apply _, GetIntConstant(param1).apply _)
+          case (BigSize, e1: LongExpressionResult) =>
+            ShlBigs(LongToBig(e1.apply _).apply _, GetIntConstant(param1).apply _)
+          case (BigSize, e1: BigExpressionResult) =>
+            ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
+        }
+      } else {
+
+        arg1 match {
+          case e1: IntExpressionResult =>
+            op match {
+              case Head => HeadInts(e1.apply _, takeBits = param1, arg1Width)
+              case Tail => TailInts(e1.apply _, toDrop = param1, arg1Width)
+              case Shr => ShrInts(e1.apply _, GetIntConstant(param1).apply _)
+            }
+          case e1: LongExpressionResult =>
+            op match {
+              case Head => HeadLongs(e1.apply _, takeBits = param1, arg1Width)
+              case Tail => TailLongs(e1.apply _, toDrop = param1, arg1Width)
+              case Shr => ShrLongs(e1.apply _, GetLongConstant(param1).apply _)
+            }
+          case e1: BigExpressionResult =>
+            op match {
+              case Head => HeadBigs(e1.apply _, takeBits = param1, arg1Width)
+              case Tail => TailBigs(e1.apply _, toDrop = param1, arg1Width)
+              case Shr => ShrBigs(e1.apply _, GetBigConstant(param1).apply _)
+            }
+        }
       }
     }
 

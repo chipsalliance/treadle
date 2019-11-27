@@ -47,8 +47,6 @@ class TreadleLowFirrtlOptimization extends SeqTransform {
   def transforms: Seq[Transform] = Seq(
     passes.RemoveValidIf,
     new firrtl.transforms.ConstantPropagation,
-    passes.PadWidths,
-    new firrtl.transforms.ConstantPropagation,
     passes.Legalize,
     new firrtl.transforms.ConstantPropagation,
     passes.SplitExpressions,
