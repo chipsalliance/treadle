@@ -421,7 +421,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 
       },
       new Command("vcd") {
-        def usage: (String, String) = ("vcd [run|list|test|help]", "control vcd input file")
+        def usage: (String, String) = ("vcd [load|run|list|test|help]", "control vcd input file")
         override def completer: Option[ArgumentCompleter] = {
           Some(new ArgumentCompleter(
             new StringsCompleter({"vcd"}),
