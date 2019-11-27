@@ -62,4 +62,64 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
 
     tester.reportString should include ("Failed: Stop result 47")
   }
+
+  "stop should say stopped if return value is 0" in {
+    val input: String =
+      """
+        |circuit HasStop0 :
+        |  module HasStop0 :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output count : UInt<32>
+        |
+        |    reg counter : UInt<32>, clock with : (reset => (reset, UInt(0)))
+        |
+        |    counter <= tail(add(counter, UInt("h1")), 1)
+        |
+        |    count <= counter
+        |
+        |    stop(clock, eq(counter, UInt("h20")), 0)
+        |
+    """.stripMargin
+
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
+    val caught = intercept[StopException] {
+      tester.step(100)
+      tester.finish
+    }
+    caught.getMessage should include ("Stopped: result 0")
+
+    tester.getStopResult should be (Some(0))
+  }
+
+  "stop should say failed if return value is > 0" in {
+    val input: String =
+      """
+        |circuit HasStop0 :
+        |  module HasStop0 :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output count : UInt<32>
+        |
+        |    reg counter : UInt<32>, clock with : (reset => (reset, UInt(0)))
+        |
+        |    counter <= tail(add(counter, UInt("h1")), 1)
+        |
+        |    count <= counter
+        |
+        |    stop(clock, eq(counter, UInt("h20")), 44)
+        |
+    """.stripMargin
+
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
+    val caught = intercept[StopException] {
+      tester.step(100)
+      tester.finish
+    }
+    caught.getMessage should include ("Failure Stop: result 44")
+
+    tester.getStopResult should be (Some(44))
+  }
 }
