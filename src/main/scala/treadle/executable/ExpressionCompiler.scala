@@ -392,23 +392,23 @@ class ExpressionCompiler(
           case (IntSize, e1: IntExpressionResult) =>
             ShlInts(e1.apply _, GetIntConstant(param1).apply _)
           case (IntSize, e1: LongExpressionResult) =>
-            ShlLongs(e1.apply, GetLongConstant(param1).apply _)
+            ShlLongs(e1.apply, GetIntConstant(param1).apply _)
           case (IntSize, e1: BigExpressionResult) =>
             ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
 
           case (LongSize, e1: IntExpressionResult) =>
             ShlLongs(ToLong(e1.apply _).apply _, GetIntConstant(param1).apply _)
           case (LongSize, e1: LongExpressionResult) =>
-            ShlLongs(e1.apply _, GetLongConstant(param1).apply _)
+            ShlLongs(e1.apply _, GetIntConstant(param1).apply _)
           case (LongSize, e1: BigExpressionResult) =>
-            ShlBigs(e1.apply _, GetBigConstant(param1).apply _)
+            ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
 
           case (BigSize, e1: IntExpressionResult) =>
             ShlBigs(ToBig(e1.apply _).apply _, GetIntConstant(param1).apply _)
           case (BigSize, e1: LongExpressionResult) =>
-            ShlBigs(LongToBig(e1.apply _).apply _, GetLongConstant(param1).apply _)
+            ShlBigs(LongToBig(e1.apply _).apply _, GetIntConstant(param1).apply _)
           case (BigSize, e1: BigExpressionResult) =>
-            ShlBigs(e1.apply _, GetBigConstant(param1).apply _)
+            ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
         }
       } else {
 
