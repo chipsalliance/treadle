@@ -894,7 +894,12 @@ class ExpressionCompiler(
                 val printOp = PrintfOp(
                   printInfo.printSymbol,
                   info, stringLiteral,
-                  argExpressions.map { expression => processExpression(expression) },
+                  argExpressions.map { expression =>
+                    processExpression(expression)
+                  },
+                  argExpressions.map { expression =>
+                    getWidth(expression)
+                  },
                   clockTransitionGetter,
                   intExpression
                 )
