@@ -108,62 +108,6 @@ case class PrintfOp(
     (StringContext.treatEscapes(outBuffer.toString()), filters)
   }
 
-  //scalastyle:off method.length
-//  def executeVerilogPrint(formatString: String, allArgs: Seq[Any], bitWidths: Seq[Int]): String = {
-//    val outBuffer = new StringBuilder
-//    var s = formatString
-//    var args = allArgs
-//    var widths = bitWidths
-//
-//    def pad(specifier: Char, value: BigInt, bitWidth: Int): String = {
-//      specifier match {
-//        case 'x' =>
-//          val columns = BigInt("1" * bitWidth, 2).toString(16).length
-//          val valueAsString = value.toString(16)
-//          ("0" * (columns - valueAsString.length)) + valueAsString
-//        case 'd' =>
-//          val columns = BigInt("1" * bitWidth, 2).toString(10).length
-//          val valueAsString = value.toString(10)
-//          (" " * (columns - valueAsString.length)) + valueAsString
-//        case _ => ""
-//      }
-//    }
-//
-//    while(s.nonEmpty) {
-//      s.indexOf("%") match {
-//        case -1 =>
-//          outBuffer ++= s
-//          s = ""
-//        case offset =>
-//          outBuffer ++= s.take(offset)
-//          s = s.drop(offset + 1)
-//          s.headOption match {
-//            case Some('%') =>
-//              outBuffer ++= "%"
-//              s = s.tail
-//            case Some('b') =>
-//              outBuffer ++= BigInt(args.head.toString).toString(2)
-//              args = args.tail
-//              widths = widths.tail
-//              s = s.tail
-//            case Some('c') =>
-//              outBuffer += BigInt(args.head.toString).makeChar
-//              args = args.tail
-//              widths = widths.tail
-//              s = s.tail
-//            case Some(specifier)   =>
-//              outBuffer ++= pad(specifier, BigInt(args.head.toString), widths.head)
-//              args = args.tail
-//              s = s.tail
-//              widths = widths.tail
-//            case _ =>
-//              s = ""
-//          }
-//      }
-//    }
-//    StringContext.treatEscapes(outBuffer.toString())
-//  }
-
   def executeVerilogPrint(formatString: String, allArgs: Seq[BigInt]): String = {
     val processedArgs = allArgs.zip(filterFunctions).map { case (arg, filter) => filter(arg) }
     paddedFormatString.format(processedArgs:_*)
