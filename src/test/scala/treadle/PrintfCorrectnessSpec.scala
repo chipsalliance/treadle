@@ -5,9 +5,10 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
+import logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.{FreeSpec, Matchers}
 
-class PrintfCorrectnessSpec extends FreeSpec with Matchers {
+class PrintfCorrectnessSpec extends FreeSpec with Matchers with LazyLogging {
   "printf needs to capture values at the proper time" in {
     val input =
       """
@@ -77,10 +78,14 @@ class PrintfCorrectnessSpec extends FreeSpec with Matchers {
       tester.step()
       tester.finish
     }
+
+    logger.debug(output.toString)
+
+
     Seq(
-      "PRINTF:0 moveHead 0, moveTail 0, head 0, tail 0, nextTail 1",
-      "PRINTF:1 moveHead 0, moveTail 1, head 0, tail 0, nextTail 2",
-      "PRINTF:2 moveHead 0, moveTail 1, head 0, tail 1, nextTail 3"
+      "PRINTF:   0 moveHead  0, moveTail  0, head    0, tail    0, nextTail    1",
+      "PRINTF:   1 moveHead  0, moveTail  1, head    0, tail    0, nextTail    2",
+      "PRINTF:   2 moveHead  0, moveTail  1, head    0, tail    1, nextTail    3"
     ).foreach { targetLine =>
       output.toString.contains(targetLine) should be (true)
     }

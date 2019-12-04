@@ -5,11 +5,14 @@ package treadle.executable
 import firrtl.WireKind
 import firrtl.ir._
 
+import scala.collection.mutable
+
 case class PrintfOp(
   symbol          : Symbol,
   info            : Info,
   string          : StringLit,
   args            : Seq[ExpressionResult],
+  fieldWidths     : Seq[Int],
   clockTransition : ClockTransitionGetter,
   condition       : IntExpressionResult
 ) extends Assigner {
@@ -20,9 +23,11 @@ case class PrintfOp(
     val conditionValue = condition.apply() > 0
     if (conditionValue && clockTransition.isPosEdge) {
       val currentArgValues = args.map {
-        case e: IntExpressionResult => e.apply()
-        case e: LongExpressionResult => e.apply()
-        case e: BigExpressionResult => e.apply()
+        case e: IntExpressionResult  => BigInt(e.apply())
+        case e: LongExpressionResult => BigInt(e.apply())
+        case e: BigExpressionResult  => e.apply()
+        case _ =>
+          throw TreadleException(s"In printf got unknown result in arguments to printf ${string.toString}")
       }
       val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
       print(instantiatedString.drop(1).dropRight(1))
@@ -31,10 +36,28 @@ case class PrintfOp(
     () => Unit
   }
 
-  def executeVerilogPrint(formatString: String, allArgs: Seq[Any]): String = {
+  def asIs(b: BigInt): BigInt = b
+  def makeHex(base: BigInt)(b: BigInt): BigInt = if (b >= 0) b else base + b + 1
+  def makeChar(b: BigInt): Char = b.toChar
+  def toBinary(b: BigInt): String = b.toString(2)
+
+  /** Create a format string and a list format functions in order to implement the printf
+    * Figures out how many columns each output field show have from the bit widths
+    * We do this to match verilator's printf behavior more closely.
+    * The problem type is binary that does not have a %-conversion code and char which requires
+    * a non-numeric value. This is why the format functions are BigInt => Any
+    *
+    * @param formatString  The raw format string from the firrtl printf statement
+    * @param bitWidths     The bit widths of each argument
+    * @return
+    */
+  //scalastyle:off method.length cyclomatic.complexity
+  def constructFormatter(formatString: String, bitWidths: Seq[Int]): (String, Seq[BigInt => Any]) = {
     val outBuffer = new StringBuilder
     var s = formatString
-    var args = allArgs
+    var widths = bitWidths
+
+    val filters = new mutable.ArrayBuffer[BigInt => Any]
 
     while(s.nonEmpty) {
       s.indexOf("%") match {
@@ -49,29 +72,55 @@ case class PrintfOp(
               outBuffer ++= "%"
               s = s.tail
             case Some('b') =>
-              outBuffer ++= BigInt(args.head.toString).toString(2)
-              args = args.tail
+              filters += toBinary
+              outBuffer ++= s"%${widths.head}s"
+              widths = widths.tail
               s = s.tail
             case Some('c') =>
-              outBuffer += BigInt(args.head.toString).toChar
-              args = args.tail
+              val ref = makeChar _
+              filters += ref
+              outBuffer ++= s"%c"
+              widths = widths.tail
               s = s.tail
-            case Some(specifier)   =>
-              //noinspection ScalaUnnecessaryParentheses
-              outBuffer ++= (s"%$specifier").format(BigInt(args.head.toString))
-              args = args.tail
+            case Some('d') =>
+              // Adds a +1 to the length to handle minus sign if it's an SInt
+              val decimalWidth = BigInt("1" * widths.head, 2).toString(10).length + 1
+              filters += asIs
+              outBuffer ++= s"%${decimalWidth}d"
+              widths = widths.tail
               s = s.tail
+            case Some('x') =>
+              val maxValue = BigInt("1" * widths.head, 2)
+              filters += makeHex(maxValue)
+              outBuffer ++= s"%0${(widths.head / 4) + 1}x"
+              widths = widths.tail
+              s = s.tail
+            case Some(_)   =>
+              filters += asIs
+              outBuffer ++= s"%${widths.head}d"
+              s = s.tail
+              widths = widths.tail
             case _ =>
               s = ""
           }
       }
     }
-    StringContext.treatEscapes(outBuffer.toString())
+    (StringContext.treatEscapes(outBuffer.toString()), filters)
   }
+
+  def executeVerilogPrint(formatString: String, allArgs: Seq[BigInt]): String = {
+    val processedArgs = allArgs.zip(filterFunctions).map { case (arg, filter) => filter(arg) }
+    paddedFormatString.format(processedArgs:_*)
+  }
+
+  val (paddedFormatString, filterFunctions) = constructFormatter(formatString, bitWidths = fieldWidths)
+
+  val x = 22
+
 }
 
 object PrintfOp {
-  val PrintfOpSymbol = Symbol("printfop", IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
+  val PrintfOpSymbol: Symbol = Symbol("printfop", IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), NoInfo)
 }
 
 case class PrintInfo(printSymbol: Symbol, cardinal: Int) extends Ordered[PrintInfo] {
