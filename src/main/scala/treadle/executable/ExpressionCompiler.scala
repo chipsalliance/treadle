@@ -11,10 +11,11 @@ import treadle.utils.FindModule
 import scala.collection.mutable
 
 class ExpressionCompiler(
-    val symbolTable  : SymbolTable,
-    val dataStore    : DataStore,
-    scheduler        : Scheduler,
-    validIfIsRandom  : Boolean,
+    val symbolTable      : SymbolTable,
+    val dataStore        : DataStore,
+    scheduler            : Scheduler,
+    validIfIsRandom      : Boolean,
+    prefixPrintfWithTime : Boolean,
     blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {
@@ -907,7 +908,9 @@ class ExpressionCompiler(
                     getWidth(expression)
                   },
                   clockTransitionGetter,
-                  intExpression
+                  intExpression,
+                  scheduler,
+                  prefixPrintfWithTime
                 )
                 addAssigner(printOp)
               case _ =>

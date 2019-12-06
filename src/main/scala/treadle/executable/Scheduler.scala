@@ -25,6 +25,8 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
 
+  var executionEngineOpt: Option[ExecutionEngine] = None
+
   def addAssigner(
     symbol: Symbol,
     assigner: Assigner,

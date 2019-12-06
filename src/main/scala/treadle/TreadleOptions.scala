@@ -206,6 +206,19 @@ case object CallResetAtStartupAnnotation extends NoTargetAnnotation with Treadle
 }
 
 /**
+  *  Tells treadle to prefix printf strings with a wall time
+  */
+case object PrefixPrintfWithWallTime extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-prefix-printf-with-walltime",
+      toAnnotationSeq = _ => Seq(PrefixPrintfWithWallTime),
+      helpText = """Adds a string "[<wall-time>]" to the front of printf lines, helps match to vcd"""
+    )
+  )
+}
+
+/**
   * The circuit used to build a [[TreadleTester]]
   * @param circuit a firrtl ast
   */

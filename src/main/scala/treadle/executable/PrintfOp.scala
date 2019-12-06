@@ -14,7 +14,9 @@ case class PrintfOp(
   args            : Seq[ExpressionResult],
   fieldWidths     : Seq[Int],
   clockTransition : ClockTransitionGetter,
-  condition       : IntExpressionResult
+  condition       : IntExpressionResult,
+  scheduler       : Scheduler,
+  addWallTime     : Boolean
 ) extends Assigner {
 
   private val formatString = string.escape
@@ -30,7 +32,7 @@ case class PrintfOp(
           throw TreadleException(s"In printf got unknown result in arguments to printf ${string.toString}")
       }
       val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
-      print(instantiatedString.drop(1).dropRight(1))
+      print(instantiatedString)
     }
 
     () => Unit
@@ -110,13 +112,19 @@ case class PrintfOp(
 
   def executeVerilogPrint(formatString: String, allArgs: Seq[BigInt]): String = {
     val processedArgs = allArgs.zip(filterFunctions).map { case (arg, filter) => filter(arg) }
-    paddedFormatString.format(processedArgs:_*)
+    if(addWallTime) {
+      val time = scheduler.executionEngineOpt match {
+        case Some(executionEngine) => executionEngine.wallTime.currentTime
+        case _ => 0L
+      }
+      f"[$time%4d] " + paddedFormatString.format(processedArgs:_*).drop(1).dropRight(1)
+    }
+    else {
+      paddedFormatString.format(processedArgs:_*).drop(1).dropRight(1)
+    }
   }
 
   val (paddedFormatString, filterFunctions) = constructFormatter(formatString, bitWidths = fieldWidths)
-
-  val x = 22
-
 }
 
 object PrintfOp {
