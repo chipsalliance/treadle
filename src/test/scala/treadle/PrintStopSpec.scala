@@ -10,7 +10,7 @@ import treadle.executable.StopException
 
 //scalastyle:off magic.number
 class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
-  behavior of "stop"
+  behavior.of("stop")
 
   it should "return not stop if condition is not met" in {
     val input =
@@ -25,7 +25,7 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     for (_ <- 0 to 10) {
       tester.step(2)
-      tester.engine.stopped should be (false)
+      tester.engine.stopped should be(false)
     }
   }
 
@@ -43,8 +43,8 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
     intercept[StopException] {
       tester.step(2)
     }
-    tester.engine.stopped should be (true)
-    tester.engine.lastStopResult.get should be (2)
+    tester.engine.stopped should be(true)
+    tester.engine.lastStopResult.get should be(2)
   }
 
   it should "return success if a stop with zero result" in {
@@ -61,8 +61,8 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
     intercept[StopException] {
       tester.step(2)
     }
-    tester.engine.stopped should be (true)
-    tester.engine.lastStopResult.get should be (0)
+    tester.engine.stopped should be(true)
+    tester.engine.lastStopResult.get should be(0)
   }
 
   it should "have stops happen in order they appear in a module" in {
@@ -89,14 +89,13 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
       intercept[StopException] {
         tester.step(2)
       }
-      tester.engine.stopped should be (true)
-      tester.engine.lastStopResult.get should be (0)
+      tester.engine.stopped should be(true)
+      tester.engine.lastStopResult.get should be(0)
 
     }
   }
 
-
-  behavior of "Print statement"
+  behavior.of("Print statement")
 
   it should "be visible" in {
     val output = new ByteArrayOutputStream()
@@ -116,8 +115,8 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
       tester.step(2)
       tester.finish
     }
-    output.toString().contains("HELLO WORLD") should be (true)
-    output.toString.split("\n").count(_.contains("HELLO WORLD")) should be (2)
+    output.toString().contains("HELLO WORLD") should be(true)
+    output.toString.split("\n").count(_.contains("HELLO WORLD")) should be(2)
 
   }
 
@@ -140,9 +139,8 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
 
     logger.debug(output.toString)
 
-    output.toString() should include ("HELLO WORLD int '       7' hex '00000001f' SInt '      -2'")
+    output.toString() should include("HELLO WORLD int '       7' hex '00000001f' SInt '      -2'")
   }
-
 
   it should "support printf formatting with binary" in {
     val output = new ByteArrayOutputStream()
@@ -227,7 +225,6 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
     println("after peek")
   }
 
-
   it should "print rry=480 in the following example" in {
     val input =
       """
@@ -278,21 +275,20 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
     // "+++ count=    0 r0=   0 r1=   0"
     // "+++ count=    0 r0=   0 r1=   1"
 
-
-
     Logger.setLevel("treadle.PrintStopSpec", LogLevel.Debug)
     logger.debug(output.toString)
 
-    output
-      .toString
+    output.toString
       .split("\n")
       .count { line =>
         line.contains("+++ y=  481 ry=  481 rry=  480 rryIsZero(_T_1)=0 rryIs480(_T_2)=1")
-      } should be (1)
+      } should be(1)
 
-    output
-      .toString
-      .split("\n").count { line => line.contains("+++ y=") } should be (1)
+    output.toString
+      .split("\n")
+      .count { line =>
+        line.contains("+++ y=")
+      } should be(1)
 
   }
   it should "print register values that have not been advanced yet" in {
@@ -338,14 +334,17 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
     }
 
     logger.debug(output.toString)
-    output
-      .toString
+    output.toString
       .split("\n")
-      .count { line => line.contains("+++ y=  481 ry=  481 rry=  480 isZero=0 rry_is_480=1") } should be (1)
+      .count { line =>
+        line.contains("+++ y=  481 ry=  481 rry=  480 isZero=0 rry_is_480=1")
+      } should be(1)
 
-    output
-      .toString
-      .split("\n").count { line => line.contains("+++ y=") } should be (7)
+    output.toString
+      .split("\n")
+      .count { line =>
+        line.contains("+++ y=")
+      } should be(7)
 
   }
   it should "print swapping register values should show alternating" in {
@@ -388,21 +387,21 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
 
     logger.debug(output.toString)
 
-    printfLines.head should include ("+++ count=    0 r0=   0 r1=   0")
+    printfLines.head should include("+++ count=    0 r0=   0 r1=   0")
 
     val linesCorrect = printfLines
-            .drop(2)
-            .zipWithIndex
-            .map { case (line, lineNumber) =>
-              if (lineNumber % 2 == 0) {
-                line.contains("r0=   1 r1=   0")
-              }
-              else {
-                line.contains("r0=   0 r1=   1")
-              }
-            }
+      .drop(2)
+      .zipWithIndex
+      .map {
+        case (line, lineNumber) =>
+          if (lineNumber % 2 == 0) {
+            line.contains("r0=   1 r1=   0")
+          } else {
+            line.contains("r0=   0 r1=   1")
+          }
+      }
 
-    linesCorrect.forall(b => b) should be (true)
+    linesCorrect.forall(b => b) should be(true)
   }
 
   it should "show hex stuff with right width and without sign" in {
@@ -426,7 +425,7 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
     Console.withOut(new PrintStream(output)) {
       val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
-      for(i <- 0 until 32) {
+      for (i <- 0 until 32) {
         tester.poke("io_in", i)
         tester.step()
       }
@@ -435,9 +434,9 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
 
     val out = output.toString
 
-    for(i <- 0 until 32) {
-      val n = if( i < 16) i else i - 32
-      out should include (f"'$i%3d' '$i%02x'  -- s '$n%3d'  '$i%02x'")
+    for (i <- 0 until 32) {
+      val n = if (i < 16) i else i - 32
+      out should include(f"'$i%3d' '$i%02x'  -- s '$n%3d'  '$i%02x'")
     }
   }
 
@@ -473,7 +472,7 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
       j <- 0 until 4
       line = (i * 4) + j
     } {
-      printfLines(line).contains(s"+++ $j") should be (true)
+      printfLines(line).contains(s"+++ $j") should be(true)
     }
   }
 
@@ -520,7 +519,7 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
       j <- 0 until 4
       line = (i * 4) + j
     } {
-      printfLines(line).contains(s"+++ $j") should be (true)
+      printfLines(line).contains(s"+++ $j") should be(true)
     }
 
   }

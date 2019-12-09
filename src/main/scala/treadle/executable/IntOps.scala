@@ -51,10 +51,9 @@ case class MulInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
 case class DivInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
   def apply(): Int = {
     val divisor = f2()
-    if(divisor == 0) {
+    if (divisor == 0) {
       0
-    }
-    else {
+    } else {
       f1() / divisor
     }
   }
@@ -63,41 +62,40 @@ case class DivInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
 case class RemInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
   def apply(): Int = {
     val modulus = f2()
-    if(modulus == 0) {
+    if (modulus == 0) {
       0
-    }
-    else {
+    } else {
       f1() % modulus
     }
   }
 }
 
 case class MuxInts(condition: FuncInt, trueClause: FuncInt, falseClause: FuncInt) extends IntExpressionResult {
-  def apply(): Int = if(condition() > 0) trueClause() else falseClause()
+  def apply(): Int = if (condition() > 0) trueClause() else falseClause()
 }
 
 case class EqInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = if(f1() == f2()) 1 else 0
+  def apply(): Int = if (f1() == f2()) 1 else 0
 }
 
 case class NeqInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = if(f1() != f2()) 1 else 0
+  def apply(): Int = if (f1() != f2()) 1 else 0
 }
 
 case class LtInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = if(f1() < f2()) 1 else 0
+  def apply(): Int = if (f1() < f2()) 1 else 0
 }
 
 case class LeqInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = if(f1() <= f2()) 1 else 0
+  def apply(): Int = if (f1() <= f2()) 1 else 0
 }
 
 case class GtInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = if(f1() > f2()) 1 else 0
+  def apply(): Int = if (f1() > f2()) 1 else 0
 }
 
 case class GeqInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = if(f1() >= f2()) 1 else 0
+  def apply(): Int = if (f1() >= f2()) 1 else 0
 }
 
 case class AsUIntInts(f1: FuncInt, width: Int) extends IntExpressionResult {
@@ -111,14 +109,12 @@ case class AsSIntInts(f1: FuncInt, width: Int) extends IntExpressionResult {
 
   def apply(): Int = {
     val value = f1()
-    if(value < 0) {
+    if (value < 0) {
       value
-    }
-    else {
-      if(bitMasks.isMsbSet(value)) {
+    } else {
+      if (bitMasks.isMsbSet(value)) {
         (value & bitMasks.allBitsMask) - bitMasks.nextPowerOfTwo
-      }
-      else {
+      } else {
         value & bitMasks.allBitsMask
       }
     }
@@ -126,7 +122,7 @@ case class AsSIntInts(f1: FuncInt, width: Int) extends IntExpressionResult {
 }
 
 case class AsClockInts(f1: FuncInt) extends IntExpressionResult {
-  def apply(): Int = if(f1() == 0) 0 else 1
+  def apply(): Int = if (f1() == 0) 0 else 1
 }
 
 case class ShlInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
@@ -146,12 +142,12 @@ case class DshrInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
 }
 
 case class NegInts(f1: FuncInt) extends IntExpressionResult {
-  def apply(): Int = - f1()
+  def apply(): Int = -f1()
 }
 
 case class NotInts(f1: FuncInt, width: Int) extends IntExpressionResult {
   private val mask = BitMasks.getBitMasksInts(width).allBitsMask
-  def apply(): Int = (~ f1()) & mask
+  def apply(): Int = (~f1()) & mask
 }
 
 case class AndInts(f1: FuncInt, f2: FuncInt, resultWidth: Int) extends IntExpressionResult {
@@ -181,7 +177,7 @@ case class AndrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
   private val bitMask = BitMasks.getBitMasksInts(width).allBitsMask
 
   def apply(): Int = {
-    if((f1() & bitMask) == bitMask) { 1 } else {0 }
+    if ((f1() & bitMask) == bitMask) { 1 } else { 0 }
   }
 }
 
@@ -195,7 +191,7 @@ case class OrrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
 
   def apply(): Int = {
     val uInt = f1() & mask
-    if(uInt > 0) { 1 } else { 0 }
+    if (uInt > 0) { 1 } else { 0 }
   }
 }
 
@@ -248,10 +244,9 @@ case class TailInts(f1: FuncInt, toDrop: Int, originalWidth: Int) extends IntExp
 
 case class IsPosEdge(symbol: Symbol, symbolPreviousValue: Symbol, dataStore: DataStore) extends IntExpressionResult {
   def apply(): Int = {
-    if(dataStore.intData(symbol.index) == 1 && dataStore.intData(symbolPreviousValue.index) == 0) {
+    if (dataStore.intData(symbol.index) == 1 && dataStore.intData(symbolPreviousValue.index) == 0) {
       1
-    }
-    else {
+    } else {
       0
     }
   }
@@ -264,4 +259,3 @@ case class UndefinedInts(width: Int) {
     treadle.random.nextInt(maxValue)
   }
 }
-

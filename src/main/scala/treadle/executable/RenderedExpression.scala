@@ -4,7 +4,6 @@ package treadle.executable
 
 import scala.collection.mutable
 
-
 object RenderHelper {
 
   implicit class ExpressionHelper(val sc: StringContext) extends AnyVal {
@@ -24,7 +23,6 @@ object SymbolAtDepth {
     new SymbolAtDepth(symbol, displayDepth, dataTime, dataArrays)
   }
 }
-
 
 /**
   * This class answers the question why does the given symbol have a particular value,
@@ -51,18 +49,18 @@ class ExpressionViewRenderer(
 
   //scalastyle:off cyclomatic.complexity method.length
   private def renderInternal(
-    currentOutputFormat : String = "d",
-    showValues          : Boolean = true,
-    startTime           : Long
+    currentOutputFormat: String = "d",
+    showValues:          Boolean = true,
+    startTime:           Long
   ): String = {
 
     val builder = new StringBuilder()
 
     def formatOutput(value: BigInt): String = {
       currentOutputFormat match {
-        case "d" => value.toString
+        case "d"       => value.toString
         case "h" | "x" => f"0x$value%x"
-        case "b" => s"b${value.toString(2)}"
+        case "b"       => s"b${value.toString(2)}"
       }
     }
 
@@ -78,12 +76,12 @@ class ExpressionViewRenderer(
         * mux branch NOT taken as having been seen, so we won't pursue them
         */
       def checkForMux(): Unit = {
-        if(sc.parts.head == "Mux(") {
+        if (sc.parts.head == "Mux(") {
           args.head match {
             case ev: ExpressionView =>
               ev.args.head match {
                 case ms: Symbol =>
-                  val arg = args.drop(if(dataStore(ms) > 0) 2 else 1).head
+                  val arg = args.drop(if (dataStore(ms) > 0) 2 else 1).head
                   arg match {
                     case ev2: ExpressionView =>
                       ev2.args.head match {
@@ -94,7 +92,7 @@ class ExpressionViewRenderer(
                     case _ =>
                   }
                 case value: Big =>
-                  val arg = args.drop(if(value > 0) 2 else 1).head
+                  val arg = args.drop(if (value > 0) 2 else 1).head
                   arg match {
                     case ev2: ExpressionView =>
                       ev2.args.head match {
@@ -108,7 +106,7 @@ class ExpressionViewRenderer(
                   x.toString
               }
             case ms: Symbol =>
-              val arg = args.drop(if(dataStore(ms) > 0) 2 else 1).head
+              val arg = args.drop(if (dataStore(ms) > 0) 2 else 1).head
               arg match {
                 case ev2: ExpressionView =>
                   ev2.args.head match {
@@ -130,26 +128,25 @@ class ExpressionViewRenderer(
       builder ++= sc.parts.head
       val argStrings = args.map {
         case symbol: Symbol =>
-          if(! (
-              symbolTable.inputPortsNames.contains(symbol.name) ||
-              symbolsSeen.contains(symbol)
-            )) {
-            if(displayDepth < maxDependencyDepth) {
+          if (!(
+                symbolTable.inputPortsNames.contains(symbol.name) ||
+                  symbolsSeen.contains(symbol)
+              )) {
+            if (displayDepth < maxDependencyDepth) {
               symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, dataTime, dataArrays))
             }
           }
 
           val value = symbol.normalize(dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))
 
-          val string = s"${symbol.name}" + (if(showValues) {
-             " <= " +
-                    (if(dataTime < startTime) Console.RED else "") +
-                    s"${formatOutput(value)}" +
-                    (if(dataTime < startTime) Console.RESET else "")
-          }
-          else {
-            ""
-          })
+          val string = s"${symbol.name}" + (if (showValues) {
+                                              " <= " +
+                                                (if (dataTime < startTime) Console.RED else "") +
+                                                s"${formatOutput(value)}" +
+                                                (if (dataTime < startTime) Console.RESET else "")
+                                            } else {
+                                              ""
+                                            })
           string
 
         case subView: ExpressionView =>
@@ -158,9 +155,10 @@ class ExpressionViewRenderer(
         case other => other.toString
       }
 
-      argStrings.zip(sc.parts.tail).foreach { case (s1, s2) =>
-        builder ++= s1
-        builder ++= s2
+      argStrings.zip(sc.parts.tail).foreach {
+        case (s1, s2) =>
+          builder ++= s1
+          builder ++= s2
       }
       builder.toString()
     }
@@ -169,14 +167,14 @@ class ExpressionViewRenderer(
       val symbolAtDepth = symbolsToDo.dequeue()
       val symbol = symbolAtDepth.symbol
 
-      if(! symbolsSeen.contains(symbol)) {
+      if (!symbolsSeen.contains(symbol)) {
         symbolsSeen += symbol
         val dataTime = symbolAtDepth.dataTime
 
         expressionViews.get(symbol).foreach { view =>
           builder ++= "  " * symbolAtDepth.displayDepth
           builder ++= s"${symbol.name}"
-          if(showValues) {
+          if (showValues) {
             builder ++= s" <= "
             if (dataTime < startTime) {
               builder ++= Console.RED
@@ -186,33 +184,30 @@ class ExpressionViewRenderer(
             if (dataTime < startTime) {
               builder ++= Console.RESET
             }
-          }
-          else {
+          } else {
             builder ++= " <= "
           }
 
           // If not showing values then just don't worry about previous rollback buffer
-          if(symbolTable.isRegister(symbol.name) && showValues) {
+          if (symbolTable.isRegister(symbol.name) && showValues) {
             val clockSymbol = symbolTable.registerToClock(symbol)
-            val clockIndex  = clockSymbol.index
+            val clockIndex = clockSymbol.index
             val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
             val prevClockIndex = prevClockSymbol.index
 
-            dataStore
-                    .rollBackBufferManager
-                    .findBufferBeforeClockTransition(dataTime, clockIndex, prevClockIndex) match {
+            dataStore.rollBackBufferManager
+              .findBufferBeforeClockTransition(dataTime, clockIndex, prevClockIndex) match {
 
               case Some(buffer) =>
                 builder ++= renderView(view, symbolAtDepth.displayDepth, buffer.time, buffer)
 
               case _ =>
             }
-          }
-          else {
+          } else {
             builder ++= renderView(view, symbolAtDepth.displayDepth, dataTime, symbolAtDepth.dataArrays)
           }
 
-          if(showValues) {
+          if (showValues) {
             if (dataTime < startTime) {
               builder ++= s" :  Values in red are from previous cycle at time $dataTime"
             }
@@ -229,10 +224,10 @@ class ExpressionViewRenderer(
   }
 
   def render(
-    symbol        : Symbol,
-    dataTime      : Long,
-    outputFormat  : String = "d",
-    showValues    : Boolean = true
+    symbol:       Symbol,
+    dataTime:     Long,
+    outputFormat: String = "d",
+    showValues:   Boolean = true
   ): String = {
     symbolsSeen.clear()
     symbolsToDo.enqueue(SymbolAtDepth(symbol, 0, dataTime, dataStore))
@@ -240,8 +235,3 @@ class ExpressionViewRenderer(
     renderInternal(outputFormat, showValues, dataTime)
   }
 }
-
-
-
-
-

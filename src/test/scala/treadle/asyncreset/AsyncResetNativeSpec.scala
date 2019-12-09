@@ -26,7 +26,8 @@ class AsyncResetNativeSpec extends FreeSpec with Matchers {
       """.stripMargin
 
     val annotations = Seq(
-      FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation
+      FirrtlSourceAnnotation(input),
+      CallResetAtStartupAnnotation
     )
     val tester = TreadleTester(annotations)
 

@@ -8,9 +8,9 @@ import scala.collection.mutable
 
 class UTC(val scaleName: String = "picoseconds") {
   private var internalTime: Long = 0L
-  def currentTime:  Long = internalTime
+  def currentTime:          Long = internalTime
   def setTime(time: Long): Unit = {
-    if(internalTime < time || time == 0L) {
+    if (internalTime < time || time == 0L) {
       internalTime = time
       if (isVerbose) Render.headerBar(s"WallTime: $internalTime")
       onTimeChange()
@@ -38,7 +38,7 @@ class UTC(val scaleName: String = "picoseconds") {
   }
 
   def runNextTask(): Option[Task] = {
-    if(hasNextTask) {
+    if (hasNextTask) {
       eventQueue.dequeue() match {
         case recurringTask: RecurringTask =>
           setTime(recurringTask.time)
@@ -53,22 +53,21 @@ class UTC(val scaleName: String = "picoseconds") {
           // do nothing
           None
       }
-    }
-    else {
+    } else {
       None
     }
   }
 
   def runToTask(taskName: String): Unit = {
-    if(eventQueue.nonEmpty) {
+    if (eventQueue.nonEmpty) {
       val done = eventQueue.head.taskName == taskName
       runNextTask()
-      if(! done) runToTask(taskName)
+      if (!done) runToTask(taskName)
     }
   }
 
   def runUntil(time: Long): Unit = {
-    while(eventQueue.nonEmpty && eventQueue.head.time <= time) {
+    while (eventQueue.nonEmpty && eventQueue.head.time <= time) {
       runNextTask()
     }
     setTime(time)
@@ -83,19 +82,16 @@ object UTC {
   def apply(scaleName: String = "picoseconds"): UTC = new UTC(scaleName)
 }
 
-
 trait Task extends Ordered[Task] {
   def taskName: String
-  def run(): Unit
-  def time: Long
+  def run():    Unit
+  def time:     Long
   override def compare(that: Task): Int = {
-    if(this.time < that.time) {
+    if (this.time < that.time) {
       1
-    }
-    else if(this.time == that.time) {
+    } else if (this.time == that.time) {
       0
-    }
-    else {
+    } else {
       -1
     }
   }

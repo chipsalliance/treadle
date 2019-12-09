@@ -2,6 +2,4 @@
 
 package treadle
 
-class QueueTest {
-
-}
+class QueueTest {}

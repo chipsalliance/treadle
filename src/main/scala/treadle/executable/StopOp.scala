@@ -5,24 +5,23 @@ package treadle.executable
 import firrtl.ir.Info
 
 case class StopOp(
-  symbol             : Symbol,
-  info               : Info,
-  returnValue        : Int,
-  condition          : IntExpressionResult,
-  hasStopped         : Symbol,
-  dataStore          : DataStore,
-  clockTransition    : ClockTransitionGetter
+  symbol:          Symbol,
+  info:            Info,
+  returnValue:     Int,
+  condition:       IntExpressionResult,
+  hasStopped:      Symbol,
+  dataStore:       DataStore,
+  clockTransition: ClockTransitionGetter
 ) extends Assigner {
 
   def run: FuncUnit = {
     val conditionValue = condition.apply() > 0
     if (conditionValue && clockTransition.isPosEdge) {
-      if(dataStore(hasStopped) > 0) {
+      if (dataStore(hasStopped) > 0) {
         if (isVerbose) {
           println(s"previous stop has fired with result ${dataStore(hasStopped)}")
         }
-      }
-      else {
+      } else {
         if (isVerbose) {
           println(s"stop ${symbol.name} has fired")
         }
@@ -30,7 +29,8 @@ case class StopOp(
       }
     }
 
-    () => Unit
+    () =>
+      Unit
   }
 }
 

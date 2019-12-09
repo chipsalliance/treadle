@@ -8,15 +8,15 @@ import firrtl.ir._
 import scala.collection.mutable
 
 case class PrintfOp(
-  symbol          : Symbol,
-  info            : Info,
-  string          : StringLit,
-  args            : Seq[ExpressionResult],
-  fieldWidths     : Seq[Int],
-  clockTransition : ClockTransitionGetter,
-  condition       : IntExpressionResult,
-  scheduler       : Scheduler,
-  addWallTime     : Boolean
+  symbol:          Symbol,
+  info:            Info,
+  string:          StringLit,
+  args:            Seq[ExpressionResult],
+  fieldWidths:     Seq[Int],
+  clockTransition: ClockTransitionGetter,
+  condition:       IntExpressionResult,
+  scheduler:       Scheduler,
+  addWallTime:     Boolean
 ) extends Assigner {
 
   private val formatString = string.escape
@@ -35,13 +35,14 @@ case class PrintfOp(
       print(instantiatedString)
     }
 
-    () => Unit
+    () =>
+      Unit
   }
 
-  def asIs(b: BigInt): BigInt = b
+  def asIs(b:       BigInt): BigInt = b
   def makeHex(base: BigInt)(b: BigInt): BigInt = if (b >= 0) b else base + b + 1
-  def makeChar(b: BigInt): Char = b.toChar
-  def toBinary(b: BigInt): String = b.toString(2)
+  def makeChar(b:   BigInt): Char = b.toChar
+  def toBinary(b:   BigInt): String = b.toString(2)
 
   /** Create a format string and a list format functions in order to implement the printf
     * Figures out how many columns each output field show have from the bit widths
@@ -61,7 +62,7 @@ case class PrintfOp(
 
     val filters = new mutable.ArrayBuffer[BigInt => Any]
 
-    while(s.nonEmpty) {
+    while (s.nonEmpty) {
       s.indexOf("%") match {
         case -1 =>
           outBuffer ++= s
@@ -97,7 +98,7 @@ case class PrintfOp(
               outBuffer ++= s"%0${(widths.head / 4) + 1}x"
               widths = widths.tail
               s = s.tail
-            case Some(_)   =>
+            case Some(_) =>
               filters += asIs
               outBuffer ++= s"%${widths.head}d"
               s = s.tail
@@ -112,15 +113,14 @@ case class PrintfOp(
 
   def executeVerilogPrint(formatString: String, allArgs: Seq[BigInt]): String = {
     val processedArgs = allArgs.zip(filterFunctions).map { case (arg, filter) => filter(arg) }
-    if(addWallTime) {
+    if (addWallTime) {
       val time = scheduler.executionEngineOpt match {
         case Some(executionEngine) => executionEngine.wallTime.currentTime
-        case _ => 0L
+        case _                     => 0L
       }
-      f"[$time%4d] " + paddedFormatString.format(processedArgs:_*).drop(1).dropRight(1)
-    }
-    else {
-      paddedFormatString.format(processedArgs:_*).drop(1).dropRight(1)
+      f"[$time%4d] " + paddedFormatString.format(processedArgs: _*).drop(1).dropRight(1)
+    } else {
+      paddedFormatString.format(processedArgs: _*).drop(1).dropRight(1)
     }
   }
 

@@ -6,7 +6,6 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
-
 // scalastyle:off magic.number
 class ShiftRegisterSpec extends FreeSpec with Matchers {
   "ShiftRegisterSpec should pass a basic test" in {
@@ -38,11 +37,10 @@ class ShiftRegisterSpec extends FreeSpec with Matchers {
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(4)))
 
-
     intercept[StopException] {
       tester.step(8)
     }
-    tester.engine.lastStopResult should be (Some(1))
+    tester.engine.lastStopResult should be(Some(1))
     tester.report()
   }
 }

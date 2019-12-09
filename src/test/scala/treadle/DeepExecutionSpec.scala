@@ -5,7 +5,6 @@ package treadle
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
-
 // scalastyle:off magic.number
 class DeepExecutionSpec extends FreeSpec with Matchers {
   "DeepExecutionSpec should pass a basic test" in {

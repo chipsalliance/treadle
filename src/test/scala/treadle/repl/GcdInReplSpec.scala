@@ -46,8 +46,8 @@ class GcdInReplSpec extends FreeSpec with Matchers {
 
     println(textOut)
 
-    textOut.contains("io_v == value 1 in 3 cycle") should be (true)
-    textOut.contains("peek io_z 4") should be (true)
+    textOut.contains("io_v == value 1 in 3 cycle") should be(true)
+    textOut.contains("peek io_z 4") should be(true)
 
   }
 
@@ -99,9 +99,9 @@ class GcdInReplSpec extends FreeSpec with Matchers {
 
     println(textOut)
 
-    textOut.contains("peek io_v 1") should be (true)
-    textOut.contains("peek io_z 4") should be (true)
-    textOut.contains("incremented by 10") should be (true)
-    textOut.contains("period    10,  (up: 5, down: 5)") should be (true)
+    textOut.contains("peek io_v 1") should be(true)
+    textOut.contains("peek io_z 4") should be(true)
+    textOut.contains("incremented by 10") should be(true)
+    textOut.contains("period    10,  (up: 5, down: 5)") should be(true)
   }
 }

@@ -10,7 +10,7 @@ import org.scalatest.{FreeSpec, Matchers}
   * muxes etc, and coming up with some sort of performance formula
   */
 class Performance extends FreeSpec with Matchers {
-  "how fast is this" ignore {
+  "how fast is this".ignore {
     val width = 32
 
     val junkFirrtl: String =
@@ -32,8 +32,7 @@ class Performance extends FreeSpec with Matchers {
          |    y <= add(y, io_b)
          |
          |    io_z <= add(x, y)
-    """
-              .stripMargin
+    """.stripMargin
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(junkFirrtl)))
 
@@ -42,7 +41,7 @@ class Performance extends FreeSpec with Matchers {
     tester.poke("io_a", 1)
     tester.poke("io_b", 2)
 
-    for(i <- 0 to 30) {
+    for (i <- 0 to 30) {
       tester.step(1000000)
       println(s"trial $i got ${tester.peek("io_z")}")
     }

@@ -27,10 +27,9 @@ case class MulBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
 case class DivBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
   def apply(): Big = {
     val divisor = f2()
-    if(divisor == 0) {
+    if (divisor == 0) {
       0
-    }
-    else {
+    } else {
       f1() / divisor
     }
   }
@@ -39,40 +38,39 @@ case class DivBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
 case class RemBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
   def apply(): Big = {
     val modulus = f2()
-    if(modulus == 0) {
+    if (modulus == 0) {
       0
-    }
-    else {
+    } else {
       f1() % modulus
     }
   }
 }
 
 case class MuxBigs(condition: FuncInt, trueClause: FuncBig, falseClause: FuncBig) extends BigExpressionResult {
-  def apply(): Big = if(condition() > 0) trueClause() else falseClause()
+  def apply(): Big = if (condition() > 0) trueClause() else falseClause()
 }
 
 case class EqBigs(f1: FuncBig, f2: FuncBig) extends IntExpressionResult {
-  def apply(): Int = if(f1() == f2()) 1 else 0
+  def apply(): Int = if (f1() == f2()) 1 else 0
 }
 case class NeqBigs(f1: FuncBig, f2: FuncBig) extends IntExpressionResult {
-  def apply(): Int = if(f1() != f2()) 1 else 0
+  def apply(): Int = if (f1() != f2()) 1 else 0
 }
 
 case class LtBigs(f1: FuncBig, f2: FuncBig) extends IntExpressionResult {
-  def apply(): Int = if(f1() < f2()) 1 else 0
+  def apply(): Int = if (f1() < f2()) 1 else 0
 }
 
 case class LeqBigs(f1: FuncBig, f2: FuncBig) extends IntExpressionResult {
-  def apply(): Int = if(f1() <= f2()) 1 else 0
+  def apply(): Int = if (f1() <= f2()) 1 else 0
 }
 
 case class GtBigs(f1: FuncBig, f2: FuncBig) extends IntExpressionResult {
-  def apply(): Int = if(f1() > f2()) 1 else 0
+  def apply(): Int = if (f1() > f2()) 1 else 0
 }
 
 case class GeqBigs(f1: FuncBig, f2: FuncBig) extends IntExpressionResult {
-  def apply(): Int = if(f1() >= f2()) 1 else 0
+  def apply(): Int = if (f1() >= f2()) 1 else 0
 }
 
 case class AsUIntBigs(f1: FuncBig, width: Int) extends BigExpressionResult {
@@ -86,14 +84,12 @@ case class AsSIntBigs(f1: FuncBig, width: Int) extends BigExpressionResult {
 
   def apply(): Big = {
     val value = f1()
-    if(value < 0) {
+    if (value < 0) {
       value
-    }
-    else {
-      if(bitMasks.isMsbSet(value)) {
+    } else {
+      if (bitMasks.isMsbSet(value)) {
         (value & bitMasks.allBitsMask) - bitMasks.nextPowerOfTwo
-      }
-      else {
+      } else {
         value & bitMasks.allBitsMask
       }
     }
@@ -101,7 +97,7 @@ case class AsSIntBigs(f1: FuncBig, width: Int) extends BigExpressionResult {
 }
 
 case class AsClockBigs(f1: FuncBig) extends IntExpressionResult {
-  def apply(): Int = if(f1() == 0) 0 else 1
+  def apply(): Int = if (f1() == 0) 0 else 1
 }
 
 case class ShlBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
@@ -121,18 +117,19 @@ case class DshrBigs(f1: FuncBig, f2: FuncBig) extends BigExpressionResult {
 }
 
 case class NegBigs(f1: FuncBig) extends BigExpressionResult {
-  def apply(): Big = - f1()
+  def apply(): Big = -f1()
 }
 
 case class NotBigs(f1: FuncBig, width: Int) extends BigExpressionResult {
   private val mask = BitMasks.getBitMasksBigs(width).allBitsMask
-  def apply(): Big = (~ f1()) & mask
+  def apply(): Big = (~f1()) & mask
 }
 
 case class AndBigs(f1: FuncBig, f2: FuncBig, resultWidth: Int) extends BigExpressionResult {
   private val mask = BitUtils.makeMaskBig(resultWidth)
 
-  def apply(): Big = (f1() & f2()) & mask}
+  def apply(): Big = (f1() & f2()) & mask
+}
 
 case class OrBigs(f1: FuncBig, f2: FuncBig, resultWidth: Int) extends BigExpressionResult {
   private val mask = BitUtils.makeMaskBig(resultWidth)
@@ -155,7 +152,7 @@ case class AndrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
   private val bitMask = BitMasks.getBitMasksBigs(width).allBitsMask
 
   def apply(): Int = {
-    if((f1() & bitMask) == bitMask) 1 else 0
+    if ((f1() & bitMask) == bitMask) 1 else 0
   }
 }
 
@@ -169,7 +166,7 @@ case class OrrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
 
   def apply(): Int = {
     val uInt = f1() & bitMask
-    if(uInt > 0) { 1 } else { 0 }
+    if (uInt > 0) { 1 } else { 0 }
   }
 }
 
@@ -223,4 +220,3 @@ case class TailBigs(f1: FuncBig, toDrop: Int, originalWidth: Int) extends BigExp
 case class UndefinedBigs(width: Int) {
   def apply(): Big = BigInt(width, treadle.random)
 }
-

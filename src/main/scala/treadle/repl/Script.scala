@@ -9,16 +9,15 @@ import treadle.TreadleRepl
 import scala.tools.jline.console.ConsoleReader
 
 case class ScriptFactory(parent: TreadleRepl) {
-  val console: ConsoleReader = parent.console
+  val console:        ConsoleReader = parent.console
   var lastFileOption: Option[String] = None
 
   def apply(fileName: String): Option[Script] = {
     val file = new File(fileName)
-    if(! file.exists()) {
+    if (!file.exists()) {
       console.println(s"Unable to open script file $fileName")
       None
-    }
-    else {
+    } else {
       val scriptFile = io.Source.fromFile(file)
       val scriptLines = scriptFile.getLines().toArray
       scriptFile.close()
@@ -34,19 +33,18 @@ class Script(val fileName: String, val lines: Array[String]) {
   var linesLeftToRun = 0
 
   def getNextLineOption: Option[String] = {
-    if(hasNext) {
+    if (hasNext) {
       currentLine += 1
       linesLeftToRun -= 1
       val nextLine = lines(currentLine)
       Some(nextLine)
-    }
-    else {
+    } else {
       None
     }
   }
 
   def hasNext: Boolean = {
-    currentLine < lines.length-1 && linesLeftToRun > 0
+    currentLine < lines.length - 1 && linesLeftToRun > 0
   }
 
   def length: Int = lines.length
@@ -56,7 +54,7 @@ class Script(val fileName: String, val lines: Array[String]) {
   }
 
   def setSkipLines(n: Int): Unit = {
-    for(_ <- 0 until n) {
+    for (_ <- 0 until n) {
       getNextLineOption
     }
   }
@@ -80,10 +78,11 @@ class Script(val fileName: String, val lines: Array[String]) {
   }
 
   override def toString: String = {
-    lines.zipWithIndex.map { case (line, index) =>
-      f"$index%3d" +
-        (if(index == currentLine) "* " else "  " ) +
-        line
+    lines.zipWithIndex.map {
+      case (line, index) =>
+        f"$index%3d" +
+          (if (index == currentLine) "* " else "  ") +
+          line
     }.mkString("\n")
   }
 }

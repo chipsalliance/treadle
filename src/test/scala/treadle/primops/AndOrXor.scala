@@ -4,9 +4,8 @@ package treadle.primops
 
 import firrtl.stage.FirrtlSourceAnnotation
 import treadle.executable.{AndInts, OrInts, XorInts}
-import treadle.{BitTwiddlingUtils, TreadleTester, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils, TreadleTester}
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class AndOrXor extends FreeSpec with Matchers {
@@ -21,13 +20,12 @@ class AndOrXor extends FreeSpec with Matchers {
       } {
         val a = i.toInt
         val b = j.toInt
-        val primpOp  = AndInts(() => a, () => b, bitWidth).apply _
+        val primpOp = AndInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.and(a, b, bitWidth).toInt
 
         // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
         //   f" & $b%5d (${Render.binary(b, 4)})" +
         //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
-
 
         primpOp() should be(expected)
       }
@@ -42,13 +40,12 @@ class AndOrXor extends FreeSpec with Matchers {
       } {
         val a = i.toInt
         val b = j.toInt
-        val primpOp  = AndInts(() => a, () => b, bitWidth).apply _
+        val primpOp = AndInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.and(a, b, bitWidth).toInt
 
         // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
         //   f" & $b%5d (${Render.binary(b, 4)})" +
         //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
-
 
         primpOp() should be(expected)
       }
@@ -65,13 +62,12 @@ class AndOrXor extends FreeSpec with Matchers {
       } {
         val a = i.toInt
         val b = j.toInt
-        val primpOp  = OrInts(() => a, () => b, bitWidth).apply _
+        val primpOp = OrInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.or(a, b, bitWidth).toInt
 
         // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
         //   f" | $b%5d (${Render.binary(b, 4)})" +
         //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
-
 
         primpOp() should be(expected)
       }
@@ -86,13 +82,12 @@ class AndOrXor extends FreeSpec with Matchers {
       } {
         val a = i.toInt
         val b = j.toInt
-        val primpOp  = OrInts(() => a, () => b, bitWidth).apply _
+        val primpOp = OrInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.or(a, b, bitWidth).toInt
 
         // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
         //   f" | $b%5d (${Render.binary(b, 4)})" +
         //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
-
 
         primpOp() should be(expected)
       }
@@ -109,13 +104,12 @@ class AndOrXor extends FreeSpec with Matchers {
       } {
         val a = i.toInt
         val b = j.toInt
-        val primpOp  = XorInts(() => a, () => b, bitWidth).apply _
+        val primpOp = XorInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.xor(a, b, bitWidth).toInt
 
         // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
         //   f" ^ $b%5d (${Render.binary(b, 4)})" +
         //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
-
 
         primpOp() should be(expected)
       }
@@ -130,13 +124,12 @@ class AndOrXor extends FreeSpec with Matchers {
       } {
         val a = i.toInt
         val b = j.toInt
-        val primpOp  = XorInts(() => a, () => b, bitWidth).apply _
+        val primpOp = XorInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.xor(a, b, bitWidth).toInt
 
         // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
         //   f" ^ $b%5d (${Render.binary(b, 4)})" +
         //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
-
 
         primpOp() should be(expected)
       }

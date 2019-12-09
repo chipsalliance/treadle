@@ -6,7 +6,6 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
-
 // scalastyle:off magic.number
 class RegOfVecSpec extends FreeSpec with Matchers {
   "reg of vec should chain correctly" in {
@@ -101,7 +100,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
     intercept[StopException] {
       tester.step(10)
     }
-    tester.engine.lastStopResult should be (Some(0))
+    tester.engine.lastStopResult should be(Some(0))
   }
 
   "RegisterResetTest" in {
@@ -136,7 +135,7 @@ class RegOfVecSpec extends FreeSpec with Matchers {
 
     def show(): Unit = {
       tester.step()
-      for(name <- Seq("_T_16", "_T_18")) {
+      for (name <- Seq("_T_16", "_T_18")) {
         println(s"${tester.engine.renderComputation(name)}")
       }
     }
@@ -148,6 +147,6 @@ class RegOfVecSpec extends FreeSpec with Matchers {
       show()
     }
     // The first stop to fire, based on the conditions and the order within the module
-    tester.engine.lastStopResult should be (Some(1))
+    tester.engine.lastStopResult should be(Some(1))
   }
 }

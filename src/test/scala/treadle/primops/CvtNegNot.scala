@@ -3,15 +3,14 @@
 package treadle.primops
 
 import treadle.executable._
-import treadle.{BitTwiddlingUtils, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils}
 import org.scalatest.{FreeSpec, Matchers}
-
 
 // scalastyle:off magic.number
 class CvtNegNot extends FreeSpec with Matchers {
   "Cvt, Neg and Not should pass a basic test" - {
     "Cvt is a no-op for the simulator" in {
-      true should be (true)
+      true should be(true)
     }
 
     "Neg should pass the following tests" - {

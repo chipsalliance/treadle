@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 // scalastyle:off magic.number
 class RegisterSpec extends FlatSpec with Matchers {
-  behavior of "register reset"
+  behavior.of("register reset")
 
   it should "reset registers when their condition is true" in {
     val input =
@@ -29,25 +29,25 @@ class RegisterSpec extends FlatSpec with Matchers {
 
     tester.poke("reset1", 1)
     tester.step()
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
 
     tester.poke("reset1", 0)
     tester.step()
-    tester.peek("reg1") should be (4)
+    tester.peek("reg1") should be(4)
 
-    tester.peek("reg1") should be (4)
+    tester.peek("reg1") should be(4)
 
     tester.poke("reset1", 0)
     tester.step()
-    tester.peek("reg1") should be (5)
+    tester.peek("reg1") should be(5)
 
     tester.poke("reset1", 1)
     tester.step()
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
 
     tester.poke("reset1", 0)
     tester.step()
-    tester.peek("reg1") should be (4)
+    tester.peek("reg1") should be(4)
   }
 
   it should "be able to initialize registers from other places" in {
@@ -79,53 +79,53 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.poke("reset1", 1)
     tester.poke("reset2", 0)
     tester.step()
-    tester.peek("reg1") should be (0)
+    tester.peek("reg1") should be(0)
 
     tester.poke("reset1", 0)
     tester.poke("reset2", 1)
     tester.step()
-    tester.peek("reg1") should be (1)
-    tester.peek("reg2") should be (0)
+    tester.peek("reg1") should be(1)
+    tester.peek("reg2") should be(0)
 
     tester.poke("reset1", 1)
     tester.poke("reset2", 1)
     tester.step()
-    tester.peek("reg1") should be (0)
-    tester.peek("reg2") should be (1)
+    tester.peek("reg1") should be(0)
+    tester.peek("reg2") should be(1)
 
     tester.poke("reset1", 0)
     tester.poke("reset2", 0)
     tester.step()
-    tester.peek("reg1") should be (1)
-    tester.peek("reg2") should be (4)
+    tester.peek("reg1") should be(1)
+    tester.peek("reg2") should be(4)
 
     tester.poke("reset1", 0)
     tester.poke("reset2", 0)
     tester.step()
-    tester.peek("reg1") should be (2)
-    tester.peek("reg2") should be (7)
+    tester.peek("reg1") should be(2)
+    tester.peek("reg2") should be(7)
 
     tester.poke("reset1", 1)
     tester.poke("reset2", 0)
     tester.step()
-    tester.peek("reg1") should be (0)
-    tester.peek("reg2") should be (10)
+    tester.peek("reg1") should be(0)
+    tester.peek("reg2") should be(10)
 
     tester.poke("reset1", 0)
     tester.poke("reset2", 0)
     tester.step()
-    tester.peek("reg1") should be (1)
-    tester.peek("reg2") should be (13)
+    tester.peek("reg1") should be(1)
+    tester.peek("reg2") should be(13)
 
     tester.poke("reset1", 0)
     tester.poke("reset2", 1)
     tester.step()
-    tester.peek("reg1") should be (2)
-    tester.peek("reg2") should be (1)
+    tester.peek("reg1") should be(2)
+    tester.peek("reg2") should be(1)
 
   }
 
-  behavior of "reset support"
+  behavior.of("reset support")
 
   it should "have register decrement as reset lowers" in {
     val input =
@@ -153,7 +153,7 @@ class RegisterSpec extends FlatSpec with Matchers {
     tester.finish
   }
 
-  behavior of "reset support, 2"
+  behavior.of("reset support, 2")
 
   it should "reset takes precedence over next value" in {
     val input =
@@ -176,36 +176,36 @@ class RegisterSpec extends FlatSpec with Matchers {
 
     tester.poke("reset1", 1)
     tester.step()
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
     tester.step()
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
     tester.step()
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
 
     tester.poke("reset1", 0)
     tester.step()
-    tester.peek("reg1") should be (4)
+    tester.peek("reg1") should be(4)
 
-    tester.peek("reg1") should be (4)
+    tester.peek("reg1") should be(4)
 
     tester.poke("reset1", 0)
     tester.step()
-    tester.peek("reg1") should be (5)
+    tester.peek("reg1") should be(5)
 
     tester.poke("reset1", 1)
-    tester.peek("reg1") should be (5)
+    tester.peek("reg1") should be(5)
     tester.step()
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
     tester.step()
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
 
     tester.poke("reset1", 0)
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
     tester.step()
-    tester.peek("reg1") should be (4)
+    tester.peek("reg1") should be(4)
   }
 
-  behavior of "poking registers"
+  behavior.of("poking registers")
 
   it should "poke a register" in {
     val input =
@@ -233,20 +233,20 @@ class RegisterSpec extends FlatSpec with Matchers {
 
     tester.poke("in", 7)
     tester.step()
-    tester.peek("reg1") should be (7)
+    tester.peek("reg1") should be(7)
     tester.poke("in", 3)
     tester.step()
-    tester.peek("reg1") should be (3)
+    tester.peek("reg1") should be(3)
 
     tester.poke("in", 8)
     tester.poke("reg1", 42)
-    tester.peek("reg1") should be (42)
+    tester.peek("reg1") should be(42)
     tester.step()
-    tester.peek("reg2") should be (42)
-    tester.peek("reg1") should be (8)
+    tester.peek("reg2") should be(42)
+    tester.peek("reg1") should be(8)
   }
 
-  behavior of "multi-clock registers"
+  behavior.of("multi-clock registers")
 
   it should "get the timing right" in {
     val input =
@@ -313,7 +313,7 @@ class RegisterSpec extends FlatSpec with Matchers {
 
   }
 
-  behavior of "mutually connected registers"
+  behavior.of("mutually connected registers")
 
   it should "alternate values" in {
     val input =

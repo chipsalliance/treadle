@@ -12,7 +12,7 @@ import scala.collection.mutable
 //scalastyle:off regex
 
 class RemoveTempWires extends Transform {
-  override def inputForm: CircuitForm = LowForm
+  override def inputForm:  CircuitForm = LowForm
   override def outputForm: CircuitForm = LowForm
 
   /**
@@ -27,6 +27,7 @@ class RemoveTempWires extends Transform {
   def execute(state: CircuitState): CircuitState = {
 
     val c = state.circuit
+
     /**
       * removes all references to temp wires in module
       * @param module the module to be altered
@@ -69,7 +70,7 @@ class RemoveTempWires extends Transform {
         e match {
           case wire: WRef =>
             if ((wire.name.startsWith(RemoveTempWires.GenPrefix) ||
-                    wire.name.startsWith(RemoveTempWires.TempPrefix)) && toRemove.contains(wire.name)) {
+                wire.name.startsWith(RemoveTempWires.TempPrefix)) && toRemove.contains(wire.name)) {
               val new_node = toRemove(wire.name)
               removeGen(new_node)
             } else {
@@ -77,7 +78,7 @@ class RemoveTempWires extends Transform {
             }
           case wire: WSubField =>
             if ((wire.name.startsWith(RemoveTempWires.GenPrefix) ||
-                    wire.name.startsWith(RemoveTempWires.TempPrefix)) && toRemove.contains(wire.name)) {
+                wire.name.startsWith(RemoveTempWires.TempPrefix)) && toRemove.contains(wire.name)) {
               val new_node = toRemove(wire.name)
               removeGen(new_node)
             } else {
@@ -127,7 +128,7 @@ class RemoveTempWires extends Transform {
   }
 }
 
-object RemoveTempWires  {
+object RemoveTempWires {
   val GenPrefix = "_GEN_"
   val TempPrefix = "_T_"
 }

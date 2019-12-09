@@ -20,7 +20,7 @@ object TreadleCompatibilityPhase extends Phase {
   )
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    chirrtlPhases.foldLeft(annotations)( (a, f) => f.transform(a) )
+    chirrtlPhases.foldLeft(annotations)((a, f) => f.transform(a))
   }
 
   /** Here to determine which phases to run based on the circuit form.
@@ -29,9 +29,9 @@ object TreadleCompatibilityPhase extends Phase {
   def checkFormTransform(circuitForm: CircuitForm, annotations: AnnotationSeq): AnnotationSeq = {
     val phases = circuitForm match {
       case ChirrtlForm => chirrtlPhases
-      case _ => lowFIRRTLPhases
+      case _           => lowFIRRTLPhases
     }
-    phases.foldLeft(annotations)( (a, f) => f.transform(a) )
+    phases.foldLeft(annotations)((a, f) => f.transform(a))
   }
 }
 
@@ -48,6 +48,6 @@ object TreadleTesterPhase extends Phase {
   )
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    phases.foldLeft(annotations)( (a, f) => f.transform(a) )
+    phases.foldLeft(annotations)((a, f) => f.transform(a))
   }
 }

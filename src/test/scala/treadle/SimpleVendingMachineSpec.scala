@@ -7,7 +7,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
 //scalastyle:off magic.number
-class SimpleVendingMachineSpec extends FreeSpec with Matchers{
+class SimpleVendingMachineSpec extends FreeSpec with Matchers {
   "Simple Vending machine should dispense at the right time" in {
     val input =
       """
@@ -153,11 +153,10 @@ class SimpleVendingMachineSpec extends FreeSpec with Matchers{
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
-
     intercept[StopException] {
       tester.step(80)
     }
-    tester.engine.lastStopResult should be (Some(0))
+    tester.engine.lastStopResult should be(Some(0))
     tester.report()
   }
 }

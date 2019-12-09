@@ -18,10 +18,9 @@ object GetFirrtlAst extends Phase {
 
     /* first priority, does circuit already exist */
     def handleTreadleCircuit(): Option[AnnotationSeq] = {
-      if(annotationSeq.exists { case FirrtlCircuitAnnotation(_) => true ; case _ => false}) {
+      if (annotationSeq.exists { case FirrtlCircuitAnnotation(_) => true; case _ => false }) {
         Some(annotationSeq)
-      }
-      else {
+      } else {
         None
       }
     }
