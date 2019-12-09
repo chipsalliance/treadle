@@ -251,7 +251,7 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
         |      node _T_3 = bits(reset, 0, 0) @[PrintfWrong.scala 19:11]
         |      node _T_4 = eq(_T_3, UInt<1>("h00")) @[PrintfWrong.scala 19:11]
         |      when _T_4 : @[PrintfWrong.scala 19:11]
-        |        printf(clock, UInt<1>(1), "+++ y=%d ry=%d rry=%d isZero=%x is480=%x\n", y, regY, regRegY, _T_1, _T_2) @[PrintfWrong.scala 19:11]
+        |        printf(clock, UInt<1>(1), "+++ y=%d ry=%d rry=%d rryIsZero(_T_1)=%x rryIs480(_T_2)=%x\n", y, regY, regRegY, _T_1, _T_2) @[PrintfWrong.scala 19:11]
         |        skip @[PrintfWrong.scala 19:11]
         |      skip @[PrintfWrong.scala 18:28]
         |    io.out <= regRegY @[PrintfWrong.scala 22:10]
@@ -261,7 +261,7 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation, PrefixPrintfWithWallTime))
 
       tester.poke("io_in", 479)
       tester.step()
@@ -270,16 +270,25 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
       tester.step()
 
       tester.poke("io_in", 481)
-      tester.step()
+      tester.step(3)
+      tester.finish
 
     }
 
+    // "+++ count=    0 r0=   0 r1=   0"
+    // "+++ count=    0 r0=   0 r1=   1"
+
+
+
+    Logger.setLevel("treadle.PrintStopSpec", LogLevel.Debug)
     logger.debug(output.toString)
 
     output
       .toString
       .split("\n")
-      .count { line => line.contains("+++ y=  481 ry=  481 rry=  480 isZero=0 is480=1") } should be (1)
+      .count { line =>
+        line.contains("+++ y=  481 ry=  481 rry=  480 rryIsZero(_T_1)=0 rryIs480(_T_2)=1")
+      } should be (1)
 
     output
       .toString
@@ -379,10 +388,10 @@ class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
 
     logger.debug(output.toString)
 
-    printfLines.head should include ("+++ count=    0 r0=   0 r1=   1")
+    printfLines.head should include ("+++ count=    0 r0=   0 r1=   0")
 
     val linesCorrect = printfLines
-            .tail
+            .drop(2)
             .zipWithIndex
             .map { case (line, lineNumber) =>
               if (lineNumber % 2 == 0) {
