@@ -31,7 +31,7 @@ object SetImplicitOutputInfo extends Phase {
             state.circuit.main
         }.getOrElse("default")
       }
-      Seq(OutputFileAnnotation(name))
+      Seq(OutputFileAnnotation(outputFileName))
     }
     val targetDir = if(annotationSeq.exists { case _: TargetDirAnnotation => true ; case _ => false }) {
       Seq.empty
