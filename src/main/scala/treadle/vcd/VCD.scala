@@ -445,6 +445,17 @@ object VCD extends LazyLogging {
 
       println(s"${vcd.info}")
 
+      if(config.dumpHumanReadable) {
+        val times = vcd.valuesAtTime.keys.toSeq.sorted
+        for(time <- times) {
+          println(s"TIME: $time   " + "-" * 100)
+          val changes = vcd.valuesAtTime(time).toSeq.sortBy(_.wire.fullName)
+          for(change <- changes) {
+            println(f"${change.wire.fullName}%64s -> ${change.value}%32x")
+          }
+        }
+      }
+
       if (config.vcdTargetName.nonEmpty) {
         vcd.write(config.vcdTargetName)
       }
