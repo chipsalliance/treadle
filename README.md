@@ -117,6 +117,15 @@ class TreadleUsageSpec extends FlatSpec with Matchers {
 }
 ```
 
+### Style conventions ScalaFmt
+Treadle is the first repo in the chisel family to use the [ScalaFmt](https://scalameta.org/scalafmt/) code formatter. 
+The plan going forward from 12/9/2019 is that all Scala code in PRs to Treadle after that date must be formatted using
+the specification in the `.scalafmt.conf` file. Doing the formatting is simple and can be done via IntelliJ or
+`sbt`.
+More details can be found on the link above. 
+For the present we are also interested in comments on the formatting decisions we have made.
+Keep in mind that there is no set of rules that will satisfy everyone.
+
 ### About ports and names
 The firrtl transformations that result in LoFirrtl alter the names of ports.
 What would be io.a becomes io_a and so forth.

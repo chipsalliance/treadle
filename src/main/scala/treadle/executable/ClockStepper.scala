@@ -13,7 +13,7 @@ trait ClockStepper {
   def getCycleCount: Long = cycleCount
   def addTask(taskTime: Long)(task: () => Unit): Unit
   val clockAssigners: mutable.HashMap[Symbol, ClockAssigners] = new mutable.HashMap()
-  def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {}
+  def bumpClock(clockSymbol:   Symbol, value: BigInt): Unit = {}
   def combinationalBump(value: Long): Unit = {}
 }
 
@@ -30,20 +30,20 @@ class NoClockStepper extends ClockStepper {
 case class ClockAssigners(upAssigner: Assigner, downAssigner: Assigner)
 
 case class SimpleSingleClockStepper(
-  engine: ExecutionEngine,
-  dataStore: DataStore,
-  clockSymbol: Symbol,
-  resetSymbolOpt: Option[Symbol],
-  clockPeriod: Long,
+  engine:             ExecutionEngine,
+  dataStore:          DataStore,
+  clockSymbol:        Symbol,
+  resetSymbolOpt:     Option[Symbol],
+  clockPeriod:        Long,
   clockInitialOffset: Long,
-  wallTime: UTC
+  wallTime:           UTC
 ) extends ClockStepper {
 
   var clockIsHigh: Boolean = false
-  def clockIsLow: Boolean = ! clockIsHigh
+  def clockIsLow:  Boolean = !clockIsHigh
 
-  val upPeriod   : Long = clockPeriod / 2
-  val downPeriod : Long = clockPeriod - upPeriod
+  val upPeriod:   Long = clockPeriod / 2
+  val downPeriod: Long = clockPeriod - upPeriod
 
   var resetTaskTime: Long = -1L
 
@@ -59,7 +59,7 @@ case class SimpleSingleClockStepper(
     * @param value        new clock value should be zero or one, all non-zero values are treated as one
     */
   override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
-    if(hasRollBack) {
+    if (hasRollBack) {
       // save data state under roll back buffers for this clock
       engine.dataStore.saveData(wallTime.currentTime)
     }
@@ -85,21 +85,20 @@ case class SimpleSingleClockStepper(
       * interval
       */
     def handlePossibleReset(increment: Long): Long = {
-      if(resetTaskTime > wallTime.currentTime && wallTime.currentTime + increment >= resetTaskTime) {
+      if (resetTaskTime > wallTime.currentTime && wallTime.currentTime + increment >= resetTaskTime) {
         val incrementToReset = resetTaskTime - wallTime.currentTime
         wallTime.incrementTime(incrementToReset)
 
         resetSymbolOpt.foreach { resetSymbol =>
           engine.setValue(resetSymbol.name, 0)
-          if(increment - incrementToReset > 0) {
+          if (increment - incrementToReset > 0) {
             engine.evaluateCircuit()
           }
         }
         resetTaskTime = -1L
 
         increment - incrementToReset
-      }
-      else {
+      } else {
         increment
       }
     }
@@ -125,8 +124,8 @@ case class SimpleSingleClockStepper(
       combinationalBumps = 0L
     }
 
-    for(_ <- 0 until steps) {
-      if(engine.verbose) {
+    for (_ <- 0 until steps) {
+      if (engine.verbose) {
         Render.headerBar(s"step ${cycleCount + 1} started")
       }
 
@@ -140,8 +139,7 @@ case class SimpleSingleClockStepper(
       val downIncrement = if (isFirstRun) {
         isFirstRun = false
         clockInitialOffset - wallTime.currentTime
-      }
-      else {
+      } else {
         downPeriod - combinationalBumps
       }
 
@@ -153,14 +151,14 @@ case class SimpleSingleClockStepper(
 
       lowerClock()
 
-      if(engine.verbose) {
+      if (engine.verbose) {
         Render.headerBar(s"Done step: $cycleCount finished")
       }
     }
   }
 
   override def addTask(taskTime: Long)(task: () => Unit): Unit = {
-    if(resetTaskTime >= 0) {
+    if (resetTaskTime >= 0) {
       throw TreadleException(s"Timed add second reset task to single clock")
     }
     resetTaskTime = taskTime
@@ -177,8 +175,8 @@ case class SimpleSingleClockStepper(
   * @param wallTime       handle to top level wall time
   */
 class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], wallTime: UTC) extends ClockStepper {
-  val dataStore: DataStore = engine.dataStore
-  val scheduler: Scheduler = engine.scheduler
+  val dataStore:   DataStore = engine.dataStore
+  val scheduler:   Scheduler = engine.scheduler
   val hasRollBack: Boolean = engine.dataStore.numberOfBuffers > 0
 
   val shortestPeriod: Long = clockInfoList.map(_.period).min
@@ -209,14 +207,13 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
     */
   override def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {
     val assigner = clockAssigners(clockSymbol)
-    if(value > Big(0)) {
-      if(hasRollBack) {
+    if (value > Big(0)) {
+      if (hasRollBack) {
         // save data state under roll back buffers for this clock
         engine.dataStore.saveData(wallTime.currentTime)
       }
       assigner.upAssigner.run()
-    }
-    else {
+    } else {
       assigner.downAssigner.run()
     }
   }
@@ -243,7 +240,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
         }
       }
 
-      while(! upTransitionProcessed) {
+      while (!upTransitionProcessed) {
         runHeadTask()
       }
 
@@ -251,7 +248,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
       there could be multiple clocks temporarily set to run at this
       same time, let them all run
        */
-      while(wallTime.eventQueue.head.time == wallTime.currentTime) {
+      while (wallTime.eventQueue.head.time == wallTime.currentTime) {
         runHeadTask()
       }
     }

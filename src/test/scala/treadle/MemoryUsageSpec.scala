@@ -136,37 +136,37 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     val depth = 2
     val input =
       s"""
-        |circuit target_memory :
-        |  module target_memory :
-        |    input clock      : Clock
-        |    input index      : UInt<12>
-        |    input do_write   : UInt<1>
-        |    input do_enable  : UInt<1>
-        |    input write_data : UInt<12>
-        |    output read_data : UInt<12>
-        |
-        |    mem ram :
-        |      data-type => UInt<12>
-        |      depth => $depth
-        |      read-latency => 1
-        |      write-latency => 1
-        |      readwriter => RW_0
-        |      read-under-write => undefined
-        |
-        |    ram.RW_0.clk <= clock
-        |    ram.RW_0.addr <= index
-        |    ram.RW_0.en <= UInt<1>("h1")
-        |
-        |    ram.RW_0.wmode <= do_write
-        |    read_data <= ram.RW_0.rdata
-        |    ram.RW_0.wdata <= write_data
-        |    ram.RW_0.wmask <= UInt<1>("h1")
+         |circuit target_memory :
+         |  module target_memory :
+         |    input clock      : Clock
+         |    input index      : UInt<12>
+         |    input do_write   : UInt<1>
+         |    input do_enable  : UInt<1>
+         |    input write_data : UInt<12>
+         |    output read_data : UInt<12>
+         |
+         |    mem ram :
+         |      data-type => UInt<12>
+         |      depth => $depth
+         |      read-latency => 1
+         |      write-latency => 1
+         |      readwriter => RW_0
+         |      read-under-write => undefined
+         |
+         |    ram.RW_0.clk <= clock
+         |    ram.RW_0.addr <= index
+         |    ram.RW_0.en <= UInt<1>("h1")
+         |
+         |    ram.RW_0.wmode <= do_write
+         |    read_data <= ram.RW_0.rdata
+         |    ram.RW_0.wdata <= write_data
+         |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.poke("do_write", 1)
-    for(i <- 0 until depth) {
+    for (i <- 0 until depth) {
       tester.poke("index", i)
       tester.poke("write_data", i + 3)
       tester.step()
@@ -174,7 +174,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     tester.poke("do_write", 0)
     tester.step(2)
 
-    for(i <- 0 until depth) {
+    for (i <- 0 until depth) {
       tester.poke("index", i)
       tester.step()
       tester.expect("read_data", i + 3)
@@ -240,7 +240,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
     tester.poke("outer_write_en", 1)
-    for(i <- 0 until 10) {
+    for (i <- 0 until 10) {
       tester.poke("outer_addr", i)
       tester.poke("outer_din", i * 3)
       tester.step()
@@ -248,7 +248,7 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     tester.poke("outer_write_en", 0)
     tester.step(2)
 
-    for(i <- 0 until 10) {
+    for (i <- 0 until 10) {
       tester.poke("outer_addr", i)
       tester.step()
       tester.expect("outer_dout", i * 3)
@@ -318,31 +318,31 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
       println(s"ReadLatency $readLatency WriteLatency $writeLatency")
       val input =
         s"""circuit Test :
-          |  module Test :
-          |    input clock    : Clock
-          |    input in1      : UInt<8>
-          |    input addr     : UInt<8>
-          |    input write_en : UInt<1>
-          |    output out1    : UInt<8>
-          |    mem m :
-          |      data-type => UInt<8>
-          |      depth => 32
-          |      read-latency => $readLatency
-          |      write-latency => $writeLatency
-          |      reader => read
-          |      writer => write
-          |
-          |    m.read.clk <= clock
-          |    m.read.en <= eq(write_en, UInt<1>(0))
-          |    m.read.addr <= addr
-          |
-          |    m.write.clk <= clock
-          |    m.write.en <= eq(write_en, UInt<1>(1))
-          |    m.write.mask <= UInt<8>("hff")
-          |    m.write.addr <= addr
-          |    m.write.data <= in1
-          |
-          |    out1 <= m.read.data
+           |  module Test :
+           |    input clock    : Clock
+           |    input in1      : UInt<8>
+           |    input addr     : UInt<8>
+           |    input write_en : UInt<1>
+           |    output out1    : UInt<8>
+           |    mem m :
+           |      data-type => UInt<8>
+           |      depth => 32
+           |      read-latency => $readLatency
+           |      write-latency => $writeLatency
+           |      reader => read
+           |      writer => write
+           |
+           |    m.read.clk <= clock
+           |    m.read.en <= eq(write_en, UInt<1>(0))
+           |    m.read.addr <= addr
+           |
+           |    m.write.clk <= clock
+           |    m.write.en <= eq(write_en, UInt<1>(1))
+           |    m.write.mask <= UInt<8>("hff")
+           |    m.write.addr <= addr
+           |    m.write.data <= in1
+           |
+           |    out1 <= m.read.data
         """.stripMargin
 
       val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
@@ -403,28 +403,30 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
 
     val memoryAnnotations = Seq(
       LoadMemoryAnnotation(
-        ComponentName("memory", ModuleName("UsesMem", CircuitName("UsesMem"))), s"$targetDirName/mem1"
+        ComponentName("memory", ModuleName("UsesMem", CircuitName("UsesMem"))),
+        s"$targetDirName/mem1"
       ),
       LoadMemoryAnnotation(
-        ComponentName("memory", ModuleName("UsesMemLow", CircuitName("UsesMem"))), s"$targetDirName/mem2"
+        ComponentName("memory", ModuleName("UsesMemLow", CircuitName("UsesMem"))),
+        s"$targetDirName/mem2"
       )
     )
 
     val writer = new PrintWriter(new File(s"$targetDirName/mem1"))
-    for(i <- 0 until 8) {
+    for (i <- 0 until 8) {
       writer.println(i)
     }
     writer.close()
 
     val writer2 = new PrintWriter(new File(s"$targetDirName/mem2"))
-    for(i <- 0 until 8) {
+    for (i <- 0 until 8) {
       writer2.println(7 - i)
     }
     writer2.close()
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)) ++ memoryAnnotations)
 
-    for(i <- 0 until 8) {
+    for (i <- 0 until 8) {
       tester.expectMemory("memory", i, i)
       tester.expectMemory("low.memory", i, 7 - i)
 
@@ -473,19 +475,19 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
     val tester = simpleMemTester
 
     // (en == 0) should prevent a write
-    tester.pokeMemory("m", 3,  123)
+    tester.pokeMemory("m", 3, 123)
     tester.poke("io_w_data", 0)
     tester.poke("io_w_addr", 3)
     tester.poke("io_w_en", 0)
     tester.poke("io_w_mask", 1)
     tester.step()
-    tester.peekMemory("m", 3) should be (123)
+    tester.peekMemory("m", 3) should be(123)
 
     // (mask == 0) should prevent a write
     tester.poke("io_w_en", 1)
     tester.poke("io_w_mask", 0)
     tester.step()
-    tester.peekMemory("m", 3) should be (123)
+    tester.peekMemory("m", 3) should be(123)
   }
 
   "read port: enable should be pipelined correctly" in {
@@ -493,14 +495,14 @@ class MemoryUsageSpec extends FreeSpec with Matchers {
 
     tester.poke("io_r_en", 0)
     tester.step()
-    tester.peek("m.r.en") should be (0)
+    tester.peek("m.r.en") should be(0)
 
     tester.poke("io_r_en", 1)
     tester.step()
-    tester.peek("m.r.en") should be (1)
+    tester.peek("m.r.en") should be(1)
 
     tester.poke("io_r_en", 0)
     tester.step()
-    tester.peek("m.r.en") should be (0)
+    tester.peek("m.r.en") should be(0)
   }
 }

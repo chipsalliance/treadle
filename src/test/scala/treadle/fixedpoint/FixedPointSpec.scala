@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import treadle._
 
 class FixedPointSpec extends FlatSpec with Matchers {
-  behavior of "dumb fixed point multiply test"
+  behavior.of("dumb fixed point multiply test")
 
   it should "expand instances as found" in {
     val input =
@@ -17,7 +17,6 @@ class FixedPointSpec extends FlatSpec with Matchers {
         |    input  b : Fixed<6><<2>>
         |    output c : Fixed
         |    c <= mul(a, b)""".stripMargin
-
 
     val options = Seq()
 
@@ -30,7 +29,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
     tester.expect("c", BigInt("1000", 2))
   }
 
-  behavior of "allow zero length binary point"
+  behavior.of("allow zero length binary point")
 
   it should "be happy with zero" in {
 
@@ -54,7 +53,7 @@ class FixedPointSpec extends FlatSpec with Matchers {
     println(s"got ${tester.peek("io_out")}")
   }
 
-  behavior of "set binary point"
+  behavior.of("set binary point")
 
   it should "shorten number with new binary point" in {
     val input =

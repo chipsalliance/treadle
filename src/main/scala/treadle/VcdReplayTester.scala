@@ -30,9 +30,9 @@ class VcdReplayTester(annotationSeq: AnnotationSeq) extends LazyLogging {
 
   private def getInput(fileName: String): String = {
     var file = new File(fileName)
-    if(! file.exists()) {
+    if (!file.exists()) {
       file = new File(fileName + ".fir")
-      if(! file.exists()) {
+      if (!file.exists()) {
         throw new Exception(s"file $fileName does not exist")
       }
     }
@@ -54,18 +54,18 @@ class VcdReplayTester(annotationSeq: AnnotationSeq) extends LazyLogging {
   val vcdRunner: VcdRunner = new VcdRunner(tester, vcd)
 
   def testSuccesses: Long = vcdRunner.testSuccesses
-  def testFailures: Long = vcdRunner.testFailures
+  def testFailures:  Long = vcdRunner.testFailures
 
   def run(): Unit = {
     vcdRunner.setInitialValues()
 
     val start = annotationSeq.collectFirst { case VcdReplaySkipEvents(n) => n }.getOrElse(0)
-    val end = annotationSeq.collectFirst { case VcdReplaySkipEvents(n) => start + n }.getOrElse(vcdRunner.events.length)
+    val end = annotationSeq.collectFirst { case VcdReplaySkipEvents(n)   => start + n }.getOrElse(vcdRunner.events.length)
 
     vcdRunner.setNextEvent(start)
 
     val startTime = System.currentTimeMillis()
-    while(vcdRunner.nextEvent < end) {
+    while (vcdRunner.nextEvent < end) {
       println(vcdRunner.eventSummary(vcdRunner.nextEvent))
 
       vcdRunner.executeNextEvent()
@@ -94,7 +94,6 @@ class VcdReplayTester(annotationSeq: AnnotationSeq) extends LazyLogging {
 trait VcdReplayTesterCli { this: Shell =>
   parser.note("VcdReplayTester Front End Options")
 
-
 }
 
 class VcdReplayTesterStage extends Stage {
@@ -112,7 +111,8 @@ class VcdReplayTesterStage extends Stage {
 
 object VcdReplayTester extends StageMain(new VcdReplayTesterStage)
 
-sealed trait VcdReplayTesterOptions extends Unserializable { this: Annotation => }
+sealed trait VcdReplayTesterOptions extends Unserializable { this: Annotation =>
+}
 
 case class VcdReplayVcdFile(fileName: String) extends NoTargetAnnotation with VcdReplayTesterOptions
 
@@ -177,4 +177,3 @@ case object VcdReplayTestAliasedWires extends NoTargetAnnotation with VcdReplayT
     )
   )
 }
-

@@ -6,7 +6,6 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
-
 // scalastyle:off magic.number
 class ClockSpec extends FreeSpec with Matchers {
   "ClockSpec should pass a basic test" in {
@@ -49,7 +48,7 @@ class ClockSpec extends FreeSpec with Matchers {
     intercept[StopException] {
       tester.step(100)
     }
-    tester.engine.lastStopResult should be (Some(0))
+    tester.engine.lastStopResult should be(Some(0))
     tester.report()
   }
 
@@ -97,18 +96,18 @@ class ClockSpec extends FreeSpec with Matchers {
 
     // load memory
     tester.poke("write_en", 1)
-    for(i <- 0 until 8) {
+    for (i <- 0 until 8) {
       tester.poke("addr", i)
       tester.poke("in1", i * 10 + i)
       tester.step()
     }
 
-    for(i <- 0 until 8) {
+    for (i <- 0 until 8) {
       println(s"memory($i) = ${tester.peekMemory("m", i)}")
     }
     // read phase
     tester.poke("write_en", 1)
-    for(i <- 0 until 8) {
+    for (i <- 0 until 8) {
       tester.poke("addr", i)
       tester.expect("out1", i * 10 + i)
 

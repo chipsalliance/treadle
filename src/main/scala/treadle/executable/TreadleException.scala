@@ -8,5 +8,3 @@ package treadle.executable
 case class TreadleException(message: String) extends Exception(message)
 
 case class StopException(message: String) extends Exception(message)
-
-

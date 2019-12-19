@@ -2,7 +2,7 @@
 
 package treadle
 
-import org.scalatest.{Matchers, FreeSpec}
+import org.scalatest.{FreeSpec, Matchers}
 
 class DriverSpec extends FreeSpec with Matchers {
   "The Driver class provides a simple caller with run-time parameters" - {

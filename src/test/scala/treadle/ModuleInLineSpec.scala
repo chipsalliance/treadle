@@ -6,7 +6,7 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 
 class ModuleInLineSpec extends FlatSpec with Matchers {
-  behavior of "multiple modes"
+  behavior.of("multiple modes")
 
   it should "expand instances as found" in {
     val stream = getClass.getResourceAsStream("/three_deep.fir")

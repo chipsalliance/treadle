@@ -5,17 +5,13 @@ package treadle.executable
 import treadle._
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
-import treadle.{
-  BigIntTestValuesGenerator,
-  DataStorePlugInAnnotation,
-  TreadleTester
-}
+import treadle.{BigIntTestValuesGenerator, DataStorePlugInAnnotation, TreadleTester}
 
 import scala.collection.mutable
 
 class DataStoreSpec extends FreeSpec with Matchers {
 
-  info( "this")
+  info("this")
 
   "DataStore Plugins can be added via an annotation" - {
     "They can be useful for analytics on a circuit simulation" in {
@@ -37,9 +33,7 @@ class DataStoreSpec extends FreeSpec with Matchers {
 
       case class Extrema(low: BigInt, high: BigInt) {
         def update(value: BigInt): Extrema = {
-          if (value < low) { Extrema(value, high) }
-          else if (value > high) { Extrema(low, value) }
-          else { this }
+          if (value < low) { Extrema(value, high) } else if (value > high) { Extrema(low, value) } else { this }
         }
       }
 
@@ -50,13 +44,10 @@ class DataStoreSpec extends FreeSpec with Matchers {
           PlugIn(executionEngine)
         }
 
-        case class PlugIn(executionEngine: ExecutionEngine)
-            extends DataStorePlugin {
+        case class PlugIn(executionEngine: ExecutionEngine) extends DataStorePlugin {
           override def dataStore: DataStore = executionEngine.dataStore
 
-          override def run(symbol: Symbol,
-                           offset: Int,
-                           previousValue: Big): Unit = {
+          override def run(symbol: Symbol, offset: Int, previousValue: Big): Unit = {
             extrema(symbol.name) = extrema.get(symbol.name) match {
               case Some(extrema) => extrema.update(dataStore(symbol))
               case None          => Extrema(dataStore(symbol), dataStore(symbol))
@@ -82,9 +73,9 @@ class DataStoreSpec extends FreeSpec with Matchers {
       }
       tester.finish
 
-      dataCollector.extrema("c") should be (Extrema(-256, 254))
-      dataCollector.extrema("d") should be (Extrema(-384, 381))
-      dataCollector.extrema("r") should be (Extrema(-256, 254))
+      dataCollector.extrema("c") should be(Extrema(-256, 254))
+      dataCollector.extrema("d") should be(Extrema(-384, 381))
+      dataCollector.extrema("r") should be(Extrema(-256, 254))
     }
   }
 }

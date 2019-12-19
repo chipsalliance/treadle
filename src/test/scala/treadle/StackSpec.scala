@@ -5,7 +5,6 @@ package treadle
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
-
 // scalastyle:off magic.number
 class StackSpec extends FreeSpec with Matchers {
   "StackSpec should pass a basic test" in {
@@ -94,9 +93,7 @@ class StackSpec extends FreeSpec with Matchers {
 
     println(s"======== first push done sp ${tester.peek("sp")}")
 
-
     tester.expect("sp", 1)
-
 
     tester.poke("io_dataIn", 22)
     tester.step()

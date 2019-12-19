@@ -27,10 +27,9 @@ case class MulLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
 case class DivLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
   def apply(): Long = {
     val divisor = f2()
-    if(divisor == 0) {
+    if (divisor == 0) {
       0
-    }
-    else {
+    } else {
       f1() / divisor
     }
   }
@@ -39,40 +38,39 @@ case class DivLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
 case class RemLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
   def apply(): Long = {
     val modulus = f2()
-    if(modulus == 0) {
+    if (modulus == 0) {
       0
-    }
-    else {
+    } else {
       f1() % modulus
     }
   }
 }
 
 case class MuxLongs(condition: FuncInt, trueClause: FuncLong, falseClause: FuncLong) extends LongExpressionResult {
-  def apply(): Long = if(condition() > 0) trueClause() else falseClause()
+  def apply(): Long = if (condition() > 0) trueClause() else falseClause()
 }
 
 case class EqLongs(f1: FuncLong, f2: FuncLong) extends IntExpressionResult {
-  def apply(): Int = if(f1() == f2()) 1 else 0
+  def apply(): Int = if (f1() == f2()) 1 else 0
 }
 case class NeqLongs(f1: FuncLong, f2: FuncLong) extends IntExpressionResult {
-  def apply(): Int = if(f1() != f2()) 1 else 0
+  def apply(): Int = if (f1() != f2()) 1 else 0
 }
 
 case class LtLongs(f1: FuncLong, f2: FuncLong) extends IntExpressionResult {
-  def apply(): Int = if(f1() < f2()) 1 else 0
+  def apply(): Int = if (f1() < f2()) 1 else 0
 }
 
 case class LeqLongs(f1: FuncLong, f2: FuncLong) extends IntExpressionResult {
-  def apply(): Int = if(f1() <= f2()) 1 else 0
+  def apply(): Int = if (f1() <= f2()) 1 else 0
 }
 
 case class GtLongs(f1: FuncLong, f2: FuncLong) extends IntExpressionResult {
-  def apply(): Int = if(f1() > f2()) 1 else 0
+  def apply(): Int = if (f1() > f2()) 1 else 0
 }
 
 case class GeqLongs(f1: FuncLong, f2: FuncLong) extends IntExpressionResult {
-  def apply(): Int = if(f1() >= f2()) 1 else 0
+  def apply(): Int = if (f1() >= f2()) 1 else 0
 }
 
 case class AsUIntLongs(f1: FuncLong, width: Int) extends LongExpressionResult {
@@ -86,14 +84,12 @@ case class AsSIntLongs(f1: FuncLong, width: Int) extends LongExpressionResult {
 
   def apply(): Long = {
     val value = f1()
-    if(value < 0) {
+    if (value < 0) {
       value
-    }
-    else {
-      if(bitMasks.isMsbSet(value)) {
+    } else {
+      if (bitMasks.isMsbSet(value)) {
         (value & bitMasks.allBitsMask) - bitMasks.nextPowerOfTwo
-      }
-      else {
+      } else {
         value & bitMasks.allBitsMask
       }
     }
@@ -101,7 +97,7 @@ case class AsSIntLongs(f1: FuncLong, width: Int) extends LongExpressionResult {
 }
 
 case class AsClockLongs(f1: FuncLong) extends IntExpressionResult {
-  def apply(): Int = if(f1() == 0) 0 else 1
+  def apply(): Int = if (f1() == 0) 0 else 1
 }
 
 case class ShlLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
@@ -125,12 +121,12 @@ case class DshrLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
 }
 
 case class NegLongs(f1: FuncLong) extends LongExpressionResult {
-  def apply(): Long = - f1()
+  def apply(): Long = -f1()
 }
 
 case class NotLongs(f1: FuncLong, width: Int) extends LongExpressionResult {
   private val mask = BitMasks.getBitMasksLongs(width).allBitsMask
-  def apply(): Long = (~ f1()) & mask
+  def apply(): Long = (~f1()) & mask
 }
 
 case class AndLongs(f1: FuncLong, f2: FuncLong, resultWidth: Int) extends LongExpressionResult {
@@ -160,7 +156,7 @@ case class AndrLongs(f1: FuncLong, width: Int) extends IntExpressionResult {
   private val bitMask = BitMasks.getBitMasksLongs(width).allBitsMask
 
   def apply(): Int = {
-    if((f1() & bitMask) == bitMask) 1 else 0
+    if ((f1() & bitMask) == bitMask) 1 else 0
   }
 }
 
@@ -174,7 +170,7 @@ case class OrrLongs(f1: FuncLong, width: Int) extends IntExpressionResult {
 
   def apply(): Int = {
     val uInt = f1() & bitMask
-    if(uInt > 0) { 1 } else { 0 }
+    if (uInt > 0) { 1 } else { 0 }
   }
 }
 
@@ -188,7 +184,8 @@ case class XorrLongs(f1: FuncLong, width: Int) extends IntExpressionResult {
 
   def apply(): Int = {
     val uInt = f1() & bitMask
-    (0 until width).map(n => ((uInt >> n) & BigInt(1)).toInt).reduce(_ ^ _)  }
+    (0 until width).map(n => ((uInt >> n) & BigInt(1)).toInt).reduce(_ ^ _)
+  }
 }
 
 case class CatLongs(f1: FuncLong, f1Width: Int, f2: FuncLong, f2Width: Int) extends LongExpressionResult {
@@ -199,8 +196,7 @@ case class CatLongs(f1: FuncLong, f1Width: Int, f2: FuncLong, f2Width: Int) exte
   }
 }
 
-case class BitsLongs(f1: FuncLong, high: Int, low: Int, originalWidth: Int)
-  extends LongExpressionResult {
+case class BitsLongs(f1: FuncLong, high: Int, low: Int, originalWidth: Int) extends LongExpressionResult {
   private val mask = LongUtils.makeMask((high - low) + 1)
 
   def apply(): Long = {
@@ -226,7 +222,7 @@ case class TailLongs(f1: FuncLong, toDrop: Int, originalWidth: Int) extends Long
 }
 
 case class UndefinedLongs(width: Int) {
-  val mask: Long = LongUtils.makeMask(width)
+  val mask:    Long = LongUtils.makeMask(width)
   def apply(): Long = treadle.random.nextLong() & mask
 }
 
@@ -235,4 +231,3 @@ object LongUtils {
     (1L << width) - 1
   }
 }
-

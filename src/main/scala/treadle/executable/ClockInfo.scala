@@ -16,17 +16,17 @@ package treadle.executable
   * @param initialOffset  the tick where the first up transition takes place.
   */
 case class ClockInfo(
-  name          : String = ClockInfo.DefaultName,
-  period        : Long   = ClockInfo.DefaultPeriod,
-  initialOffset : Long   = ClockInfo.DefaultOffset
+  name:          String = ClockInfo.DefaultName,
+  period:        Long = ClockInfo.DefaultPeriod,
+  initialOffset: Long = ClockInfo.DefaultOffset
 ) {
-  if(period % 2 != 0) {
+  if (period % 2 != 0) {
     throw TreadleException(s"Error: Clock period must be divisible by 2: Found $this")
   }
 
-  val upPeriod   : Long = period / 2
-  val downPeriod : Long = period - upPeriod
-  if(initialOffset <= 0) {
+  val upPeriod:   Long = period / 2
+  val downPeriod: Long = period - upPeriod
+  if (initialOffset <= 0) {
     throw TreadleException(s"initialOffset in ClockInfo for $name must be positive. Found value $initialOffset")
   }
 
@@ -40,7 +40,7 @@ case class ClockInfo(
   * The default settings for a single clock are here.  Units are in arbitrary ticks
   */
 object ClockInfo {
-  val DefaultName: String = "clock"
+  val DefaultName:   String = "clock"
   val DefaultPeriod: Long = 10L
   val DefaultOffset: Long = 1L
 }

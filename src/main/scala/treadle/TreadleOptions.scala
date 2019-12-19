@@ -9,7 +9,8 @@ import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserial
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
-sealed trait TreadleOption extends Unserializable { this: Annotation => }
+sealed trait TreadleOption extends Unserializable { this: Annotation =>
+}
 
 /**
   * Tells treadle to write a vcd file during simulation
@@ -121,7 +122,8 @@ case object ValidIfIsRandomAnnotation extends NoTargetAnnotation with TreadleOpt
   *  Sets the number of rollback buffers in simulator, useful to see why wires have their values
   */
 case class RollBackBuffersAnnotation(rollbackBufferDepth: Int = TreadleDefaults.RollbackBuffers)
-        extends NoTargetAnnotation with TreadleOption
+    extends NoTargetAnnotation
+    with TreadleOption
 
 case object RollBackBuffersAnnotation extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -137,7 +139,8 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
   *  Sets one or more clocks including their frequencies and phase
   */
 case class ClockInfoAnnotation(clockInfoSeq: Seq[ClockInfo] = Seq(ClockInfo()))
-        extends NoTargetAnnotation with TreadleOption
+    extends NoTargetAnnotation
+    with TreadleOption
 
 case object ClockInfoAnnotation extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -242,13 +245,14 @@ object TreadleFirrtlFormHint extends HasShellOptions {
       longOption = "tr-firrtl-input-form",
       toAnnotationSeq = (firrtl: String) => {
         val form = firrtl match {
-          case "low" => LowForm
-          case "high" => HighForm
+          case "low"     => LowForm
+          case "high"    => HighForm
           case "chirrtl" => ChirrtlForm
           case "unknown" => UnknownForm
           case _ =>
             throw TreadleException(
-              s"--tr-firrtl-input-form $firrtl is invalid, should be one of high,low,chirrtl,unknown")
+              s"--tr-firrtl-input-form $firrtl is invalid, should be one of high,low,chirrtl,unknown"
+            )
         }
         Seq(TreadleFirrtlFormHint(form))
       },
@@ -292,7 +296,8 @@ object TreadleFirrtlFile extends HasShellOptions {
 }
 
 case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFactory])
-        extends NoTargetAnnotation with TreadleOption
+    extends NoTargetAnnotation
+    with TreadleOption
 
 /**
   * Using this annotation allows external users of a TreadleTester to supply their own custom
@@ -303,9 +308,10 @@ case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFacto
   * @param getPlugin A function that returns a DataStorePlugin subclass
   */
 case class DataStorePlugInAnnotation(
-                                      name: String,
-                                      getPlugin: ExecutionEngine => DataStorePlugin
-                                    ) extends NoTargetAnnotation with TreadleOption
+  name:      String,
+  getPlugin: ExecutionEngine => DataStorePlugin
+) extends NoTargetAnnotation
+    with TreadleOption
 
 /** Constructs this as a registered library that will be auto-detected by
   * projects who have a dependency on Treadle

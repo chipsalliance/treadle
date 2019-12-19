@@ -11,43 +11,43 @@ import org.scalatest.{FreeSpec, Matchers}
 class DynamicMemorySearch extends FreeSpec with Matchers {
   "dynamic memory search should run with correct results" in {
     val input =
-    """
-      |circuit DynamicMemorySearch :
-      |  module DynamicMemorySearch :
-      |    input clk : Clock
-      |    input reset : UInt<1>
-      |    output io : {flip isWr : UInt<1>, flip wrAddr : UInt<3>, flip data : UInt<6>, flip en : UInt<1>, target : UInt<3>, done : UInt<1>}
-      |
-      |    io is invalid
-      |    reg index : UInt<3>, clk with : (reset => (reset, UInt<3>("h00")))
-      |    cmem list : UInt<6>[8]
-      |    infer mport memVal = list[index], clk
-      |    node T_10 = eq(io.en, UInt<1>("h00"))
-      |    node T_11 = eq(memVal, io.data)
-      |    node T_13 = eq(index, UInt<3>("h07"))
-      |    node T_14 = or(T_11, T_13)
-      |    node over = and(T_10, T_14)
-      |    when io.isWr :
-      |      infer mport T_15 = list[io.wrAddr], clk
-      |      T_15 <= io.data
-      |      skip
-      |    node T_17 = eq(io.isWr, UInt<1>("h00"))
-      |    node T_18 = and(T_17, io.en)
-      |    when T_18 :
-      |      index <= UInt<1>("h00")
-      |      skip
-      |    node T_21 = eq(over, UInt<1>("h00"))
-      |    node T_23 = eq(io.isWr, UInt<1>("h00"))
-      |    node T_25 = eq(io.en, UInt<1>("h00"))
-      |    node T_26 = and(T_23, T_25)
-      |    node T_27 = and(T_26, T_21)
-      |    when T_27 :
-      |      node T_29 = add(index, UInt<1>("h01"))
-      |      node T_30 = tail(T_29, 1)
-      |      index <= T_30
-      |      skip
-      |    io.done <= over
-      |    io.target <= index
+      """
+        |circuit DynamicMemorySearch :
+        |  module DynamicMemorySearch :
+        |    input clk : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip isWr : UInt<1>, flip wrAddr : UInt<3>, flip data : UInt<6>, flip en : UInt<1>, target : UInt<3>, done : UInt<1>}
+        |
+        |    io is invalid
+        |    reg index : UInt<3>, clk with : (reset => (reset, UInt<3>("h00")))
+        |    cmem list : UInt<6>[8]
+        |    infer mport memVal = list[index], clk
+        |    node T_10 = eq(io.en, UInt<1>("h00"))
+        |    node T_11 = eq(memVal, io.data)
+        |    node T_13 = eq(index, UInt<3>("h07"))
+        |    node T_14 = or(T_11, T_13)
+        |    node over = and(T_10, T_14)
+        |    when io.isWr :
+        |      infer mport T_15 = list[io.wrAddr], clk
+        |      T_15 <= io.data
+        |      skip
+        |    node T_17 = eq(io.isWr, UInt<1>("h00"))
+        |    node T_18 = and(T_17, io.en)
+        |    when T_18 :
+        |      index <= UInt<1>("h00")
+        |      skip
+        |    node T_21 = eq(over, UInt<1>("h00"))
+        |    node T_23 = eq(io.isWr, UInt<1>("h00"))
+        |    node T_25 = eq(io.en, UInt<1>("h00"))
+        |    node T_26 = and(T_23, T_25)
+        |    node T_27 = and(T_26, T_21)
+        |    when T_27 :
+        |      node T_29 = add(index, UInt<1>("h01"))
+        |      node T_30 = tail(T_29, 1)
+        |      index <= T_30
+        |      skip
+        |    io.done <= over
+        |    io.target <= index
     """.stripMargin
 
     // these numbers are hard-code into above firrtl, do not change with out fixing
@@ -72,11 +72,11 @@ class DynamicMemorySearch extends FreeSpec with Matchers {
     def checkSearch(searchValue: BigInt): Unit = {
       val expectedIndex = list.indexOf(searchValue) match {
         case -1 => list.length
-        case x => x
+        case x  => x
       }
 
       var waitCount = 0
-      while(waitCount <= n && tester.peek("io_done") == Big0) {
+      while (waitCount <= n && tester.peek("io_done") == Big0) {
         // println(s"Waiting for done $waitCount")
         // println(this.engine.circuitState.prettyString())
         // println(s"external list ${list.mkString(",")}")
@@ -91,18 +91,20 @@ class DynamicMemorySearch extends FreeSpec with Matchers {
     }
 
     // initialize memory
-    for(write_address <- 0 until n) {
+    for (write_address <- 0 until n) {
       tester.poke("io_en", 1)
       tester.poke("io_isWr", 1)
       tester.poke("io_wrAddr", write_address)
-      tester.poke("io_data",   write_address)
+      tester.poke("io_data", write_address)
       list(write_address) = write_address
       tester.step()
-      println(s"Initializing memory address $write_address with $write_address mem($write_address)" +
-              s" is ${tester.peekMemory("list", write_address)}")
+      println(
+        s"Initializing memory address $write_address with $write_address mem($write_address)" +
+          s" is ${tester.peekMemory("list", write_address)}"
+      )
     }
 
-    if(showLocalDebug) {
+    if (showLocalDebug) {
       println(s"Memory init done XXXXXXXXXX")
       (0 until n).foreach { i =>
         val mem = tester.peekMemory("list", i)
@@ -118,8 +120,8 @@ class DynamicMemorySearch extends FreeSpec with Matchers {
 
       // Compute a random address and value
       val wrAddr = random.nextInt(n - 1)
-      val data   = random.nextInt((1 << w) - 1)
-      if(showLocalDebug) {
+      val data = random.nextInt((1 << w) - 1)
+      if (showLocalDebug) {
         println(s"setting memory($wrAddr) = $data")
       }
 
@@ -127,13 +129,15 @@ class DynamicMemorySearch extends FreeSpec with Matchers {
       tester.poke("io_en", 0)
       tester.poke("io_isWr", 1)
       tester.poke("io_wrAddr", wrAddr)
-      tester.poke("io_data",   data)
+      tester.poke("io_data", data)
       list(wrAddr) = data
       tester.step()
 
-      if(showLocalDebug) {
+      if (showLocalDebug) {
         println(s"current memory ")
-        println((0 until n).map { i => s"$i:${tester.peekMemory("list", i)}:${list(i)}" }.mkString(", "))
+        println((0 until n).map { i =>
+          s"$i:${tester.peekMemory("list", i)}:${list(i)}"
+        }.mkString(", "))
         println()
       }
 
@@ -151,7 +155,7 @@ class DynamicMemorySearch extends FreeSpec with Matchers {
       }
 
       var waitCount = 0
-      while(waitCount <= n && tester.peek("io_done") == Big0) {
+      while (waitCount <= n && tester.peek("io_done") == Big0) {
         // println(s"Waiting for done $waitCount")
         // println(this.engine.circuitState.prettyString())
         // println(s"external list ${list.mkString(",")}")
@@ -159,9 +163,11 @@ class DynamicMemorySearch extends FreeSpec with Matchers {
         waitCount += 1
       }
 
-      if(showLocalDebug) {
-        println(s"Done wait count is $waitCount done is ${tester.peek("io_done")} " +
-                s"got ${tester.peek("io_target")} got $expectedIndex")
+      if (showLocalDebug) {
+        println(
+          s"Done wait count is $waitCount done is ${tester.peek("io_done")} " +
+            s"got ${tester.peek("io_target")} got $expectedIndex"
+        )
       }
       tester.expect("io_done", 1)
       tester.expect("io_target", expectedIndex)

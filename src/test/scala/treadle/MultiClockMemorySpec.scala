@@ -7,7 +7,6 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.{ClockInfo, TreadleException}
 
-
 // scalastyle:off magic.number
 class MultiClockMemorySpec extends FreeSpec with Matchers {
   "should work with two-clocks with different periods" in {
@@ -49,14 +48,14 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
     tester.step()
     tester.poke("reset", 0)
 
-    for(trial <- 1 to 6) {
+    for (trial <- 1 to 6) {
       tester.step()
       println(f"trial $trial%3d -- ${tester.peek("out1")}%6d ${tester.peek("out2")}%6d")
 
-      tester.peek("out1") should be (r1)
-      tester.peek("out2") should be (r2)
+      tester.peek("out1") should be(r1)
+      tester.peek("out2") should be(r2)
 
-      if(trial % 3 == 1) r1 += 1
+      if (trial % 3 == 1) r1 += 1
       r2 += 1
     }
     tester.report()
@@ -88,6 +87,6 @@ class MultiClockMemorySpec extends FreeSpec with Matchers {
         Seq(FirrtlSourceAnnotation(input), ClockInfoAnnotation(Seq(ClockInfo("clock1", 3), ClockInfo("clock2", 1))))
       )
     }
-    thrown.message should be ("Error: Clock period must be divisible by 2: Found ClockInfo(clock1,3,1)")
+    thrown.message should be("Error: Clock period must be divisible by 2: Found ClockInfo(clock1,3,1)")
   }
 }

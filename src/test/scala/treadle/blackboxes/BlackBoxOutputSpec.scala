@@ -33,7 +33,7 @@ class FanOutAdder extends ScalaBlackBox {
       case "out1" => Seq("in", "clock")
       case "out2" => Seq("in")
       case "out3" => Seq("in")
-      case _ => throw TreadleException(s"$name was asked for input dependency for unknown output $outputName")
+      case _      => throw TreadleException(s"$name was asked for input dependency for unknown output $outputName")
     }
   }
 }
@@ -50,19 +50,18 @@ class BlackBoxCounter extends ScalaBlackBox {
   var clearSet: Boolean = false
 
   def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
-    if(inputValues.head == Big1) {
+    if (inputValues.head == Big1) {
       clearSet = true
       counter = 0
-    }
-    else {
+    } else {
       clearSet = false
     }
     counter
   }
 
   override def clockChange(transition: Transition, clockName: String): Unit = {
-    if(transition == PositiveEdge) {
-      if(! clearSet) counter += 1
+    if (transition == PositiveEdge) {
+      if (!clearSet) counter += 1
     }
   }
 
@@ -115,7 +114,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
 
       val tester = TreadleTester(FirrtlSourceAnnotation(adderInput) +: options)
 
-      for(i <- 0 until 10) {
+      for (i <- 0 until 10) {
         tester.poke("in", i)
         tester.expect("out1", i + 1)
         tester.expect("out2", i + 2)
@@ -160,7 +159,7 @@ class BlackBoxOutputSpec extends FreeSpec with Matchers {
       tester.step()
       tester.poke("clear", 0)
 
-      for(i <- 0 until 10) {
+      for (i <- 0 until 10) {
         tester.expect("counter", i)
         tester.step()
       }

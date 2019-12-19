@@ -44,7 +44,6 @@ class TesterCreationTest extends FreeSpec with Matchers {
            |    out1 <= m.read.data
       """.stripMargin
 
-
       var annos: AnnotationSeq = Seq(
         TargetDirAnnotation("test_run_dir/tester_creation"),
         FirrtlSourceAnnotation(input),
@@ -64,7 +63,9 @@ class TesterCreationTest extends FreeSpec with Matchers {
           annos
 //            .filterNot(_.isInstanceOf[DeletedAnnotation])
             .map(_.toString.split("\n"))
-            .map { l => l.head + (if(l.length > 1 ) "\n" + l.last else "") }
+            .map { l =>
+              l.head + (if (l.length > 1) "\n" + l.last else "")
+            }
             .mkString("\n")
       )
 
@@ -77,10 +78,12 @@ class TesterCreationTest extends FreeSpec with Matchers {
       println(
         s"Post Creation Annotations\n" +
           annos
-          .filterNot(_.isInstanceOf[DeletedAnnotation])
-          .map(_.toString.split("\n"))
-          .map { l => l.head + (if(l.length > 1 ) "\n" + l.last else "") }
-          .mkString("\n")
+            .filterNot(_.isInstanceOf[DeletedAnnotation])
+            .map(_.toString.split("\n"))
+            .map { l =>
+              l.head + (if (l.length > 1) "\n" + l.last else "")
+            }
+            .mkString("\n")
       )
     }
 

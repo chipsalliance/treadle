@@ -7,7 +7,6 @@ import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
 
-
 // scalastyle:off magic.number
 class VecSpec extends FreeSpec with Matchers {
   "simple register chain should work" in {
@@ -44,7 +43,9 @@ class VecSpec extends FreeSpec with Matchers {
 
     def show(): Unit = {
       println("Rendering register assignments")
-      for(name <- Seq.tabulate(1) { i => s"shifter_$i" }) {
+      for (name <- Seq.tabulate(1) { i =>
+             s"shifter_$i"
+           }) {
         println(s"${tester.engine.renderComputation(name)}")
       }
     }
@@ -135,6 +136,6 @@ class VecSpec extends FreeSpec with Matchers {
     intercept[StopException] {
       tester.step(10)
     }
-    tester.engine.lastStopResult should be (Some(0))
+    tester.engine.lastStopResult should be(Some(0))
   }
 }

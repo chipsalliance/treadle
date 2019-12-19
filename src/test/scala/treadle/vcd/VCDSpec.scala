@@ -19,7 +19,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     VCD("test_circuit")
   }
 
-  behavior of "vcd"
+  behavior.of("vcd")
 
   it should "be able to generate unique ids " in {
     val vcd = getVcd
@@ -31,7 +31,9 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
       ids.contains(id) should be(false)
       ids += id
 
-      id.forall { c => c.toInt >= 33 && c.toInt <= 126 } should be(true)
+      id.forall { c =>
+        c.toInt >= 33 && c.toInt <= 126
+      } should be(true)
     }
   }
 
@@ -42,13 +44,13 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     vcd.setTime(100)
 
-    for(_ <- 0 to 10) {
+    for (_ <- 0 to 10) {
       for (i <- 0 to 10) {
         lastValue = rand.nextInt()
         vcd.wireChanged("testWire1", lastValue)
       }
 
-      vcd.valuesAtTime(vcd.timeStamp).size should be (1)
+      vcd.valuesAtTime(vcd.timeStamp).size should be(1)
       vcd.valuesAtTime(vcd.timeStamp).head.value should be(lastValue)
 
       vcd.incrementTime(10)
@@ -78,19 +80,19 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     // time starts at -1 to support initialized values
     vcd.incrementTime()
-    for(i <- 0 to 10) {
+    for (i <- 0 to 10) {
       vcd.wireChanged("bob", i)
       vcd.wireChanged("carol", i / 2)
       vcd.wireChanged("ted", i / 4)
       vcd.incrementTime()
     }
 
-    vcd.valuesAtTime(1).size should be (3)
-    vcd.valuesAtTime(2).size should be (1)
-    vcd.valuesAtTime(3).size should be (2)
-    vcd.valuesAtTime(4).size should be (1)
-    vcd.valuesAtTime(5).size should be (3)
-    vcd.valuesAtTime(6).size should be (1)
+    vcd.valuesAtTime(1).size should be(3)
+    vcd.valuesAtTime(2).size should be(1)
+    vcd.valuesAtTime(3).size should be(2)
+    vcd.valuesAtTime(4).size should be(1)
+    vcd.valuesAtTime(5).size should be(3)
+    vcd.valuesAtTime(6).size should be(1)
 
     println(vcd.serialize)
   }
@@ -98,31 +100,31 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
   it should "be able to serialize negative and positive values" in {
     val wire = Wire("testwire", "t", width = 4)
     val s = new StringBuilder
-    for( i <- -8 to 7) {
+    for (i <- -8 to 7) {
       val change = Change(wire, i)
       val string = s"$i => ${change.serialize}"
       println(string)
       s ++= string + "\n"
     }
-    s.toString().contains("-8 => b1000") should be (true)
-    s.toString().contains("-1 => b1111") should be (true)
-    s.toString().contains("0 => b0000") should be (true)
-    s.toString().contains("1 => b0001") should be (true)
-    s.toString().contains("7 => b0111") should be (true)
+    s.toString().contains("-8 => b1000") should be(true)
+    s.toString().contains("-1 => b1111") should be(true)
+    s.toString().contains("0 => b0000") should be(true)
+    s.toString().contains("1 => b0001") should be(true)
+    s.toString().contains("7 => b0111") should be(true)
   }
 
   it should "serialize 1 bit numbers correctly" in {
     val c0 = Change(Wire("test1", "%", 1), 0)
-    c0.serialize should be ("0%")
+    c0.serialize should be("0%")
 
     val c1 = Change(Wire("test1", "%", 1), 1)
-    c1.serialize should be ("1%")
+    c1.serialize should be("1%")
 
     val c2 = Change(Wire("test1", "%", 1), -1)
-    c2.serialize should be ("1%")
+    c2.serialize should be("1%")
   }
 
-  behavior of "VCD reader"
+  behavior.of("VCD reader")
 
   it should "be able to read a file" in {
     val tempFile = File.createTempFile("GCD", ".vcd")
@@ -130,12 +132,12 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     copyResourceToFile("/GCD.vcd", tempFile)
     val vcdFile = VCD.read(tempFile.getCanonicalPath)
 
-    vcdFile.date should be ("2016-10-13T16:31+0000")
+    vcdFile.date should be("2016-10-13T16:31+0000")
   }
 
-  behavior of "vcd log containing negative numbers"
+  behavior.of("vcd log containing negative numbers")
 
-  it should "work correctly and be runnable from vcd output file" in  {
+  it should "work correctly and be runnable from vcd output file" in {
 
     val input =
       """
@@ -158,25 +160,25 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
     engine.poke("a", -1)
-    engine.peek("a") should be (BigInt(-1))
+    engine.peek("a") should be(BigInt(-1))
     engine.poke("b", -7)
-    engine.peek("b") should be (BigInt(-7))
+    engine.peek("b") should be(BigInt(-7))
 
     engine.step()
-    engine.peek("c") should be (BigInt(-8))
+    engine.peek("c") should be(BigInt(-8))
 
     engine.poke("a", 255)
-    engine.peek("a") should be (BigInt(-1))
+    engine.peek("a") should be(BigInt(-1))
     engine.poke("b", 249)
-    engine.peek("b") should be (BigInt(-7))
+    engine.peek("b") should be(BigInt(-7))
 
     engine.step()
-    engine.peek("c") should be (BigInt(-8))
+    engine.peek("c") should be(BigInt(-8))
     engine.report()
 
   }
 
-  behavior of "Using VCD output as a golden model test of a circuit"
+  behavior.of("Using VCD output as a golden model test of a circuit")
 
   it should "be able to create a VCD then replay the VCD testing inputs" in {
     val stream = getClass.getResourceAsStream("/VcdAdder.fir")
@@ -193,11 +195,11 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     engine.step()
     engine.poke("io_a", 3)
     engine.poke("io_b", 5)
-    engine.peek("io_a") should be (BigInt(3))
-    engine.peek("io_b") should be (BigInt(5))
+    engine.peek("io_a") should be(BigInt(3))
+    engine.peek("io_b") should be(BigInt(5))
 
     engine.step()
-    engine.peek("io_c") should be (BigInt(8))
+    engine.peek("io_c") should be(BigInt(8))
 
 //    engine.poke("io_a", -1)
 //    engine.poke("io_b", -7)
@@ -210,7 +212,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     engine.report()
   }
 
-  behavior of "vcd can record temp vars or not"
+  behavior.of("vcd can record temp vars or not")
 
   //scalastyle:off method.length
   def testVcdTempWireTest(hasTempWires: Boolean): Unit = {
@@ -235,19 +237,18 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     val options = Seq(
       Some(WriteVcdAnnotation),
-      if(hasTempWires) { Some(VcdShowUnderScoredAnnotation) } else { None },
+      if (hasTempWires) { Some(VcdShowUnderScoredAnnotation) } else { None },
       Some(TargetDirAnnotation("test_run_dir/vcd_register_delay/")),
       Some(OutputFileAnnotation("pwminCount"))
     ).flatten
 
     val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-      engine.poke("reset", 0)
+    engine.poke("reset", 0)
 
-      engine.step(50)
+    engine.step(50)
 
-      engine.report()
-      engine.finish
-
+    engine.report()
+    engine.finish
 
     val vcd = VCD.read("test_run_dir/vcd_register_delay/pwminCount.vcd")
 
@@ -260,19 +261,24 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     }.toSeq.sortBy(_._1).map(_._2).toArray
 
     // at every step the io_testReg should be one cycle behind
-    for(timeStep <- 4 to 24) {
+    for (timeStep <- 4 to 24) {
       def getValue(step: Int, name: String): Int = {
-        eventsOfInterest(step).find { change => change.wire.name == name}.head.value.toInt
+        eventsOfInterest(step).find { change =>
+          change.wire.name == name
+        }.head.value.toInt
       }
 
-      getValue(timeStep, "testReg") should be (getValue(timeStep, "io_testReg"))
+      getValue(timeStep, "testReg") should be(getValue(timeStep, "io_testReg"))
     }
 
-    if(hasTempWires) {
-      vcd.wires.values.exists { value => value.name.startsWith("_T_") } should be (true)
-    }
-    else {
-      vcd.wires.values.forall { value => ! value.name.startsWith("_T_") } should be (true)
+    if (hasTempWires) {
+      vcd.wires.values.exists { value =>
+        value.name.startsWith("_T_")
+      } should be(true)
+    } else {
+      vcd.wires.values.forall { value =>
+        !value.name.startsWith("_T_")
+      } should be(true)
     }
   }
 
@@ -284,7 +290,7 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     testVcdTempWireTest(hasTempWires = false)
   }
 
-  behavior of "vcd replay spec"
+  behavior.of("vcd replay spec")
 
   it should "replay a script and the treadle engine should match the vcd" in {
     val targetDir = "test_run_dir/vcd_replay_spec/"
@@ -306,7 +312,6 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     val resourceFileName = resourceName
     copyResourceToFile(resourceName, new File(firrtlFileName))
 
-
     val tester = TreadleTester(options)
 
     tester.poke("io_a", 3)
@@ -321,13 +326,13 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
 
     val replayOptions = options.filter {
       case WriteVcdAnnotation => false
-      case _ => true
+      case _                  => true
     }
 
     val replayTester = new VcdReplayTester(replayOptions)
     replayTester.run()
 
-    replayTester.testSuccesses should be (7)
-    replayTester.testFailures should be (0)
+    replayTester.testSuccesses should be(7)
+    replayTester.testFailures should be(0)
   }
 }

@@ -65,7 +65,7 @@ class PrintfOnDerivedClockSpec extends FreeSpec with Matchers with LazyLogging {
     logger.debug(output.toString)
 
     // printf will be in output twice once for each up transition of io_in, which drives the derived clock
-    output.toString.split("\n").count( line => line.contains("SPI spi.sck=")) should be (2)
+    output.toString.split("\n").count(line => line.contains("SPI spi.sck=")) should be(2)
   }
 
 }

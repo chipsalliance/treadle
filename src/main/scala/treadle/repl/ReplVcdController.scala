@@ -18,10 +18,10 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
 
   // The following control the current list state of the vcd file
   var currentListLocation: Int = 0
-  var currentListSize: Int = 10
+  var currentListSize:     Int = 10
 
   // The following control the current execution options
-  var testAfterRun : Boolean = true
+  var testAfterRun:  Boolean = true
   var justSetInputs: Boolean = true
 
   val IntPattern: Regex = """(-?\d+)""".r
@@ -40,25 +40,25 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
 
   def showInputs(timeIndex: Int): Unit = {
     var hasStep = false
-    if(timeIndex == currentTimeIndex) console.print(Console.GREEN)
+    if (timeIndex == currentTimeIndex) console.print(Console.GREEN)
     console.println(now)
     vcd.valuesAtTime(timeStamps(timeIndex)).foreach { change =>
-      if(vcdRunner.inputs.contains(change.wire.name)) {
+      if (vcdRunner.inputs.contains(change.wire.name)) {
         console.println(s"       ${change.wire.name} <= ${change.value}")
       }
     }
-    if(timeIndex == currentTimeIndex) console.print(Console.RESET)
+    if (timeIndex == currentTimeIndex) console.print(Console.RESET)
   }
 
   def showChanges(timeIndex: Int, showDetail: Boolean = false): Unit = {
-    if(timeIndex == currentTimeIndex) console.print(Console.GREEN)
+    if (timeIndex == currentTimeIndex) console.print(Console.GREEN)
     console.println(showEvent(timeIndex))
-    if(showDetail) {
+    if (showDetail) {
       vcd.valuesAtTime(timeStamps(timeIndex)).foreach { change =>
         console.println(s"        ${change.wire.fullName} <= ${change.value}")
       }
     }
-    if(timeIndex == currentTimeIndex) console.print(Console.RESET)
+    if (timeIndex == currentTimeIndex) console.print(Console.RESET)
   }
 
   //scalastyle:off method.length
@@ -94,26 +94,26 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
       case Nil =>
         vcdRunner.executeNextEvent()
 
-      case "to" :: tail => tail match {
-        case IntPattern(nString) :: _ =>
-          val n = nString.toInt
-          if(n <= currentTimeIndex) {
-            console.println(s"run to $n, error, $n must be greater then current time index ${currentTimeIndex + 1}")
-          }
-          else {
-            while (vcdRunner.nextEvent <= n & currentTimeIndex < timeStamps.length) {
+      case "to" :: tail =>
+        tail match {
+          case IntPattern(nString) :: _ =>
+            val n = nString.toInt
+            if (n <= currentTimeIndex) {
+              console.println(s"run to $n, error, $n must be greater then current time index ${currentTimeIndex + 1}")
+            } else {
+              while (vcdRunner.nextEvent <= n & currentTimeIndex < timeStamps.length) {
+                vcdRunner.executeNextEvent()
+              }
+              if (testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
+            }
+          case "step" :: _ =>
+            var upClockFound = false
+            while (vcdRunner.hasNextEvent && !upClockFound) {
+              upClockFound = vcdRunner.nextEventHasClockUp
               vcdRunner.executeNextEvent()
             }
-            if(testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
-          }
-        case "step" :: _ =>
-          var upClockFound = false
-          while(vcdRunner.hasNextEvent && !upClockFound) {
-            upClockFound = vcdRunner.nextEventHasClockUp
-            vcdRunner.executeNextEvent()
-          }
-          if(testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
-      }
+            if (testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
+        }
       case "test" :: _ =>
         testAfterRun = true
       case "notest" :: _ =>
@@ -127,26 +127,27 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
       case "noverbose" :: _ =>
         vcdRunner.verbose = false
       case "all" :: _ =>
-        while(vcdRunner.hasNextEvent) {
+        while (vcdRunner.hasNextEvent) {
           vcdRunner.executeNextEvent()
         }
       case arg :: Nil =>
         arg match {
           case IntPattern(nString) =>
-            for(_ <- 0 until nString.toInt.max(vcdRunner.events.length)) {
+            for (_ <- 0 until nString.toInt.max(vcdRunner.events.length)) {
               vcdRunner.executeNextEvent()
             }
-            if(testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
+            if (testAfterRun) vcdRunner.testWires(vcdRunner.previousEvent, justOutputs = true)
           case _ =>
             console.println(s"Unknown run command ${parameters.mkString(" ")}")
             console.println(runUsage)
         }
-      case "set" :: tail => tail match {
-        case IntPattern(nString) :: _ =>
-          vcdRunner.setNextEvent(nString.toInt)
-        case _ =>
-          console.println(s"vcd next set requires event number")
-      }
+      case "set" :: tail =>
+        tail match {
+          case IntPattern(nString) :: _ =>
+            vcdRunner.setNextEvent(nString.toInt)
+          case _ =>
+            console.println(s"vcd next set requires event number")
+        }
       case _ =>
         console.println(s"Unknown next command ${parameters.mkString(" ")}")
         console.println(runUsage)
@@ -169,8 +170,8 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
   }
 
   def show(lo: Int, hi: Int): Unit = {
-    for(timeIndex <- lo until hi) {
-      if(timeIndex < timeStamps.length) {
+    for (timeIndex <- lo until hi) {
+      if (timeIndex < timeStamps.length) {
         showChanges(timeIndex, showDetail = lo == hi - 1)
       }
     }
