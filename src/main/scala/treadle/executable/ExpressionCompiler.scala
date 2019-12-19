@@ -11,10 +11,11 @@ import treadle.utils.FindModule
 import scala.collection.mutable
 
 class ExpressionCompiler(
-    val symbolTable  : SymbolTable,
-    val dataStore    : DataStore,
-    scheduler        : Scheduler,
-    validIfIsRandom  : Boolean,
+    val symbolTable      : SymbolTable,
+    val dataStore        : DataStore,
+    scheduler            : Scheduler,
+    validIfIsRandom      : Boolean,
+    prefixPrintfWithTime : Boolean,
     blackBoxFactories: Seq[ScalaBlackBoxFactory]
 )
   extends logger.LazyLogging {
@@ -92,19 +93,22 @@ class ExpressionCompiler(
     val assigner = (symbol.dataSize, expressionResult) match {
       case (IntSize,  result: IntExpressionResult)  =>
         dataStore.AssignInt(symbol, result.apply _, info)
-
       case (IntSize,  result: LongExpressionResult) =>
           dataStore.AssignInt(symbol,  ToInt(result.apply _).apply _, info)
-
       case (IntSize,  result: BigExpressionResult)  =>
           dataStore.AssignInt(symbol,  ToInt(result.apply _).apply _, info)
-
-      case (LongSize, result: IntExpressionResult)  => dataStore.AssignLong(symbol, ToLong(result.apply _).apply _, info)
-      case (LongSize, result: LongExpressionResult) => dataStore.AssignLong(symbol, result.apply _, info)
-      case (LongSize, result: BigExpressionResult)  => dataStore.AssignLong(symbol, BigToLong(result.apply _).apply _, info)
-      case (BigSize,  result: IntExpressionResult)  => dataStore.AssignBig(symbol,  ToBig(result.apply _).apply _, info)
-      case (BigSize,  result: LongExpressionResult) => dataStore.AssignBig(symbol,  LongToBig(result.apply _).apply _, info)
-      case (BigSize,  result: BigExpressionResult)  => dataStore.AssignBig(symbol,  result.apply _, info)
+      case (LongSize, result: IntExpressionResult)  =>
+        dataStore.AssignLong(symbol, ToLong(result.apply _).apply _, info)
+      case (LongSize, result: LongExpressionResult) =>
+        dataStore.AssignLong(symbol, result.apply _, info)
+      case (LongSize, result: BigExpressionResult)  =>
+        dataStore.AssignLong(symbol, BigToLong(result.apply _).apply _, info)
+      case (BigSize,  result: IntExpressionResult)  =>
+        dataStore.AssignBig(symbol,  ToBig(result.apply _).apply _, info)
+      case (BigSize,  result: LongExpressionResult) =>
+        dataStore.AssignBig(symbol,  LongToBig(result.apply _).apply _, info)
+      case (BigSize,  result: BigExpressionResult)  =>
+        dataStore.AssignBig(symbol,  result.apply _, info)
       case (size, result) =>
         val expressionSize = result match {
           case _: IntExpressionResult => "Int"
@@ -156,13 +160,15 @@ class ExpressionCompiler(
       case (IntSize, result: IntExpressionResult) =>
         dataStore.AssignIntIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (LongSize, result: IntExpressionResult) =>
-        dataStore.AssignLongIndirect(portSymbol, memorySymbol, getIndex, getEnable, ToLong(result.apply _).apply _, info)
+        dataStore.AssignLongIndirect(
+          portSymbol, memorySymbol, getIndex, getEnable, ToLong(result.apply _).apply _, info)
       case (LongSize, result: LongExpressionResult) =>
         dataStore.AssignLongIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (BigSize, result: IntExpressionResult) =>
         dataStore.AssignBigIndirect(portSymbol, memorySymbol, getIndex, getEnable, ToBig(result.apply _).apply _, info)
       case (BigSize, result: LongExpressionResult) =>
-        dataStore.AssignBigIndirect(portSymbol, memorySymbol, getIndex, getEnable, LongToBig(result.apply _).apply _, info)
+        dataStore.AssignBigIndirect(
+          portSymbol, memorySymbol, getIndex, getEnable, LongToBig(result.apply _).apply _, info)
       case (BigSize, result: BigExpressionResult) =>
         dataStore.AssignBigIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (size, result) =>
@@ -182,6 +188,7 @@ class ExpressionCompiler(
   def processStatements(modulePrefix: String, circuit: Circuit, statement: firrtl.ir.Statement): Unit = {
     def expand(name: String): String = if(modulePrefix.isEmpty) name else modulePrefix + "." + name
 
+    @scala.annotation.tailrec
     def getDrivingClock(clockExpression: Expression): Option[Symbol] = {
 
       clockExpression match {
@@ -387,28 +394,53 @@ class ExpressionCompiler(
       val arg1Width = getWidth(expressions.head)
       val param1 = ints.head.toInt
 
-      arg1 match {
-        case e1: IntExpressionResult =>
-          op match {
-            case Head => HeadInts(e1.apply _, takeBits = param1, arg1Width)
-            case Tail => TailInts(e1.apply _, toDrop = param1, arg1Width)
-            case Shl  => ShlInts(e1.apply _, GetIntConstant(param1).apply _)
-            case Shr  => ShrInts(e1.apply _, GetIntConstant(param1).apply _)
-          }
-        case e1: LongExpressionResult =>
-          op match {
-            case Head => HeadLongs(e1.apply _, takeBits = param1, arg1Width)
-            case Tail => TailLongs(e1.apply _, toDrop = param1, arg1Width)
-            case Shl  => ShlLongs(e1.apply _, GetLongConstant(param1).apply _)
-            case Shr  => ShrLongs(e1.apply _, GetLongConstant(param1).apply _)
-          }
-        case e1: BigExpressionResult =>
-          op match {
-            case Head => HeadBigs(e1.apply _, takeBits = param1, arg1Width)
-            case Tail => TailBigs(e1.apply _, toDrop = param1, arg1Width)
-            case Shl  => ShlBigs(e1.apply _, GetBigConstant(param1).apply _)
-            case Shr  => ShrBigs(e1.apply _, GetBigConstant(param1).apply _)
-          }
+      if(op == Shl) {
+        (DataSize(getWidth(tpe)), arg1) match {
+          case (IntSize, e1: IntExpressionResult) =>
+            ShlInts(e1.apply _, GetIntConstant(param1).apply _)
+          case (IntSize, e1: LongExpressionResult) =>
+            ShlLongs(e1.apply _, GetIntConstant(param1).apply _)
+          case (IntSize, e1: BigExpressionResult) =>
+            ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
+
+          case (LongSize, e1: IntExpressionResult) =>
+            ShlLongs(ToLong(e1.apply _).apply _, GetIntConstant(param1).apply _)
+          case (LongSize, e1: LongExpressionResult) =>
+            ShlLongs(e1.apply _, GetIntConstant(param1).apply _)
+          case (LongSize, e1: BigExpressionResult) =>
+            ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
+
+          case (BigSize, e1: IntExpressionResult) =>
+            ShlBigs(ToBig(e1.apply _).apply _, GetIntConstant(param1).apply _)
+          case (BigSize, e1: LongExpressionResult) =>
+            ShlBigs(LongToBig(e1.apply _).apply _, GetIntConstant(param1).apply _)
+          case (BigSize, e1: BigExpressionResult) =>
+            ShlBigs(e1.apply _, GetIntConstant(param1).apply _)
+          case (a, b) =>
+            throw TreadleException(s"Shl with un-matched inputs $a, $b")
+        }
+      } else {
+
+        arg1 match {
+          case e1: IntExpressionResult =>
+            op match {
+              case Head => HeadInts(e1.apply _, takeBits = param1, arg1Width)
+              case Tail => TailInts(e1.apply _, toDrop = param1, arg1Width)
+              case Shr => ShrInts(e1.apply _, GetIntConstant(param1).apply _)
+            }
+          case e1: LongExpressionResult =>
+            op match {
+              case Head => HeadLongs(e1.apply _, takeBits = param1, arg1Width)
+              case Tail => TailLongs(e1.apply _, toDrop = param1, arg1Width)
+              case Shr => ShrLongs(e1.apply _, GetLongConstant(param1).apply _)
+            }
+          case e1: BigExpressionResult =>
+            op match {
+              case Head => HeadBigs(e1.apply _, takeBits = param1, arg1Width)
+              case Tail => TailBigs(e1.apply _, toDrop = param1, arg1Width)
+              case Shr => ShrBigs(e1.apply _, GetBigConstant(param1).apply _)
+            }
+        }
       }
     }
 
@@ -730,8 +762,6 @@ class ExpressionCompiler(
                     val blackBoxCycler = BlackBoxCycler(
                       instanceSymbol, implementation, clockSymbol, clockTransitionGetter, info)
 
-                    val drivingClockOption = symbolTable.findHighestClock(clockSymbol)
-
                     scheduler.addAssigner(instanceSymbol, blackBoxCycler)
                   }
                   else if(port.direction == Input) {
@@ -767,7 +797,7 @@ class ExpressionCompiler(
       case DefWire(_, name, _) =>
         logger.debug(s"declaration:DefWire:$name")
 
-      case DefRegister(info, name, tpe, clockExpression, resetExpression, initExpression) =>
+      case DefRegister(info, name, _, clockExpression, resetExpression, initExpression) =>
 
         logger.debug(s"declaration:DefRegister:$name")
 
@@ -871,9 +901,16 @@ class ExpressionCompiler(
                 val printOp = PrintfOp(
                   printInfo.printSymbol,
                   info, stringLiteral,
-                  argExpressions.map { expression => processExpression(expression) },
+                  argExpressions.map { expression =>
+                    processExpression(expression)
+                  },
+                  argExpressions.map { expression =>
+                    getWidth(expression)
+                  },
                   clockTransitionGetter,
-                  intExpression
+                  intExpression,
+                  scheduler,
+                  prefixPrintfWithTime
                 )
                 addAssigner(printOp)
               case _ =>

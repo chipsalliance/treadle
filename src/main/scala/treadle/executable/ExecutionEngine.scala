@@ -32,6 +32,8 @@ class ExecutionEngine(
     expressionViews
   )
 
+  scheduler.executionEngineOpt = Some(this)
+
   if(annotationSeq.collectFirst { case ShowFirrtlAtLoadAnnotation => ShowFirrtlAtLoadAnnotation }.isDefined) {
     println(ast.serialize)
   }
@@ -464,6 +466,9 @@ object ExecutionEngine {
       Seq.empty
     )
     val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation => true; case _ => false }
+    val prefixPrintfWithTime = annotationSeq.exists { case PrefixPrintfWithWallTime => true; case _ => false }
+
+
     val rollbackBuffers = annotationSeq.collectFirst{ case RollBackBuffersAnnotation(rbb) => rbb }.getOrElse(
       TreadleDefaults.RollbackBuffers
     )
@@ -486,7 +491,9 @@ object ExecutionEngine {
 
     val scheduler = new Scheduler(symbolTable)
 
-    val compiler = new ExpressionCompiler(symbolTable, dataStore, scheduler, validIfIsRandom, blackBoxFactories)
+    val compiler = new ExpressionCompiler(
+      symbolTable, dataStore, scheduler, validIfIsRandom, prefixPrintfWithTime, blackBoxFactories
+    )
 
     timer("Build Compiled Expressions") {
       compiler.compile(circuit, blackBoxFactories)
