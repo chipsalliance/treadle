@@ -3,9 +3,8 @@
 package treadle.primops
 
 import treadle.executable._
-import treadle.{BigIntTestValuesGenerator, BitTwiddlingUtils, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BigIntTestValuesGenerator, BitTwiddlingUtils}
 import org.scalatest.{FreeSpec, Matchers}
-
 
 //noinspection RedundantDefaultArgument
 // scalastyle:off magic.number

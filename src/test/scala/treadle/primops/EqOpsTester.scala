@@ -18,21 +18,20 @@ class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
   override def setParams(params: Seq[ir.Param]): Unit = {
     val p1 = params.find(_.name == "T")
     p1.foreach {
-      case valueParam : firrtl.ir.RawStringParam =>
+      case valueParam: firrtl.ir.RawStringParam =>
         returnValue = BigInt("deadbeef", 16)
       case _ =>
         println(s"huh?")
     }
   }
 
-  override def outputDependencies(
-    outputName: String): Seq[String] = Seq()
+  override def outputDependencies(outputName: String): Seq[String] = Seq()
 }
 
 // scalastyle:off magic.number
 class EqOpsTester extends FreeSpec with Matchers {
   private val factory = new ScalaBlackBoxFactory {
-    override def createInstance(instanceName: String, blackBoxName : String): Option[ScalaBlackBox] = {
+    override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
       blackBoxName match {
         case "BlackBoxTypeParam" => Some(add(new BlackBoxTypeParam_1(instanceName)))
       }
@@ -63,9 +62,8 @@ class EqOpsTester extends FreeSpec with Matchers {
 
     val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
-    tester.peek("out") should be (1)
+    tester.peek("out") should be(1)
   }
-
 
   "results of equals on large numbers should have widths all work" in {
     val input =
@@ -84,7 +82,7 @@ class EqOpsTester extends FreeSpec with Matchers {
           """.stripMargin
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-    tester.peek("out") should be (BigInt(0))
+    tester.peek("out") should be(BigInt(0))
     println(s"peek out ${tester.peek("out") != BigInt(0)}")
     tester.report()
   }

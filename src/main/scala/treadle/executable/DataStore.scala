@@ -19,16 +19,15 @@ import scala.collection.mutable
   * @param numberOfBuffers Number of buffers
   */
 //scalastyle:off number.of.methods
-class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator)
-extends HasDataArrays {
+class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator) extends HasDataArrays {
   assert(numberOfBuffers >= 0, s"DataStore: numberOfBuffers $numberOfBuffers must be >= 0")
 
-  var leanMode      : Boolean = true
-  val plugins       : mutable.HashMap[String, DataStorePlugin] = new mutable.HashMap()
-  val activePlugins : mutable.ArrayBuffer[DataStorePlugin]     = new mutable.ArrayBuffer()
+  var leanMode:      Boolean = true
+  val plugins:       mutable.HashMap[String, DataStorePlugin] = new mutable.HashMap()
+  val activePlugins: mutable.ArrayBuffer[DataStorePlugin] = new mutable.ArrayBuffer()
 
   def addPlugin(name: String, plugin: DataStorePlugin, enable: Boolean): Unit = {
-    if(plugins.contains(name)) {
+    if (plugins.contains(name)) {
       throw TreadleException(s"Attempt to add already loaded plugin $name new $plugin, existing ${plugins(name)}")
     }
     plugins(name) = plugin
@@ -36,25 +35,25 @@ extends HasDataArrays {
   }
 
   def enablePlugin(name: String): Unit = {
-    if(plugins.contains(name)) {
+    if (plugins.contains(name)) {
       println(s"Could not find plugin $name to remove it")
     }
     plugins(name).setEnabled(true)
   }
 
   def disablePlugin(name: String): Unit = {
-    if(plugins.contains(name)) {
+    if (plugins.contains(name)) {
       println(s"Could not find plugin $name to remove it")
     }
     plugins(name).setEnabled(false)
   }
 
   def removePlugin(name: String): Unit = {
-    if(plugins.contains(name)) {
+    if (plugins.contains(name)) {
       println(s"Could not find plugin $name to remove it")
     }
     val plugin = plugins(name)
-    plugin.setEnabled(false)  // remove from active and should return to lean mode if no other plugins are active
+    plugin.setEnabled(false) // remove from active and should return to lean mode if no other plugins are active
     plugins.remove(name)
   }
 
@@ -70,8 +69,7 @@ extends HasDataArrays {
     executionEngine.symbolsToWatch.foreach { symbolName =>
       if (executionEngine.symbolTable.contains(symbolName)) {
         watchList += executionEngine.symbolTable(symbolName)
-      }
-      else {
+      } else {
         throw TreadleException(s"treadleOptions.symbols to watch has bad symbolName $symbolName")
       }
     }
@@ -100,27 +98,27 @@ extends HasDataArrays {
     }
   }
 
-  def numberOfInts: Int  = dataStoreAllocator.nextIndexFor(IntSize)
+  def numberOfInts:  Int = dataStoreAllocator.nextIndexFor(IntSize)
   def numberOfLongs: Int = dataStoreAllocator.nextIndexFor(LongSize)
-  def numberOfBigs: Int  = dataStoreAllocator.nextIndexFor(BigSize)
+  def numberOfBigs:  Int = dataStoreAllocator.nextIndexFor(BigSize)
 
   val watchList: mutable.HashSet[Symbol] = new mutable.HashSet()
 
-  val intData:   Array[Int]  = Array.fill(numberOfInts)(0)
-  val longData:  Array[Long] = Array.fill(numberOfLongs)(0L)
-  val bigData:   Array[Big]  = Array.fill(numberOfBigs)(Big(0))
+  val intData:  Array[Int] = Array.fill(numberOfInts)(0)
+  val longData: Array[Long] = Array.fill(numberOfLongs)(0L)
+  val bigData:  Array[Big] = Array.fill(numberOfBigs)(Big(0))
 
   val rollBackBufferManager = new RollBackBufferManager(this)
 
   def saveData(time: Long): Unit = {
-    if(numberOfBuffers > 0) {
+    if (numberOfBuffers > 0) {
       rollBackBufferManager.saveData(time)
     }
   }
 
   @deprecated("Use saveData(time: Long), clock based rollback buffers are no longer supported", "since 1.0")
   def saveData(clockName: String, time: Long): Unit = {
-    if(numberOfBuffers > 0) {
+    if (numberOfBuffers > 0) {
       rollBackBufferManager.saveData(time)
     }
   }
@@ -168,13 +166,13 @@ extends HasDataArrays {
 
     def runFull(): Unit = {
       val previousValue = apply(symbol)
-      val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
+      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
       intData(index) = value
       runPlugins(symbol, previousValue = previousValue)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if (isLean) runLean _ else runFull _
     }
     var run: FuncUnit = runLean _
   }
@@ -191,7 +189,8 @@ extends HasDataArrays {
     override def run: FuncUnit = {
       underlyingAssigner.run()
       blackBox.inputChanged(portName, apply(symbol))
-      () => Unit
+      () =>
+        Unit
     }
   }
 
@@ -208,14 +207,14 @@ extends HasDataArrays {
 
     def runFull(): Unit = {
       val previousValue = apply(symbol)
-      val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
+      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
 
       longData(index) = value
       runPlugins(symbol, previousValue = previousValue)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) {
+      run = if (isLean) {
         runLean _
       } else {
         runFull _
@@ -236,24 +235,24 @@ extends HasDataArrays {
     }
     def runFull(): Unit = {
       val previousValue = apply(symbol)
-      val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
+      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
 
       bigData(index) = value
       runPlugins(symbol, previousValue = previousValue)
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if (isLean) runLean _ else runFull _
     }
     var run: FuncUnit = runLean _
   }
 
   /** for memory implementations */
   case class GetIntIndirect(
-                             memorySymbol: Symbol,
-                             getMemoryIndex: FuncInt,
-                             enable: FuncInt
-                           ) extends IntExpressionResult {
+    memorySymbol:   Symbol,
+    getMemoryIndex: FuncInt,
+    enable:         FuncInt
+  ) extends IntExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Int = {
       intData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
@@ -261,9 +260,9 @@ extends HasDataArrays {
   }
 
   case class GetLongIndirect(
-    memorySymbol: Symbol,
+    memorySymbol:   Symbol,
     getMemoryIndex: FuncInt,
-    enable: FuncInt
+    enable:         FuncInt
   ) extends LongExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Long = {
@@ -272,9 +271,9 @@ extends HasDataArrays {
   }
 
   case class GetBigIndirect(
-    memorySymbol: Symbol,
+    memorySymbol:   Symbol,
     getMemoryIndex: FuncInt,
-    enable: FuncInt
+    enable:         FuncInt
   ) extends BigExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Big = {
@@ -283,24 +282,24 @@ extends HasDataArrays {
   }
 
   case class AssignIntIndirect(
-    symbol: Symbol,
-    memorySymbol: Symbol,
+    symbol:         Symbol,
+    memorySymbol:   Symbol,
     getMemoryIndex: FuncInt,
-    enable: FuncInt,
-    expression: FuncInt,
-    info: Info
+    enable:         FuncInt,
+    expression:     FuncInt,
+    info:           Info
   ) extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {
-      if(enable() > 0) {
+      if (enable() > 0) {
         intData(index + getMemoryIndex.apply()) = expression()
       }
     }
 
     def runFull(): Unit = {
-      if(enable() > 0) {
-        val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
+      if (enable() > 0) {
+        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
         val previousValue = intData(index + (memoryIndex % memorySymbol.slots))
@@ -310,30 +309,30 @@ extends HasDataArrays {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _  else runFull _
+      run = if (isLean) runLean _ else runFull _
     }
     var run: FuncUnit = runLean _
   }
 
   case class AssignLongIndirect(
-    symbol: Symbol,
-    memorySymbol: Symbol,
+    symbol:         Symbol,
+    memorySymbol:   Symbol,
     getMemoryIndex: FuncInt,
-    enable: FuncInt,
-    expression: FuncLong,
-    info: Info
+    enable:         FuncInt,
+    expression:     FuncLong,
+    info:           Info
   ) extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {
-      if(enable() > 0) {
+      if (enable() > 0) {
         longData(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
       }
     }
 
     def runFull(): Unit = {
-      if(enable() > 0) {
-        val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
+      if (enable() > 0) {
+        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
         val previousValue = longData(index + (memoryIndex % memorySymbol.slots))
@@ -343,30 +342,30 @@ extends HasDataArrays {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if (isLean) runLean _ else runFull _
     }
     var run: FuncUnit = runLean _
   }
 
   case class AssignBigIndirect(
-    symbol: Symbol,
-    memorySymbol: Symbol,
+    symbol:         Symbol,
+    memorySymbol:   Symbol,
     getMemoryIndex: FuncInt,
-    enable: FuncInt,
-    expression: FuncBig,
-    info: Info
+    enable:         FuncInt,
+    expression:     FuncBig,
+    info:           Info
   ) extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {
-      if(enable() > 0) {
+      if (enable() > 0) {
         bigData(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
       }
     }
 
     def runFull(): Unit = {
-      if(enable() > 0) {
-        val value = if( symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
+      if (enable() > 0) {
+        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
         val previousValue = bigData(index + (memoryIndex % memorySymbol.slots))
@@ -376,23 +375,24 @@ extends HasDataArrays {
     }
 
     override def setLeanMode(isLean: Boolean): Unit = {
-      run = if(isLean) runLean _ else runFull _
+      run = if (isLean) runLean _ else runFull _
     }
     var run: FuncUnit = runLean _
   }
 
   case class BlackBoxShim(
-      unexpandedName: String,
-      outputName:     Symbol,
-      inputs:         Seq[Symbol],
-      implementation: ScalaBlackBox
-  )
-  extends BigExpressionResult {
+    unexpandedName: String,
+    outputName:     Symbol,
+    inputs:         Seq[Symbol],
+    implementation: ScalaBlackBox
+  ) extends BigExpressionResult {
 
     val dataStore: DataStore = DataStore.this
 
     def apply(): Big = {
-      val inputValues = inputs.map { input => dataStore(input) }
+      val inputValues = inputs.map { input =>
+        dataStore(input)
+      }
       val bigInt = implementation.getOutput(inputValues, outputName.firrtlType, unexpandedName)
       bigInt
     }
@@ -426,15 +426,17 @@ extends HasDataArrays {
     val clockValues = new Array[BigInt](n)
     val symbolValues = Array.ofDim[BigInt](symbols.length, n)
 
-    buffers.zipWithIndex.foreach { case (buffer, i) =>
-      clockValues(i) = buffer.time
-      symbols.zipWithIndex.foreach { case (symbol, j) =>
-        symbol.dataSize match {
-          case IntSize => symbolValues(j)(i) = buffer.intData(symbol.index)
-          case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
-          case BigSize => symbolValues(j)(i) = buffer.bigData(symbol.index)
+    buffers.zipWithIndex.foreach {
+      case (buffer, i) =>
+        clockValues(i) = buffer.time
+        symbols.zipWithIndex.foreach {
+          case (symbol, j) =>
+            symbol.dataSize match {
+              case IntSize  => symbolValues(j)(i) = buffer.intData(symbol.index)
+              case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
+              case BigSize  => symbolValues(j)(i) = buffer.bigData(symbol.index)
+            }
         }
-      }
     }
     WaveformValues(clockValues, symbols, symbolValues)
   }
@@ -448,7 +450,7 @@ extends HasDataArrays {
   }
 
   def update(symbol: Symbol, offset: Int, value: Big): Unit = {
-    if(offset >= symbol.slots) {
+    if (offset >= symbol.slots) {
       throw TreadleException(s"assigning to memory ${symbol.name}[$offset] <= $value: index out of range")
     }
     symbol.dataSize match {
@@ -465,40 +467,55 @@ extends HasDataArrays {
       size.toString -> dataStoreAllocator.nextIndexFor(size)
     }.toMap
 
-    def toIntJArray(array : Array[Int])  = JArray(array.toList.map { a ⇒ val v: JValue = a; v })
-    def toLongJArray(array: Array[Long]) = JArray(array.toList.map { a ⇒ val v: JValue = a; v })
-    def toBigJArray(array : Array[Big])  = JArray(array.toList.map { a ⇒ val v: JValue = a; v })
+    def toIntJArray(array: Array[Int]) =
+      JArray(array.toList.map { a ⇒
+        val v: JValue = a; v
+      })
+    def toLongJArray(array: Array[Long]) =
+      JArray(array.toList.map { a ⇒
+        val v: JValue = a; v
+      })
+    def toBigJArray(array: Array[Big]) =
+      JArray(array.toList.map { a ⇒
+        val v: JValue = a; v
+      })
 
-    val intDataValues  = toIntJArray(intData)
+    val intDataValues = toIntJArray(intData)
     val longDataValues = toLongJArray(longData)
-    val bigDataValues  = toBigJArray(bigData)
+    val bigDataValues = toBigJArray(bigData)
 
     def packageRollbackBuffers = {
       val packet = List("AllClocks").map { clockName =>
         val rollbackRing = rollBackBufferManager.rollBackBufferRing
 
-        val intArray  = JArray(rollbackRing.ringBuffer.map { x => toIntJArray(x.intData)   }.toList)
-        val longArray = JArray(rollbackRing.ringBuffer.map { x => toLongJArray(x.longData) }.toList)
-        val bigArray  = JArray(rollbackRing.ringBuffer.map { x => toBigJArray(x.bigData)   }.toList)
+        val intArray = JArray(rollbackRing.ringBuffer.map { x =>
+          toIntJArray(x.intData)
+        }.toList)
+        val longArray = JArray(rollbackRing.ringBuffer.map { x =>
+          toLongJArray(x.longData)
+        }.toList)
+        val bigArray = JArray(rollbackRing.ringBuffer.map { x =>
+          toBigJArray(x.bigData)
+        }.toList)
 
         ("clockName" -> clockName) ~
-                ("latestBufferIndex" -> rollbackRing.latestBufferIndex) ~
-                ("oldestBufferIndex" -> rollbackRing.oldestBufferIndex) ~
-                ("intBuffers"        -> intArray) ~
-                ("longBuffers"       -> longArray) ~
-                ("bigBuffers"        -> bigArray)
+          ("latestBufferIndex" -> rollbackRing.latestBufferIndex) ~
+          ("oldestBufferIndex" -> rollbackRing.oldestBufferIndex) ~
+          ("intBuffers" -> intArray) ~
+          ("longBuffers" -> longArray) ~
+          ("bigBuffers" -> bigArray)
       }
 
       packet
     }
 
     val json =
-          ("numberOfBuffers" -> numberOfBuffers) ~
-          ("nextForData"     -> nextForData) ~
-          ("intData"         -> intDataValues) ~
-          ("longData"        -> longDataValues) ~
-          ("bigData"         -> bigDataValues) ~
-          ("rollbackData"    -> packageRollbackBuffers)
+      ("numberOfBuffers" -> numberOfBuffers) ~
+        ("nextForData" -> nextForData) ~
+        ("intData" -> intDataValues) ~
+        ("longData" -> longDataValues) ~
+        ("bigData" -> bigDataValues) ~
+        ("rollbackData" -> packageRollbackBuffers)
 
     pretty(render(json))
   }
@@ -513,7 +530,7 @@ extends HasDataArrays {
       fieldName match {
         case "numberOfBuffers" =>
           val JInt(numBuffs) = value
-          if(numBuffs != numberOfBuffers) {
+          if (numBuffs != numberOfBuffers) {
             println(s"WARNING: numberOfBuffers in snapshot $numBuffs does not match runtime $numberOfBuffers")
           }
         case "nextForData" =>
@@ -523,35 +540,35 @@ extends HasDataArrays {
           } {
             val JInt(nextNumber) = value
             fieldName match {
-              case "Int"  => dataStoreAllocator.nextIndexFor(IntSize)  = nextNumber.toInt
+              case "Int"  => dataStoreAllocator.nextIndexFor(IntSize) = nextNumber.toInt
               case "Long" => dataStoreAllocator.nextIndexFor(LongSize) = nextNumber.toInt
-              case "Big"  => dataStoreAllocator.nextIndexFor(BigSize)  = nextNumber.toInt
+              case "Big"  => dataStoreAllocator.nextIndexFor(BigSize) = nextNumber.toInt
             }
           }
         case "intData" =>
-          value match  {
+          value match {
             case JArray(elementValues) =>
               elementValues.zipWithIndex.foreach {
                 case (JInt(v), index) => intData(index) = v.toInt
-                case _ => None
+                case _                => None
               }
             case _ =>
           }
         case "longData" =>
-          value match  {
+          value match {
             case JArray(elementValues) =>
               elementValues.zipWithIndex.foreach {
                 case (JInt(v), index) => longData(index) = v.toLong
-                case _ => None
+                case _                => None
               }
             case _ =>
           }
         case "bigData" =>
-          value match  {
+          value match {
             case JArray(elementValues) =>
               elementValues.zipWithIndex.foreach {
                 case (JInt(v), index) => bigData(index) = v
-                case _ => None
+                case _                => None
               }
             case _ =>
           }
@@ -615,7 +632,7 @@ extends HasDataArrays {
           }
 
         case _ =>
-          // println(s"$fieldName -> $value")
+        // println(s"$fieldName -> $value")
       }
     }
   }
@@ -628,15 +645,15 @@ object DataStore {
 }
 
 trait HasDataArrays {
-  def intData  : Array[Int]
-  def longData : Array[Long]
-  def bigData  : Array[Big]
+  def intData:  Array[Int]
+  def longData: Array[Long]
+  def bigData:  Array[Big]
 
   def setValueAtIndex(dataSize: DataSize, index: Int, value: Big): Unit = {
     dataSize match {
-      case IntSize  => intData(index)  = value.toInt
+      case IntSize  => intData(index) = value.toInt
       case LongSize => longData(index) = value.toLong
-      case BigSize  => bigData(index)  = value
+      case BigSize  => bigData(index) = value
     }
   }
 
@@ -652,13 +669,13 @@ trait HasDataArrays {
 class DataStoreAllocator {
   val nextIndexFor = new mutable.HashMap[DataSize, Int]
 
-  nextIndexFor(IntSize)  = 0
+  nextIndexFor(IntSize) = 0
   nextIndexFor(LongSize) = 0
-  nextIndexFor(BigSize)  = 0
+  nextIndexFor(BigSize) = 0
 
-  def numberOfInts: Int  = nextIndexFor(IntSize)
+  def numberOfInts:  Int = nextIndexFor(IntSize)
   def numberOfLongs: Int = nextIndexFor(LongSize)
-  def numberOfBigs: Int  = nextIndexFor(BigSize)
+  def numberOfBigs:  Int = nextIndexFor(BigSize)
 
   val watchList: mutable.HashSet[Symbol] = new mutable.HashSet()
 

@@ -20,13 +20,13 @@ package object treadle {
     BigInt(width, random)
   }
 
-  def boolToInt(condition: Boolean): Int = if(condition) 1 else 0
-  def boolToBigInt(condition: Boolean): BigInt = if(condition) 1 else 0
-  def widthToInt(width: Width): Int = width.asInstanceOf[IntWidth].width.toInt
-  def typeToWidth(tpe: Type): Int = tpe match {
-    case UIntType(w)  => widthToInt(w)
-    case SIntType(w)  => widthToInt(w)
-    case ClockType    => 1
+  def boolToInt(condition:    Boolean): Int = if (condition) 1 else 0
+  def boolToBigInt(condition: Boolean): BigInt = if (condition) 1 else 0
+  def widthToInt(width:       Width): Int = width.asInstanceOf[IntWidth].width.toInt
+  def typeToWidth(tpe:        Type): Int = tpe match {
+    case UIntType(w) => widthToInt(w)
+    case SIntType(w) => widthToInt(w)
+    case ClockType   => 1
   }
   def ceilingLog2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
 
@@ -48,7 +48,7 @@ package object treadle {
     * @return
     */
   def computeBits(n: BigInt): Int = {
-    n.bitLength + (if(n < 0) 1 else 0)
+    n.bitLength + (if (n < 0) 1 else 0)
   }
 
   /**
@@ -60,16 +60,16 @@ package object treadle {
     val nearestPowerOf2 = BigInt("1" + ("0" * (width - 1)), 2)
     (-nearestPowerOf2, nearestPowerOf2 - 1)
   }
+
   /**
     * computes the smallest and largest values that will fit in a UInt
     * @param width width of SInt
     * @return tuple(minVale, maxValue)
     */
   def extremaOfUIntOfWidth(width: Int): (BigInt, BigInt) = {
-    if(width == 1) {
+    if (width == 1) {
       (0, 1)
-    }
-    else {
+    } else {
       val nearestPowerOf2 = BigInt("1" + ("0" * (width - 1)), 2)
       (0, (nearestPowerOf2 * 2) - 1)
     }
@@ -85,14 +85,12 @@ package object treadle {
     * @return minimum required bits for an SInt
     */
   def requiredBitsForSInt(num: BigInt): Int = {
-    if(num == Big0 || num == -Big1) {
+    if (num == Big0 || num == -Big1) {
       1
-    }
-    else {
+    } else {
       if (num < 0) {
         computeBits(num)
-      }
-      else {
+      } else {
         computeBits(num) + 1
       }
     }
@@ -106,10 +104,9 @@ package object treadle {
     * @return    minimum required bits for an SInt
     */
   def requiredBitsForUInt(num: BigInt): Int = {
-    if(num == Big0) {
+    if (num == Big0) {
       1
-    }
-    else {
+    } else {
       computeBits(num)
     }
   }

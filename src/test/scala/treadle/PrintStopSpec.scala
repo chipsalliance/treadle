@@ -4,12 +4,13 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
+import logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.{FlatSpec, Matchers}
 import treadle.executable.StopException
 
 //scalastyle:off magic.number
-class PrintStopSpec extends FlatSpec with Matchers {
-  behavior of "stop"
+class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
+  behavior.of("stop")
 
   it should "return not stop if condition is not met" in {
     val input =
@@ -24,7 +25,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     for (_ <- 0 to 10) {
       tester.step(2)
-      tester.engine.stopped should be (false)
+      tester.engine.stopped should be(false)
     }
   }
 
@@ -42,8 +43,8 @@ class PrintStopSpec extends FlatSpec with Matchers {
     intercept[StopException] {
       tester.step(2)
     }
-    tester.engine.stopped should be (true)
-    tester.engine.lastStopResult.get should be (2)
+    tester.engine.stopped should be(true)
+    tester.engine.lastStopResult.get should be(2)
   }
 
   it should "return success if a stop with zero result" in {
@@ -60,8 +61,8 @@ class PrintStopSpec extends FlatSpec with Matchers {
     intercept[StopException] {
       tester.step(2)
     }
-    tester.engine.stopped should be (true)
-    tester.engine.lastStopResult.get should be (0)
+    tester.engine.stopped should be(true)
+    tester.engine.lastStopResult.get should be(0)
   }
 
   it should "have stops happen in order they appear in a module" in {
@@ -88,14 +89,13 @@ class PrintStopSpec extends FlatSpec with Matchers {
       intercept[StopException] {
         tester.step(2)
       }
-      tester.engine.stopped should be (true)
-      tester.engine.lastStopResult.get should be (0)
+      tester.engine.stopped should be(true)
+      tester.engine.lastStopResult.get should be(0)
 
     }
   }
 
-
-  behavior of "Print statement"
+  behavior.of("Print statement")
 
   it should "be visible" in {
     val output = new ByteArrayOutputStream()
@@ -115,8 +115,8 @@ class PrintStopSpec extends FlatSpec with Matchers {
       tester.step(2)
       tester.finish
     }
-    output.toString().contains("HELLO WORLD") should be (true)
-    output.toString.split("\n").count(_.contains("HELLO WORLD")) should be (2)
+    output.toString().contains("HELLO WORLD") should be(true)
+    output.toString.split("\n").count(_.contains("HELLO WORLD")) should be(2)
 
   }
 
@@ -129,7 +129,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |  module Stop0 :
           |    input clk : Clock
           |
-          |    printf(clk, UInt(1), "HELLO WORLD int %d hex %x SIint %d\n", UInt(7), UInt(31), SInt(-2) )
+          |    printf(clk, UInt(1), "HELLO WORLD int '%d' hex '%x' SInt '%d'\n", UInt<20>(7), UInt<32>(31), SInt<20>(-2) )
           |
       """.stripMargin
 
@@ -137,10 +137,10 @@ class PrintStopSpec extends FlatSpec with Matchers {
       tester.step(2)
     }
 
-    output.toString().contains("HELLO WORLD int 7 hex 1f SIint -2") should be (true)
+    logger.debug(output.toString)
 
+    output.toString() should include("HELLO WORLD int '       7' hex '00000001f' SInt '      -2'")
   }
-
 
   it should "support printf formatting with binary" in {
     val output = new ByteArrayOutputStream()
@@ -151,15 +151,20 @@ class PrintStopSpec extends FlatSpec with Matchers {
           |  module Stop0 :
           |    input clk : Clock
           |
-          |    printf(clk, UInt(1), "char %c int %d hex %x SIint %d %b\n", UInt(77), UInt(7), UInt(255), SInt(-2), SInt(7) )
-          |    printf(clk, UInt(1), "char %c int %d hex %x SIint %d %b\n", UInt(48), UInt(7), UInt(255), SInt(-2), SInt(-7) )
+          |    printf(clk, UInt(1), "char %c int %d hex %x SInt %d %b\n", UInt(77), UInt(7), UInt(255), SInt(-2), SInt(7) )
+          |    printf(clk, UInt(1), "char %c int %d hex %x SInt %d %b\n", UInt(48), UInt(7), UInt(255), SInt(-2), SInt(-7) )
           |
         """.stripMargin
 
       val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
       tester.step(2)
     }
-    output.toString().contains("char M int 7 hex ff SIint -2 111") should be (true)
+
+    logger.debug(output.toString)
+
+    output.toString() should include("char M int  7 hex 0ff SInt -2  111")
+    output.toString() should include("char 0 int  7 hex 0ff SInt -2 -111")
+
   }
 
   it should "print at the right part of clock cycle" in {
@@ -220,7 +225,6 @@ class PrintStopSpec extends FlatSpec with Matchers {
     println("after peek")
   }
 
-
   it should "print rry=480 in the following example" in {
     val input =
       """
@@ -244,7 +248,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
         |      node _T_3 = bits(reset, 0, 0) @[PrintfWrong.scala 19:11]
         |      node _T_4 = eq(_T_3, UInt<1>("h00")) @[PrintfWrong.scala 19:11]
         |      when _T_4 : @[PrintfWrong.scala 19:11]
-        |        printf(clock, UInt<1>(1), "+++ y=%d ry=%d rry=%d isZero=%x is480=%x\n", y, regY, regRegY, _T_1, _T_2) @[PrintfWrong.scala 19:11]
+        |        printf(clock, UInt<1>(1), "+++ y=%d ry=%d rry=%d rryIsZero(_T_1)=%x rryIs480(_T_2)=%x\n", y, regY, regRegY, _T_1, _T_2) @[PrintfWrong.scala 19:11]
         |        skip @[PrintfWrong.scala 19:11]
         |      skip @[PrintfWrong.scala 18:28]
         |    io.out <= regRegY @[PrintfWrong.scala 22:10]
@@ -254,7 +258,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation, PrefixPrintfWithWallTime))
 
       tester.poke("io_in", 479)
       tester.step()
@@ -263,17 +267,28 @@ class PrintStopSpec extends FlatSpec with Matchers {
       tester.step()
 
       tester.poke("io_in", 481)
-      tester.step()
+      tester.step(3)
+      tester.finish
 
     }
 
-    output
-      .toString
-      .split("\n").count { line => line.contains("+++ y=481 ry=481 rry=480 isZero=0 is480=1") } should be (1)
+    // "+++ count=    0 r0=   0 r1=   0"
+    // "+++ count=    0 r0=   0 r1=   1"
 
-    output
-      .toString
-      .split("\n").count { line => line.contains("+++ y=") } should be (1)
+    Logger.setLevel("treadle.PrintStopSpec", LogLevel.Debug)
+    logger.debug(output.toString)
+
+    output.toString
+      .split("\n")
+      .count { line =>
+        line.contains("+++ y=  481 ry=  481 rry=  480 rryIsZero(_T_1)=0 rryIs480(_T_2)=1")
+      } should be(1)
+
+    output.toString
+      .split("\n")
+      .count { line =>
+        line.contains("+++ y=")
+      } should be(1)
 
   }
   it should "print register values that have not been advanced yet" in {
@@ -318,15 +333,18 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     }
 
-    println(output.toString)
-    output
-      .toString
+    logger.debug(output.toString)
+    output.toString
       .split("\n")
-      .count { line => line.contains("+++ y=481 ry=481 rry=480 isZero=0 rry_is_480=1") } should be (1)
+      .count { line =>
+        line.contains("+++ y=  481 ry=  481 rry=  480 isZero=0 rry_is_480=1")
+      } should be(1)
 
-    output
-      .toString
-      .split("\n").count { line => line.contains("+++ y=") } should be (7)
+    output.toString
+      .split("\n")
+      .count { line =>
+        line.contains("+++ y=")
+      } should be(7)
 
   }
   it should "print swapping register values should show alternating" in {
@@ -367,21 +385,59 @@ class PrintStopSpec extends FlatSpec with Matchers {
 
     val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
 
-    printfLines.head.contains("+++ count=0 r0=0 r1=1") should be (true)
+    logger.debug(output.toString)
+
+    printfLines.head should include("+++ count=    0 r0=   0 r1=   0")
 
     val linesCorrect = printfLines
-            .tail
-            .zipWithIndex
-            .map { case (line, lineNumber) =>
-              if (lineNumber % 2 == 0) {
-                line.contains("r0=1 r1=0")
-              }
-              else {
-                line.contains("r0=0 r1=1")
-              }
-            }
+      .drop(2)
+      .zipWithIndex
+      .map {
+        case (line, lineNumber) =>
+          if (lineNumber % 2 == 0) {
+            line.contains("r0=   1 r1=   0")
+          } else {
+            line.contains("r0=   0 r1=   1")
+          }
+      }
 
-    linesCorrect.forall(b => b) should be (true)
+    linesCorrect.forall(b => b) should be(true)
+  }
+
+  it should "show hex stuff with right width and without sign" in {
+    val input =
+      """
+        |circuit Printer :
+        |  module Printer :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip in : UInt<5>, out : SInt<5>}
+        |
+        |    node s = asSInt(io.in) @[PrintfTest.scala 18:17]
+        |    io.out <= s @[PrintfTest.scala 19:10]
+        |    node _T = bits(reset, 0, 0) @[PrintfTest.scala 21:9]
+        |    node _T_1 = eq(_T, UInt<1>("h00")) @[PrintfTest.scala 21:9]
+        |    when _T_1 : @[PrintfTest.scala 21:9]
+        |    printf(clock, UInt<1>(1), "io.in '%d' '%x'  -- s '%d'  '%x'\n", io.in, io.in, s, s) @[PrintfTest.scala 21:9]
+      """.stripMargin
+
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+
+      for (i <- 0 until 32) {
+        tester.poke("io_in", i)
+        tester.step()
+      }
+    }
+    logger.debug(output.toString)
+
+    val out = output.toString
+
+    for (i <- 0 until 32) {
+      val n = if (i < 16) i else i - 32
+      out should include(f"'$i%3d' '$i%02x'  -- s '$n%3d'  '$i%02x'")
+    }
   }
 
   it should "have printf's print in order" in {
@@ -416,7 +472,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
       j <- 0 until 4
       line = (i * 4) + j
     } {
-      printfLines(line).contains(s"+++ $j") should be (true)
+      printfLines(line).contains(s"+++ $j") should be(true)
     }
   }
 
@@ -463,7 +519,7 @@ class PrintStopSpec extends FlatSpec with Matchers {
       j <- 0 until 4
       line = (i * 4) + j
     } {
-      printfLines(line).contains(s"+++ $j") should be (true)
+      printfLines(line).contains(s"+++ $j") should be(true)
     }
 
   }

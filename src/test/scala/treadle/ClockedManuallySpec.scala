@@ -6,7 +6,6 @@ import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
-
 // scalastyle:off magic.number
 class ClockedManuallySpec extends FreeSpec with Matchers {
 
@@ -143,16 +142,16 @@ class ClockedManuallySpec extends FreeSpec with Matchers {
     tester.poke("reset", 0)
     tester.poke("inp", 0)
     tester.step()
-    tester.peek("out") should be (0)
+    tester.peek("out") should be(0)
 
     // no matter how often we poke r/in, r should never take on a new value unless we step the clock
     tester.poke("inp", 7)
-    tester.peek("out") should be (0)
+    tester.peek("out") should be(0)
     tester.poke("inp", 5)
-    tester.peek("out") should be (0)
+    tester.peek("out") should be(0)
 
     // step
     tester.step()
-    tester.peek("out") should be (5)
+    tester.peek("out") should be(5)
   }
 }

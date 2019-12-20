@@ -44,13 +44,13 @@ class ClockCrossingSpec extends FreeSpec with Matchers {
     tester.reset(8)
 
     tester.poke("io_divIn", 0x42)
-    tester.expect("io_mainOut", 0)  // initial register value
+    tester.expect("io_mainOut", 0) // initial register value
     tester.step()
-    tester.expect("io_mainOut", 1)  // initial value of divReg
-    tester.step()  // for divided clock to have a rising edge
-    tester.expect("io_mainOut", 1)  // one-cycle-delay divReg
-    tester.step()  // for main clock register to propagate
-    tester.expect("io_mainOut", 0x42)  // updated value propagates
+    tester.expect("io_mainOut", 1) // initial value of divReg
+    tester.step() // for divided clock to have a rising edge
+    tester.expect("io_mainOut", 1) // one-cycle-delay divReg
+    tester.step() // for main clock register to propagate
+    tester.expect("io_mainOut", 0x42) // updated value propagates
     tester.finish
   }
 

@@ -10,20 +10,20 @@ class ChronometrySpec extends FreeSpec with Matchers {
     val utc = UTC()
     var x = 0
 
-    utc.hasNextTask should be (false)
+    utc.hasNextTask should be(false)
 
     utc.addOneTimeTask(10) { () =>
       println(s"task number one")
       x = 1
     }
 
-    utc.hasNextTask should be (true)
+    utc.hasNextTask should be(true)
 
     utc.runNextTask()
 
-    x should be (1)
+    x should be(1)
 
-    utc.hasNextTask should be (false)
+    utc.hasNextTask should be(false)
   }
 
   "A clock requires two recurring tasks, one for rising one for falling" in {
@@ -41,13 +41,13 @@ class ChronometrySpec extends FreeSpec with Matchers {
       println(s"clock down at ${utc.currentTime}")
     }
 
-    for(i <- 1 to 10) {
+    for (i <- 1 to 10) {
       utc.runNextTask()
-      utc.currentTime should be ((i - 1) * 1000 + 500)
-      cycle should be (i)
+      utc.currentTime should be((i - 1) * 1000 + 500)
+      cycle should be(i)
       utc.runNextTask()
 
-      utc.hasNextTask should be (true)
+      utc.hasNextTask should be(true)
     }
   }
 
@@ -72,10 +72,9 @@ class ChronometrySpec extends FreeSpec with Matchers {
 
     utc.runToTask("clock/up")
 
-    cycle should be (5)
+    cycle should be(5)
 
   }
-
 
   "UTC can schedule events for two clocks, 1 to 3 ratio" in {
     val utc = UTC()
@@ -100,11 +99,11 @@ class ChronometrySpec extends FreeSpec with Matchers {
       println(s"clock slow down at ${utc.currentTime}")
     }
 
-    for(_ <- 0 to 30) {
+    for (_ <- 0 to 30) {
       utc.runNextTask()
     }
 
-    cycleA should be (cycleB * 3)
+    cycleA should be(cycleB * 3)
   }
 
   "How slow is one clock" in {
@@ -118,10 +117,10 @@ class ChronometrySpec extends FreeSpec with Matchers {
     }
 
     utc.addRecurringTask(1000, 1000) { () =>
-    }
+      }
 
     val startTime = System.currentTimeMillis()
-    for(_ <- 1L to toDo) {
+    for (_ <- 1L to toDo) {
       utc.runNextTask()
     }
     val stopTime = System.currentTimeMillis()
@@ -129,7 +128,8 @@ class ChronometrySpec extends FreeSpec with Matchers {
     val eps = toDo.toDouble / (stopTime - startTime)
     println(
       f"$toDo events in ${(stopTime - startTime) / 1000.0}%10.5f seconds," +
-        f"rate = $eps%10.5f KHz utc = ${utc.currentTime}")
+        f"rate = $eps%10.5f KHz utc = ${utc.currentTime}"
+    )
 
     //TODO: Figure out a way to do this that doesn't break CI
     // eps should be > 1000.0  // clock should be fairly lean, i.e. be at least a mega-hz
@@ -146,24 +146,24 @@ class ChronometrySpec extends FreeSpec with Matchers {
     }
 
     utc.addRecurringTask(1000, 1000) { () =>
-    }
+      }
 
     utc.addRecurringTask(3000, 2000) { () =>
       cycle += 1
     }
 
     utc.addRecurringTask(3000, 1000) { () =>
-    }
+      }
 
     utc.addRecurringTask(900, 500) { () =>
       cycle += 1
     }
 
     utc.addRecurringTask(900, 1000) { () =>
-    }
+      }
 
     val startTime = System.currentTimeMillis()
-    for(_ <- 1L to toDo) {
+    for (_ <- 1L to toDo) {
       utc.runNextTask()
     }
     val stopTime = System.currentTimeMillis()
@@ -171,7 +171,8 @@ class ChronometrySpec extends FreeSpec with Matchers {
     val eps = toDo.toDouble / (stopTime - startTime)
     println(
       f"$toDo events in ${(stopTime - startTime) / 1000.0}%10.5f seconds," +
-        f"rate = $eps%10.5f KHz utc = ${utc.currentTime}")
+        f"rate = $eps%10.5f KHz utc = ${utc.currentTime}"
+    )
 
     //TODO: Figure out a way to do this that doesn't break CI
     // eps should be > 1000.0  // clock should be fairly lean, i.e. be at least a mega-hz

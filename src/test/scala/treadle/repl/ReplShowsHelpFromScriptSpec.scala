@@ -37,7 +37,7 @@ class ReplShowsHelpFromScriptSpec extends FreeSpec with Matchers {
 
     // println(textOut)
 
-    textOut.contains("show command history") should be (true)
-    textOut.contains("load/replace the current firrtl file") should be (true)
+    textOut.contains("show command history") should be(true)
+    textOut.contains("load/replace the current firrtl file") should be(true)
   }
 }

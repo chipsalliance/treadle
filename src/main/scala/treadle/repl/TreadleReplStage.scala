@@ -24,4 +24,3 @@ class TreadleReplStage extends Stage {
   * This is the primary entry point for running the Treadle Repl
   */
 object TreadleReplMain extends StageMain(new TreadleReplStage)
-

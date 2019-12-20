@@ -5,18 +5,16 @@ package treadle.utils
 //scalastyle:off magic.number regex
 object Render {
   def binary(value: BigInt, bitWidth: Int): String = {
-    val numberString = if(value < 0) {
+    val numberString = if (value < 0) {
       val powerOfTwo = BitMasks.getBitMasksBigs(bitWidth).nextPowerOfTwo
       val positiveValue = value + powerOfTwo
       positiveValue.toString(2)
-    }
-    else {
+    } else {
       value.toString(2)
     }
-    if(bitWidth > numberString.length) {
+    if (bitWidth > numberString.length) {
       ("0" * (bitWidth - numberString.length)) + numberString
-    }
-    else {
+    } else {
       numberString
     }
   }

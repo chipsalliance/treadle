@@ -179,9 +179,9 @@ case class BitMasksBigs(bitWidth: Int) {
 }
 
 object BitMasks {
-  private val alreadyCreatedInts  = new TrieMap[Int, BitMasksInts]
+  private val alreadyCreatedInts = new TrieMap[Int, BitMasksInts]
   private val alreadyCreatedLongs = new TrieMap[Int, BitMasksLongs]
-  private val alreadyCreatedBigs  = new TrieMap[Int, BitMasksBigs]
+  private val alreadyCreatedBigs = new TrieMap[Int, BitMasksBigs]
 
   /** Factory for BitMasksInts
     * makes sure there is only one instance per bitWidth

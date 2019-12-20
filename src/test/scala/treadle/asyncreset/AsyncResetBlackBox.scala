@@ -23,10 +23,10 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
 
   override def inputChanged(name: String, value: BigInt): Unit = {
     name match {
-      case "io_d"     => nextValue = value
-      case "io_en"    => enable = value > Big0
-      case "rst"   =>
-        if(value > Big0) {
+      case "io_d"  => nextValue = value
+      case "io_en" => enable = value > Big0
+      case "rst" =>
+        if (value > Big0) {
           nextValue = resetValue
           currentValue = nextValue
         }
@@ -36,7 +36,7 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
   }
 
   override def clockChange(transition: Transition, clockName: String): Unit = {
-    if(transition == PositiveEdge && enable) {
+    if (transition == PositiveEdge && enable) {
       currentValue = nextValue
     }
   }
@@ -64,7 +64,7 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
       case firrtl.ir.IntParam("RESET_VALUE", value) =>
         resetValue = value
       case _ =>
-        // ignore
+      // ignore
     }
   }
 }

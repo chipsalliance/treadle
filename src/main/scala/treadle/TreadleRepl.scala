@@ -25,14 +25,15 @@ import scala.tools.jline.console.history.FileHistory
 import scala.tools.jline.{Terminal, TerminalFactory}
 import scala.util.matching.Regex
 
-
 abstract class Command(val name: String) {
   def run(args: Array[String]): Unit
   def usage: (String, String)
   def completer: Option[ArgumentCompleter] = {
-    Some(new ArgumentCompleter(
-      new StringsCompleter({name})
-    ))
+    Some(
+      new ArgumentCompleter(
+        new StringsCompleter({ name })
+      )
+    )
   }
 }
 
@@ -42,8 +43,8 @@ abstract class Command(val name: String) {
   */
 class TreadleRepl(initialAnnotations: AnnotationSeq) {
   var annotationSeq: AnnotationSeq = initialAnnotations
-  var stageOptions: StageOptions = view[StageOptions](annotationSeq)
-  var replConfig: ReplConfig = ReplConfig.fromAnnotations(annotationSeq)
+  var stageOptions:  StageOptions = view[StageOptions](annotationSeq)
+  var replConfig:    ReplConfig = ReplConfig.fromAnnotations(annotationSeq)
 
   def mutateAnnotations(newAnnotations: AnnotationSeq): Unit = {
     annotationSeq = newAnnotations
@@ -54,7 +55,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   val terminal: Terminal = TerminalFactory.create()
   val console: ConsoleReader = annotationSeq.collectFirst { case OverrideOutputStream(s) => s } match {
     case Some(stream) => new ConsoleReader(System.in, stream)
-    case _ => new ConsoleReader
+    case _            => new ConsoleReader
   }
 
   // creates a treadle repl history in the current directory
@@ -70,16 +71,14 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     }
     history.load(historyFile)
     console.setHistory(history)
-  }
-
-  catch {
+  } catch {
     case e: Exception =>
       // ignore problems with history file, better to run than freak out over this.
       println(s"Error creating history file: message is ${e.getMessage}. History of commands will not be saved")
   }
 
   var currentTreadleTesterOpt: Option[TreadleTester] = None
-  def currentTreadleTester: TreadleTester = currentTreadleTesterOpt.get
+  def currentTreadleTester:    TreadleTester = currentTreadleTesterOpt.get
 
   def engine: ExecutionEngine = currentTreadleTesterOpt match {
     case Some(tester) => tester.engine
@@ -93,25 +92,25 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   var inScript = false
   val scriptFactory = ScriptFactory(this)
   var currentScript: Option[Script] = None
-  val IntPattern: Regex = """(-?\d+)""".r
+  val IntPattern:    Regex = """(-?\d+)""".r
 
   var currentSymbols: String = ""
 
-  var currentVcdScript: Option[VCD] = None
+  var currentVcdScript:  Option[VCD] = None
   var replVcdController: Option[ReplVcdController] = None
 
   var outputFormat: String = replConfig.outputFormat
 
   def formatOutput(value: BigInt): String = {
     outputFormat match {
-      case "d" => value.toString
+      case "d"       => value.toString
       case "h" | "x" => f"0x$value%x"
-      case "b" => s"b${value.toString(2)}"
+      case "b"       => s"b${value.toString(2)}"
     }
   }
 
   def showNameAndValue(symbolName: String, offset: Int = 0): String = {
-    if(engine.inputsChanged) {
+    if (engine.inputsChanged) {
       engine.evaluateCircuit()
     }
     engine.symbolTable.get(symbolName) match {
@@ -133,9 +132,9 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 
   def loadFile(fileName: String): Unit = {
     var file = new File(fileName)
-    if(! file.exists()) {
+    if (!file.exists()) {
       file = new File(fileName + ".fir")
-      if(! file.exists()) {
+      if (!file.exists()) {
         throw new Exception(s"file $fileName does not exist")
       }
     }
@@ -144,10 +143,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     sourceReader.close()
 
     annotationSeq = TreadleTesterPhase.transform(annotationSeq.filter {
-      case _: OutputFileAnnotation => false
-      case _: FirrtlCircuitAnnotation => false
-      case _: FirrtlSourceAnnotation => false
-      case _: TreadleTesterAnnotation => false
+      case _: OutputFileAnnotation          => false
+      case _: FirrtlCircuitAnnotation       => false
+      case _: FirrtlSourceAnnotation        => false
+      case _: TreadleTesterAnnotation       => false
       case _: TreadleCircuitStateAnnotation => false
       case _ => true
     } :+ FirrtlSourceAnnotation(input))
@@ -166,7 +165,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         if (!fileName.startsWith(targetDir)) {
           currentScript = scriptFactory(targetDir + File.separator + fileName)
         }
-        if(currentScript.isEmpty) {
+        if (currentScript.isEmpty) {
           currentScript = scriptFactory(fileName)
         }
       case _ =>
@@ -183,14 +182,13 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   def loadVcdScript(fileName: String): Unit = {
     val dutName = currentTreadleTesterOpt match {
       case Some(tester) => tester.engine.ast.main
-      case None => ""
+      case None         => ""
     }
     try {
       currentVcdScript = Some(VCD.read(fileName, dutName))
       replVcdController = Some(new ReplVcdController(this, this.engine, currentVcdScript.get))
       println(s"vcd script $fileName loaded")
-    }
-    catch {
+    } catch {
       case e: Exception =>
         console.println(s"Failed to load vcd script $fileName, error: ${e.getMessage}")
     }
@@ -201,17 +199,21 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       BigInt(numString, radix)
     }
 
-    if(numberString.startsWith("0x"))     { parseWithRadix(numberString.drop(2), 16) }
-    else if(numberString.startsWith("h")) { parseWithRadix(numberString.drop(1), 16) }
-    else if(numberString.startsWith("o")) { parseWithRadix(numberString.drop(1), 8) }
-    else if(numberString.startsWith("b")) { parseWithRadix(numberString.drop(1), 2) }
-    else                                  { parseWithRadix(numberString, 10) }
+    if (numberString.startsWith("0x")) { parseWithRadix(numberString.drop(2), 16) } else if (numberString.startsWith(
+                                                                                               "h"
+                                                                                             )) {
+      parseWithRadix(numberString.drop(1), 16)
+    } else if (numberString.startsWith("o")) { parseWithRadix(numberString.drop(1), 8) } else if (numberString
+                                                                                                    .startsWith("b")) {
+      parseWithRadix(numberString.drop(1), 2)
+    } else { parseWithRadix(numberString, 10) }
   }
 
   val wallTime = UTC()
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
-      vcd.setTime(wallTime.currentTime)}
+      vcd.setTime(wallTime.currentTime)
+    }
   }
 
   val combinationalDelay: Long = 10
@@ -222,7 +224,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 
     wallTime.addOneTimeTask(wallTime.currentTime + timeRaised, "reset-task") { () =>
       engine.setValue(currentTreadleTester.resetName, 0)
-      if(engine.verbose) {
+      if (engine.verbose) {
         println(s"reset dropped at ${wallTime.currentTime}")
       }
       engine.inputsChanged = true
@@ -244,56 +246,45 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   // scalastyle:off number.of.methods
   object Commands {
     def getOneArg(failureMessage: String, argOption: Option[String] = None): Option[String] = {
-      if(args.length == 2) {
+      if (args.length == 2) {
         Some(args(1))
-      }
-      else if(args.length == 1 && argOption.isDefined) {
+      } else if (args.length == 1 && argOption.isDefined) {
         Some(argOption.get)
-      }
-      else {
-        if(failureMessage.nonEmpty){
+      } else {
+        if (failureMessage.nonEmpty) {
           error(failureMessage)
         }
         None
       }
     }
     def getTwoArgs(failureMessage: String,
-                   arg1Option: Option[String] = None,
-                   arg2Option: Option[String] = None
-                  ): (Option[String],Option[String]) = {
-      if(args.length == 3) {
+                   arg1Option:     Option[String] = None,
+                   arg2Option:     Option[String] = None): (Option[String], Option[String]) = {
+      if (args.length == 3) {
         (Some(args(1)), Some(args(2)))
-      }
-      else if(args.length == 2) {
+      } else if (args.length == 2) {
         (Some(args(1)), arg2Option)
-      }
-      else if(args.length == 1) {
+      } else if (args.length == 1) {
         (arg1Option, arg2Option)
-      }
-      else {
+      } else {
         error(failureMessage)
         (None, None)
       }
     }
     //scalastyle:off magic.number
     def getThreeArgs(failureMessage: String,
-      arg1Option: Option[String] = None,
-      arg2Option: Option[String] = None,
-      arg3Option: Option[String] = None
-    ): (Option[String],Option[String],Option[String]) = {
-      if(args.length == 4) {
+                     arg1Option:     Option[String] = None,
+                     arg2Option:     Option[String] = None,
+                     arg3Option:     Option[String] = None): (Option[String], Option[String], Option[String]) = {
+      if (args.length == 4) {
         (Some(args(1)), Some(args(2)), Some(args(3)))
-      }
-      else if(args.length == 3) {
+      } else if (args.length == 3) {
         (Some(args(1)), Some(args(2)), arg3Option)
-      }
-      else if(args.length == 2) {
+      } else if (args.length == 2) {
         (Some(args(1)), arg2Option, arg3Option)
-      }
-      else if(args.length == 1) {
+      } else if (args.length == 1) {
         (arg1Option, arg2Option, arg3Option)
-      }
-      else {
+      } else {
         error(failureMessage)
         (None, None, None)
       }
@@ -303,7 +294,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     def getManyArgs(defaults: Option[String]*): List[Option[String]] = {
       val combined: Seq[(Option[String], Option[String])] = args.tail.map(Some(_)).zipAll(defaults, None, None)
 
-      val result = combined.map { case (command, default) => if(command.isDefined) command else default }
+      val result = combined.map { case (command, default) => if (command.isDefined) command else default }
 
       result.toList
     }
@@ -313,25 +304,29 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("load") {
         def usage: (String, String) = ("load fileName", "load/replace the current firrtl file")
         override def completer: Option[ArgumentCompleter] = {
-          Some(new ArgumentCompleter(
-            new StringsCompleter({"load"}),
-            new FileNameCompleter
-          ))
+          Some(
+            new ArgumentCompleter(
+              new StringsCompleter({ "load" }),
+              new FileNameCompleter
+            )
+          )
         }
         def run(args: Array[String]): Unit = {
           getOneArg("load filename") match {
             case Some(fileName) => loadFile(fileName)
-            case _ =>
+            case _              =>
           }
         }
       },
       new Command("script") {
         def usage: (String, String) = ("script fileName", "load a script from a text file")
         override def completer: Option[ArgumentCompleter] = {
-          Some(new ArgumentCompleter(
-            new StringsCompleter({"script"}),
-            new FileNameCompleter
-          ))
+          Some(
+            new ArgumentCompleter(
+              new StringsCompleter({ "script" }),
+              new FileNameCompleter
+            )
+          )
         }
         def run(args: Array[String]): Unit = {
           getOneArg("script fileName") match {
@@ -344,10 +339,12 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("run") {
         def usage: (String, String) = ("run [linesToRun|all|list|reset]", "run loaded script")
         override def completer: Option[ArgumentCompleter] = {
-          Some(new ArgumentCompleter(
-            new StringsCompleter({"run"}),
-            new StringsCompleter(jlist(Seq("all", "reset", "list")))
-          ))
+          Some(
+            new ArgumentCompleter(
+              new StringsCompleter({ "run" }),
+              new StringsCompleter(jlist(Seq("all", "reset", "list")))
+            )
+          )
         }
         def handleList(script: Script, listArg: Option[String]): Unit = {
           val (min, max) = listArg match {
@@ -361,18 +358,17 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               (0, script.length)
           }
           console.println(
-            script.lines.zipWithIndex.flatMap { case (line, index) =>
-              if(index >= min && index < max) {
-                if (index == script.currentLine + 1) {
-                  Some(Console.GREEN + f"$index%3d $line" + Console.RESET)
+            script.lines.zipWithIndex.flatMap {
+              case (line, index) =>
+                if (index >= min && index < max) {
+                  if (index == script.currentLine + 1) {
+                    Some(Console.GREEN + f"$index%3d $line" + Console.RESET)
+                  } else {
+                    Some(f"$index%3d $line")
+                  }
+                } else {
+                  None
                 }
-                else {
-                  Some(f"$index%3d $line")
-                }
-              }
-              else {
-                None
-              }
             }.mkString("\n")
           )
         }
@@ -381,11 +377,11 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           currentScript match {
             case Some(script) =>
               getTwoArgs("run [lines|skip [n]|set n|all|reset|list [n]], default is 1 => run 1 line",
-                arg1Option = Some("1"), arg2Option = None) match {
-                case (Some("all"), _)   =>
+                         arg1Option = Some("1"),
+                         arg2Option = None) match {
+                case (Some("all"), _) =>
                   console.println("run all")
-                  if(script.atEnd) { script.reset() }
-                  else { script.runRemaining() }
+                  if (script.atEnd) { script.reset() } else { script.runRemaining() }
                 case (Some("reset"), _) =>
                   script.reset()
                   handleList(script, Some("2"))
@@ -394,7 +390,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                 case (Some("skip"), listArg) =>
                   val skip = listArg match {
                     case Some(IntPattern(intString)) => intString.toInt
-                    case _ => 1
+                    case _                           => 1
                   }
                   script.setSkipLines(skip)
                 case (Some("set"), listArg) =>
@@ -423,16 +419,18 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("vcd") {
         def usage: (String, String) = ("vcd [load|run|list|test|help]", "control vcd input file")
         override def completer: Option[ArgumentCompleter] = {
-          Some(new ArgumentCompleter(
-            new StringsCompleter({"vcd"}),
-            new AggregateCompleter(
-              new StringsCompleter(jlist(Seq("run", "inputs", "list", "test"))),
-              new ArgumentCompleter(
-                new StringsCompleter({"load"}),
-                new FileNameCompleter
+          Some(
+            new ArgumentCompleter(
+              new StringsCompleter({ "vcd" }),
+              new AggregateCompleter(
+                new StringsCompleter(jlist(Seq("run", "inputs", "list", "test"))),
+                new ArgumentCompleter(
+                  new StringsCompleter({ "load" }),
+                  new FileNameCompleter
+                )
               )
             )
-          ))
+          )
         }
         def run(args: Array[String]): Unit = {
           args.toList match {
@@ -441,7 +439,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
             case _ =>
               replVcdController match {
                 case Some(controller) => controller.processListCommand(args)
-                case _ => error(s"No current script")
+                case _                => error(s"No current script")
               }
           }
         }
@@ -449,19 +447,19 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("record-vcd") {
         def usage: (String, String) = ("record-vcd [<fileName>]|[done]", "treadle.vcd loaded script")
         override def completer: Option[ArgumentCompleter] = {
-          Some(new ArgumentCompleter(
-            new StringsCompleter({"record-vcd"}),
-            new FileNameCompleter
-          ))
+          Some(
+            new ArgumentCompleter(
+              new StringsCompleter({ "record-vcd" }),
+              new FileNameCompleter
+            )
+          )
         }
         def run(args: Array[String]): Unit = {
-          getOneArg("treadle.vcd [fileName|done]",
-            argOption = Some("out.treadle.vcd")) match {
-            case Some("done")   =>
+          getOneArg("treadle.vcd [fileName|done]", argOption = Some("out.treadle.vcd")) match {
+            case Some("done") =>
               engine.disableVCD()
             case Some(fileName) =>
-              engine.makeVCDLogger(
-                fileName, showUnderscored = currentTreadleTester.vcdShowUnderscored)
+              engine.makeVCDLogger(fileName, showUnderscored = currentTreadleTester.vcdShowUnderscored)
             case _ =>
               engine.disableVCD()
           }
@@ -472,14 +470,15 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         def usage: (String, String) = ("symbol regex", "show symbol information")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({"symbol"}),
-              new StringsCompleter(jlist(peekableThings))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "symbol" }),
+                new StringsCompleter(jlist(peekableThings))
+              )
+            )
           }
         }
 
@@ -496,23 +495,21 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                       try {
                         val value = engine.getValue(signal)
                         val symbol = engine.symbolTable(signal)
-                        if(linesShown % 50 == 0) {
+                        if (linesShown % 50 == 0) {
                           console.println(s"${Symbol.renderHeader}")
                         }
                         linesShown += 1
                         console.println(s"${symbol.render} ${formatOutput(value)}")
                         true
-                      }
-                      catch { case _: Exception => false}
+                      } catch { case _: Exception => false }
                     case _ =>
                       false
                   }
                 }
-                if(numberOfThingsPeeked == 0) {
+                if (numberOfThingsPeeked == 0) {
                   console.println(s"Sorry no settable ports matched regex $peekRegex")
                 }
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
                 case a: AssertionError =>
@@ -524,17 +521,18 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       },
       new Command("watch") {
         private def peekableThings: Seq[String] = engine.validNames.toSeq
-        def usage: (String, String) = ("watch [+|-] regex [regex ...]", "watch (+) or unwatch (-) signals")
+        def usage:                  (String, String) = ("watch [+|-] regex [regex ...]", "watch (+) or unwatch (-) signals")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({"watch"}),
-              new StringsCompleter(jlist(peekableThings))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "watch" }),
+                new StringsCompleter(jlist(peekableThings))
+              )
+            )
           }
         }
 
@@ -550,29 +548,28 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                 case symbolPattern =>
                   try {
                     val portRegex = symbolPattern.r
-                    peekableThings.foreach { signalName =>
-                      portRegex.findFirstIn(signalName) match {
-                        case Some(_) =>
-                          try {
-                            val value = engine.getValue(signalName)
-                            val symbol = engine.symbolTable(signalName)
-                            if (isAdding) {
-                              plugin.symbolsToWatch += symbol
-                              console.println(s"add watch for ${symbol.render} ${formatOutput(value)}")
-                            } else {
-                              plugin.symbolsToWatch -= symbol
-                              console.println(s"removing watch for ${symbol.render} ${formatOutput(value)}")
+                    peekableThings.foreach {
+                      signalName =>
+                        portRegex.findFirstIn(signalName) match {
+                          case Some(_) =>
+                            try {
+                              val value = engine.getValue(signalName)
+                              val symbol = engine.symbolTable(signalName)
+                              if (isAdding) {
+                                plugin.symbolsToWatch += symbol
+                                console.println(s"add watch for ${symbol.render} ${formatOutput(value)}")
+                              } else {
+                                plugin.symbolsToWatch -= symbol
+                                console.println(s"removing watch for ${symbol.render} ${formatOutput(value)}")
+                              }
+                            } catch {
+                              case _: Exception => false
                             }
-                          }
-                          catch {
-                            case _: Exception => false
-                          }
-                        case _ =>
-                          false
-                      }
+                          case _ =>
+                            false
+                        }
                     }
-                  }
-                  catch {
+                  } catch {
                     case e: Exception =>
                       error(s"exception ${e.getMessage} $e")
                     case a: AssertionError =>
@@ -590,18 +587,19 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("poke") {
         def usage: (String, String) = ("poke inputSymbol value", "set an input port to the given integer value")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "poke"
-              }),
-              new StringsCompleter(
-                jlist(engine.getInputPorts ++ engine.getRegisterNames)
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "poke"
+                }),
+                new StringsCompleter(
+                  jlist(engine.getInputPorts ++ engine.getRegisterNames)
+                )
               )
-            ))
+            )
           }
         }
         def run(args: Array[String]): Unit = {
@@ -610,8 +608,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               try {
                 val numberValue = parseNumber(valueString)
                 engine.setValue(portName, numberValue)
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
               }
@@ -624,45 +621,45 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           ("force symbol value", "hold a wire to value (use value clear to clear forced wire)")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "force"
-              }),
-              new StringsCompleter(
-                jlist(engine.getInputPorts ++ engine.getRegisterNames)
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "force"
+                }),
+                new StringsCompleter(
+                  jlist(engine.getInputPorts ++ engine.getRegisterNames)
+                )
               )
-            ))
+            )
           }
         }
         def run(args: Array[String]): Unit = {
           getTwoArgs("force symbol value (use value clear to clear forced wire)") match {
             case (Some(portName), Some(valueString)) =>
               try {
-                if(valueString.toLowerCase == "clear") {
+                if (valueString.toLowerCase == "clear") {
                   currentTreadleTester.clearForceValue(portName)
-                }
-                else {
+                } else {
                   val numberValue = parseNumber(valueString)
                   currentTreadleTester.forceValue(portName, numberValue)
                 }
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
               }
             case (None, None) =>
               val forcedList = engine.symbolTable.nameToSymbol.keys.toSeq.sorted.flatMap { key =>
                 val symbol = engine.symbolTable(key)
-                symbol.forcedValue.map { _ => showNameAndValue(symbol.name) }
+                symbol.forcedValue.map { _ =>
+                  showNameAndValue(symbol.name)
+                }
               }
-              if(forcedList.nonEmpty) {
+              if (forcedList.nonEmpty) {
                 console.println(forcedList.mkString("\n"))
-              }
-              else {
+              } else {
                 console.println("Currently no wires are forced")
               }
             case _ =>
@@ -675,16 +672,17 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
         def usage: (String, String) = ("rpoke regex value", "poke value into portSymbols that match regex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "rpoke"
-              }),
-              new StringsCompleter(jlist(settableThings))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "rpoke"
+                }),
+                new StringsCompleter(jlist(settableThings))
+              )
+            )
           }
         }
         def run(args: Array[String]): Unit = {
@@ -701,16 +699,13 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                     case _ => None
                   }
                 }
-                if(setThings.nonEmpty) {
+                if (setThings.nonEmpty) {
                   console.println(s"poking value $pokeValue into ${setThings.toList.sorted.mkString(", ")}")
-                }
-                else {
+                } else {
                   console.println(s"Sorry no inputSymbols matched regex $pokeRegex")
                 }
 
-
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
               }
@@ -723,16 +718,17 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           ("peek symbol [offset]", "show the current value of the signal")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "peek"
-              }),
-              new StringsCompleter(jlist(engine.validNames.toSeq))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "peek"
+                }),
+                new StringsCompleter(jlist(engine.validNames.toSeq))
+              )
+            )
           }
         }
         def run(args: Array[String]): Unit = {
@@ -744,11 +740,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                   case Some('d') => BigInt(offsetString.tail, 10).toInt
                   case Some('x') => BigInt(offsetString.tail, 16).toInt
                   case Some('h') => BigInt(offsetString.tail, 16).toInt
-                  case _ => offsetString.toInt
+                  case _         => offsetString.toInt
                 }
                 console.println(s"peek ${showNameAndValue(symbol, offset)}")
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage}")
                 case a: AssertionError =>
@@ -763,16 +758,17 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         private def peekableThings = engine.validNames.toSeq
         def usage: (String, String) = ("rpeek regex", "show the current value of symbols matching the regex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "rpeek"
-              }),
-              new StringsCompleter(jlist(peekableThings))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "rpeek"
+                }),
+                new StringsCompleter(jlist(peekableThings))
+              )
+            )
           }
         }
         //scalastyle:off cyclomatic.complexity
@@ -787,17 +783,15 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                       try {
                         console.println(showNameAndValue(settableThing))
                         true
-                      }
-                      catch { case _: Exception => false}
+                      } catch { case _: Exception => false }
                     case _ =>
                       false
                   }
                 }
-                if(numberOfThingsPeeked == 0) {
+                if (numberOfThingsPeeked == 0) {
                   console.println(s"Sorry no symbols matched regex $peekRegex")
                 }
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
                 case a: AssertionError =>
@@ -810,12 +804,11 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("randomize") {
         def usage: (String, String) = ("randomize", "randomize all symbols except reset)")
         def run(args: Array[String]): Unit = {
-          for(symbol <- engine.symbols) {
+          for (symbol <- engine.symbols) {
             try {
               val newValue = makeRandom(symbol.firrtlType)
               engine.setValue(symbol.name, newValue)
-            }
-            catch {
+            } catch {
               case e: Exception =>
                 console.println(s"Error randomize: setting ${symbol.name}, error ${e.getMessage}")
             }
@@ -823,18 +816,19 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("reset") {
-        def usage: (String, String) = ("reset [numberOfSteps]",
-          "assert reset (if present) for numberOfSteps (default 1)")
+        def usage: (String, String) =
+          ("reset [numberOfSteps]", "assert reset (if present) for numberOfSteps (default 1)")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "reset"
-              })
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "reset"
+                })
+              )
+            )
           }
         }
         def run(args: Array[String]): Unit = {
@@ -851,8 +845,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                     engine.advanceTime(combinationalDelay)
                     engine.setValue("reset", 0)
                 }
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
               }
@@ -861,28 +854,27 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("radix") {
-        def usage: (String, String) = ("reset [b|d|x|h]",
-          "Set the output radix to binary, decimal, or hex")
+        def usage: (String, String) = ("reset [b|d|x|h]", "Set the output radix to binary, decimal, or hex")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "radix"
-              }),
-              new StringsCompleter(jlist(Seq("b", "d", "h", "x")))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "radix"
+                }),
+                new StringsCompleter(jlist(Seq("b", "d", "h", "x")))
+              )
+            )
           }
         }
         def run(args: Array[String]): Unit = {
           getOneArg("radix [b|d|h|x]", Some("d")) match {
             case Some(radix) =>
-              if(Seq("b", "d", "h", "x").contains(radix.toLowerCase())) {
+              if (Seq("b", "d", "h", "x").contains(radix.toLowerCase())) {
                 outputFormat = radix
-              }
-              else {
+              } else {
                 console.println(s"Unknown output radix $radix")
               }
 
@@ -891,8 +883,8 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("step") {
-        def usage: (String, String) = ("step [numberOfSteps]",
-          "cycle the clock numberOfSteps (default 1) times, and show state")
+        def usage: (String, String) =
+          ("step [numberOfSteps]", "cycle the clock numberOfSteps (default 1) times, and show state")
         def run(args: Array[String]): Unit = {
           getOneArg("step [numberOfSteps]", Some("1")) match {
             case Some(numberOfStepsString) =>
@@ -905,12 +897,11 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                     }
                   }
                 }
-                if(! scriptRunning) {
+                if (!scriptRunning) {
                   // console.println(engine.circuitState.prettyString())
                   console.println(s"step $numberOfSteps in ${engine.timer.prettyLastTime("steps")}")
                 }
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
               }
@@ -919,20 +910,22 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("waitfor") {
-        def usage: (String, String) = ("waitfor symbol value [maxNumberOfSteps]",
-          "wait for particular value (default 1) of symbol, up to maxNumberOfSteps (default 100)")
+        def usage: (String, String) =
+          ("waitfor symbol value [maxNumberOfSteps]",
+           "wait for particular value (default 1) of symbol, up to maxNumberOfSteps (default 100)")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "waitfor"
-              }),
-              new StringsCompleter(jlist(engine.validNames.toSeq))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "waitfor"
+                }),
+                new StringsCompleter(jlist(engine.validNames.toSeq))
+              )
+            )
           }
         }
 
@@ -948,20 +941,19 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                 val value = valueString.toInt
 
                 var tries = 0
-                while(tries < maxNumberOfSteps && engine.getValue(symbol) != BigInt(value)) {
+                while (tries < maxNumberOfSteps && engine.getValue(symbol) != BigInt(value)) {
                   step()
                   tries += 1
                 }
-                if(engine.getValue(symbol) != BigInt(value)) {
+                if (engine.getValue(symbol) != BigInt(value)) {
                   console.println(
                     s"waitfor exhausted $symbol did not take on" +
-                      s" value ${formatOutput(value)} in $maxNumberOfSteps cycles")
-                }
-                else {
+                      s" value ${formatOutput(value)} in $maxNumberOfSteps cycles"
+                  )
+                } else {
                   console.println(s"$symbol == value ${formatOutput(value)} in $tries cycles")
                 }
-              }
-              catch {
+              } catch {
                 case e: Exception =>
                   error(s"exception ${e.getMessage} $e")
               }
@@ -970,22 +962,24 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("depend") {
-        def usage: (String, String) = ("depend [childrenOf|parentsOf] signal [depth] | depend compare symbol1 symbol2",
-          "show dependency relationship to symbol or between two symbols")
+        def usage: (String, String) =
+          ("depend [childrenOf|parentsOf] signal [depth] | depend compare symbol1 symbol2",
+           "show dependency relationship to symbol or between two symbols")
 
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
+          } else {
             def peekableThings = engine.validNames.toSeq
 
-            Some(new ArgumentCompleter(
-              new StringsCompleter({ "depend"}),
-              new StringsCompleter(jlist(Seq("childrenOf", "parentsOf", "compare"))),
-              new StringsCompleter(jlist(peekableThings)),
-              new StringsCompleter(jlist(peekableThings))
-            ))
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "depend" }),
+                new StringsCompleter(jlist(Seq("childrenOf", "parentsOf", "compare"))),
+                new StringsCompleter(jlist(peekableThings)),
+                new StringsCompleter(jlist(peekableThings))
+              )
+            )
           }
         }
 
@@ -1039,8 +1033,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                   path.foreach { symbol =>
                     console.println(f"${symbol.name}")
                   }
-                }
-                catch {
+                } catch {
                   case _: firrtl.graph.PathNotFoundException =>
                     console.println(s"$symbol1 is not a $direction of $symbol2")
                 }
@@ -1056,14 +1049,15 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("show") {
         def usage: (String, String) = ("show [state|inputs|outputs|clocks|firrtl|lofirrtl]", "show useful things")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({ "show"}),
-              new StringsCompleter(jlist(Seq("state", "inputs", "outputs", "clocks", "firrtl", "lofirrtl")))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "show" }),
+                new StringsCompleter(jlist(Seq("state", "inputs", "outputs", "clocks", "firrtl", "lofirrtl")))
+              )
+            )
           }
         }
 
@@ -1109,21 +1103,22 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("display") {
         def usage: (String, String) = ("display symbol[, symbol, ...]", "show computation of symbols")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({ "display"}),
-              new StringsCompleter(jlist(engine.symbolTable.keys.toSeq))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "display" }),
+                new StringsCompleter(jlist(engine.symbolTable.keys.toSeq))
+              )
+            )
           }
         }
 
         def run(args: Array[String]): Unit = {
           getOneArg("", Some("state")) match {
             case Some(symbolList) =>
-              if(currentTreadleTesterOpt.isDefined) {
+              if (currentTreadleTesterOpt.isDefined) {
                 console.println(engine.renderComputation(symbolList, outputFormat))
               }
             case _ =>
@@ -1140,13 +1135,14 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("walltime") {
         def usage: (String, String) = ("walltime [advance]", "show current wall time, or advance it")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({ "walltime"})
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "walltime" })
+              )
+            )
           }
         }
         // scalastyle:off cyclomatic.complexity
@@ -1158,11 +1154,12 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                   val advance = numberString.toLong
                   if (advance < 1) {
                     console.println("walltime advance must be > 0")
-                  }
-                  else {
+                  } else {
                     currentTreadleTester.advanceTime(advance)
-                    console.println(s"Current Wall Time is ${currentTreadleTester.wallTime.currentTime}" +
-                      s" incremented by $advance")
+                    console.println(
+                      s"Current Wall Time is ${currentTreadleTester.wallTime.currentTime}" +
+                        s" incremented by $advance"
+                    )
                   }
 
                 case _ =>
@@ -1174,41 +1171,42 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("verbose") {
-        def usage: (String, String) = ("verbose [true|false|toggle]",
-          "set evaluator verbose mode (default toggle) during dependency evaluation")
+        def usage: (String, String) =
+          ("verbose [true|false|toggle]", "set evaluator verbose mode (default toggle) during dependency evaluation")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({ "verbose"}),
-              new StringsCompleter(jlist(Seq("true", "false", "toggle")))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "verbose" }),
+                new StringsCompleter(jlist(Seq("true", "false", "toggle")))
+              )
+            )
           }
         }
         def run(args: Array[String]): Unit = {
           getOneArg("verbose must be followed by true false or toggle", Some("toggle")) match {
-            case Some("toggle") => engine.setVerbose(! engine.verbose)
+            case Some("toggle") => engine.setVerbose(!engine.verbose)
             case Some("true")   => engine.setVerbose()
             case Some("false")  => engine.setVerbose(false)
-            case _ =>
+            case _              =>
           }
           console.println(s"evaluator verbosity is now ${engine.verbose}")
         }
       },
       new Command("snapshot") {
-        def usage: (String, String) = ("snapshot",
-          "save state of engine")
+        def usage: (String, String) = ("snapshot", "save state of engine")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({ "snapshot"}),
-              new FileNameCompleter
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "snapshot" }),
+                new FileNameCompleter
+              )
+            )
           }
         }
         def run(args: Array[String]): Unit = {
@@ -1223,17 +1221,17 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("restore") {
-        def usage: (String, String) = ("restore",
-          "restore state of engine from snapshot file")
+        def usage: (String, String) = ("restore", "restore state of engine from snapshot file")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({ "restore"}),
-              new FileNameCompleter
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({ "restore" }),
+                new FileNameCompleter
+              )
+            )
           }
         }
         def run(args: Array[String]): Unit = {
@@ -1274,18 +1272,19 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 //      },
       new Command("waves") {
         def usage: (String, String) =
-          ("waves symbolName ...","generate wavedrom json for viewing waveforms")
+          ("waves symbolName ...", "generate wavedrom json for viewing waveforms")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "waves"
-              }),
-              new StringsCompleter(jlist(engine.validNames.toSeq))
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "waves"
+                }),
+                new StringsCompleter(jlist(engine.validNames.toSeq))
+              )
+            )
           }
         }
         def run(args: Array[String]): Unit = {
@@ -1297,10 +1296,11 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
             val symbolNames = args.tail.tail
             val numSymbols = symbolNames.length
             val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
-            symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
-              assert(engine.symbolTable.contains(symbolName),
-                s""""$symbolName" : argument is not an element of this circuit""")
-              symbols.update(counter, engine.symbolTable(symbolName))
+            symbolNames.zipWithIndex.foreach {
+              case (symbolName, counter) =>
+                assert(engine.symbolTable.contains(symbolName),
+                       s""""$symbolName" : argument is not an element of this circuit""")
+                symbols.update(counter, engine.symbolTable(symbolName))
             }
 
             val waveformValues: WaveformValues =
@@ -1314,15 +1314,16 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("history") {
         def usage: (String, String) = ("history [pattern]", "show command history, with optional regex pattern")
         override def completer: Option[ArgumentCompleter] = {
-          if(currentTreadleTesterOpt.isEmpty) {
+          if (currentTreadleTesterOpt.isEmpty) {
             None
-          }
-          else {
-            Some(new ArgumentCompleter(
-              new StringsCompleter({
-                "history"
-              })
-            ))
+          } else {
+            Some(
+              new ArgumentCompleter(
+                new StringsCompleter({
+                  "history"
+                })
+              )
+            )
           }
         }
         //scalastyle:off cyclomatic.complexity
@@ -1333,18 +1334,17 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               var matches = 0
               val iterator = console.getHistory.entries()
 
-              while(iterator.hasNext) {
+              while (iterator.hasNext) {
                 val command = iterator.next()
-                if(historyRegex.findFirstIn(command.value()).isDefined) {
+                if (historyRegex.findFirstIn(command.value()).isDefined) {
                   matches += 1
                   println(s"${command.index() + 1} ${command.value()}")
                 }
               }
-              if(matches == 0) {
+              if (matches == 0) {
                 console.println(s"Sorry no wires matched regex $regex")
               }
-            }
-            catch {
+            } catch {
               case e: Exception =>
                 error(s"exception ${e.getMessage} $e")
               case a: AssertionError =>
@@ -1368,14 +1368,14 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               Commands.commands.foreach { command =>
                 val (column1, column2) = command.usage
                 val escapeColumn1 = column1
-                        .replaceAll(raw"\|", "&#124;")
-                        .replaceAll("<", raw"\<")
-                        .replaceAll(">", raw"\<")
+                  .replaceAll(raw"\|", "&#124;")
+                  .replaceAll("<", raw"\<")
+                  .replaceAll(">", raw"\<")
 
                 val escapeColumn2 = column2
-                        .replaceAll(raw"\|", "&#124;")
-                        .replaceAll("<", raw"\<")
-                        .replaceAll(">", raw"\<")
+                  .replaceAll(raw"\|", "&#124;")
+                  .replaceAll("<", raw"\<")
+                  .replaceAll(">", raw"\<")
 
                 console.println(s"| $escapeColumn1 | $escapeColumn2 |")
               }
@@ -1385,7 +1385,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                 val (column1, column2) = command.usage
                 terminal.getWidth
 
-                console.println(s"$column1${" "*(maxColumn1Width - column1.length)} $column2")
+                console.println(s"$column1${" " * (maxColumn1Width - column1.length)} $column2")
               }
           }
         }
@@ -1393,7 +1393,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       new Command("quit") {
         def usage: (String, String) = ("quit", "exit the engine")
         def run(args: Array[String]): Unit = {
-          if(! history.isEmpty) {
+          if (!history.isEmpty) {
             history.removeLast()
           }
           done = true
@@ -1434,11 +1434,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 
         console.readLine()
     }
-    if(rawLine == null) {
+    if (rawLine == null) {
       history.add("quit")
       "quit"
-    }
-    else {
+    } else {
       rawLine.split("#").head
     }
   }
@@ -1459,7 +1458,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     try {
       loadSource()
 
-      if(! annotationSeq.exists(_.isInstanceOf[TreadleTesterAnnotation])) {
+      if (!annotationSeq.exists(_.isInstanceOf[TreadleTesterAnnotation])) {
         if (replConfig.firrtlSourceName.nonEmpty) {
           loadFile(replConfig.firrtlSourceName)
         }
@@ -1471,8 +1470,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         val fileName = replConfig.getVcdInputFileName
         loadVcdScript(fileName)
       }
-    }
-    catch {
+    } catch {
       case t: TreadleException =>
         console.println(s"Startup: Treadle Exception ${t.getMessage}")
       case _: CyclicException =>
@@ -1481,7 +1479,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     }
     buildCompletions()
 
-    if(replConfig.runScriptAtStart) {
+    if (replConfig.runScriptAtStart) {
       currentScript match {
         case Some(script) =>
           script.reset()
@@ -1491,28 +1489,24 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       }
     }
 
-    while (! done) {
+    while (!done) {
       try {
         val line = getNextLine
 
         line.split(""";""").foreach { subLine =>
-
           args = subLine.trim.split(" +")
 
           if (args.length > 0) {
             if (Commands.commandMap.contains(args.head)) {
               Commands.commandMap(args.head).run(args.tail)
-            }
-            else {
+            } else {
               if (subLine.nonEmpty) error(s"unknown command $subLine, try help")
             }
-          }
-          else {
+          } else {
             error(s"unknown command: $subLine")
           }
         }
-      }
-      catch {
+      } catch {
         case ie: TreadleException =>
           console.println(s"Treadle Exception occurred: ${ie.getMessage}")
           ie.printStackTrace()
@@ -1532,8 +1526,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       history.flush()
       console.shutdown()
       TerminalFactory.get.restore()
-    }
-    catch {
+    } catch {
       case e: Exception =>
         println(s"Error on quit, message is ${e.getMessage}")
     }
@@ -1544,7 +1537,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     console.println(s"Error: $message")
   }
 
-  def jlist(list: Seq[String]): java.util.List[String]= {
+  def jlist(list: Seq[String]): java.util.List[String] = {
     val array = ArrayBuffer.empty[String]
     array ++= list
     array.asJava

@@ -4,7 +4,6 @@ package treadle
 
 import org.scalatest.{FreeSpec, Matchers}
 
-
 /**
   * The author of this fine test, does not quite remember what it is designed to do.
   * As it currently stands it is a decent demonstration of dead code removal. All but one
@@ -30,7 +29,7 @@ class GetIntBreakdownSpec extends FreeSpec with Matchers {
     val s = new StringBuilder
     var lastNode = "io_in"
     s ++= "\n"
-    for(i <- 0 until n) {
+    for (i <- 0 until n) {
 //      s ++= s"""    node T_$i = add($lastNode, UInt<1>("h1"))\n"""
 //      s ++= s"""    node T_$i = add(io_in, UInt<1>("h1"))\n"""
       s ++= s"""    node T_$i = tail(add(io_in, UInt<1>("h1")), 1)\n"""

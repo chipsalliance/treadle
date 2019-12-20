@@ -36,8 +36,6 @@ class CombinationalDelaySpec extends FreeSpec with Matchers {
 
     val t = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
-
-
     t.poke("in_0", 20)
     t.poke("in_1", 11)
     t.expect("add_out", 31)

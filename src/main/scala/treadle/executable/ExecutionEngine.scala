@@ -13,17 +13,17 @@ import scala.collection.mutable
 
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
-    val ast             : Circuit,
-    val annotationSeq   : AnnotationSeq,
-    val symbolTable     : SymbolTable,
-    val dataStore       : DataStore,
-    val scheduler       : Scheduler,
-    val expressionViews : Map[Symbol, ExpressionView],
-    val wallTime        : UTC
+  val ast:             Circuit,
+  val annotationSeq:   AnnotationSeq,
+  val symbolTable:     SymbolTable,
+  val dataStore:       DataStore,
+  val scheduler:       Scheduler,
+  val expressionViews: Map[Symbol, ExpressionView],
+  val wallTime:        UTC
 ) {
   val cycleTimeIncrement = 500
 
-  var vcdOption: Option[VCD] = None
+  var vcdOption:   Option[VCD] = None
   var vcdFileName: String = ""
 
   val expressionViewRenderer = new ExpressionViewRenderer(
@@ -32,7 +32,9 @@ class ExecutionEngine(
     expressionViews
   )
 
-  if(annotationSeq.collectFirst { case ShowFirrtlAtLoadAnnotation => ShowFirrtlAtLoadAnnotation }.isDefined) {
+  scheduler.executionEngineOpt = Some(this)
+
+  if (annotationSeq.collectFirst { case ShowFirrtlAtLoadAnnotation => ShowFirrtlAtLoadAnnotation }.isDefined) {
     println(ast.serialize)
   }
 
@@ -46,11 +48,12 @@ class ExecutionEngine(
   /* Default dataStore plugins */
 
   dataStore.addPlugin(
-    "show-assigns", new ReportAssignments(this),
+    "show-assigns",
+    new ReportAssignments(this),
     enable = verbose
   )
 
-  val symbolsToWatch: Seq[String] = annotationSeq.collectFirst{ case SymbolsToWatchAnnotation(stw) => stw }.getOrElse {
+  val symbolsToWatch: Seq[String] = annotationSeq.collectFirst { case SymbolsToWatchAnnotation(stw) => stw }.getOrElse {
     Seq.empty
   }
 
@@ -65,7 +68,7 @@ class ExecutionEngine(
   }
 
   def setLeanMode(): Unit = {
-    val canBeLean = ! (verbose || dataStore.hasEnabledPlugins)
+    val canBeLean = !(verbose || dataStore.hasEnabledPlugins)
     scheduler.setLeanMode(canBeLean)
     scheduler.setVerboseAssign(verbose)
   }
@@ -81,24 +84,23 @@ class ExecutionEngine(
     setLeanMode()
     dataStore.plugins.get("show-assigns") match {
       case Some(plugin) => plugin.setEnabled(verbose)
-      case _ => None
+      case _            => None
     }
     scheduler.setVerboseAssign(isVerbose)
   }
 
   val timer = new Timer
 
-  if(verbose) {
+  if (verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
       Render.headerBar(s"Executing static assignments", offset = 8)
-    }
-    else {
+    } else {
       Render.headerBar(s"No static assignments", offset = 8)
     }
   }
   scheduler.executeOrphanedAssigns()
-  if(verbose) {
-    if(scheduler.orphanedAssigns.nonEmpty) {
+  if (verbose) {
+    if (scheduler.orphanedAssigns.nonEmpty) {
       Render.headerBar(s"Finished executing static assignments", offset = 8)
     }
   }
@@ -140,7 +142,13 @@ class ExecutionEngine(
   def renderComputation(symbolNames: String, outputFormat: String = "d", showValues: Boolean = true): String = {
     val renderer = new ExpressionViewRenderer(dataStore, symbolTable, expressionViews)
 
-    val symbols = symbolNames.split(",").map(_.trim).flatMap { s => symbolTable.get(s) }.distinct
+    val symbols = symbolNames
+      .split(",")
+      .map(_.trim)
+      .flatMap { s =>
+        symbolTable.get(s)
+      }
+      .distinct
 
     symbols.flatMap { symbol =>
       expressionViews.get(symbol) match {
@@ -158,13 +166,12 @@ class ExecutionEngine(
       // save data state under roll back buffers if they are being used
       dataStore.saveData(wallTime.currentTime)
 
-      if(lastStopResult.isDefined) {
+      if (lastStopResult.isDefined) {
         writeVCD()
-        val stopKind = if(lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
+        val stopKind = if (lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
         throw StopException(s"$stopKind: result ${lastStopResult.get}")
       }
-    }
-    catch {
+    } catch {
       case throwable: Throwable =>
         writeVCD()
         throw throwable
@@ -172,11 +179,10 @@ class ExecutionEngine(
   }
 
   def getValue(name: String, offset: Int = 0): BigInt = {
-    assert(symbolTable.contains(name),
-      s"""Error: getValue("$name") : argument is not an element of this circuit""")
+    assert(symbolTable.contains(name), s"""Error: getValue("$name") : argument is not an element of this circuit""")
 
-    if(inputsChanged) {
-      if(verbose) {
+    if (inputsChanged) {
+      if (verbose) {
         Render.headerBar(s"peeking", offset = 8)
       }
       inputsChanged = false
@@ -184,11 +190,10 @@ class ExecutionEngine(
     }
 
     val symbol = symbolTable(name)
-    if(offset == 0) {
+    if (offset == 0) {
       symbol.normalize(dataStore(symbol))
-    }
-    else {
-      if(offset - 1 > symbol.slots) {
+    } else {
+      if (offset - 1 > symbol.slots) {
         throw TreadleException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
       }
       symbol.normalize(dataStore.getValueAtIndex(symbol.dataSize, index = symbol.index + offset))
@@ -207,11 +212,11 @@ class ExecutionEngine(
     */
   // scalastyle:off cyclomatic.complexity method.length
   def setValue(
-    name: String,
-    value: BigInt,
-    force: Boolean = true,
+    name:         String,
+    value:        BigInt,
+    force:        Boolean = true,
     registerPoke: Boolean = false,
-    offset: Int = 0
+    offset:       Int = 0
   ): BigInt = {
 
     val symbol = symbolTable.getOrElse(
@@ -220,27 +225,26 @@ class ExecutionEngine(
     )
 
     inputsChanged = true
-    if(symbolsPokedSinceEvaluation.contains(symbol)) {
-      if(verbose) {
+    if (symbolsPokedSinceEvaluation.contains(symbol)) {
+      if (verbose) {
         println(s"updating circuit on second update of same input without clock advance")
       }
       symbolsPokedSinceEvaluation.clear()
       scheduler.executeCombinationalAssigns()
-    }
-    else {
+    } else {
       symbolsPokedSinceEvaluation += symbol
     }
 
-    if(!force) {
+    if (!force) {
       assert(symbol.dataKind == PortKind,
-        s"Error: setValue($name) not on input, use setValue($name, force=true) to override")
+             s"Error: setValue($name) not on input, use setValue($name, force=true) to override")
       return Big0
     }
 
     val adjustedValue = symbol.valueFrom(value)
-    if(offset == 0) {
-      if(verbose) {
-        if(! inputsChanged) {
+    if (offset == 0) {
+      if (verbose) {
+        if (!inputsChanged) {
           Render.headerBar("Poking")
         }
         println(s"${symbol.name} <= $value")
@@ -249,13 +253,12 @@ class ExecutionEngine(
       vcdOption.foreach { vcd =>
         vcd.wireChanged(symbol.name, adjustedValue, symbol.bitWidth)
       }
-    }
-    else {
-      if(offset - 1 > symbol.slots) {
+    } else {
+      if (offset - 1 > symbol.slots) {
         throw TreadleException(s"get value from ${symbol.name} offset $offset > than size ${symbol.slots}")
       }
-      if(verbose) {
-        if(! inputsChanged) {
+      if (verbose) {
+        if (!inputsChanged) {
           Render.headerBar("Poking")
         }
 
@@ -277,24 +280,23 @@ class ExecutionEngine(
   // scalastyle:off cyclomatic.complexity method.length
   def setIntValue(
     symbol: Symbol,
-    value: Int
+    value:  Int
   ): Int = {
 
     inputsChanged = true
-    if(symbolsPokedSinceEvaluation.contains(symbol)) {
-      if(verbose) {
+    if (symbolsPokedSinceEvaluation.contains(symbol)) {
+      if (verbose) {
         println(s"updating circuit on second update of same input without clock advance")
       }
       symbolsPokedSinceEvaluation.clear()
       scheduler.executeCombinationalAssigns()
-    }
-    else {
+    } else {
       symbolsPokedSinceEvaluation += symbol
     }
 
     val adjustedValue = symbol.valueFrom(value)
-    if(verbose) {
-      if(! inputsChanged) {
+    if (verbose) {
+      if (!inputsChanged) {
         Render.headerBar("Poking")
       }
       println(s"${symbol.name} <= $value")
@@ -332,19 +334,19 @@ class ExecutionEngine(
   }
 
   def validNames: Iterable[String] = symbolTable.keys
-  def symbols: Iterable[Symbol] = symbolTable.symbols
+  def symbols:    Iterable[Symbol] = symbolTable.symbols
 
   def evaluateCircuit(): Unit = {
-    if(inputsChanged) {
+    if (inputsChanged) {
       inputsChanged = false
       symbolsPokedSinceEvaluation.clear()
 
-      if(verbose) {
+      if (verbose) {
         Render.headerBar(s"combinational evaluate", offset = 8)
       }
       runAssigns()
 
-      if(verbose) {
+      if (verbose) {
         Render.headerBar(s"done combinational evaluate", offset = 8)
       }
 
@@ -352,8 +354,8 @@ class ExecutionEngine(
   }
 
   def advanceTime(increment: Long): Unit = {
-    if(increment > 0) {
-      if(inputsChanged) {
+    if (increment > 0) {
+      if (inputsChanged) {
         evaluateCircuit()
       }
 //      wallTime.advance(increment)
@@ -361,6 +363,7 @@ class ExecutionEngine(
   }
 
   private val stopHappenedSymbolOpt = symbolTable.get(StopOp.stopHappenedName)
+
   /**
     * returns that value specified by a StopOp when
     * its condition is satisfied.  Only defined when
@@ -373,8 +376,7 @@ class ExecutionEngine(
         val stopValue = dataStore(hasStoppedSymbol).toInt
         if (stopValue > 0) {
           Some(stopValue - 1)
-        }
-        else {
+        } else {
           None
         }
       case _ =>
@@ -407,17 +409,18 @@ class ExecutionEngine(
     val keys = symbolTable.keys.toArray.sorted
 
     ("-" * fieldsHeader.length) + "\n" +
-        keys.map { name =>
-          val symbol = symbolTable(name)
-          val value = symbol.normalize(dataStore(symbolTable(name)))
-          f" $value%9.9s" }.mkString("") + "\n" +
-        ("-" * fieldsHeader.length)
+      keys.map { name =>
+        val symbol = symbolTable(name)
+        val value = symbol.normalize(dataStore(symbolTable(name)))
+        f" $value%9.9s"
+      }.mkString("") + "\n" +
+      ("-" * fieldsHeader.length)
   }
 
-  def getInfoString: String = "Info"  //TODO (chick) flesh this out
+  def getInfoString: String = "Info" //TODO (chick) flesh this out
   def getPrettyString: String = {
     header + "\n" +
-    dataInColumns
+      dataInColumns
   }
 
   trait ClockToggle {
@@ -430,7 +433,7 @@ class ExecutionEngine(
   def makeUpToggler(symbol: Symbol): Assigner = {
     val assigner = dataStore.AssignInt(symbol, GetIntConstant(1).apply _, NoInfo)
 
-    if(vcdOption.isDefined) assigner.setLeanMode(false)
+    if (vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
     assigner
   }
@@ -438,7 +441,7 @@ class ExecutionEngine(
   def makeDownToggler(symbol: Symbol): Assigner = {
     val assigner = dataStore.AssignInt(symbol, GetIntConstant(0).apply _, NoInfo)
 
-    if(vcdOption.isDefined) assigner.setLeanMode(false)
+    if (vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
     assigner
   }
@@ -459,16 +462,18 @@ object ExecutionEngine {
     val timer = new Timer
     val t0 = System.nanoTime()
 
-    val circuit = annotationSeq.collectFirst{ case TreadleCircuitStateAnnotation(c) => c }.get.circuit
-    val blackBoxFactories = annotationSeq.collectFirst{ case BlackBoxFactoriesAnnotation(bbf) => bbf }.getOrElse(
+    val circuit = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(c)           => c }.get.circuit
+    val blackBoxFactories = annotationSeq.collectFirst { case BlackBoxFactoriesAnnotation(bbf) => bbf }.getOrElse(
       Seq.empty
     )
-    val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation => true; case _ => false }
-    val rollbackBuffers = annotationSeq.collectFirst{ case RollBackBuffersAnnotation(rbb) => rbb }.getOrElse(
+    val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation             => true; case _ => false }
+    val prefixPrintfWithTime = annotationSeq.exists { case PrefixPrintfWithWallTime => true; case _ => false }
+
+    val rollbackBuffers = annotationSeq.collectFirst { case RollBackBuffersAnnotation(rbb) => rbb }.getOrElse(
       TreadleDefaults.RollbackBuffers
     )
-    val validIfIsRandom  = annotationSeq.exists { case ValidIfIsRandomAnnotation => true; case _ => false }
-    val verbose  = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
+    val validIfIsRandom = annotationSeq.exists { case ValidIfIsRandomAnnotation => true; case _ => false }
+    val verbose = annotationSeq.exists { case VerboseAnnotation                 => true; case _ => false }
 
     val symbolTable: SymbolTable = timer("Build Symbol Table") {
       SymbolTable(circuit, blackBoxFactories, allowCycles)
@@ -480,22 +485,31 @@ object ExecutionEngine {
 
     val dataStore = DataStore(rollbackBuffers, dataStoreAllocator)
 
-    if(verbose) {
+    if (verbose) {
       println(s"Symbol table:\n${symbolTable.render}")
     }
 
     val scheduler = new Scheduler(symbolTable)
 
-    val compiler = new ExpressionCompiler(symbolTable, dataStore, scheduler, validIfIsRandom, blackBoxFactories)
+    val compiler = new ExpressionCompiler(
+      symbolTable,
+      dataStore,
+      scheduler,
+      validIfIsRandom,
+      prefixPrintfWithTime,
+      blackBoxFactories
+    )
 
     timer("Build Compiled Expressions") {
       compiler.compile(circuit, blackBoxFactories)
     }
 
-    val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(
-      symbolTable, dataStore, scheduler,
-      validIfIsRandom,
-      circuit, blackBoxFactories)
+    val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(symbolTable,
+                                                                                                dataStore,
+                                                                                                scheduler,
+                                                                                                validIfIsRandom,
+                                                                                                circuit,
+                                                                                                blackBoxFactories)
 
     scheduler.organizeAssigners()
 
@@ -504,7 +518,7 @@ object ExecutionEngine {
 
     executionEngine.dataStore.setExecutionEngine(executionEngine)
 
-    if(verbose) {
+    if (verbose) {
       println(s"\n${scheduler.render(executionEngine)}")
       scheduler.setVerboseAssign(verbose)
     }
@@ -514,8 +528,10 @@ object ExecutionEngine {
 
     val t1 = System.nanoTime()
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
-    println(s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
-            s"${scheduler.combinationalAssigns.size} statements")
+    println(
+      s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
+        s"${scheduler.combinationalAssigns.size} statements"
+    )
 
     executionEngine.memoryInitializer.initializeMemoriesFromFiles()
 

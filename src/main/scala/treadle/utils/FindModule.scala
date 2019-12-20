@@ -6,6 +6,7 @@ import firrtl.ir.{Circuit, DefModule, Module}
 import treadle.executable.TreadleException
 
 object FindModule {
+
   /**
     * finds the specified module name in the circuit
     *

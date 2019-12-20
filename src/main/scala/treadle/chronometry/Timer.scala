@@ -5,7 +5,7 @@ package treadle.chronometry
 import scala.collection.mutable
 
 case class TimerEvent(tag: String) {
-  var events  = 0L
+  var events = 0L
   var nanoseconds = 0L
   var lastEventNanoseconds = 0L
 }
@@ -22,7 +22,7 @@ class Timer {
   val totalEvent = TimerEvent("Total")
 
   def apply[R](tag: String)(block: => R): R = {
-    if(enabled) {
+    if (enabled) {
       val t0 = System.nanoTime()
       val result = block // call-by-name
       val t1 = System.nanoTime()
@@ -36,8 +36,7 @@ class Timer {
       totalEvent.nanoseconds += delta
       totalEvent.lastEventNanoseconds = delta
       result
-    }
-    else {
+    } else {
       block
     }
   }
@@ -59,7 +58,7 @@ class Timer {
     timingLog.get(tag) match {
       case Some(entry) =>
         prettyEntry(entry)
-      case _           => ""
+      case _ => ""
     }
   }
 
@@ -68,7 +67,7 @@ class Timer {
       case Some(entry) =>
         val lastEventSeconds = entry.lastEventNanoseconds.toDouble / Timer.TenTo9th
         s"$lastEventSeconds"
-      case _           => ""
+      case _ => ""
     }
   }
 

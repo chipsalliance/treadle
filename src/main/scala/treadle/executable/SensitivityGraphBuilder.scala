@@ -13,10 +13,10 @@ class SensitivityGraphBuilder {
   val parentsOf:  MutableDiGraph[Symbol] = new MutableDiGraph[Symbol]
 
   def addSensitivity(drivingSymbol: Symbol, sensitiveSymbol: Symbol): Unit = {
-    if(!childrenOf.contains(drivingSymbol)) childrenOf.addVertex(drivingSymbol)
-    if(!childrenOf.contains(sensitiveSymbol)) childrenOf.addVertex(sensitiveSymbol)
-    if(!parentsOf.contains(drivingSymbol)) parentsOf.addVertex(drivingSymbol)
-    if(!parentsOf.contains(sensitiveSymbol)) parentsOf.addVertex(sensitiveSymbol)
+    if (!childrenOf.contains(drivingSymbol)) childrenOf.addVertex(drivingSymbol)
+    if (!childrenOf.contains(sensitiveSymbol)) childrenOf.addVertex(sensitiveSymbol)
+    if (!parentsOf.contains(drivingSymbol)) parentsOf.addVertex(drivingSymbol)
+    if (!parentsOf.contains(sensitiveSymbol)) parentsOf.addVertex(sensitiveSymbol)
 
     childrenOf.addPairWithEdge(drivingSymbol, sensitiveSymbol)
     parentsOf.addPairWithEdge(sensitiveSymbol, drivingSymbol)
@@ -34,8 +34,8 @@ class SensitivityGraphBuilder {
   def orphans(symbolTable: SymbolTable): Seq[Symbol] = {
     val o2 = childrenOf.findSources.filterNot { symbol =>
       symbolTable.isTopLevelInput(symbol.name) ||
-        symbolTable.isRegister(symbol.name) ||
-        symbol.firrtlType == ClockType
+      symbolTable.isRegister(symbol.name) ||
+      symbol.firrtlType == ClockType
     }.toSeq
     o2
   }

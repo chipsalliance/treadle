@@ -7,7 +7,6 @@ import treadle._
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.asyncreset.AsyncResetBlackBoxFactory
 
-
 class BlackBoxRealSpec extends FreeSpec with Matchers {
   "this tests black box implmentation of real numbers" - {
     val adderInput =

@@ -5,9 +5,10 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
+import logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.{FreeSpec, Matchers}
 
-class PrintfCorrectnessSpec extends FreeSpec with Matchers {
+class PrintfCorrectnessSpec extends FreeSpec with Matchers with LazyLogging {
   "printf needs to capture values at the proper time" in {
     val input =
       """
@@ -64,25 +65,31 @@ class PrintfCorrectnessSpec extends FreeSpec with Matchers {
         |    reg _GEN_7 : UInt<8>, clock with :
         |      reset => (UInt<1>("h0"), UInt<1>("h0")) @[PrintfTreadleVsVerilatorTest.scala 50:9]
         |    _GEN_7 <= tailPointer @[PrintfTreadleVsVerilatorTest.scala 50:9]
-        |    printf(clock, _T_25, "PRINTF:%d moveHead %d, moveTail %d, head %d, tail %d, nextTail %d\n", _GEN_3, moveHead, moveTail, _GEN_6, _GEN_7, nextTail) @[PrintfTreadleVsVerilatorTest.scala 50:9]
+        |    printf(clock, _T_25, "PRINTF:moveHead %d, moveTail %d, head %d, tail %d, nextTail %d\n", moveHead, moveTail, _GEN_6, _GEN_7, nextTail) @[PrintfTreadleVsVerilatorTest.scala 50:9]
         |
         |""".stripMargin
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))
       tester.step()
       tester.poke("moveTail", 1)
       tester.step()
       tester.step()
+      tester.step()
       tester.finish
     }
+
+    Logger.setLevel("treadle.PrintfCorrectnessSpec", LogLevel.Debug)
+    logger.debug(output.toString)
+
+    val outputString = output.toString
     Seq(
-      "PRINTF:0 moveHead 0, moveTail 0, head 0, tail 0, nextTail 1",
-      "PRINTF:1 moveHead 0, moveTail 1, head 0, tail 0, nextTail 2",
-      "PRINTF:2 moveHead 0, moveTail 1, head 0, tail 1, nextTail 3"
+      "PRINTF:moveHead  0, moveTail  0, head    0, tail    0, nextTail    1",
+      "PRINTF:moveHead  0, moveTail  1, head    0, tail    0, nextTail    2",
+      "PRINTF:moveHead  0, moveTail  1, head    0, tail    1, nextTail    3"
     ).foreach { targetLine =>
-      output.toString.contains(targetLine) should be (true)
+      outputString should include(targetLine)
     }
   }
 }

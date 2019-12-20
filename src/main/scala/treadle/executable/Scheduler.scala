@@ -18,16 +18,18 @@ import scala.collection.mutable
   */
 class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
 
-  var combinationalAssigns : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
-  val endOfCycleAssigns    : mutable.HashSet[Assigner] = new mutable.HashSet
+  var combinationalAssigns: mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val endOfCycleAssigns:    mutable.HashSet[Assigner] = new mutable.HashSet
 
-  val orphanedAssigns   : mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
+  val orphanedAssigns: mutable.ArrayBuffer[Assigner] = new mutable.ArrayBuffer
 
   private val toAssigner: mutable.HashMap[Symbol, Assigner] = new mutable.HashMap()
 
+  var executionEngineOpt: Option[ExecutionEngine] = None
+
   def addAssigner(
-    symbol: Symbol,
-    assigner: Assigner,
+    symbol:                   Symbol,
+    assigner:                 Assigner,
     excludeFromCombinational: Boolean = false
   ): Unit = {
 
@@ -36,7 +38,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
   }
 
   def addEndOfCycleAssigner(assigner: Assigner): Unit = {
-    if(! endOfCycleAssigns.exists(a => a.symbol == assigner.symbol)) {
+    if (!endOfCycleAssigns.exists(a => a.symbol == assigner.symbol)) {
       endOfCycleAssigns += assigner
     }
   }
@@ -52,28 +54,33 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
   def getAssignerInfo(symbol: Symbol): Info = {
     getAllAssigners.find(assigner => assigner.symbol == symbol) match {
       case Some(assigner) => assigner.info
-      case _ => NoInfo
+      case _              => NoInfo
     }
   }
 
   def getAssignerInfo(symbolName: String): Info = {
     symbolTable.get(symbolName) match {
       case Some(symbol) => getAssignerInfo(symbol)
-      case _ => NoInfo
+      case _            => NoInfo
     }
   }
 
   def inputChildrenAssigners(): Seq[Assigner] = {
     val assigners = {
-      symbolTable.getChildren(symbolTable.inputPortsNames.map(symbolTable.nameToSymbol(_)).toSeq)
-              .flatMap { symbol => toAssigner.get(symbol)}
-              .toSeq
+      symbolTable
+        .getChildren(symbolTable.inputPortsNames.map(symbolTable.nameToSymbol(_)).toSeq)
+        .flatMap { symbol =>
+          toAssigner.get(symbol)
+        }
+        .toSeq
     }
     assigners
   }
 
   def getAssigners(symbols: Seq[Symbol]): Seq[Assigner] = {
-    val assigners = symbols.flatMap { symbol => toAssigner.get(symbol) }
+    val assigners = symbols.flatMap { symbol =>
+      toAssigner.get(symbol)
+    }
     assigners
   }
 
@@ -82,7 +89,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
       case _: BlackBoxCycler => None
       case _: StopOp         => None
       case _: PrintfOp       => None
-      case assigner          => Some(assigner)
+      case assigner => Some(assigner)
     }
 
     setOrphanedAssigners(orphansAndSensitives)
@@ -111,7 +118,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     var index = 0
     val lastIndex = assigners.length
 
-    while(index < lastIndex) {
+    while (index < lastIndex) {
       assigners(index).run()
       index += 1
     }
@@ -162,18 +169,17 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
       val expression =
         expressionViewRenderer.render(assigner.symbol, engine.wallTime.currentTime, showValues = false)
 
-      if(expression.isEmpty) {
+      if (expression.isEmpty) {
         s"${assigner.symbol.name} :::"
-      }
-      else {
+      } else {
         s"${expression.toString}"
       }
     }
 
     s"Static assigns (${orphanedAssigns.size})\n" +
       orphanedAssigns.map(renderAssigner).mkString("\n") + "\n\n" +
-    s"Active assigns (${combinationalAssigns.size})\n" +
-    combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n"
+      s"Active assigns (${combinationalAssigns.size})\n" +
+      combinationalAssigns.map(renderAssigner).mkString("\n") + "\n\n"
   }
 }
 

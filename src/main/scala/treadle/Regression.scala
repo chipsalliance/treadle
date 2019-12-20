@@ -11,11 +11,10 @@ object Regression {
     var x = a
     var y = b
     var depth = 1
-    while(y > 0 ) {
+    while (y > 0) {
       if (x > y) {
         x -= y
-      }
-      else {
+      } else {
         y -= x
       }
       depth += 1
@@ -53,8 +52,7 @@ object Regression {
          |    y <= mux(io_e, io_b, GEN_1)
          |    io_z <= x
          |    io_v <= T_21
-    """
-              .stripMargin
+    """.stripMargin
 
     val manager = new TreadleOptionsManager {
       treadleOptions = treadleOptions.copy(
@@ -65,8 +63,9 @@ object Regression {
     }
 
     val values =
-      for {x <- 1 to 1000
-           y <- 1 to 100
+      for {
+        x <- 1 to 1000
+        y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
     val tester = TreadleTester(gcdFirrtl, manager)
@@ -74,7 +73,7 @@ object Regression {
     val startTime = System.nanoTime()
     tester.poke("clock", 1)
 
-    for((x, y, z) <- values) {
+    for ((x, y, z) <- values) {
       tester.step()
       tester.poke("io_a", x)
       tester.poke("io_b", y)
@@ -101,17 +100,11 @@ object Regression {
     tester.report()
   }
 
-
-
-
   def main(args: Array[String]): Unit = {
     manyValuesTest(20)
   }
 
-
 }
-
-
 
 /**
   * This regression demonstrates that a bad initial setting has been fixed
@@ -172,7 +165,7 @@ object MemoryUsageRegression {
 
     val tester = timer("tester assembly")(TreadleTester(input, optionsManager))
 
-    for(trial <- 0 until 4) {
+    for (trial <- 0 until 4) {
       timer(s"trial_${trial}_$testSize") {
         tester.poke("do_write", 1)
 
@@ -196,11 +189,10 @@ object MemoryUsageRegression {
   }
 
   def main(args: Array[String]): Unit = {
-    for(power <- 20 to 32) {
+    for (power <- 20 to 32) {
       val memorySize = 1 << power
       println(s"Memory size $memorySize")
-      memoryRegression(memorySize, 10000 )
+      memoryRegression(memorySize, 10000)
     }
   }
 }
-

@@ -9,8 +9,16 @@ import firrtl.passes.memlib.ReplSeqMem
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.transforms.BlackBoxSourceHelper
 import firrtl.{
-  AnnotationSeq, ChirrtlForm, CircuitForm, CircuitState,
-  HighForm, LowForm, SeqTransform, Transform, UnknownForm, passes
+  passes,
+  AnnotationSeq,
+  ChirrtlForm,
+  CircuitForm,
+  CircuitState,
+  HighForm,
+  LowForm,
+  SeqTransform,
+  Transform,
+  UnknownForm
 }
 import treadle.{TreadleCircuitStateAnnotation, TreadleFirrtlFormHint}
 import treadle.utils.{AugmentPrintf, FixupOps}
@@ -41,7 +49,7 @@ trait TreadlePhase extends Phase {
   * for some firrtl files
   */
 class TreadleLowFirrtlOptimization extends SeqTransform {
-  def inputForm: CircuitForm = LowForm
+  def inputForm:  CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
 
   def transforms: Seq[Transform] = Seq(
@@ -62,12 +70,12 @@ class ChirrtlToLow extends Transform {
   override def outputForm: CircuitForm = LowForm
 
   override protected def execute(state: CircuitState): CircuitState = {
-    if(state.form == ChirrtlForm || state.form == UnknownForm) {
+    if (state.form == ChirrtlForm || state.form == UnknownForm) {
       val transformSeq = new SeqTransform {
-        override def inputForm: CircuitForm = ChirrtlForm
+        override def inputForm:  CircuitForm = ChirrtlForm
         override def outputForm: CircuitForm = LowForm
 
-        override def transforms: Seq[Transform] =  getLoweringTransforms(ChirrtlForm, LowForm)
+        override def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, LowForm)
       }
       transformSeq.execute(state)
     } else {
@@ -82,12 +90,13 @@ class HighToLow extends Transform {
   override def outputForm: CircuitForm = LowForm
 
   override protected def execute(state: CircuitState): CircuitState = {
-    if(state.form == HighForm) {
+    if (state.form == HighForm) {
       val transformSeq = new SeqTransform {
-        override def inputForm: CircuitForm = HighForm
+        override def inputForm:  CircuitForm = HighForm
         override def outputForm: CircuitForm = LowForm
 
-        override def transforms: Seq[Transform] = Seq(new ReplSeqMem, RemoveCHIRRTL) ++ getLoweringTransforms(HighForm, LowForm)
+        override def transforms: Seq[Transform] =
+          Seq(new ReplSeqMem, RemoveCHIRRTL) ++ getLoweringTransforms(HighForm, LowForm)
       }
       transformSeq.execute(state)
     } else {
@@ -113,7 +122,8 @@ object PrepareAst extends TreadlePhase {
       new HighToLow,
       new TreadleLowFirrtlOptimization,
       new BlackBoxSourceHelper,
-      new FixupOps
+      new FixupOps,
+      AugmentPrintf
     )
   }
 }
