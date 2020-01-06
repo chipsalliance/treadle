@@ -240,11 +240,7 @@ object VCD extends LazyLogging {
       } else if (name == VCD.ResetName) {
         Some(name)
       } else if (name.startsWith(varPrefix)) {
-        if (newVarPrefix.nonEmpty) {
-          Some(newVarPrefix + name.drop(varPrefix.length))
-        } else {
-          Some(name)
-        }
+        Some(name)
       } else {
         None
       }
