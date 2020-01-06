@@ -12,6 +12,7 @@ import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
+import treadle.vcd.VCD
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
@@ -57,7 +58,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   private val writeVcd = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
   val vcdShowUnderscored: Boolean = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
   private val callResetAtStartUp = annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }
-  private val topName = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
+  val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
   private val verbose = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
   private val stageOptions = view[StageOptions](annotationSeq)
 

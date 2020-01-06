@@ -4,12 +4,13 @@ package treadle.vcd
 
 import firrtl.ExecutionOptionsManager
 
-case class VCDConfig(vcdSourceName:    String = "",
-                     vcdTargetName:    String = "",
-                     startScope:       String = "",
-                     renameStartScope: String = "",
-                     varPrefix:        String = "",
-                     newVarPrefix:     String = "")
+case class VCDConfig(vcdSourceName:     String = "",
+                     vcdTargetName:     String = "",
+                     startScope:        String = "",
+                     renameStartScope:  String = "",
+                     varPrefix:         String = "",
+                     newVarPrefix:      String = "",
+                     dumpHumanReadable: Boolean = false)
     extends firrtl.ComposableOptions {}
 
 trait HasVCDConfig {
@@ -36,7 +37,15 @@ trait HasVCDConfig {
     .text("rename startScope to this")
 
   parser
-    .opt[String]("<retain-vars-with-prefix>...")
+    .opt[Unit]("dump-human-readable")
+    .abbr("vdhr")
+    .foreach { x =>
+      vcdConfig = vcdConfig.copy(dumpHumanReadable = true)
+    }
+    .text("rename startScope to this")
+
+  parser
+    .opt[String]("retain-vars-with-prefix")
     .abbr("vrp")
     .foreach { x =>
       vcdConfig = vcdConfig.copy(varPrefix = x)
@@ -44,7 +53,7 @@ trait HasVCDConfig {
     .text("only vars that start with prefix will be kept")
 
   parser
-    .opt[String]("<new-var-prefix>...")
+    .opt[String]("new-var-prefix...")
     .abbr("vnvp")
     .foreach { x =>
       vcdConfig = vcdConfig.copy(newVarPrefix = x)
@@ -52,7 +61,8 @@ trait HasVCDConfig {
     .text("re-prefix vars with this string")
 
   parser
-    .arg[String]("<input-vcd-file>...")
+    .opt[String]("vcd-input")
+    .abbr("vi")
     .required()
     .foreach { x =>
       vcdConfig = vcdConfig.copy(vcdSourceName = x)

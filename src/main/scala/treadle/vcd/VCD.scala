@@ -36,7 +36,7 @@ object VCD extends LazyLogging {
   val numberOfIdChars: Int = idChars.length
 
   // A number of regular expressions to parse vcd lines
-  val SectionHeader: Regex = """^\$([^\$]+) *$""".r
+  val SectionHeader: Regex = """^\$([^$]+) *$""".r
   val EndSection:    Regex = """^\$end *$""".r
 
   val ScopedModule: Regex = """\s*(?i)(\S+)\s+(\S+)\s*""".r
@@ -44,7 +44,7 @@ object VCD extends LazyLogging {
 
   val VarSpec:            Regex = """\s*(\w+)\s+(\d+)\s+(\S+)\s+([\S ]+)\s*""".r
   val ValueChangeScalar:  Regex = """\s*(\d+)(\S+)\s*""".r
-  val ValueChangeVector:  Regex = """\s*([rbh])([0-9\.]+)\s*""".r
+  val ValueChangeVector:  Regex = """\s*([rbh])([0-9.]+)\s*""".r
   val ValueChangeVectorX: Regex = """\s*([rbh]).*x.*\s*""".r
   val TimeStamp:          Regex = """\s*#(\d+)\s*""".r
 
@@ -174,6 +174,7 @@ object VCD extends LazyLogging {
       }
     }
 
+    @scala.annotation.tailrec
     def processScope(): Unit = {
       if (words.hasNext) {
         words.next match {
@@ -239,11 +240,7 @@ object VCD extends LazyLogging {
       } else if (name == VCD.ResetName) {
         Some(name)
       } else if (name.startsWith(varPrefix)) {
-        if (newVarPrefix.nonEmpty) {
-          Some(newVarPrefix + name.drop(varPrefix.length))
-        } else {
-          Some(name)
-        }
+        Some(name)
       } else {
         None
       }
@@ -252,7 +249,7 @@ object VCD extends LazyLogging {
     def addVar(s: String): Unit = {
       s match {
         case VarSpec("wire", sizeString, idString, referenceString) =>
-          checkName(referenceString.split(" +").head) match {
+          checkName(referenceString.split(""" +""").head) match {
             case Some(varName) =>
               if (desiredScopeFound) {
                 val wire: Wire = Wire(varName, idString, sizeString.toInt, scopePath(currentScope).toArray)
@@ -279,6 +276,7 @@ object VCD extends LazyLogging {
       }
     }
 
+    @scala.annotation.tailrec
     def processVar(): Unit = {
       if (words.hasNext) {
         words.next match {
@@ -292,6 +290,7 @@ object VCD extends LazyLogging {
       }
     }
 
+    @scala.annotation.tailrec
     def processHeader(builder: StringBuilder): Unit = {
       if (words.hasNext) {
         if (words.next match {
@@ -372,6 +371,7 @@ object VCD extends LazyLogging {
       }
     }
 
+    @scala.annotation.tailrec
     def processSections(): Unit = {
       if (words.hasNext) {
         val nextWord = words.next
@@ -444,6 +444,17 @@ object VCD extends LazyLogging {
       )
 
       println(s"${vcd.info}")
+
+      if(config.dumpHumanReadable) {
+        val times = vcd.valuesAtTime.keys.toSeq.sorted
+        for(time <- times) {
+          println(s"TIME: $time   " + "-" * 100)
+          val changes = vcd.valuesAtTime(time).toSeq.sortBy(_.wire.fullName)
+          for(change <- changes) {
+            println(f"${change.wire.fullName}%64s -> ${change.value}%32x")
+          }
+        }
+      }
 
       if (config.vcdTargetName.nonEmpty) {
         vcd.write(config.vcdTargetName)
@@ -528,6 +539,7 @@ case class VCD(
       if (!scope.wires.contains(wire)) scope.wires += wire
     }
 
+    @scala.annotation.tailrec
     def findScope(currentScope: Scope, scopeList: List[String]): Option[Scope] = {
       scopeList match {
         case name :: tail =>
