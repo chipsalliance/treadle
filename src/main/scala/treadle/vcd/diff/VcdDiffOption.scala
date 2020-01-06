@@ -114,7 +114,7 @@ case object CompareWires extends NoTargetAnnotation with VcdDiffOption with HasS
       longOption = "compare-wires",
       toAnnotationSeq = _ => Seq(CompareWires),
       helpText = "Show comparison of wire tables between files",
-      shortOption = Some("cw"),
+      shortOption = Some("cw")
     )
   )
 }
@@ -125,7 +125,7 @@ case object UnmatchedWires extends NoTargetAnnotation with VcdDiffOption with Ha
       longOption = "show_unmatched-wires",
       toAnnotationSeq = _ => Seq(UnmatchedWires),
       helpText = "show all the wires that could not be matched up",
-      shortOption = Some("suw"),
+      shortOption = Some("suw")
     )
   )
 }
