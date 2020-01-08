@@ -45,11 +45,11 @@ class BoreSpec extends FreeSpec with Matchers {
 
     var annos: AnnotationSeq = Seq(
       FirrtlSourceAnnotation(input),
-      SourceAnnotation(ComponentName("x",ModuleName("BoreTestConstant",CircuitName("BoreTestTop"))),"x"),
-      DontTouchAnnotation(ReferenceTarget("BoreTestTop","BoreTestConstant",List(),"x",List())),
-      NoDedupAnnotation(ModuleName("BoreTestConstant",CircuitName("BoreTestTop"))),
-      SinkAnnotation(ComponentName("y",ModuleName("BoreTestExpect",CircuitName("BoreTestTop"))),"x"),
-      NoDedupAnnotation(ModuleName("BoreTestExpect",CircuitName("BoreTestTop"))),
+      SourceAnnotation(ComponentName("x", ModuleName("BoreTestConstant", CircuitName("BoreTestTop"))), "x"),
+      DontTouchAnnotation(ReferenceTarget("BoreTestTop", "BoreTestConstant", List(), "x", List())),
+      NoDedupAnnotation(ModuleName("BoreTestConstant", CircuitName("BoreTestTop"))),
+      SinkAnnotation(ComponentName("y", ModuleName("BoreTestExpect", CircuitName("BoreTestTop"))), "x"),
+      NoDedupAnnotation(ModuleName("BoreTestExpect", CircuitName("BoreTestTop"))),
       RunFirrtlTransformAnnotation(new firrtl.passes.wiring.WiringTransform)
     )
 

@@ -33,10 +33,9 @@ class InfoSpec extends FreeSpec with Matchers {
 
       try {
         tester.expect("out1", 24)
-      }
-      catch {
+      } catch {
         case t: TreadleException => println(t.getMessage)
-        case t: Throwable => throw t
+        case t: Throwable        => throw t
       }
       tester.expect("out2", 21)
 
@@ -46,7 +45,7 @@ class InfoSpec extends FreeSpec with Matchers {
 
     val output = outputBuffer.toString
 
-    output.contains("Assigned at:  @[HasInfo.scala 18:51]") should be (true)
+    output.contains("Assigned at:  @[HasInfo.scala 18:51]") should be(true)
 
     println(output.toString)
   }

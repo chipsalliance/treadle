@@ -11,15 +11,15 @@ import scala.collection.mutable
 class RollBackBuffer(dataStore: DataStore) extends HasDataArrays {
   var time: Long = 0L
 
-  val intData    : Array[Int]  = Array.fill(dataStore.numberOfInts)(0)
-  val longData   : Array[Long] = Array.fill(dataStore.numberOfLongs)(0)
-  val bigData    : Array[Big]  = Array.fill(dataStore.numberOfBigs)(0)
+  val intData:  Array[Int] = Array.fill(dataStore.numberOfInts)(0)
+  val longData: Array[Long] = Array.fill(dataStore.numberOfLongs)(0)
+  val bigData:  Array[Big] = Array.fill(dataStore.numberOfBigs)(0)
 
   def dump(dumpTime: Long): Unit = {
     time = dumpTime
-    Array.copy(dataStore.intData,  0, intData,  0, intData.length)
+    Array.copy(dataStore.intData, 0, intData, 0, intData.length)
     Array.copy(dataStore.longData, 0, longData, 0, longData.length)
-    Array.copy(dataStore.bigData,  0, bigData,  0, bigData.length)
+    Array.copy(dataStore.bigData, 0, bigData, 0, bigData.length)
   }
 }
 
@@ -30,16 +30,15 @@ class RollBackBuffer(dataStore: DataStore) extends HasDataArrays {
   */
 class RollBackBufferRing(dataStore: DataStore) {
   val numberOfBuffers: Int = dataStore.numberOfBuffers
-  val ringBuffer: Array[RollBackBuffer] = Array.fill(numberOfBuffers)(new RollBackBuffer(dataStore))
+  val ringBuffer:      Array[RollBackBuffer] = Array.fill(numberOfBuffers)(new RollBackBuffer(dataStore))
 
   var oldestBufferIndex: Int = 0
   var latestBufferIndex: Int = 0
 
   def currentNumberOfBuffers: Int = {
-    if(numberOfBuffers == 0) {
+    if (numberOfBuffers == 0) {
       0
-    }
-    else {
+    } else {
       (latestBufferIndex + numberOfBuffers - oldestBufferIndex) % numberOfBuffers
     }
   }
@@ -50,7 +49,7 @@ class RollBackBufferRing(dataStore: DataStore) {
     */
   def newestToOldestBuffers: Seq[RollBackBuffer] = {
     var list = List.empty[RollBackBuffer]
-    if(currentNumberOfBuffers > 0) {
+    if (currentNumberOfBuffers > 0) {
       var index = latestBufferIndex
       while (index != oldestBufferIndex) {
         list = list :+ ringBuffer(index)
@@ -72,11 +71,10 @@ class RollBackBufferRing(dataStore: DataStore) {
     * @return
     */
   def advanceAndGetNextBuffer(time: Long): RollBackBuffer = {
-    if(currentNumberOfBuffers > 0 && time < ringBuffer(latestBufferIndex).time) {
+    if (currentNumberOfBuffers > 0 && time < ringBuffer(latestBufferIndex).time) {
       // It's an error to record something earlier in time
       throw TreadleException(s"rollback buffer requested has earlier time that last used buffer")
-    }
-    else if(currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time)) {
+    } else if (currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time)) {
       // time has advanced so get a new buffer or re-use the oldest one
       // if time did not advance just fall through and newest buffer to be used again
       latestBufferIndex += 1
@@ -133,17 +131,14 @@ class RollBackBufferManager(dataStore: DataStore) {
     var foundHighClock = false
 
     rollBackBufferRing.newestToOldestBuffers.find { buffer =>
-      if(buffer.time >= time) {
+      if (buffer.time >= time) {
         false
-      }
-      else if(foundHighClock && buffer.intData(prevClockIndex) == 0) {
+      } else if (foundHighClock && buffer.intData(prevClockIndex) == 0) {
         true
-      }
-      else if(buffer.intData(clockIndex) > 0) {
+      } else if (buffer.intData(clockIndex) > 0) {
         foundHighClock = true
         false
-      }
-      else {
+      } else {
         foundHighClock = false
         false
       }

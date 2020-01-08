@@ -12,6 +12,7 @@ import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
+import treadle.vcd.VCD
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
@@ -32,31 +33,34 @@ import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
 class TreadleTester(annotationSeq: AnnotationSeq) {
 
   def this(input: String, optionsManager: HasTreadleSuite, circuitForm: CircuitForm = ChirrtlForm) = {
-    this(TreadleCompatibilityPhase.checkFormTransform(circuitForm, optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input)))
+    this(
+      TreadleCompatibilityPhase.checkFormTransform(circuitForm,
+                                                   optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input))
+    )
   }
 
   var expectationsMet = 0
 
-  treadle.random.setSeed(annotationSeq.collectFirst{ case RandomSeedAnnotation(seed) => seed }.getOrElse(0L))
+  treadle.random.setSeed(annotationSeq.collectFirst { case RandomSeedAnnotation(seed) => seed }.getOrElse(0L))
 
   val wallTime = UTC()
 
-  val engine         : ExecutionEngine  = ExecutionEngine(annotationSeq, wallTime)
+  val engine: ExecutionEngine = ExecutionEngine(annotationSeq, wallTime)
 
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
-      vcd.setTime(wallTime.currentTime)}
+      vcd.setTime(wallTime.currentTime)
+    }
   }
 
-  val resetName: String = annotationSeq.collectFirst{ case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
-  private val clockInfo = annotationSeq.collectFirst{ case ClockInfoAnnotation(cia) => cia }.getOrElse(Seq.empty)
-  private val writeVcd  = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
-  val vcdShowUnderscored: Boolean  = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
+  val resetName: String = annotationSeq.collectFirst { case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
+  private val clockInfo = annotationSeq.collectFirst { case ClockInfoAnnotation(cia) => cia }.getOrElse(Seq.empty)
+  private val writeVcd = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
+  val vcdShowUnderscored: Boolean = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
   private val callResetAtStartUp = annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }
-  private val topName = annotationSeq.collectFirst{ case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
-  private val verbose  = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
+  val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
+  private val verbose = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
   private val stageOptions = view[StageOptions](annotationSeq)
-
 
   def setVerbose(value: Boolean = true): Unit = {
     wallTime.isVerbose = value
@@ -65,18 +69,15 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   val startTime: Long = System.nanoTime()
 
-  val clockInfoList: Seq[ClockInfo] = if(clockInfo.isEmpty) {
-    if(engine.symbolTable.contains("clock")) {
+  val clockInfoList: Seq[ClockInfo] = if (clockInfo.isEmpty) {
+    if (engine.symbolTable.contains("clock")) {
       Seq(ClockInfo())
-    }
-    else if(engine.symbolTable.contains("clk")) {
+    } else if (engine.symbolTable.contains("clk")) {
       Seq(ClockInfo("clk"))
-    }
-    else {
+    } else {
       Seq()
     }
-  }
-  else {
+  } else {
     clockInfo
   }
 
@@ -134,18 +135,18 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   wallTime.setTime(0L)
 
-  if(engine.verbose) {
-    println(s"${"-"*60}\nStarting Treadle at ${Calendar.getInstance.getTime} WallTime: ${wallTime.currentTime}")
+  if (engine.verbose) {
+    println(s"${"-" * 60}\nStarting Treadle at ${Calendar.getInstance.getTime} WallTime: ${wallTime.currentTime}")
   }
 
-  if(writeVcd) {
+  if (writeVcd) {
     engine.makeVCDLogger(
       stageOptions.getBuildFileName(topName, Some(".vcd")),
       vcdShowUnderscored
     )
   }
 
-  if(callResetAtStartUp && engine.symbolTable.contains(resetName)) {
+  if (callResetAtStartUp && engine.symbolTable.contains(resetName)) {
     clockInfoList.headOption.foreach { clockInfo =>
       reset(clockInfo.period + clockInfo.initialOffset)
     }
@@ -169,7 +170,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
             }
             engine.evaluateCircuit()
           }
-          while(engine.dataStore(resetSymbol) != Big0) {
+          while (engine.dataStore(resetSymbol) != Big0) {
             stepper.run(1)
           }
 
@@ -209,32 +210,32 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     * @param ex exception causing the failure
     * @param msg optional message to be printed
     */
-  def fail(ex: Throwable, msg: Option[String ] = None): Nothing = {
+  def fail(ex: Throwable, msg: Option[String] = None): Nothing = {
     engine.writeVCD()
 
     msg match {
       case Some(s) => println(s)
-      case _ =>
+      case _       =>
     }
     fail(2)
     throw ex
   }
   def isOK: Boolean = failCode match {
     case None | Some(0) => true
-    case _ => false
+    case _              => false
   }
 
   def forceValue(name: String, value: BigInt): Unit = {
     engine.symbolTable.get(name) match {
       case Some(symbol) =>
         symbol.forcedValue = Some(value)
-        if(engine.symbolTable.isRegister(name)) {
+        if (engine.symbolTable.isRegister(name)) {
           engine.setValue(name, value, registerPoke = true)
         }
         engine.inputsChanged = true
       case _ => println(s"Error: forceValue($name, $value) $name not found in symbol table")
     }
-    if(engine.dataStore.leanMode) {
+    if (engine.dataStore.leanMode) {
       engine.scheduler.setLeanMode(false)
     }
   }
@@ -261,8 +262,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     try {
       val isRegister = engine.symbolTable.isRegister(name)
       engine.setValue(name, value, registerPoke = isRegister)
-    }
-    catch {
+    } catch {
       case ie: TreadleException =>
         fail(ie, Some(s"Error: poke($name, $value)"))
     }
@@ -274,13 +274,13 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     * @return A BigInt value currently set at name
     */
   def peek(name: String): BigInt = {
-    if(engine.inputsChanged) {
-      if(engine.verbose) {
+    if (engine.inputsChanged) {
+      if (engine.verbose) {
         println(s"peeking $name on stale circuit, refreshing START")
       }
       engine.evaluateCircuit()
       clockStepper.combinationalBump(combinationalDelay)
-      if(engine.verbose) {
+      if (engine.verbose) {
         println(s"peeking $name on stale circuit, refreshing DONE")
       }
     }
@@ -289,16 +289,15 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   /**
     * require that a value be present on the named component
- *
+    *
     * @param name component name
     * @param expectedValue the BigInt value required
     */
   def expect(name: String, expectedValue: BigInt, message: String = ""): Unit = {
     val value = peek(name)
-    if(value != expectedValue) {
+    if (value != expectedValue) {
       val info = engine.scheduler.getAssignerInfo(name)
-      val renderer = new ExpressionViewRenderer(
-        engine.dataStore, engine.symbolTable, engine.expressionViews)
+      val renderer = new ExpressionViewRenderer(engine.dataStore, engine.symbolTable, engine.expressionViews)
       val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
       fail(
         TreadleException(s"Error:expect($name, $expectedValue) got $value $message\n$calculation\nAssigned at: $info")
@@ -316,7 +315,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     * @param n cycles to perform
     */
   def step(n: Int = 1): Unit = {
-    if(engine.verbose) println(s"In step at ${wallTime.currentTime}")
+    if (engine.verbose) println(s"In step at ${wallTime.currentTime}")
     clockStepper.run(n)
   }
 
@@ -353,19 +352,18 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     */
   def expectMemory(name: String, index: Int, expectedValue: BigInt, message: String = ""): Unit = {
     val value = peekMemory(name, index)
-    if(value != expectedValue) {
-      val renderer = new ExpressionViewRenderer(
-        engine.dataStore, engine.symbolTable, engine.expressionViews)
+    if (value != expectedValue) {
+      val renderer = new ExpressionViewRenderer(engine.dataStore, engine.symbolTable, engine.expressionViews)
       val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
-      fail(TreadleException (s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+      fail(TreadleException(s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
     }
     expectationsMet += 1
   }
 
   def waveformValues(
-      symbolNames: Array[String] = Array[String](),
-      startCycle: Int = 0,
-      endCycle: Int = -1
+    symbolNames: Array[String] = Array[String](),
+    startCycle:  Int = 0,
+    endCycle:    Int = -1
   ): WaveformValues = {
     val symbols = if (symbolNames.length == 0) {
       engine.symbolTable.nameToSymbol.values.toArray
@@ -375,10 +373,11 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     }
 
     if (symbolNames.length == 0) {
-      symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
-        assert(engine.symbolTable.contains(symbolName),
-          s""""$symbolName" : argument is not an element of this circuit""")
-        symbols.update(counter, engine.symbolTable(symbolName))
+      symbolNames.zipWithIndex.foreach {
+        case (symbolName, counter) =>
+          assert(engine.symbolTable.contains(symbolName),
+                 s""""$symbolName" : argument is not an element of this circuit""")
+          symbols.update(counter, engine.symbolTable(symbolName))
       }
     }
 
@@ -405,7 +404,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
         throws an TreadleException on Stop (but maybe that will be made optional at some point)
         Best to leave this here for now, someone might catch the exception manually and still want to
         see this report which should include the Failed in that case
-      */
+     */
     def status: String = {
       engine.lastStopResult match {
         case Some(0) =>
@@ -424,6 +423,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
       s"$status $expectationsMet tests passed " +
       f"in $cycleCount cycles in $elapsedSeconds%.6f seconds ${cycleCount / elapsedSeconds}%.2f Hz"
   }
+
   /**
     * A simplistic report of the number of expects that passed
     */
@@ -439,6 +439,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 }
 
 object TreadleTester {
+
   /**
     * this convenience method avoids files laying around in current directory
     * @return
@@ -456,7 +457,7 @@ object TreadleTester {
     * @return
     */
   @deprecated("Use TreadleTester(annotationSeq) instead", "since ")
-  def apply(input : String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
+  def apply(input: String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
     val sourceAnnotation = FirrtlSourceAnnotation(input)
     TreadleTester(sourceAnnotation +: optionsManager.toAnnotationSeq)
   }

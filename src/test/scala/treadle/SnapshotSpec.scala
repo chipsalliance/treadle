@@ -5,7 +5,6 @@ package treadle
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
-
 // scalastyle:off magic.number
 class SnapshotSpec extends FreeSpec with Matchers {
   "Snapshots can be created" in {
@@ -57,7 +56,7 @@ class SnapshotSpec extends FreeSpec with Matchers {
     println(s"snapshot0\n$snapshot0")
     println(s"snapshot1\n$snapshot1")
 
-    snapshot1.contains(""""numberOfBuffers":4,""") should be (true)
+    snapshot1.contains(""""numberOfBuffers":4,""") should be(true)
 
     println(s"snapshot0\n$snapshot0")
     println(s"snapshot1\n$snapshot1")
@@ -66,7 +65,7 @@ class SnapshotSpec extends FreeSpec with Matchers {
 
     val snapshot2 = t.engine.dataStore.serialize
 
-    snapshot2 should be (snapshot0)
+    snapshot2 should be(snapshot0)
 
     println(s"snapshot2\n$snapshot2")
   }

@@ -6,7 +6,7 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 
 class FailSpec extends FlatSpec with Matchers {
-  behavior of "explict fail"
+  behavior.of("explict fail")
 
   it should "fail a test with an explicit failure code" in {
     val input =
@@ -21,6 +21,6 @@ class FailSpec extends FlatSpec with Matchers {
 
     tester.fail(3)
     tester.report()
-    tester.reportString should include ("Failed: Code 3")
+    tester.reportString should include("Failed: Code 3")
   }
 }

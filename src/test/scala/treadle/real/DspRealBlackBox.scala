@@ -10,6 +10,7 @@ object DspReal {
 }
 
 abstract class DspRealTwoArgumentToDouble extends ScalaBlackBox {
+
   /**
     * sub-classes must implement this two argument function
     *
@@ -22,7 +23,7 @@ abstract class DspRealTwoArgumentToDouble extends ScalaBlackBox {
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in1", "in2")
-      case _ => Seq.empty
+      case _     => Seq.empty
     }
   }
   def cycle(): Unit = {}
@@ -37,6 +38,7 @@ abstract class DspRealTwoArgumentToDouble extends ScalaBlackBox {
 }
 
 abstract class DspRealOneArgumentToDouble extends ScalaBlackBox {
+
   /**
     * sub-classes must implement this two argument function
     *
@@ -48,7 +50,7 @@ abstract class DspRealOneArgumentToDouble extends ScalaBlackBox {
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in")
-      case _ => Seq.empty
+      case _     => Seq.empty
     }
   }
   def cycle(): Unit = {}
@@ -62,6 +64,7 @@ abstract class DspRealOneArgumentToDouble extends ScalaBlackBox {
 }
 
 abstract class DspRealTwoArgumentToBoolean extends ScalaBlackBox {
+
   /**
     * sub-classes must implement this two argument function
     *
@@ -74,7 +77,7 @@ abstract class DspRealTwoArgumentToBoolean extends ScalaBlackBox {
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in1", "in2")
-      case _ => Seq.empty
+      case _     => Seq.empty
     }
   }
   def cycle(): Unit = {}
@@ -83,7 +86,7 @@ abstract class DspRealTwoArgumentToBoolean extends ScalaBlackBox {
     val doubleArg1 = bigIntBitsToDouble(arg1)
     val doubleArg2 = bigIntBitsToDouble(arg2)
     val booleanResult = twoOp(doubleArg1, doubleArg2)
-    val result = if(booleanResult) Big1 else Big0
+    val result = if (booleanResult) Big1 else Big0
     result
   }
 }
@@ -139,7 +142,7 @@ class DspRealToInt(val name: String) extends ScalaBlackBox {
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in")
-      case _ => Seq.empty
+      case _     => Seq.empty
     }
   }
   def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
@@ -153,7 +156,7 @@ class DspRealFromInt(val name: String) extends ScalaBlackBox {
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
       case "out" => Seq("in")
-      case _ => Seq.empty
+      case _     => Seq.empty
     }
   }
   def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {

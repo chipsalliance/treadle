@@ -19,8 +19,7 @@ case class BlackBoxCycler(
   clockSymbol:           Symbol,
   clockTransitionGetter: ClockTransitionGetter,
   info:                  Info
-)
-extends Assigner {
+) extends Assigner {
 
   override def run: FuncUnit = {
     val transition = clockTransitionGetter.transition
@@ -28,6 +27,7 @@ extends Assigner {
     if (isVerbose) {
       println(s"${symbol.name} : clock ${clockSymbol.name} state ($transition)")
     }
-    () => Unit
+    () =>
+      Unit
   }
 }

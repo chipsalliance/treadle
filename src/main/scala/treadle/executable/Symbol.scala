@@ -8,19 +8,19 @@ import treadle._
 import treadle.utils.{BitMasks, BitMasksBigs, BitUtils}
 
 case class Symbol(
-    name: String,
-    dataSize:   DataSize,
-    dataType:   DataType,
-    dataKind:   Kind,
-    bitWidth:   Int,
-    slots:      Int,
-    firrtlType: firrtl.ir.Type,
-    info:       Info
+  name:       String,
+  dataSize:   DataSize,
+  dataType:   DataType,
+  dataKind:   Kind,
+  bitWidth:   Int,
+  slots:      Int,
+  firrtlType: firrtl.ir.Type,
+  info:       Info
 ) {
   var index:          Int = -1
   var cardinalNumber: Int = -1
 
-  val masks:          BitMasksBigs = BitMasks.getBitMasksBigs(bitWidth)
+  val masks: BitMasksBigs = BitMasks.getBitMasksBigs(bitWidth)
 
   var forcedValue: Option[BigInt] = None
 
@@ -31,10 +31,9 @@ case class Symbol(
 
   def makeSInt(a: BigInt, bitWidth: Int): BigInt = {
     val b = a & masks.allBitsMask
-    if((b & masks.msbMask) > Big(0)) {
+    if ((b & masks.msbMask) > Big(0)) {
       b - masks.nextPowerOfTwo
-    }
-    else {
+    } else {
       b
     }
   }
@@ -52,23 +51,20 @@ case class Symbol(
     dataType match {
       case SignedInt =>
         val (lo, hi) = extremaOfSIntOfWidth(bitWidth)
-        if(bigInt > hi) {
+        if (bigInt > hi) {
           val result = ((bigInt - lo) & masks.allBitsMask) + lo
           result
-        }
-        else if(bigInt < lo) {
+        } else if (bigInt < lo) {
           val result = hi - ((bigInt.abs - (lo.abs + 1)) % masks.allBitsMask)
           result
-        }
-        else {
+        } else {
           bigInt
         }
       case UnsignedInt =>
-        if(bigInt < 0) {
+        if (bigInt < 0) {
           val (_, hi) = extremaOfUIntOfWidth(bitWidth)
           (hi + 1) - (bigInt.abs & masks.allBitsMask) & masks.allBitsMask
-        }
-        else {
+        } else {
           bigInt & masks.allBitsMask
         }
     }
@@ -89,14 +85,19 @@ case class Symbol(
 }
 
 object Symbol {
-  def apply(
-             name:       String,
-             firrtlType: firrtl.ir.Type,
-             firrtlKind: Kind = WireKind,
-             slots:      Int = 1,
-             info:       Info = NoInfo): Symbol = {
-    Symbol(name, DataSize(firrtlType), DataType(firrtlType),
-      firrtlKind, DataSize.getBitWidth(firrtlType), slots, firrtlType, info)
+  def apply(name:       String,
+            firrtlType: firrtl.ir.Type,
+            firrtlKind: Kind = WireKind,
+            slots:      Int = 1,
+            info:       Info = NoInfo): Symbol = {
+    Symbol(name,
+           DataSize(firrtlType),
+           DataType(firrtlType),
+           firrtlKind,
+           DataSize.getBitWidth(firrtlType),
+           slots,
+           firrtlType,
+           info)
   }
 
   def renderHeader: String = {
@@ -132,13 +133,11 @@ object DataSize {
   }
 
   def apply(bitWidth: Int): DataSize = {
-    if(bitWidth <= DataSize.IntThreshold) {
+    if (bitWidth <= DataSize.IntThreshold) {
       IntSize
-    }
-    else if(bitWidth <= DataSize.LongThreshold) {
+    } else if (bitWidth <= DataSize.LongThreshold) {
       LongSize
-    }
-    else {
+    } else {
       BigSize
     }
   }
@@ -164,8 +163,8 @@ object DataType {
 
   def apply(tpe: firrtl.ir.Type): DataType = {
     tpe match {
-      case _: firrtl.ir.SIntType    => SignedInt
-      case _: firrtl.ir.UIntType    => UnsignedInt
+      case _: firrtl.ir.SIntType => SignedInt
+      case _: firrtl.ir.UIntType => UnsignedInt
       case firrtl.ir.ClockType      => UnsignedInt
       case firrtl.ir.AsyncResetType => UnsignedInt
       case t =>

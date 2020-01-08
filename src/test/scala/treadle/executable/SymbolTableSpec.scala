@@ -34,8 +34,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          |    b3 <= b2
          |    node b4 = b3
          |    io_out2 <= b4
-    """
-        .stripMargin
+    """.stripMargin
 
     val simulator = TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl)))
 
@@ -44,7 +43,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     val keyToDependent = symbolTable.childrenOf
 
     // b3, b3/in, and io_out2 depend on clock
-    keyToDependent.reachableFrom(symbolTable("clock")).size should be (3)
+    keyToDependent.reachableFrom(symbolTable("clock")).size should be(3)
 
     symbolTable.registerNames.toList.sorted.foreach { key =>
       val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
@@ -74,8 +73,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          |    node a2 = a1
          |    node a3 = a2
          |    io_out1 <= a3
-         """
-        .stripMargin
+         """.stripMargin
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl)))
     val simulator = tester.engine
@@ -84,9 +82,9 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (0)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be(0)
 
-    childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
+    childrenOf.reachableFrom(symbolTable("io_in1")) should contain(symbolTable("io_out1"))
 
     println("All dependencies")
     symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
@@ -119,8 +117,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          |    a3 <= a2
          |    node a4 = a3
          |    io_out1 <= a4
-         """
-        .stripMargin
+         """.stripMargin
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl)))
     val simulator = tester.engine
@@ -130,7 +127,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
     val childrenOf = symbolTable.childrenOf
 
     // a3, a3/in and io_out1 depend on clock
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (3)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be(3)
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
 
@@ -173,8 +170,7 @@ class SymbolTableSpec extends FreeSpec with Matchers {
          |
          |    node a4 = add(a3, b3)
          |    io_out1 <= a4
-         """
-        .stripMargin
+         """.stripMargin
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl)))
     val simulator = tester.engine
@@ -183,12 +179,12 @@ class SymbolTableSpec extends FreeSpec with Matchers {
 
     val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be (3)
+    childrenOf.reachableFrom(symbolTable("clock")).size should be(3)
 
-    childrenOf.reachableFrom(symbolTable("io_in1")) should contain (symbolTable("io_out1"))
+    childrenOf.reachableFrom(symbolTable("io_in1")) should contain(symbolTable("io_out1"))
     childrenOf.reachableFrom(symbolTable("io_in2")) should not contain symbolTable("io_out1")
-    childrenOf.reachableFrom(symbolTable("io_in2")) should contain (symbolTable("b3/in"))
-    childrenOf.reachableFrom(symbolTable("b3")) should contain (symbolTable("io_out1"))
+    childrenOf.reachableFrom(symbolTable("io_in2")) should contain(symbolTable("b3/in"))
+    childrenOf.reachableFrom(symbolTable("b3")) should contain(symbolTable("io_out1"))
 
     val inputChildren = symbolTable
       .getChildren(symbolTable.inputPortsNames.map(symbolTable(_)).toSeq)
@@ -218,45 +214,43 @@ class SymbolTableSpec extends FreeSpec with Matchers {
   """Should report combinational loop""" in {
     val simpleFirrtl: String =
       s"""
-          |circuit HasLoop :
-          |  module SubModule :
-          |    input in1 : UInt<1>
-          |    input in2 : UInt<16>
-          |    input in3 : UInt<16>
-          |    output out1 : UInt<16>
-          |
-          |    out1 <= mux(in1, in2, in3)
-          |
-          |  module HasLoop :
-          |    input clock : Clock
-          |    input reset : UInt<1>
-          |    input io_in1 : UInt<16>
-          |    input io_in2 : UInt<16>
-          |    output io_out1 : UInt<17>
-          |
-          |    reg b3 : UInt<16>, clock with :
-          |      reset => (UInt<1>("h0"), b3)
-          |
-          |    node a1 = io_in1
-          |    node a2 = io_in2
-          |    b3 <= a2
-          |
-          |    inst sub of SubModule
-          |
-          |    sub.in1 <= io_in1
-          |    sub.in2 <= io_out1
-          |    sub.in3 <= b3
-          |
-          |    io_out1 <= sub.out1
-       """
-              .stripMargin
+         |circuit HasLoop :
+         |  module SubModule :
+         |    input in1 : UInt<1>
+         |    input in2 : UInt<16>
+         |    input in3 : UInt<16>
+         |    output out1 : UInt<16>
+         |
+         |    out1 <= mux(in1, in2, in3)
+         |
+         |  module HasLoop :
+         |    input clock : Clock
+         |    input reset : UInt<1>
+         |    input io_in1 : UInt<16>
+         |    input io_in2 : UInt<16>
+         |    output io_out1 : UInt<17>
+         |
+         |    reg b3 : UInt<16>, clock with :
+         |      reset => (UInt<1>("h0"), b3)
+         |
+         |    node a1 = io_in1
+         |    node a2 = io_in2
+         |    b3 <= a2
+         |
+         |    inst sub of SubModule
+         |
+         |    sub.in1 <= io_in1
+         |    sub.in2 <= io_out1
+         |    sub.in3 <= b3
+         |
+         |    io_out1 <= sub.out1
+       """.stripMargin
 
     try {
       TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl), DontCheckCombLoopsAnnotation))
-    }
-    catch {
+    } catch {
       case c: CyclicException =>
-        c.node.asInstanceOf[Symbol].name should be ("sub.out1")
+        c.node.asInstanceOf[Symbol].name should be("sub.out1")
 
     }
   }

@@ -4,7 +4,14 @@ package treadle.primops
 
 import firrtl.stage.FirrtlSourceAnnotation
 import treadle.executable._
-import treadle.{BitTwiddlingUtils, ShowFirrtlAtLoadAnnotation, TreadleTester, VerboseAnnotation, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{
+  extremaOfSIntOfWidth,
+  extremaOfUIntOfWidth,
+  BitTwiddlingUtils,
+  ShowFirrtlAtLoadAnnotation,
+  TreadleTester,
+  VerboseAnnotation
+}
 import org.scalatest.{FreeSpec, Matchers}
 
 // scalastyle:off magic.number
@@ -28,8 +35,8 @@ class ShlShrDshlDshr extends FreeSpec with Matchers {
         //    f" << $b%5d " +
         //    f" $staticExpected%5d (${Render.binary(staticExpected, outBitWidthMax)})")
 
-        staticShifter() should be (staticExpected)
-        dynamicShifter() should be (staticExpected)
+        staticShifter() should be(staticExpected)
+        dynamicShifter() should be(staticExpected)
       }
     }
 
@@ -57,21 +64,27 @@ class ShlShrDshlDshr extends FreeSpec with Matchers {
 
       val t = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
 
-      val intInput = BigInt( "1234", 16)
+      val intInput = BigInt("1234", 16)
       val longInput = BigInt("123456789abc", 16)
       t.poke("intInput", intInput)
       t.poke("longInput", longInput)
 
       val intToLong: BigInt = t.peek("intToLong")
-      val intToBig  = t.peek("intToBig")
+      val intToBig = t.peek("intToBig")
       val longToBig = t.peek("longToBig")
 
-      println(f"intInput  ${intInput.toString(16)} << 32 yields long ${intToLong.toString(16)} with ${intToLong.bitLength}")
-      println(f"intInput  ${intInput.toString(16)} << 60 yields big  ${intToBig.toString(16)}  with ${intToBig.bitLength}")
-      println(f"longInput ${intInput.toString(16)} << 30 yields big  ${longToBig.toString(16)} with ${longToBig.bitLength}")
+      println(
+        f"intInput  ${intInput.toString(16)} << 32 yields long ${intToLong.toString(16)} with ${intToLong.bitLength}"
+      )
+      println(
+        f"intInput  ${intInput.toString(16)} << 60 yields big  ${intToBig.toString(16)}  with ${intToBig.bitLength}"
+      )
+      println(
+        f"longInput ${intInput.toString(16)} << 30 yields big  ${longToBig.toString(16)} with ${longToBig.bitLength}"
+      )
 
       t.expect("intToLong", BigInt("123400000000", 16))
-      t.expect("intToBig",  BigInt("1234000000000000000", 16))
+      t.expect("intToBig", BigInt("1234000000000000000", 16))
       t.expect("longToBig", BigInt("123456789abc00000000", 16))
     }
 
@@ -93,8 +106,8 @@ class ShlShrDshlDshr extends FreeSpec with Matchers {
         //   f" << $b%5d " +
         //   f" $staticExpected%5d (${Render.binary(staticExpected, outBitWidthMax)})")
 
-        staticShifter() should be (staticExpected)
-        dynamicShifter() should be (staticExpected)
+        staticShifter() should be(staticExpected)
+        dynamicShifter() should be(staticExpected)
       }
     }
   }
@@ -118,8 +131,8 @@ class ShlShrDshlDshr extends FreeSpec with Matchers {
         //    f" >> $b%5d " +
         //    f" $staticExpected%5d (${Render.binary(staticExpected, outBitWidthMax)})")
 
-        staticShifter() should be (staticExpected)
-        dynamicShifter() should be (staticExpected)
+        staticShifter() should be(staticExpected)
+        dynamicShifter() should be(staticExpected)
       }
     }
 
@@ -141,8 +154,8 @@ class ShlShrDshlDshr extends FreeSpec with Matchers {
         //   f" >> $b%5d " +
         //   f" $staticExpected%5d (${Render.binary(staticExpected, outBitWidthMax)})")
 
-        staticShifter() should be (staticExpected)
-        dynamicShifter() should be (staticExpected)
+        staticShifter() should be(staticExpected)
+        dynamicShifter() should be(staticExpected)
       }
     }
   }

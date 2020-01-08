@@ -6,7 +6,6 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 import treadle.TreadleTester
 
-
 // scalastyle:off magic.number
 class ClockMadnessSpec extends FreeSpec with Matchers {
   val input: String =
@@ -44,13 +43,13 @@ class ClockMadnessSpec extends FreeSpec with Matchers {
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
     tester.poke("io_enable", 0)
-    for(_ <- 0 until 10) {
+    for (_ <- 0 until 10) {
       println(s"counter = ${tester.peek("io_count")}")
       tester.step()
     }
 
     tester.poke("io_enable", 1)
-    for(_ <- 0 until 10) {
+    for (_ <- 0 until 10) {
       println(s"counter = ${tester.peek("io_count")}")
       tester.step()
     }

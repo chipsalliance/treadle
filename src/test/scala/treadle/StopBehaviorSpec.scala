@@ -60,7 +60,7 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
       tester.step()
     }
 
-    tester.reportString should include ("Failed: Stop result 47")
+    tester.reportString should include("Failed: Stop result 47")
   }
 
   "stop should say stopped if return value is 0" in {
@@ -88,9 +88,9 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
       tester.step(100)
       tester.finish
     }
-    caught.getMessage should include ("Stopped: result 0")
+    caught.getMessage should include("Stopped: result 0")
 
-    tester.getStopResult should be (Some(0))
+    tester.getStopResult should be(Some(0))
   }
 
   "stop should say failed if return value is > 0" in {
@@ -118,8 +118,8 @@ class StopBehaviorSpec extends FreeSpec with Matchers {
       tester.step(100)
       tester.finish
     }
-    caught.getMessage should include ("Failure Stop: result 44")
+    caught.getMessage should include("Failure Stop: result 44")
 
-    tester.getStopResult should be (Some(44))
+    tester.getStopResult should be(Some(44))
   }
 }

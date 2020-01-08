@@ -5,7 +5,7 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 
 class LifeCellSpec extends FlatSpec with Matchers {
-  behavior of "A Conway Life cell"
+  behavior.of("A Conway Life cell")
 
   it should "observe neighbor transition rules" in {
     val input =
@@ -56,19 +56,24 @@ class LifeCellSpec extends FlatSpec with Matchers {
       tester.step()
       tester.poke("reset", 0)
       tester.poke("io_running", 0)
-      tester.poke("io_set_alive", if(alive) 1 else 0)
-      tester.poke("io_set_dead",  if(alive) 0 else 1)
+      tester.poke("io_set_alive", if (alive) 1 else 0)
+      tester.poke("io_set_dead", if (alive) 0 else 1)
       tester.step()
       tester.poke("io_running", 1)
       tester.poke("io_set_alive", 0)
-      tester.poke("io_set_dead",  0)
+      tester.poke("io_set_dead", 0)
     }
 
     // scalastyle:off parameter.number
-    def setNeighborsIgnoreCenter(
-                       ntl: Int, ntc: Int, ntr: Int,
-                       nml: Int, nmc: Int, nmr: Int,
-                       nbl: Int, nbc: Int, nbr: Int): Unit = {
+    def setNeighborsIgnoreCenter(ntl: Int,
+                                 ntc: Int,
+                                 ntr: Int,
+                                 nml: Int,
+                                 nmc: Int,
+                                 nmr: Int,
+                                 nbl: Int,
+                                 nbc: Int,
+                                 nbr: Int): Unit = {
       // center "neighbor" is the value of the cell itself
       //        tester.poke("io_set_alive", nmc)
       tester.poke("io_top_left", ntl)
@@ -86,27 +91,21 @@ class LifeCellSpec extends FlatSpec with Matchers {
     setAlive(true)
     // dead cell with no neighbors stays dead
     setNeighborsIgnoreCenter(
-      0,0,0,
-      0,0,0,
-      0,0,0
+      0, 0, 0, 0, 0, 0, 0, 0, 0
     )
     tester.step()
     tester.expect("io_is_alive", 0)
 
     // dead cell with > 3 neighbors stays dead
     setNeighborsIgnoreCenter(
-      1,1,1,
-      1,0,1,
-      1,1,1
+      1, 1, 1, 1, 0, 1, 1, 1, 1
     )
     tester.step()
     tester.expect("io_is_alive", 0)
 
     // live cell with > 3 neighbors stays dead
     setNeighborsIgnoreCenter(
-      1,1,1,
-      1,1,1,
-      1,1,1
+      1, 1, 1, 1, 1, 1, 1, 1, 1
     )
     tester.step()
     tester.expect("io_is_alive", 0)
@@ -114,52 +113,40 @@ class LifeCellSpec extends FlatSpec with Matchers {
     // dead cell with exactly three neighbors becomes alive
     setAlive(false)
     setNeighborsIgnoreCenter(
-      1,0,0,
-      1,0,0,
-      1,0,0
+      1, 0, 0, 1, 0, 0, 1, 0, 0
     )
     tester.step()
     tester.expect("io_is_alive", 1)
     setNeighborsIgnoreCenter(
-      1,0,0,
-      0,0,1,
-      0,1,0
+      1, 0, 0, 0, 0, 1, 0, 1, 0
     )
     tester.step()
     tester.expect("io_is_alive", 1)
 
     // live cell with one neighbor dies
     setNeighborsIgnoreCenter(
-      0,0,0,
-      0,1,1,
-      0,0,0
+      0, 0, 0, 0, 1, 1, 0, 0, 0
     )
     tester.step()
     tester.expect("io_is_alive", 0)
 
     // live cell with exactly three neighbors stays alive
     setNeighborsIgnoreCenter(
-      1,0,0,
-      1,1,0,
-      1,0,0
+      1, 0, 0, 1, 1, 0, 1, 0, 0
     )
     tester.step()
     tester.expect("io_is_alive", 1)
 
     // live cell with exactly four neighbors dies
     setNeighborsIgnoreCenter(
-      1,0,0,
-      1,1,1,
-      1,0,0
+      1, 0, 0, 1, 1, 1, 1, 0, 0
     )
     tester.step()
     tester.expect("io_is_alive", 0)
 
     // test set_alive
     setNeighborsIgnoreCenter(
-      0,0,0,
-      0,0,0,
-      0,0,0
+      0, 0, 0, 0, 0, 0, 0, 0, 0
     )
 
     tester.step()

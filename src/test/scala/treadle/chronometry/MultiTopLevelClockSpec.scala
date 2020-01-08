@@ -9,7 +9,7 @@ import treadle.{CallResetAtStartupAnnotation, ClockInfoAnnotation, TreadleTester
 
 // scalastyle:off magic.number
 class MultiTopLevelClockSpec extends FreeSpec with Matchers {
-  val input : String =
+  val input: String =
     """
       |circuit GotClocks : @[:@2.0]
       |  module GotClocks : @[:@14.2]
@@ -37,14 +37,17 @@ class MultiTopLevelClockSpec extends FreeSpec with Matchers {
     val (period1, period2) = (34, 38)
     val options = Seq(
       CallResetAtStartupAnnotation,
-      ClockInfoAnnotation(Seq(
-        ClockInfo("clock1", period = period1, 1000), ClockInfo("clock2", period = period2, initialOffset = 1017)
-      ))
+      ClockInfoAnnotation(
+        Seq(
+          ClockInfo("clock1", period = period1, 1000),
+          ClockInfo("clock2", period = period2, initialOffset = 1017)
+        )
+      )
     )
 
     val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
 
-    for(_ <- 0 until period1 * period2 + 10) {
+    for (_ <- 0 until period1 * period2 + 10) {
       println(s"state = ${tester.peek("out1")}, ${tester.peek("out2")}")
       tester.step()
     }

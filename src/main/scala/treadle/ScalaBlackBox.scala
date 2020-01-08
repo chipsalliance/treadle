@@ -68,8 +68,7 @@ trait ScalaBlackBox {
   /**
     * Add any parameters to the black box implementation
     */
-  def setParams(params: Seq[Param]): Unit = {
-  }
+  def setParams(params: Seq[Param]): Unit = {}
 }
 
 /**

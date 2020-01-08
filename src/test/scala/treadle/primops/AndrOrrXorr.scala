@@ -7,7 +7,6 @@ import treadle.executable._
 import treadle._
 import org.scalatest.{FreeSpec, Matchers}
 
-
 // scalastyle:off magic.number
 class AndrOrrXorr extends FreeSpec with Matchers {
   "BitReductions should pass a basic test" - {
@@ -84,19 +83,19 @@ class AndrOrrXorr extends FreeSpec with Matchers {
             case IntSize =>
               (
                 Big(AndrInts(() => i.toInt, bitWidth).apply()),
-                Big(OrrInts(()  => i.toInt, bitWidth).apply()),
+                Big(OrrInts(() => i.toInt, bitWidth).apply()),
                 Big(XorrInts(() => i.toInt, bitWidth).apply())
               )
             case LongSize =>
               (
                 Big(AndrLongs(() => i.toLong, bitWidth).apply()),
-                Big(OrrLongs(()  => i.toLong, bitWidth).apply()),
+                Big(OrrLongs(() => i.toLong, bitWidth).apply()),
                 Big(XorrLongs(() => i.toLong, bitWidth).apply())
               )
             case BigSize =>
               (
                 AndrBigs(() => i, bitWidth).apply(),
-                OrrBigs(() => i,  bitWidth).apply(),
+                OrrBigs(() => i, bitWidth).apply(),
                 XorrBigs(() => i, bitWidth).apply()
               )
           }
@@ -109,7 +108,7 @@ class AndrOrrXorr extends FreeSpec with Matchers {
           // println(s"bitWidth $bitWidth i $i orrResult $orrResult expected $orrExpected")
 
           andrResult should be(andrExpected)
-          orrResult  should be(orrExpected)
+          orrResult should be(orrExpected)
           xorrResult should be(xorrExpected)
         }
       }
@@ -142,15 +141,15 @@ class AndrOrrXorr extends FreeSpec with Matchers {
         """.stripMargin
 
       def scalaXorReduce(x: BigInt, width: Int): Int = {
-        if(x.bitCount % 2 == 0) 0 else 1
+        if (x.bitCount % 2 == 0) 0 else 1
       }
 
       def scalaAndReduce(x: BigInt, width: Int): Int = {
-        if((0 until width).forall(i => x.testBit(i))) 1 else 0
+        if ((0 until width).forall(i => x.testBit(i))) 1 else 0
       }
 
       def scalaOrReduce(x: BigInt, width: Int): Int = {
-        if((0 until width).exists(i => x.testBit(i))) 1 else 0
+        if ((0 until width).exists(i => x.testBit(i))) 1 else 0
       }
 
       val t = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
@@ -185,19 +184,19 @@ class AndrOrrXorr extends FreeSpec with Matchers {
             case IntSize =>
               (
                 Big(AndrInts(() => i.toInt, bitWidth).apply()),
-                Big(OrrInts(()  => i.toInt, bitWidth).apply()),
+                Big(OrrInts(() => i.toInt, bitWidth).apply()),
                 Big(XorrInts(() => i.toInt, bitWidth).apply())
               )
             case LongSize =>
               (
                 Big(AndrLongs(() => i.toLong, bitWidth).apply()),
-                Big(OrrLongs(()  => i.toLong, bitWidth).apply()),
+                Big(OrrLongs(() => i.toLong, bitWidth).apply()),
                 Big(XorrLongs(() => i.toLong, bitWidth).apply())
               )
             case BigSize =>
               (
                 AndrBigs(() => i, bitWidth).apply(),
-                OrrBigs(() => i,  bitWidth).apply(),
+                OrrBigs(() => i, bitWidth).apply(),
                 XorrBigs(() => i, bitWidth).apply()
               )
           }
@@ -210,7 +209,7 @@ class AndrOrrXorr extends FreeSpec with Matchers {
 //          println(s"bitWidth $bitWidth i $i orrResult $orrResult expected $orrExpected")
 
           andrResult should be(andrExpected)
-          orrResult  should be(orrExpected)
+          orrResult should be(orrExpected)
           xorrResult should be(xorrExpected)
         }
       }

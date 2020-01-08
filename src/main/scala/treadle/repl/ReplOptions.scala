@@ -8,7 +8,8 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 import firrtl.stage.FirrtlFileAnnotation
 
-sealed trait ReplOption extends Unserializable { this: Annotation => }
+sealed trait ReplOption extends Unserializable { this: Annotation =>
+}
 
 case class OverrideOutputStream(outputStream: OutputStream) extends NoTargetAnnotation
 
@@ -98,5 +99,3 @@ case object TreadleReplRunScriptAtStartup extends NoTargetAnnotation with ReplOp
     )
   )
 }
-
-

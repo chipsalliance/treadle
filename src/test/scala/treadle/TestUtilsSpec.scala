@@ -5,27 +5,26 @@ import org.scalatest.{FlatSpec, Matchers}
 
 // scalastyle:off magic.number
 class TestUtilsSpec extends FlatSpec with Matchers {
-  behavior of "IntGenerator"
+  behavior.of("IntGenerator")
 
   it should "return a bunch of ints" in {
     val l = for (i <- IntWidthTestValuesGenerator(8, 256)) yield i
     val expected = List(8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
 //    println(l.mkString(","))
-    l.zip(expected.iterator).foreach { case (l1, e1) =>
-      l1 should be(e1)
+    l.zip(expected.iterator).foreach {
+      case (l1, e1) =>
+        l1 should be(e1)
     }
   }
   it should "return a allow negative  to positive range" in {
 
     val l = for (i <- IntWidthTestValuesGenerator(-256, 256)) yield i
-    val expected = List(
-      -256, -255, -129, -128, -127, -65, -64, -63, -33, -32, -31,
-      -17, -16, -15, -9, -8, -7, -5, -4, -3, -2, -1,
-      0, 1, 2, 3, 4, 5, 7, 8, 9,
-      15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
+    val expected = List(-256, -255, -129, -128, -127, -65, -64, -63, -33, -32, -31, -17, -16, -15, -9, -8, -7, -5, -4,
+      -3, -2, -1, 0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
 //    println(l.mkString(","))
-    l.zip(expected.iterator).foreach { case (l1, e1) =>
-      l1 should be(e1)
+    l.zip(expected.iterator).foreach {
+      case (l1, e1) =>
+        l1 should be(e1)
     }
   }
 
@@ -46,24 +45,24 @@ class TestUtilsSpec extends FlatSpec with Matchers {
   }
 
   it should "never repeat a value" in {
-    for(i <- -TestUtils.MaxTestingWidth to TestUtils.MaxTestingWidth) {
-      for(j <- i to TestUtils.MaxTestingWidth) {
+    for (i <- -TestUtils.MaxTestingWidth to TestUtils.MaxTestingWidth) {
+      for (j <- i to TestUtils.MaxTestingWidth) {
         val iterator = IntWidthTestValuesGenerator(i, j)
         var lastSeen = 0
-        if(iterator.hasNext()) {
+        if (iterator.hasNext()) {
           lastSeen = iterator.next
-          lastSeen should be (i)
-          for(k <- iterator) {
+          lastSeen should be(i)
+          for (k <- iterator) {
             k should be > lastSeen
             lastSeen = k
           }
-          lastSeen should be (j)
+          lastSeen should be(j)
         }
       }
     }
   }
 
-  behavior of "BigIntGenerator"
+  behavior.of("BigIntGenerator")
 
   it should "return a bunch of BigInts" in {
     //    val gen = IntGenerator(8, 256)
@@ -74,8 +73,9 @@ class TestUtilsSpec extends FlatSpec with Matchers {
     val l = for (i <- BigIntTestValuesGenerator(8, 256)) yield i
     val expected = List(8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
 //    println(l.mkString(","))
-    l.zip(expected.iterator).foreach { case (l1, e1) =>
-      l1 should be(e1)
+    l.zip(expected.iterator).foreach {
+      case (l1, e1) =>
+        l1 should be(e1)
     }
   }
   it should "return a allow negative  to positive range" in {
@@ -87,14 +87,12 @@ class TestUtilsSpec extends FlatSpec with Matchers {
     //
     //    }
     val l = for (i <- BigIntTestValuesGenerator(-256, 256)) yield i
-    val expected = List(
-      -256, -255, -129, -128, -127, -65, -64, -63, -33, -32, -31,
-      -17, -16, -15, -9, -8, -7, -5, -4, -3, -2, -1,
-      0, 1, 2, 3, 4, 5, 7, 8, 9,
-      15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
+    val expected = List(-256, -255, -129, -128, -127, -65, -64, -63, -33, -32, -31, -17, -16, -15, -9, -8, -7, -5, -4,
+      -3, -2, -1, 0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
 //    println(l.mkString(","))
-    l.zip(expected.iterator).foreach { case (l1, e1) =>
-      l1 should be(e1)
+    l.zip(expected.iterator).foreach {
+      case (l1, e1) =>
+        l1 should be(e1)
     }
 
   }
@@ -112,14 +110,14 @@ class TestUtilsSpec extends FlatSpec with Matchers {
   it should "work with very big numbers" in {
     //    for(i <- BigIntGenerator(-BigInt("1"*10, 2), BigInt("1"*10, 2))) {
     //    for(i <- BigIntGenerator(-8, BigInt("1"*100, 2))) {
-    for(i <- BigIntTestValuesGenerator(-BigInt("1"*100, 2), 8)) {
+    for (i <- BigIntTestValuesGenerator(-BigInt("1" * 100, 2), 8)) {
 //      println(s"$i")
     }
   }
 
   it should "work with very big numbers by specifying widths" in {
-    def testGenerator(startWidth: Int, finishWidth: Int): Unit ={
-      for(i <- BigIntTestValuesGenerator.fromWidths(startWidth, finishWidth)) {
+    def testGenerator(startWidth: Int, finishWidth: Int): Unit = {
+      for (i <- BigIntTestValuesGenerator.fromWidths(startWidth, finishWidth)) {
 //        print(s"$i ")
       }
 //      println()
@@ -146,7 +144,7 @@ class TestUtilsSpec extends FlatSpec with Matchers {
         var lastSeen = Big0
         if (iterator.hasNext()) {
           lastSeen = iterator.next
-          lastSeen should be (TestUtils.powerOfTwoFrom(i))
+          lastSeen should be(TestUtils.powerOfTwoFrom(i))
           for (k <- iterator) {
             k should be > lastSeen
             lastSeen = k

@@ -11,11 +11,10 @@ class GCDTester extends FlatSpec with Matchers {
     var x = a
     var y = b
     var depth = 1
-    while(y > 0 ) {
+    while (y > 0) {
       if (x > y) {
         x -= y
-      }
-      else {
+      } else {
         y -= x
       }
       depth += 1
@@ -23,44 +22,44 @@ class GCDTester extends FlatSpec with Matchers {
     (x, depth)
   }
 
-  behavior of "GCD"
+  behavior.of("GCD")
 
   //scalastyle:off
   def sizableTest(width: Int) {
     val gcdFirrtl: String =
       s"""
-      |circuit GCD :
-      |  module GCD :
-      |    input clock : Clock
-      |    input reset : UInt<1>
-      |    input io_a : UInt<$width>
-      |    input io_b : UInt<$width>
-      |    input io_e : UInt<1>
-      |    output io_z : UInt<$width>
-      |    output io_v : UInt<1>
-      |    reg x : UInt<$width>, clock with :
-      |      reset => (UInt<1>("h0"), x)
-      |    reg y : UInt<$width>, clock with :
-      |      reset => (UInt<1>("h0"), y)
-      |    node T_13 = gt(x, y)
-      |    node T_14 = sub(x, y)
-      |    node T_15 = tail(T_14, 1)
-      |    node T_17 = eq(T_13, UInt<1>("h0"))
-      |    node T_18 = sub(y, x)
-      |    node T_19 = tail(T_18, 1)
-      |    node T_21 = eq(y, UInt<1>("h0"))
-      |    node GEN_0 = mux(T_13, T_15, x)
-      |    x <= mux(io_e, io_a, GEN_0)
-      |    node GEN_1 = mux(T_17, T_19, y)
-      |    y <= mux(io_e, io_b, GEN_1)
-      |    io_z <= x
-      |    io_v <= T_21
-    """
-        .stripMargin
+         |circuit GCD :
+         |  module GCD :
+         |    input clock : Clock
+         |    input reset : UInt<1>
+         |    input io_a : UInt<$width>
+         |    input io_b : UInt<$width>
+         |    input io_e : UInt<1>
+         |    output io_z : UInt<$width>
+         |    output io_v : UInt<1>
+         |    reg x : UInt<$width>, clock with :
+         |      reset => (UInt<1>("h0"), x)
+         |    reg y : UInt<$width>, clock with :
+         |      reset => (UInt<1>("h0"), y)
+         |    node T_13 = gt(x, y)
+         |    node T_14 = sub(x, y)
+         |    node T_15 = tail(T_14, 1)
+         |    node T_17 = eq(T_13, UInt<1>("h0"))
+         |    node T_18 = sub(y, x)
+         |    node T_19 = tail(T_18, 1)
+         |    node T_21 = eq(y, UInt<1>("h0"))
+         |    node GEN_0 = mux(T_13, T_15, x)
+         |    x <= mux(io_e, io_a, GEN_0)
+         |    node GEN_1 = mux(T_17, T_19, y)
+         |    y <= mux(io_e, io_b, GEN_1)
+         |    io_z <= x
+         |    io_v <= T_21
+    """.stripMargin
 
     val values =
-      for {x <- 10 to 100
-           y <- 10 to 100
+      for {
+        x <- 10 to 100
+        y <- 10 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(gcdFirrtl)))
@@ -68,7 +67,7 @@ class GCDTester extends FlatSpec with Matchers {
     val startTime = System.nanoTime()
     tester.poke("clock", 1)
 
-    for((x, y, z) <- values) {
+    for ((x, y, z) <- values) {
       tester.step()
       tester.poke("io_a", x)
       tester.poke("io_b", y)
@@ -102,38 +101,38 @@ class GCDTester extends FlatSpec with Matchers {
   def manyValuesTest(width: Int) {
     val gcdFirrtl: String =
       s"""
-      |circuit GCD :
-      |  module GCD :
-      |    input clock : Clock
-      |    input reset : UInt<1>
-      |    input io_a : UInt<$width>
-      |    input io_b : UInt<$width>
-      |    input io_e : UInt<1>
-      |    output io_z : UInt<$width>
-      |    output io_v : UInt<1>
-      |    reg x : UInt<$width>, clock with :
-      |      reset => (UInt<1>("h0"), x)
-      |    reg y : UInt<$width>, clock with :
-      |      reset => (UInt<1>("h0"), y)
-      |    node T_13 = gt(x, y)
-      |    node T_14 = sub(x, y)
-      |    node T_15 = tail(T_14, 1)
-      |    node T_17 = eq(T_13, UInt<1>("h0"))
-      |    node T_18 = sub(y, x)
-      |    node T_19 = tail(T_18, 1)
-      |    node T_21 = eq(y, UInt<1>("h0"))
-      |    node GEN_0 = mux(T_13, T_15, x)
-      |    x <= mux(io_e, io_a, GEN_0)
-      |    node GEN_1 = mux(T_17, T_19, y)
-      |    y <= mux(io_e, io_b, GEN_1)
-      |    io_z <= x
-      |    io_v <= T_21
-    """
-        .stripMargin
+         |circuit GCD :
+         |  module GCD :
+         |    input clock : Clock
+         |    input reset : UInt<1>
+         |    input io_a : UInt<$width>
+         |    input io_b : UInt<$width>
+         |    input io_e : UInt<1>
+         |    output io_z : UInt<$width>
+         |    output io_v : UInt<1>
+         |    reg x : UInt<$width>, clock with :
+         |      reset => (UInt<1>("h0"), x)
+         |    reg y : UInt<$width>, clock with :
+         |      reset => (UInt<1>("h0"), y)
+         |    node T_13 = gt(x, y)
+         |    node T_14 = sub(x, y)
+         |    node T_15 = tail(T_14, 1)
+         |    node T_17 = eq(T_13, UInt<1>("h0"))
+         |    node T_18 = sub(y, x)
+         |    node T_19 = tail(T_18, 1)
+         |    node T_21 = eq(y, UInt<1>("h0"))
+         |    node GEN_0 = mux(T_13, T_15, x)
+         |    x <= mux(io_e, io_a, GEN_0)
+         |    node GEN_1 = mux(T_17, T_19, y)
+         |    y <= mux(io_e, io_b, GEN_1)
+         |    io_z <= x
+         |    io_v <= T_21
+    """.stripMargin
 
     val values =
-      for {x <- 1 to 100
-           y <- 1 to 100
+      for {
+        x <- 1 to 100
+        y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(gcdFirrtl)))
@@ -141,7 +140,7 @@ class GCDTester extends FlatSpec with Matchers {
     val startTime = System.nanoTime()
     tester.poke("clock", 1)
 
-    for((x, y, z) <- values) {
+    for ((x, y, z) <- values) {
       tester.step()
       tester.poke("io_a", x)
       tester.poke("io_b", y)
@@ -168,7 +167,6 @@ class GCDTester extends FlatSpec with Matchers {
     tester.report()
 
   }
-
 
   it should "run with InterpretedTester at Int size 16" in {
     sizableTest(16)

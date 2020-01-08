@@ -39,8 +39,7 @@ class RegisterCycleTest extends FreeSpec with Matchers {
           |
         """.stripMargin
 
-
-      for(i <- 0 to 10) {
+      for (i <- 0 to 10) {
         println(s"experiment $i")
         scala.util.Random.setSeed(i.toLong)
         val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
@@ -99,7 +98,7 @@ class RegisterCycleTest extends FreeSpec with Matchers {
         tester.expect("io_Out", 1)
       }
 
-      output.toString.contains("io_Out <= 1") should be (true)
+      output.toString.contains("io_Out <= 1") should be(true)
     }
   }
 

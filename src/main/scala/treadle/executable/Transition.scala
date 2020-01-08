@@ -24,39 +24,37 @@ case class ClockTransitionGetter(clockSymbol: Symbol, prevClockSymbol: Symbol, d
   def isNegEdge: Boolean = intData(clockIndex) == 0 && intData(prevClockIndex) > 0
 
   def transition: Transition = {
-    if(isPosEdge) { PositiveEdge }
-    else if(isNegEdge) { NegativeEdge }
-    else { NoTransition }
+    if (isPosEdge) { PositiveEdge } else if (isNegEdge) { NegativeEdge } else { NoTransition }
   }
 }
 
 case class ClockBasedAssigner(
-  assigner: Assigner,
-  clockSymbol: Symbol,
-  prevClockSymbol: Symbol,
-  dataStore: DataStore,
+  assigner:           Assigner,
+  clockSymbol:        Symbol,
+  prevClockSymbol:    Symbol,
+  dataStore:          DataStore,
   requiredTransition: Transition
 ) extends Assigner {
 
   override val symbol: Symbol = assigner.symbol
-  override val info: Info = assigner.info
+  override val info:   Info = assigner.info
 
   private val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
 
   def runLean(): Unit = {
-    if(clockTransitionGetter.transition == requiredTransition) {
+    if (clockTransitionGetter.transition == requiredTransition) {
       assigner.run()
     }
   }
 
   def runFull(): Unit = {
-    if(clockTransitionGetter.transition == requiredTransition) {
+    if (clockTransitionGetter.transition == requiredTransition) {
       assigner.run()
-    }
-    else if(isVerbose) {
+    } else if (isVerbose) {
       println(
         s"${assigner.symbol.name} <= register not updated" +
-            s" ${clockSymbol.name} state ${clockTransitionGetter.transition} not the required $requiredTransition")
+          s" ${clockSymbol.name} state ${clockTransitionGetter.transition} not the required $requiredTransition"
+      )
     }
   }
 
@@ -64,6 +62,6 @@ case class ClockBasedAssigner(
 
   override def setLeanMode(isLean: Boolean): Unit = {
     assigner.setLeanMode(isLean)
-    run = if(isLean) runLean _ else runFull _
+    run = if (isLean) runLean _ else runFull _
   }
 }

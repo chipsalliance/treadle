@@ -7,13 +7,12 @@ import org.scalatest.{FreeSpec, Matchers}
 import treadle.{BitTwiddlingUtils, _}
 import treadle.executable._
 
-
 // scalastyle:off magic.number
 class CatBitsHeadTail extends FreeSpec with Matchers {
-  def f0(): Int = 0
-  def f1(): Int = 1
-  def f2(): Int = 2
-  def f3(): Int = 3
+  def f0():      Int = 0
+  def f1():      Int = 1
+  def f2():      Int = 2
+  def f3():      Int = 3
   def fMinus1(): Int = -1
   def fMinus2(): Int = -2
   def fMinus3(): Int = -3
@@ -28,9 +27,9 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
     "Cat should pass the following tests" - {
       def doCatCheck(num1: Big, width1: Int, num2: Big, width2: Int): Unit = {
         val got = (
-          CatInts(()  => num1.toInt,  width1, () => num2.toInt,  width2).apply(),
+          CatInts(() => num1.toInt, width1, () => num2.toInt, width2).apply(),
           CatLongs(() => num1.toLong, width1, () => num2.toLong, width2).apply(),
-          CatBigs(()  => num1,        width1, () => num2,        width2).apply()
+          CatBigs(() => num1, width1, () => num2, width2).apply()
         )
         val expected = (
           BitTwiddlingUtils.cat(num1, width1, num2, width2),
@@ -105,7 +104,7 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
         tester.poke("int_input_1", 1)
         tester.poke("int_input_2", -1)
 
-        val int_output   = tester.peek("int_output")
+        val int_output = tester.peek("int_output")
         println(s"peek int_output   0x${int_output.toString(16)}  $int_output")
 
         tester.expect("int_output", BigInt("1F", 16))
@@ -113,7 +112,7 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
         tester.poke("long_input_1", 3)
         tester.poke("long_input_2", -1)
 
-        val long_output   = tester.peek("long_output")
+        val long_output = tester.peek("long_output")
         println(s"peek long_output   0x${long_output.toString(16)}  $long_output")
 
         tester.expect("long_output", BigInt("3fffff", 16))
@@ -121,7 +120,7 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
         tester.poke("big_input_1", 7)
         tester.poke("big_input_2", -1)
 
-        val big_output   = tester.peek("big_output")
+        val big_output = tester.peek("big_output")
         println(s"peek big_output   0x${big_output.toString(16)}  $big_output")
 
         tester.expect("big_output", BigInt("7fffffffffffffffff", 16))
@@ -154,9 +153,9 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
     "Bits should bass the following tests" - {
       def doBitsCheck(i: Big, hi: Int, lo: Int, bitWidth: Int): Unit = {
         val got = (
-          BitsInts(() => i.toInt,   hi, lo, originalWidth = bitWidth).apply(),
+          BitsInts(() => i.toInt, hi, lo, originalWidth = bitWidth).apply(),
           BitsLongs(() => i.toLong, hi, lo, originalWidth = bitWidth).apply(),
-          BitsBigs(() => i,         hi, lo, originalWidth = bitWidth).apply()
+          BitsBigs(() => i, hi, lo, originalWidth = bitWidth).apply()
         )
         val expected = (
           BitTwiddlingUtils.bits(i, hi, lo, bitWidth),
@@ -173,7 +172,7 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
         val (lo, hi) = extremaOfSIntOfWidth(bitWidth)
 
         for {
-          i     <- lo to hi
+          i <- lo to hi
           loBit <- 0 until bitWidth
           hiBit <- loBit until bitWidth
         } {
@@ -184,7 +183,7 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
         val bitWidth = 4
         val (lo, hi) = extremaOfUIntOfWidth(bitWidth)
         for {
-          i     <- lo to hi
+          i <- lo to hi
           loBit <- 0 until bitWidth
           hiBit <- loBit until bitWidth
         } {
@@ -196,9 +195,9 @@ class CatBitsHeadTail extends FreeSpec with Matchers {
     "Head should bass the following tests" - {
       def doHeadCheck(i: Big, takeBits: Int, bitWidth: Int): Unit = {
         val got = (
-          HeadInts(() => i.toInt,   takeBits, originalWidth = bitWidth).apply(),
+          HeadInts(() => i.toInt, takeBits, originalWidth = bitWidth).apply(),
           HeadLongs(() => i.toLong, takeBits, originalWidth = bitWidth).apply(),
-          HeadBigs(() => i,         takeBits, originalWidth = bitWidth).apply()
+          HeadBigs(() => i, takeBits, originalWidth = bitWidth).apply()
         )
         val expected = (
           BitTwiddlingUtils.head(i, takeBits, bitWidth),

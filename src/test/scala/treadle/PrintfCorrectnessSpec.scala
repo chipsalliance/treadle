@@ -80,10 +80,8 @@ class PrintfCorrectnessSpec extends FreeSpec with Matchers with LazyLogging {
       tester.finish
     }
 
-
     Logger.setLevel("treadle.PrintfCorrectnessSpec", LogLevel.Debug)
     logger.debug(output.toString)
-
 
     val outputString = output.toString
     Seq(
@@ -91,7 +89,7 @@ class PrintfCorrectnessSpec extends FreeSpec with Matchers with LazyLogging {
       "PRINTF:moveHead  0, moveTail  1, head    0, tail    0, nextTail    2",
       "PRINTF:moveHead  0, moveTail  1, head    0, tail    1, nextTail    3"
     ).foreach { targetLine =>
-      outputString should include (targetLine)
+      outputString should include(targetLine)
     }
   }
 }

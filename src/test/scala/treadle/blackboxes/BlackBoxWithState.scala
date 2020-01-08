@@ -8,7 +8,6 @@ import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable._
 import treadle._
 
-
 // scalastyle:off magic.number
 /**
   * Demonstrates how a black box can maintain and change internal state
@@ -70,12 +69,11 @@ class BlackBoxWithState extends FreeSpec with Matchers {
   */
 class AccumulatorBlackBox(val name: String) extends ScalaBlackBox {
 
-  var ns : BigInt = 0
-  var ps : BigInt = 0
+  var ns:        BigInt = 0
+  var ps:        BigInt = 0
   var isInReset: Boolean = false
 
-  override def inputChanged(name: String, value: BigInt): Unit = {
-  }
+  override def inputChanged(name: String, value: BigInt): Unit = {}
 
   def outputDependencies(outputName: String): Seq[String] = {
     outputName match {
@@ -87,13 +85,13 @@ class AccumulatorBlackBox(val name: String) extends ScalaBlackBox {
   override def clockChange(transition: Transition, clockName: String): Unit = {
     transition match {
       case PositiveEdge =>
-        if(! isInReset) {
+        if (!isInReset) {
           ps = ns
         }
         ns = ps + 1
-        // println(s"blackbox:$name ps $ps ns $ns")
+      // println(s"blackbox:$name ps $ps ns $ns")
       case _ =>
-        // println(s"not positive edge, no action for cycle in $name")
+      // println(s"not positive edge, no action for cycle in $name")
     }
   }
 
