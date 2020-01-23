@@ -40,7 +40,7 @@ case class ClockInfo(
 
   val upPeriod:   Long = period / 2
   val downPeriod: Long = period - upPeriod
-  if (initialOffset <= 0) {
+  if (initialOffset < 0) {
     throw TreadleException(s"initialOffset in ClockInfo for $name must be positive. Found value $initialOffset")
   }
 
