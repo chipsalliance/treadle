@@ -35,9 +35,9 @@ object VcdComparator {
 //scalastyle:off magic.number
 class VcdComparator(annotationSeq: AnnotationSeq) {
   val ignoreTempWires:      Boolean = annotationSeq.exists { case IgnoreTempWires => true; case _ => false }
-  val doCompareDirectories: Boolean = annotationSeq.exists { case CompareWires => true; case _ => false }
-  val doUnmatchedWires:     Boolean = annotationSeq.exists { case UnmatchedWires => true; case _ => false }
-  val dontDiffValues:       Boolean = annotationSeq.exists { case DontDiffValues => true; case _ => false }
+  val doCompareDirectories: Boolean = annotationSeq.exists { case CompareWires    => true; case _ => false }
+  val doUnmatchedWires:     Boolean = annotationSeq.exists { case UnmatchedWires  => true; case _ => false }
+  val dontDiffValues:       Boolean = annotationSeq.exists { case DontDiffValues  => true; case _ => false }
 
   private val (removePrefix1, addPrefix1) = annotationSeq.collectFirst {
     case wp: WirePrefix1 => (wp.removePrefix, wp.addPrefix)
@@ -119,25 +119,23 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
     val (vcd1CodeToVcd2Code, vcd2CodeToVcd1Code) = buildVcd1CodeToVcd2Code()
 
     def showMatchedCodes(): Unit = {
-      vcd1CodeToVcd2Code
-        .toSeq
-        .map {
-          case (tag1, tag2) =>
-            val name1 = vcd1.wires(tag1).fullName
-            val name2 = vcd2.wires(tag2).fullName
-            (tag1, tag2, name1, name2)
-      }.sortWith { case ((_, _, a, _), (_, _, b, _)) => a < b}
-        .foreach { case (tag1, tag2, name1, name2) =>
+      vcd1CodeToVcd2Code.toSeq.map {
+        case (tag1, tag2) =>
+          val name1 = vcd1.wires(tag1).fullName
+          val name2 = vcd2.wires(tag2).fullName
+          (tag1, tag2, name1, name2)
+      }.sortWith { case ((_, _, a, _), (_, _, b, _)) => a < b }.foreach {
+        case (tag1, tag2, name1, name2) =>
           println(f"$tag1%5s $tag2%5s --- $name1 $name2")
-        }
+      }
     }
 
     trait NextOption[T] { self: Iterator[T] =>
-      def nextOption: Option[T] = if(hasNext) {Some(next())} else {None}
+      def nextOption: Option[T] = if (hasNext) { Some(next()) } else { None }
     }
 
     def showUnmatchedWires(): Unit = {
-      def nextOption(i: Iterator[String]): Option[String] = if(i.hasNext) {Some(i.next())} else {None}
+      def nextOption(i: Iterator[String]): Option[String] = if (i.hasNext) { Some(i.next()) } else { None }
 
       def show(nameOpt1: Option[String], nameOpt2: Option[String]): Unit = {
         println(f"${nameOpt1.getOrElse("---")}%60s ${nameOpt2.getOrElse("---")}%-60s")
@@ -150,11 +148,11 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
       while (name1.isDefined || name2.isDefined) {
         (name1, name2) match {
           case (Some(n1), Some(n2)) =>
-            if(n1 == n2) {
+            if (n1 == n2) {
               show(name1, name2)
               name1 = nextOption(i1)
               name2 = nextOption(i2)
-            } else if(n1 < n2) {
+            } else if (n1 < n2) {
               show(name1, None)
               name1 = nextOption(i1)
             } else {
@@ -168,7 +166,6 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
             show(name1, name2)
             name2 = nextOption(i2)
           case _ =>
-
         }
       }
     }
@@ -176,10 +173,10 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
     /** Iterate through both sets of changes recording those who do not match */
     def compareChangeSets(set1: List[Change], set2: List[Change], time: Long): Unit = {
       val changeCodes1 = set1.map { change =>
-        change.wire.id -> change
+        change.wire.fullName -> change
       }.toMap
       val changeCodes2 = set2.map { change =>
-        change.wire.id -> change
+        change.wire.fullName -> change
       }.toMap
       var timeShown = false
 
@@ -279,7 +276,7 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
 
       def dumpWires(wires: Seq[String], fileName: String) {
         val out = new PrintStream(new File(fileName))
-        for(name <- wires) {
+        for (name <- wires) {
           out.println(name)
         }
         out.close()

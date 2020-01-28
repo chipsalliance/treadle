@@ -136,7 +136,7 @@ class ExecutionEngine(
     vcdOption = Some(vcd)
     vcdFileName = fileName
 
-    val vcdPlugIn = new VcdHook(this, vcd)
+    val vcdPlugIn = new VcdHook(this)
     dataStore.addPlugin(ExecutionEngine.VCDHookName, vcdPlugIn, enable = true)
   }
 
