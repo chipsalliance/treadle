@@ -154,7 +154,7 @@ object VCD extends LazyLogging {
       "h" -> 16
     )
 
-    val wires = new mutable.HashMap[String, Wire]
+    val wireIdToWire = new mutable.HashMap[String, Wire]
     val aliasedWires = new mutable.HashMap[String, mutable.HashSet[Wire]] {
       override def default(key: String): mutable.HashSet[Wire] = {
         this(key) = new mutable.HashSet[Wire]
@@ -267,8 +267,8 @@ object VCD extends LazyLogging {
             case Some(varName) =>
               if (desiredScopeFound) {
                 val wire: Wire = Wire(varName, idString, sizeString.toInt, scopePath(currentScope).toArray)
-                if (!wires.contains(idString)) {
-                  wires(idString) = wire
+                if (!wireIdToWire.contains(idString)) {
+                  wireIdToWire(idString) = wire
                   logger.debug(s"AddVar $wire at line ${words.currentLineNumber}")
                   currentScope.foreach(_.wires += wire)
                 } else {
@@ -325,12 +325,14 @@ object VCD extends LazyLogging {
         // logger.debug(s"Process dump $nextWord at line ${words.currentLineNumber}")
         nextWord match {
           case ValueChangeScalar(value, varCode) =>
-            if (wires.contains(varCode)) {
-              logger.debug(s"Change scalar ${wires(varCode)} ${BigInt(value)} at line ${words.currentLineNumber}")
+            if (wireIdToWire.contains(varCode)) {
+              logger.debug(
+                s"Change scalar ${wireIdToWire(varCode)} ${BigInt(value)} at line ${words.currentLineNumber}"
+              )
               if (currentTime < BigInt(0)) {
-                initialValues += Change(wires(varCode), BigInt(value))
+                initialValues += Change(wireIdToWire(varCode), BigInt(value))
               } else {
-                valuesAtTime(currentTime) += Change(wires(varCode), BigInt(value))
+                valuesAtTime(currentTime) += Change(wireIdToWire(varCode), BigInt(value))
               }
             } else {
               logger.warn(
@@ -340,13 +342,13 @@ object VCD extends LazyLogging {
           case ValueChangeVector(radixString, value) =>
             if (words.hasNext) {
               val varCode = words.next
-              if (wires.contains(varCode)) {
+              if (wireIdToWire.contains(varCode)) {
                 supportedVectorRadix.get(radixString) match {
                   case Some(radix) =>
                     if (currentTime < BigInt(0)) {
-                      initialValues += Change(wires(varCode), BigInt(value, radix))
+                      initialValues += Change(wireIdToWire(varCode), BigInt(value, radix))
                     } else {
-                      valuesAtTime(currentTime) += Change(wires(varCode), BigInt(value, radix))
+                      valuesAtTime(currentTime) += Change(wireIdToWire(varCode), BigInt(value, radix))
                     }
                   case None =>
                     logger.warn(
@@ -359,13 +361,13 @@ object VCD extends LazyLogging {
           case ValueChangeVectorX(radixString) =>
             if (words.hasNext) {
               val varCode = words.next
-              if (wires.contains(varCode)) {
+              if (wireIdToWire.contains(varCode)) {
                 supportedVectorRadix.get(radixString) match {
                   case Some(_) =>
                     if (currentTime < BigInt(0)) {
-                      initialValues += Change(wires(varCode), BigInt(-1))
+                      initialValues += Change(wireIdToWire(varCode), BigInt(-1))
                     } else {
-                      valuesAtTime(currentTime) += Change(wires(varCode), BigInt(-1))
+                      valuesAtTime(currentTime) += Change(wireIdToWire(varCode), BigInt(-1))
                     }
                   case None =>
                     logger.warn(
@@ -426,7 +428,9 @@ object VCD extends LazyLogging {
                   "",
                   ignoreUnderscoredNames = true)
 
-    vcd.wires ++= wires
+    vcd.wires ++= wireIdToWire.values.map { wire =>
+      wire.fullName -> wire
+    }
     vcd.initialValues ++= initialValues
     vcd.valuesAtTime ++= valuesAtTime
     vcd.aliasedWires = aliasedWires
@@ -459,15 +463,8 @@ object VCD extends LazyLogging {
 
       println(s"${vcd.info}")
 
-      if(config.dumpHumanReadable) {
-        val times = vcd.valuesAtTime.keys.toSeq.sorted
-        for(time <- times) {
-          println(s"TIME: $time   " + "-" * 100)
-          val changes = vcd.valuesAtTime(time).toSeq.sortBy(_.wire.fullName)
-          for(change <- changes) {
-            println(f"${change.wire.fullName}%64s -> ${change.value}%32x")
-          }
-        }
+      if (config.dumpHumanReadable) {
+        vcd.dumpHumanReadable()
       }
 
       if (config.vcdTargetName.nonEmpty) {
@@ -537,6 +534,17 @@ case class VCD(
     }.mkString("\n")
   }
 
+  def dumpHumanReadable(): Unit = {
+    val times = valuesAtTime.keys.toSeq.sorted
+    for (time <- times) {
+      println(s"TIME: $time   " + "-" * 100)
+      val changes = valuesAtTime(time).toSeq.sortBy(_.wire.fullName)
+      for (change <- changes) {
+        println(f"${change.wire.fullName}%64s -> ${change.value}%32x")
+      }
+    }
+  }
+
   def getIdString(value: Int = currentIdNumber, currentString: String = ""): String = {
     val index = value % VCD.numberOfIdChars
     val newValue = value / VCD.numberOfIdChars
@@ -575,7 +583,7 @@ case class VCD(
         findScope(scopeRoot, reversedScopes.reverse) match {
           case Some(subScope) =>
             if (!wires.contains(wireName)) {
-              val newWire = Wire(name, getIdString(), width)
+              val newWire = Wire(name, getIdString(), width, reversedScopes.reverse.toArray)
               incrementId()
               addWireToScope(newWire, subScope)
               wires(wireName) = newWire
@@ -611,8 +619,9 @@ case class VCD(
     wireName.split("""\.""").last.startsWith("_T_") || wireName.contains("/")
   }
 
-  /**
-    * Change wire value if it is different that its the last recorded value
+  /** Change wire value if it is different that its the last recorded value
+    * Add it to the wires if this wire has not been seen before
+    *
     * @param wireName name of wire
     * @param value    value of wire
     * @param width    width of wire (needed for header info)
@@ -683,45 +692,42 @@ case class VCD(
     initialValues.map { _.serialize }.mkString("\n")
   }
 
-  def serialize: String = {
-    val buffer = new StringBuilder
-
-    buffer.append(VCD.DateDeclaration + "\n")
-    buffer.append(date + "\n")
-    buffer.append(VCD.End + "\n")
-    buffer.append(VCD.VersionDeclaration + "\n")
-    buffer.append(version + "\n")
-    buffer.append(VCD.End + "\n")
-    buffer.append(VCD.CommentDeclaration + "\n")
-    buffer.append(comment + "\n")
-    buffer.append(VCD.End + "\n")
-    buffer.append(s"${VCD.TimeScaleDeclaration} $timeScale  ${VCD.End}\n")
+  def serialize(writer: PrintWriter): Unit = {
+    writer.print(VCD.DateDeclaration + "\n")
+    writer.print(date + "\n")
+    writer.print(VCD.End + "\n")
+    writer.print(VCD.VersionDeclaration + "\n")
+    writer.print(version + "\n")
+    writer.print(VCD.End + "\n")
+    writer.print(VCD.CommentDeclaration + "\n")
+    writer.print(comment + "\n")
+    writer.print(VCD.End + "\n")
+    writer.print(s"${VCD.TimeScaleDeclaration} $timeScale  ${VCD.End}\n")
 
     def doScope(scope: Scope, depth: Int = 0): Unit = {
       def indent(inc: Int = 0): String = " " * (depth + inc)
-      buffer.append(s"${indent()}${VCD.ScopeDeclaration} module ${scope.name} ${VCD.End}\n")
+      writer.print(s"${indent()}${VCD.ScopeDeclaration} module ${scope.name} ${VCD.End}\n")
       scope.wires.foreach { wire =>
-        buffer.append(indent(1) + wire.toString + "\n")
+        writer.print(indent(1) + wire.toString + "\n")
       }
       scope.subScopes.foreach { subScope =>
         doScope(subScope, depth + 2)
       }
-      buffer.append(s"${indent()}${VCD.UpScopeDeclaration} ${VCD.End}\n")
+      writer.print(s"${indent()}${VCD.UpScopeDeclaration} ${VCD.End}\n")
     }
 
     doScope(scopeRoot)
-    buffer.append(s"${VCD.EndDefinitionsDeclaration} ${VCD.End}\n")
+    writer.print(s"${VCD.EndDefinitionsDeclaration} ${VCD.End}\n")
     if (initialValues.nonEmpty) {
-      buffer.append(s"${VCD.DumpVarsDeclaration}\n")
-      buffer.append(serializeStartup + s"\n${VCD.End}\n")
+      writer.print(s"${VCD.DumpVarsDeclaration}\n")
+      writer.print(serializeStartup + s"\n${VCD.End}\n")
     }
-    buffer.append(serializeChanges)
-    buffer.toString()
+    writer.print(serializeChanges)
   }
 
   def write(fileName: String): Unit = {
     val writer = new PrintWriter(fileName)
-    writer.write(serialize)
+    serialize(writer)
     writer.close()
   }
 }

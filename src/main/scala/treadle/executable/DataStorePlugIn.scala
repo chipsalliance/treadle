@@ -98,13 +98,15 @@ class RenderComputations(
   }
 }
 
-class VcdHook(val executionEngine: ExecutionEngine, val vcd: VCD) extends DataStorePlugin {
+class VcdHook(val executionEngine: ExecutionEngine) extends DataStorePlugin {
   val dataStore: DataStore = executionEngine.dataStore
 
   override def run(symbol: Symbol, offset: Int = -1, previousValue: BigInt): Unit = {
     if (offset == -1) {
       val value = dataStore(symbol)
-      vcd.wireChanged(symbol.name, value, width = symbol.bitWidth)
+      executionEngine.vcdOption.foreach { vcd =>
+        vcd.wireChanged(symbol.name, value, width = symbol.bitWidth)
+      }
     }
   }
 }

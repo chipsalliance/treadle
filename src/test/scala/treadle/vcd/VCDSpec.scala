@@ -107,8 +107,6 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     vcd.valuesAtTime(4).size should be(1)
     vcd.valuesAtTime(5).size should be(3)
     vcd.valuesAtTime(6).size should be(1)
-
-    println(vcd.serialize)
   }
 
   it should "be able to serialize negative and positive values" in {
