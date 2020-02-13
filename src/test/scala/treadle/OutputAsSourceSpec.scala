@@ -17,9 +17,10 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class OutputAsSourceSpec extends FreeSpec with Matchers {
+class OutputAsSourceSpec extends AnyFreeSpec with Matchers {
   "it must be possible for the engine to handle module outputs as rhs dependencies" in {
     val input =
       """

@@ -19,8 +19,9 @@ package treadle.primops
 import firrtl.ir
 import firrtl.ir.Type
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
   var returnValue: BigInt = 0
@@ -43,7 +44,7 @@ class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
 }
 
 // scalastyle:off magic.number
-class EqOpsTester extends FreeSpec with Matchers {
+class EqOpsTester extends AnyFreeSpec with Matchers {
   private val factory = new ScalaBlackBoxFactory {
     override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
       blackBoxName match {

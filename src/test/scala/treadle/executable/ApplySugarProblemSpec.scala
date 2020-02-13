@@ -16,10 +16,11 @@ limitations under the License.
 
 package treadle.executable
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class ApplySugarProblemSpec extends FreeSpec with Matchers {
+class ApplySugarProblemSpec extends AnyFreeSpec with Matchers {
   type IntFunc = () => Int
 
   trait HasIntFunc {

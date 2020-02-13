@@ -17,13 +17,14 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 /**
   * Created by chick on 5/4/16.
   */
 //scalastyle:off magic.number
-class DynamicMemorySearch extends FreeSpec with Matchers {
+class DynamicMemorySearch extends AnyFreeSpec with Matchers {
   "dynamic memory search should run with correct results" in {
     val input =
       """

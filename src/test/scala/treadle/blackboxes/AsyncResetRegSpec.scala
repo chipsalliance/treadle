@@ -18,12 +18,13 @@ package treadle.blackboxes
 
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.asyncreset.AsyncResetBlackBoxFactory
 import treadle.{BlackBoxFactoriesAnnotation, ShowFirrtlAtLoadAnnotation, TreadleTester, WriteVcdAnnotation}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class AsyncResetRegSpec extends FreeSpec with Matchers {
+class AsyncResetRegSpec extends AnyFreeSpec with Matchers {
   "an async reset reg should behave like a normal reg using clock" in {
     val input =
       """

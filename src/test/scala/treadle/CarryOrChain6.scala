@@ -17,9 +17,10 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class CarryOrChain6 extends FreeSpec with Matchers {
+class CarryOrChain6 extends AnyFreeSpec with Matchers {
   private val input =
     """
       |circuit ORChain :

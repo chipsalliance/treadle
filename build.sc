@@ -88,7 +88,7 @@ class TreadleModule(val crossScalaVersion: String) extends CommonModule {
 
   object test extends Tests {
     override def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.0.8",
+      ivy"org.scalatest::scalatest:3.1.0",
       ivy"org.scalacheck::scalacheck:1.14.0"
     )
     def testFrameworks = Seq("org.scalatest.tools.Framework")

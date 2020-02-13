@@ -17,11 +17,12 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class RegOfVecSpec extends FreeSpec with Matchers {
+class RegOfVecSpec extends AnyFreeSpec with Matchers {
   "reg of vec should chain correctly" in {
     val input =
       """

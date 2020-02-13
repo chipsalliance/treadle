@@ -17,9 +17,10 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-private class PrintfTimingSpec extends FreeSpec with Matchers {
+private class PrintfTimingSpec extends AnyFreeSpec with Matchers {
   "printf has strict timing requirements" - {
     "it must fire before registers are updated" in {
       val input =

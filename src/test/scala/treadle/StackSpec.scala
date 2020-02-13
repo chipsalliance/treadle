@@ -17,10 +17,11 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class StackSpec extends FreeSpec with Matchers {
+class StackSpec extends AnyFreeSpec with Matchers {
   "StackSpec should pass a basic test" in {
     val input =
       """

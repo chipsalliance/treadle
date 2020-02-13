@@ -17,13 +17,14 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 /**
   * This needs work, we should be running through different kinds of ops
   * muxes etc, and coming up with some sort of performance formula
   */
-class Performance extends FreeSpec with Matchers {
+class Performance extends AnyFreeSpec with Matchers {
   "how fast is this".ignore {
     val width = 32
 
