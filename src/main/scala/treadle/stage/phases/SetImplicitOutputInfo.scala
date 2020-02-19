@@ -15,11 +15,12 @@ import treadle.TreadleCircuitStateAnnotation
   */
 object SetImplicitOutputInfo extends Phase {
   override def transform(annotationSeq: AnnotationSeq): AnnotationSeq = {
-    val nameAnnoSeq = if(annotationSeq.exists { case t: TargetDirAnnotation => true ; case _ => false }) {
+    var outputFileName = "default"
+    val nameAnnoSeq = if(annotationSeq.exists { case _: TargetDirAnnotation => true ; case _ => false }) {
       Seq.empty
     }
     else {
-      val name = annotationSeq.collectFirst {
+      outputFileName = annotationSeq.collectFirst {
         case TopNameAnnotation(topName) =>
           topName
       }.getOrElse {
@@ -28,15 +29,15 @@ object SetImplicitOutputInfo extends Phase {
             circuit.main
           case TreadleCircuitStateAnnotation(state) =>
             state.circuit.main
-        }.getOrElse("a")
+        }.getOrElse("default")
       }
-      Seq(OutputFileAnnotation(name))
+      Seq(OutputFileAnnotation(outputFileName))
     }
-    val targetDir = if(annotationSeq.exists { case t: TargetDirAnnotation => true ; case _ => false }) {
+    val targetDir = if(annotationSeq.exists { case _: TargetDirAnnotation => true ; case _ => false }) {
       Seq.empty
     }
     else {
-      Seq(TargetDirAnnotation(s"test_run_dir/$name"))
+      Seq(TargetDirAnnotation(s"test_run_dir/$outputFileName"))
     }
     annotationSeq ++ nameAnnoSeq ++ targetDir
   }

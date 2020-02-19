@@ -393,6 +393,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   def isRegister(symbolName: String): Boolean = engine.symbolTable.isRegister(symbolName)
 
+  def getStopResult: Option[Int] = {
+    engine.lastStopResult
+  }
+
   def reportString: String = {
     val endTime = System.nanoTime()
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
@@ -404,6 +408,8 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
       */
     def status: String = {
       engine.lastStopResult match {
+        case Some(0) =>
+          s"Stopped: Stop result 0:"
         case Some(stopResult) =>
           s"Failed: Stop result $stopResult:"
         case _ =>

@@ -17,15 +17,11 @@ object AugmentPrintf extends Transform {
     import firrtl._
     def insert(newStmts: mutable.ArrayBuffer[Statement], namespace: Namespace, info: Info, clockExpression: Expression)
             (a: Expression): Expression = {
-      if (Utils.kind(a) == RegKind) {
         val newName = namespace.newTemp
-        val wref = WRef(newName, a.tpe, NodeKind, MALE)
+        val wref = WRef(newName, a.tpe, NodeKind, SourceFlow)
         newStmts += DefRegister(info, newName, a.tpe, clockExpression, UIntLiteral(0), UIntLiteral(0))
         newStmts += Connect(info, wref, a)
         wref
-      } else {
-        a
-      }
     }
 
     def fixPrintsStmt(namespace: firrtl.Namespace)
@@ -36,7 +32,12 @@ object AugmentPrintf extends Transform {
         Block(newStmts :+ newStop)
       case p: Print =>
         val newStmts = mutable.ArrayBuffer[Statement]()
-        val newPrint = p.mapExpr(insert(newStmts, namespace, p.info, p.clk))
+        val newName = namespace.newTemp
+        val wref = WRef(newName, p.en.tpe, NodeKind, SourceFlow)
+        newStmts += DefRegister(p.info, newName, p.en.tpe, p.clk, UIntLiteral(0), UIntLiteral(0))
+        newStmts += Connect(p.info, wref, p.en)
+
+        val newPrint: Print = p.mapExpr(insert(newStmts, namespace, p.info, p.clk)).asInstanceOf[Print].copy(en = wref)
         Block(newStmts :+ newPrint)
       case other => other
     }
