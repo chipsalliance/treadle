@@ -30,7 +30,7 @@ name := "treadle"
 
 organization := "edu.berkeley.cs"
 
-version := "1.1-SNAPSHOT"
+version := "1.1.3"
 
 scalaVersion := "2.12.7"
 
@@ -57,7 +57,7 @@ assemblyOutputPath in assembly := file("./utils/bin/treadle.jar")
 
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.2.3")
 
 libraryDependencies ++= (Seq("firrtl").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })
