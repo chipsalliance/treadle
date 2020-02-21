@@ -19,11 +19,12 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.TreadleException
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class InfoSpec extends FreeSpec with Matchers {
+class InfoSpec extends AnyFreeSpec with Matchers {
 
   "Error in test should show source info" in {
     val input =

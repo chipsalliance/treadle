@@ -81,7 +81,7 @@ libraryDependencies ++= (Seq("firrtl").map {
 // An explicit dependency on junit seems to alleviate this.
 libraryDependencies ++= Seq(
   "junit" % "junit" % "4.12" % "test",
-  "org.scalatest" %% "scalatest" % "3.0.8" % "test",
+  "org.scalatest" %% "scalatest" % "3.1.1" % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
   "com.github.scopt" %% "scopt" % "3.7.1",
   "org.scala-lang.modules" % "scala-jline" % "2.12.1",

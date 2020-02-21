@@ -22,9 +22,10 @@ import firrtl.transforms._
 import firrtl.stage._
 import firrtl.passes.wiring._
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class BoreSpec extends FreeSpec with Matchers {
+class BoreSpec extends AnyFreeSpec with Matchers {
   "WiringTransform should be honor" in {
     val input =
       """

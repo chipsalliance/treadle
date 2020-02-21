@@ -17,10 +17,11 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class NativeAsyncResetSpec extends FreeSpec with Matchers {
+class NativeAsyncResetSpec extends AnyFreeSpec with Matchers {
   "native firrtl async reset should work" in {
     val firrtlSource =
       """

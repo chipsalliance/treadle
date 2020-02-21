@@ -17,12 +17,13 @@ limitations under the License.
 package treadle.primops
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.{BitTwiddlingUtils, _}
 import treadle.executable._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class CatBitsHeadTail extends FreeSpec with Matchers {
+class CatBitsHeadTail extends AnyFreeSpec with Matchers {
   def f0():      Int = 0
   def f1():      Int = 1
   def f2():      Int = 2

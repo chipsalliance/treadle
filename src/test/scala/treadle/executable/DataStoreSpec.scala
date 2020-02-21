@@ -18,12 +18,13 @@ package treadle.executable
 
 import treadle._
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.{BigIntTestValuesGenerator, DataStorePlugInAnnotation, TreadleTester}
 
 import scala.collection.mutable
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class DataStoreSpec extends FreeSpec with Matchers {
+class DataStoreSpec extends AnyFreeSpec with Matchers {
 
   info("this")
 

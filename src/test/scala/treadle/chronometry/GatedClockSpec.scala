@@ -17,11 +17,12 @@ limitations under the License.
 package treadle.chronometry
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.TreadleTester
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class GatedClockSpec extends FreeSpec with Matchers {
+class GatedClockSpec extends AnyFreeSpec with Matchers {
   private val input =
     """
       |circuit HasGatedCounter : @[:@2.0]

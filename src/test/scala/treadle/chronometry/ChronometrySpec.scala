@@ -16,10 +16,11 @@ limitations under the License.
 
 package treadle.chronometry
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class ChronometrySpec extends FreeSpec with Matchers {
+class ChronometrySpec extends AnyFreeSpec with Matchers {
   "UTC can schedule a single task" in {
     val utc = UTC()
     var x = 0

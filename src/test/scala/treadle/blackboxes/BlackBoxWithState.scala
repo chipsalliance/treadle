@@ -18,16 +18,17 @@ package treadle.blackboxes
 
 import firrtl.ir.Type
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable._
 import treadle._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
 /**
   * Demonstrates how a black box can maintain and change internal state
   * based on clock transitions
   */
-class BlackBoxWithState extends FreeSpec with Matchers {
+class BlackBoxWithState extends AnyFreeSpec with Matchers {
   "BlackBoxWithState should pass a basic test" in {
     val input =
       """

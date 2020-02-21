@@ -17,11 +17,12 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.{ClockInfo, StopException}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class RiscVMiniSimpleSpec extends FreeSpec with Matchers {
+class RiscVMiniSimpleSpec extends AnyFreeSpec with Matchers {
   "riscv-mini simple core test should run then stop" in {
 
     val stream = getClass.getResourceAsStream("/core-simple.lo.fir")

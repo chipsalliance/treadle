@@ -16,11 +16,12 @@ limitations under the License.
 
 package treadle
 
-import org.scalatest.{FlatSpec, Matchers}
 import treadle.chronometry.Timer
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class TimerSpec extends FlatSpec with Matchers {
+class TimerSpec extends AnyFlatSpec with Matchers {
   behavior.of("timer")
 
   it should "count times" in {

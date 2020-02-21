@@ -16,7 +16,8 @@ limitations under the License.
 
 package treadle
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 /**
   * The author of this fine test, does not quite remember what it is designed to do.
@@ -27,7 +28,7 @@ import org.scalatest.{FreeSpec, Matchers}
   * The other point of this test is to verify that the older form of writing a test using anonymous subclasses works
   */
 // scalastyle:off magic.number
-class GetIntBreakdownSpec extends FreeSpec with Matchers {
+class GetIntBreakdownSpec extends AnyFreeSpec with Matchers {
   def getIntBreakDown(n: Int): Boolean = {
     val input =
       """
