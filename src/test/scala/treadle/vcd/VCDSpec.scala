@@ -1,4 +1,18 @@
-// See LICENSE for license details.
+/*
+Copyright 2020 The Regents of the University of California (Regents)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
 
 package treadle.vcd
 
@@ -93,8 +107,6 @@ class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
     vcd.valuesAtTime(4).size should be(1)
     vcd.valuesAtTime(5).size should be(3)
     vcd.valuesAtTime(6).size should be(1)
-
-    println(vcd.serialize)
   }
 
   it should "be able to serialize negative and positive values" in {
