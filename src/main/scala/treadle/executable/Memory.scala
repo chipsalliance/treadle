@@ -17,8 +17,8 @@ limitations under the License.
 package treadle.executable
 
 import treadle._
-import firrtl.{MemKind, WireKind}
-import firrtl.ir.{ClockType, DefMemory, Info, IntWidth}
+import firrtl.{FileUtils, MemKind, WireKind}
+import firrtl.ir.{ClockType, DefMemory, Info, IntWidth, ReadUnderWrite}
 import RenderHelper.ExpressionHelper
 import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryLoadFileType, ModuleName}
 
@@ -52,6 +52,8 @@ object Memory {
     val booleanType = firrtl.ir.UIntType(IntWidth(1))
 
     val lastValueSymbols = new mutable.ArrayBuffer[Symbol]()
+
+    val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
 
     def buildRegisterTriple(baseName: String, index: Int, dataType: firrtl.ir.Type): Seq[Symbol] = {
 
@@ -104,10 +106,10 @@ object Memory {
 
       sensitivityGraphBuilder.addSensitivity(clk, data)
 
-      val pipelineRaddrSymbols = (0 until memory.readLatency).flatMap { n =>
+      val pipelineRaddrSymbols = (0 until effectiveReadLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readerString.pipeline_raddr_", n, addrType)
       }
-      val pipelineEnableSymbols = (0 until memory.readLatency).flatMap { n =>
+      val pipelineEnableSymbols = (0 until effectiveReadLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readerString.pipeline_ren_", n, booleanType)
       }
 
@@ -175,12 +177,12 @@ object Memory {
       sensitivityGraphBuilder.addSensitivity(mode, valid)
       sensitivityGraphBuilder.addSensitivity(mask, valid)
 
-      val pipelineReadDataSymbols = (0 until memory.readLatency).flatMap { n =>
+      val pipelineReadDataSymbols = (0 until effectiveReadLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_raddr_", n, addrType)
       }
       buildPipelineDependencies(addr, pipelineReadDataSymbols, Some(rdata), clockSymbol = Some(clk))
 
-      val pipelineReadEnableSymbols = (0 until memory.readLatency).flatMap { n =>
+      val pipelineReadEnableSymbols = (0 until effectiveReadLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_ren_", n, booleanType)
       }
       buildPipelineDependencies(addr, pipelineReadEnableSymbols, Some(rdata), clockSymbol = Some(clk))
@@ -269,7 +271,9 @@ object Memory {
       enable:       Symbol
     ): Symbol = {
 
-      val pipelineReadSymbols = buildPipeLine(portName, pipelineName, memory.readLatency)
+      val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
+
+      val pipelineReadSymbols = buildPipeLine(portName, pipelineName, effectiveReadLatency)
       val chain = Seq(addr) ++ pipelineReadSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
@@ -482,8 +486,10 @@ object Memory {
       val addr = symbolTable(s"$name.addr")
       val data = symbolTable(s"$name.data")
 
-      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", memory.readLatency, memory.info)
-      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", memory.readLatency, memory.info)
+      val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
+
+      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", effectiveReadLatency, memory.info)
+      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", effectiveReadLatency, memory.info)
 
       compiler.makeAssigner(
         data,
@@ -601,7 +607,7 @@ class MemoryInitializer(engine: ExecutionEngine) {
   }
 
   private def doInitialize(memorySymbol: Symbol, fileName: String, radix: Int): Unit = {
-    io.Source.fromFile(fileName).getLines().zipWithIndex.foreach {
+    FileUtils.getLines(fileName).zipWithIndex.foreach {
       case (line, lineNumber) if lineNumber < memorySymbol.slots =>
         try {
           val value = BigInt(line.trim, radix)
