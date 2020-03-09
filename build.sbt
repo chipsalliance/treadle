@@ -80,6 +80,8 @@ libraryDependencies ++= (Seq("firrtl").map {
 // when compiling tests under 2.11.12
 // An explicit dependency on junit seems to alleviate this.
 libraryDependencies ++= Seq(
+  "org.scala-lang" % "scala-reflect" % "2.12.7",
+  "org.scala-lang" % "scala-compiler" % "2.12.7",
   "junit" % "junit" % "4.12" % "test",
   "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",

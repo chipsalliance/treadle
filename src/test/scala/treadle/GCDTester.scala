@@ -146,8 +146,8 @@ class GCDTester extends FlatSpec with Matchers {
 
     val values =
       for {
-        x <- 1 to 100
-        y <- 1 to 100
+        x <- 1 to 1000
+        y <- 1 to 1000
       } yield (x, y, computeGcd(x, y)._1)
 
     val tester = TreadleTester(Seq(FirrtlSourceAnnotation(gcdFirrtl)))
