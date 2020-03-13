@@ -46,9 +46,9 @@ organization := "edu.berkeley.cs"
 
 version := "1.2-SNAPSHOT"
 
-scalaVersion := "2.12.7"
+scalaVersion := "2.12.10"
 
-crossScalaVersions := Seq("2.12.7", "2.11.12")
+crossScalaVersions := Seq("2.12.10", "2.11.12")
 
 // enables using control-c in sbt CLI
 cancelable in Global := true
