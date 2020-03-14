@@ -20,8 +20,8 @@ import firrtl._
 import firrtl.graph.DiGraph
 import firrtl.ir._
 import logger.LazyLogging
-import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
 import treadle.utils.FindModule
+import treadle.{ScalaBlackBox, ScalaBlackBoxFactory}
 
 import scala.collection.immutable.Set
 import scala.collection.mutable
@@ -57,6 +57,8 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
   val outputPortsNames: mutable.HashSet[String] = new mutable.HashSet[String]
 
   val registerToClock: mutable.HashMap[Symbol, Symbol] = new mutable.HashMap()
+
+  val instanceNameToModuleName: mutable.HashMap[String, String] = new mutable.HashMap()
 
   val moduleMemoryToMemorySymbol: mutable.HashMap[String, mutable.HashSet[Symbol]] = new mutable.HashMap
 
@@ -213,6 +215,8 @@ object SymbolTable extends LazyLogging {
 
     val registerToClock = new mutable.HashMap[Symbol, Symbol]
     val stopToStopInfo = new mutable.HashMap[Stop, StopInfo]
+    val instanceNameToModuleName = new mutable.HashMap[String, String]()
+    instanceNameToModuleName("") = circuit.main
 
     val lastStopStymbol = new mutable.HashMap[Module, Symbol]
 
@@ -315,7 +319,9 @@ object SymbolTable extends LazyLogging {
            */
           val expandedName = expand(instanceName)
           instanceNames += expandedName
-          val instanceSymbol = Symbol(expandedName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
+          instanceNameToModuleName(expandedName) = moduleName
+          val instanceSymbol =
+            Symbol(expandedName, IntSize, UnsignedInt, InstanceKind, 1, 1, UIntType(IntWidth(1)), info)
           addSymbol(instanceSymbol)
 
           val subModule = FindModule(moduleName, circuit)
@@ -569,6 +575,7 @@ object SymbolTable extends LazyLogging {
 
     val symbolTable = SymbolTable(nameToSymbol)
     symbolTable.instanceNames ++= instanceNames
+    symbolTable.instanceNameToModuleName ++= instanceNameToModuleName
     symbolTable.registerNames ++= registerNames
     symbolTable.inputPortsNames ++= inputPorts
     symbolTable.outputPortsNames ++= outputPorts
