@@ -493,12 +493,24 @@ class ScalaClassBuilder(
 
       pw ++= mapString
       pw ++= "\n"
+
+      val inputTargets = symbolTable.inputPortsNames.map { portName =>
+        val portSymbol = symbolTable.nameToSymbol(portName)
+        s"""    "${portSymbol.name}" -> "${portSymbol.dataSize}""""
+      }.mkString("  val inputToSize = Map(\n", ",\n", "  )")
+
+      pw ++= inputTargets
+      pw ++= "\n"
     }
 
     def addPeekPoke(): Unit = {
       val s = s"""
          |  def poke(s: String, value: BigInt): Unit = {
-         |    intArray(dataIndices(s)) = value.toInt
+         |      inputToSize(s) match {
+         |        case "Int"  => intArray(dataIndices(s))  = value.toInt
+         |        case "Long" => longArray(dataIndices(s)) = value.toLong
+         |        case "Big"  => bigArray(dataIndices(s))  = value
+         |    }
          |  }
          |
          |  def peek(s: String): BigInt = {

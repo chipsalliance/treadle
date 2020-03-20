@@ -59,7 +59,7 @@ object CompiledGcdSimulator {
 
       val values =
         for {x <- 1 to 1000
-             y <- 1 to 5000
+             y <- 1 to 1000
              } yield (x, y, computeGcd(x, y)._1)
 
       val startTime = System.nanoTime()
