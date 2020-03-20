@@ -18,6 +18,11 @@ package treadle.simgen
 
 import treadle.Regression.computeGcd
 
+/** This is an example of using on-the-fly compilation to execute a treadle simulation.
+  * This increases speed about 15x. Need more tests to determine whether increased spin-up speed
+  * makes this worth doing. More work needs to be done to make
+  *
+  */
 object CompiledGcdSimulator {
   //scalastyle:off method.length
   def main(args: Array[String]): Unit = {
@@ -87,8 +92,7 @@ object CompiledGcdSimulator {
       val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
 
       println(s"${tester.cycles} cycles in elapsed seconds $elapsedSeconds")
-      println(s"${tester.cycles.toDouble / (elapsedSeconds * 1000.0)} kHz")
-
+      println(s"${tester.cycles.toDouble / (elapsedSeconds * 1000000.0)} MHz")
     }
   }
 }

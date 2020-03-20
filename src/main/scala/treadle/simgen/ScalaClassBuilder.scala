@@ -501,20 +501,32 @@ class ScalaClassBuilder(
 
       pw ++= inputTargets
       pw ++= "\n"
+
+      val outputTargets = symbolTable.outputPortsNames.map { portName =>
+        val portSymbol = symbolTable.nameToSymbol(portName)
+        s"""    "${portSymbol.name}" -> "${portSymbol.dataSize}""""
+      }.mkString("  val outputToSize = Map(\n", ",\n", "  )")
+
+      pw ++= outputTargets
+      pw ++= "\n"
     }
 
     def addPeekPoke(): Unit = {
       val s = s"""
          |  def poke(s: String, value: BigInt): Unit = {
-         |      inputToSize(s) match {
-         |        case "Int"  => intArray(dataIndices(s))  = value.toInt
-         |        case "Long" => longArray(dataIndices(s)) = value.toLong
-         |        case "Big"  => bigArray(dataIndices(s))  = value
+         |    inputToSize(s) match {
+         |      case "Int"  => intArray(dataIndices(s))  = value.toInt
+         |      case "Long" => longArray(dataIndices(s)) = value.toLong
+         |      case "Big"  => bigArray(dataIndices(s))  = value
          |    }
          |  }
          |
          |  def peek(s: String): BigInt = {
-         |    BigInt(intArray(dataIndices(s)))
+         |    outputToSize(s) match {
+         |      case "Int"  => BigInt(intArray(dataIndices(s)))
+         |      case "Long" => BigInt(longArray(dataIndices(s)))
+         |      case "Big"  => bigArray(dataIndices(s))
+         |    }
          |  }
          |
          |  def expect(s: String, value: BigInt): Unit = {
