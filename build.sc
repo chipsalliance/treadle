@@ -39,7 +39,7 @@ trait CommonModule extends CrossUnRootedSbtModule with PublishModule {
   override def javacOptions = CommonBuild.javacOptionsVersion(crossScalaVersion)
 }
 
-val crossVersions = Seq("2.12.6", "2.11.12")
+val crossVersions = Seq("2.12.10", "2.11.12")
 
 // Make this available to external tools.
 object treadle extends Cross[TreadleModule](crossVersions: _*) {
@@ -89,7 +89,7 @@ class TreadleModule(val crossScalaVersion: String) extends CommonModule {
   object test extends Tests {
     override def ivyDeps = Agg(
       ivy"org.scalatest::scalatest:3.0.8",
-      ivy"org.scalacheck::scalacheck:1.14.0"
+      ivy"org.scalacheck::scalacheck:1.14.3"
     )
     def testFrameworks = Seq("org.scalatest.tools.Framework")
   }
