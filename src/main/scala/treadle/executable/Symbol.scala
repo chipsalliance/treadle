@@ -16,10 +16,10 @@ limitations under the License.
 
 package treadle.executable
 
-import firrtl.{Kind, WireKind}
 import firrtl.ir.{Info, IntWidth, NoInfo}
+import firrtl.{Kind, WireKind}
 import treadle._
-import treadle.utils.{BitMasks, BitMasksBigs, BitUtils}
+import treadle.utils.{BitMasks, BitMasksBigs}
 
 case class Symbol(
   name:       String,

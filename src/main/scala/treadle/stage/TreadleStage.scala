@@ -16,10 +16,9 @@ limitations under the License.
 
 package treadle.stage
 
-import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm, LowForm}
-import firrtl.options.{Phase, Shell, Stage}
-import firrtl.stage.FirrtlCli
-import treadle.stage.phases.{CreateTester, GetFirrtlAst, PrepareAst, PrepareAstFromLowFIRRTL, SetImplicitOutputInfo}
+import firrtl.options.Phase
+import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
+import treadle.stage.phases._
 
 object TreadleCompatibilityPhase extends Phase {
   private val chirrtlPhases: Seq[Phase] = Seq(
