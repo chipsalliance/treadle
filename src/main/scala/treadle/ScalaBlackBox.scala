@@ -17,6 +17,7 @@ limitations under the License.
 package treadle
 
 import firrtl.ir.{Param, Type}
+import treadle.blackboxes.PlusArg
 import treadle.executable.{DataStore, Symbol, Transition}
 
 import scala.collection._
@@ -79,10 +80,15 @@ trait ScalaBlackBox {
     Seq.empty
   }
 
-  /**
-    * Add any parameters to the black box implementation
+  /** Add any parameters to the black box implementation
     */
   def setParams(params: Seq[Param]): Unit = {}
+
+  /** allows blackbox to see if any plus args on command line are targeted at it
+    *
+    * @param plusArgs  list of args
+    */
+  def setPlusArgs(plusArgs: Seq[PlusArg]): Unit = {}
 }
 
 /**

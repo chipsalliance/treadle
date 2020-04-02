@@ -21,6 +21,7 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation =>
@@ -34,7 +35,7 @@ case object WriteVcdAnnotation extends NoTargetAnnotation with TreadleOption wit
     new ShellOption[Unit](
       longOption = "tr-write-vcd",
       toAnnotationSeq = _ => Seq(WriteVcdAnnotation),
-      helpText = "writes vcd executioin log, filename will be based on top-name"
+      helpText = "writes vcd execution log, filename will be based on top-name"
     )
   )
 }
@@ -145,6 +146,23 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
       longOption = "tr-rollback-buffers",
       toAnnotationSeq = (buffers: Int) => Seq(RollBackBuffersAnnotation(buffers)),
       helpText = s"number of rollback buffers, 0 is no buffers, default is ${TreadleDefaults.RollbackBuffers}"
+    )
+  )
+}
+
+/**
+  *  Sets verilog plus args that will be passed to black boxes
+  */
+case class PlusArgsAnnotation(plusArgs: Seq[String])
+    extends NoTargetAnnotation
+    with TreadleOption
+
+case object PlusArgsAnnotation extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Seq[String]](
+      longOption = "tr-plus-args",
+      toAnnotationSeq = (args: Seq[String]) => Seq(PlusArgsAnnotation(args)),
+      helpText = s"a comma separated list of plusArgs"
     )
   )
 }
@@ -275,6 +293,22 @@ object TreadleFirrtlFormHint extends HasShellOptions {
   )
 }
 
+/** Provides an input form hint to treadle to know how to best handle the input it receives
+  *
+  * @param form the input form
+  */
+case class TreadleRocketBlackBoxes(form: CircuitForm) extends NoTargetAnnotation
+
+object TreadleRocketBlackBoxes extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-add-rocket-black-boxes",
+      toAnnotationSeq = _ => Seq(BlackBoxFactoriesAnnotation(Seq(new BuiltInBlackBoxFactory))),
+      helpText = "add in the black boxes needed to simulate rocket"
+    )
+  )
+}
+
 /**
   * Used to pass a tester on to a test harness
   *
@@ -347,6 +381,7 @@ class TreadleLibrary extends RegisteredLibrary {
     SymbolsToWatchAnnotation,
     ResetNameAnnotation,
     CallResetAtStartupAnnotation,
+    TreadleRocketBlackBoxes,
     TreadleFirrtlString,
     TreadleFirrtlFile
   ).flatMap(_.options)
