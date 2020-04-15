@@ -21,7 +21,7 @@ import treadle.{ScalaBlackBox, _}
 import treadle.executable.{NegativeEdge, NoTransition, PositiveEdge, Transition}
 
 class EicgWrapper(val instanceName: String) extends ScalaBlackBox {
-  override def name: String = "EICG_Wrapper"
+  override def name: String = "EICG_wrapper"
 
   var enableValue: BigInt = Big0
   var inputValue:  BigInt = Big0

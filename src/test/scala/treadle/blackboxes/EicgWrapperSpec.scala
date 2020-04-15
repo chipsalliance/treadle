@@ -27,12 +27,12 @@ class EicgWrapperSpec extends FreeSpec with Matchers {
       """
         |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.6
         |circuit UsesEicgWrapper :
-        |  extmodule EICG_Wrapper :
+        |  extmodule EICG_wrapper :
         |    input in : Clock
         |    input en : UInt<1>
-        |    output clk_out : UInt<1>
+        |    output out : UInt<1>
         |
-        |    defname = EICG_Wrapper
+        |    defname = EICG_wrapper
         |
         |  module UsesEicgWrapper :
         |    input clock : Clock
@@ -40,9 +40,9 @@ class EicgWrapperSpec extends FreeSpec with Matchers {
         |    input enable : UInt<1>
         |    output count : UInt<17>
         |
-        |    inst eicg_instance of EICG_Wrapper
+        |    inst eicg_instance of EICG_wrapper
         |
-        |    node eicg_out = asClock(eicg_instance.clk_out)
+        |    node eicg_out = asClock(eicg_instance.out)
         |
         |    reg counter : UInt<16>, eicg_out with : (reset => (reset, UInt(0)))
         |

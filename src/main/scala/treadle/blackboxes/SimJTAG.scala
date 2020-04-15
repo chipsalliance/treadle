@@ -18,53 +18,41 @@ package treadle.blackboxes
 
 import firrtl.ir.{IntParam, Param, Type}
 import treadle.ScalaBlackBox
-import treadle.executable.{PositiveEdge, Transition}
+import treadle.executable.{PositiveEdge, Transition, TreadleException}
 
+/** Implements a scala black box corresponding to the verilog SimJtag.v used in rocket-chip
+  * IO
+  *
+  * input         clock,
+  * input         reset,
+  *
+  * input         enable,
+  * input         init_done,
+  *
+  * output        jtag_TCK,
+  * output        jtag_TMS,
+  * output        jtag_TDI,
+  * output        jtag_TRSTn,
+  *
+  * input         jtag_TDO_data,
+  * input         jtag_TDO_driven,
+  *
+  * output [31:0] exit1
+  *
+  * @param instanceName identifies which instantiation this is
+  */
 class SimJTAG(val instanceName: String) extends ScalaBlackBox {
   override def name: String = "SimJTAG"
 
   private def isSet(b: BigInt): Boolean = b != BigInt(0)
 
+  // black box inputs
   var reset:            BigInt = 0
   var enable:           BigInt = 0
   var init_done:        BigInt = 0
   var init_done_sticky: BigInt = 0
   var jtag_TDO_data:    BigInt = 0
   var jtag_TDO_driven:  BigInt = 0
-
-  var tickCounterRegister: BigInt = 0
-  var tickCounterNext:     BigInt = 0
-  var tickDelay:           BigInt = 0
-  var __jtag_TCK:          BigInt = 0
-  val __jtag_TMS:          BigInt = 0
-  val __jtag_TDI:          BigInt = 0
-  val __jtag_TRSTn:        BigInt = 0
-  //scalastyle:off method.name
-  def __jtag_TDO: BigInt = if (isSet(jtag_TDO_driven)) { jtag_TDO_data } else { util.Random.nextInt(2) }
-  var __exit:     BigInt = 0
-
-  /**
-    * getOutput is called to determine the value for the named output at the
-    * current state of the system. The proper way to do this is to not use the inputValues.
-    * Instead use[[inputChanged]] to supply a black box with its inputs.
-    *
-    * @param inputValues This is a list of BigInt values that are in the same order
-    *                    as the outputDependencies lists them
-    * @param tpe         The concrete type of this output
-    * @param outputName  The name of this output
-    * @return Computed current concrete value for the name output
-    */
-  override def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
-    outputName match {
-      case "jtag_TCK"   => __jtag_TCK
-      case "jtag_TMS"   => __jtag_TMS
-      case "jtag_TDI"   => __jtag_TDI
-      case "jtag_TRSTn" => __jtag_TRSTn
-      case "exit"       => __exit
-      case _ =>
-        BigInt(0)
-    }
-  }
 
   override def inputChanged(name: String, value: BigInt): Unit = {
     name match {
@@ -77,6 +65,38 @@ class SimJTAG(val instanceName: String) extends ScalaBlackBox {
     }
   }
 
+  // black box outputs
+  var jtag_TCK:          BigInt = 0
+  val jtag_TMS:          BigInt = 0
+  val jtag_TDI:          BigInt = 0
+  val jtag_TRSTn:        BigInt = 0
+  var exit:              BigInt = 0
+
+  /**
+    * @param inputValues Don't use these
+    * @param tpe         The concrete type of this output
+    * @param outputName  The name of this output
+    * @return Computed current concrete value for the name output
+    */
+  override def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+    outputName match {
+      case "jtag_TCK"   => jtag_TCK
+      case "jtag_TMS"   => jtag_TMS
+      case "jtag_TDI"   => jtag_TDI
+      case "jtag_TRSTn" => jtag_TRSTn
+      case "exit"       => exit
+      case _ =>
+        throw TreadleException(s"SimJTAG($instanceName).getOutput($outputName). No such output defined")
+    }
+  }
+
+  var tickCounterRegister: BigInt = 0
+  var tickCounterNext:     BigInt = 0
+  var tickDelay:           BigInt = 0
+
+  //scalastyle:off method.name
+  def jtag_TDO: BigInt = if (isSet(jtag_TDO_driven)) { jtag_TDO_data } else { util.Random.nextInt(2) }
+
   private def catBits(bits: BigInt*): BigInt = {
     bits.foldLeft(BigInt(0)) { (previousResult, bit) =>
       (previousResult << 1) | bit
@@ -86,21 +106,21 @@ class SimJTAG(val instanceName: String) extends ScalaBlackBox {
   override def clockChange(transition: Transition, clockName: String): Unit = {
     if (transition == PositiveEdge) {
       if (reset > BigInt(0)) {
-        __exit = 0
+        exit = 0
         tickCounterRegister = tickDelay
         init_done_sticky = 1
-        __jtag_TCK = if (__jtag_TCK > BigInt(0)) { 1 } else { 0 }
+        jtag_TCK = if (jtag_TCK > BigInt(0)) { 1 } else { 0 }
       } else {
         init_done_sticky = init_done_sticky | init_done
         if (enable > BigInt(0) && init_done_sticky > BigInt(0)) {
           tickCounterRegister = tickCounterNext
           if (tickCounterRegister == BigInt(0)) {
-            __exit = catBits(
-              __jtag_TCK,
-              __jtag_TMS,
-              __jtag_TDI,
-              __jtag_TRSTn,
-              __jtag_TDO
+            exit = catBits(
+              jtag_TCK,
+              jtag_TMS,
+              jtag_TDI,
+              jtag_TRSTn,
+              jtag_TDO
             )
           }
         }
