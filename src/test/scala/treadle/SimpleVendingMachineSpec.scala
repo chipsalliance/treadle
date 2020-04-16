@@ -17,11 +17,12 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class SimpleVendingMachineSpec extends FreeSpec with Matchers {
+class SimpleVendingMachineSpec extends AnyFreeSpec with Matchers {
   "Simple Vending machine should dispense at the right time" in {
     val input =
       """

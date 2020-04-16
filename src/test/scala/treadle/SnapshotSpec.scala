@@ -17,10 +17,11 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class SnapshotSpec extends FreeSpec with Matchers {
+class SnapshotSpec extends AnyFreeSpec with Matchers {
   "Snapshots can be created" in {
     val input =
       """

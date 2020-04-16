@@ -17,11 +17,12 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class ShiftRegisterSpec extends FreeSpec with Matchers {
+class ShiftRegisterSpec extends AnyFreeSpec with Matchers {
   "ShiftRegisterSpec should pass a basic test" in {
     val input =
       """

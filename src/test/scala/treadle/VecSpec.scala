@@ -18,11 +18,12 @@ package treadle
 
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class VecSpec extends FreeSpec with Matchers {
+class VecSpec extends AnyFreeSpec with Matchers {
   "simple register chain should work" in {
     val input =
       """

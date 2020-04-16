@@ -19,11 +19,12 @@ package treadle.executable
 import firrtl.graph.CyclicException
 import firrtl.stage.FirrtlSourceAnnotation
 import firrtl.transforms.DontCheckCombLoopsAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class SymbolTableSpec extends FreeSpec with Matchers {
+class SymbolTableSpec extends AnyFreeSpec with Matchers {
   """SymbolTable creates a table with dependency information""" in {
     val simpleFirrtl: String =
       s"""

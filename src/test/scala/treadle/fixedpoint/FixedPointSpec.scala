@@ -17,10 +17,11 @@ limitations under the License.
 package treadle.fixedpoint
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FlatSpec, Matchers}
 import treadle._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class FixedPointSpec extends FlatSpec with Matchers {
+class FixedPointSpec extends AnyFlatSpec with Matchers {
   behavior.of("dumb fixed point multiply test")
 
   it should "expand instances as found" in {

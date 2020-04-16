@@ -18,10 +18,11 @@ package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
 import firrtl.transforms.NoDCEAnnotation
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class RegisterSpec extends FlatSpec with Matchers {
+class RegisterSpec extends AnyFlatSpec with Matchers {
   behavior.of("register reset")
 
   it should "reset registers when their condition is true" in {

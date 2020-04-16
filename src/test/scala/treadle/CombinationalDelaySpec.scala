@@ -18,11 +18,12 @@ package treadle
 
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class CombinationalDelaySpec extends FreeSpec with Matchers {
+class CombinationalDelaySpec extends AnyFreeSpec with Matchers {
   private val input =
     """
       |circuit CombinationalCircuit :

@@ -18,10 +18,11 @@ package treadle
 
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class ClockedManuallySpec extends FreeSpec with Matchers {
+class ClockedManuallySpec extends AnyFreeSpec with Matchers {
 
   private val input =
     """
