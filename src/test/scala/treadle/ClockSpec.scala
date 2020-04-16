@@ -120,7 +120,7 @@ class ClockSpec extends FreeSpec with Matchers {
       println(s"memory($i) = ${tester.peekMemory("m", i)}")
     }
     // read phase
-    tester.poke("write_en", 1)
+    tester.poke("write_en", 0)
     for (i <- 0 until 8) {
       tester.poke("addr", i)
       tester.expect("out1", i * 10 + i)
