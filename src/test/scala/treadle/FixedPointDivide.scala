@@ -17,10 +17,11 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class FixedPointDivide extends FreeSpec with Matchers {
+class FixedPointDivide extends AnyFreeSpec with Matchers {
   "FixedPointDivide should pass a basic test" in {
     val input =
       """
@@ -47,7 +48,7 @@ class FixedPointDivide extends FreeSpec with Matchers {
 }
 
 // scalastyle:off magic.number
-class SignedAdder extends FreeSpec with Matchers {
+class SignedAdder extends AnyFreeSpec with Matchers {
   "Check adding numbers on DataSize transition boundaries" - {
 //    for(bitWidth <- Seq(16, 31, 32, 33, 63, 64, 65)) {
     for (bitWidth <- Seq(16)) {
@@ -98,7 +99,7 @@ class SignedAdder extends FreeSpec with Matchers {
 }
 
 // scalastyle:off magic.number
-class DynamicShiftRight extends FreeSpec with Matchers {
+class DynamicShiftRight extends AnyFreeSpec with Matchers {
   "Check shifting numbers on DataSize transition boundaries" - {
 //    for(bitWidth <- Seq(16, 31, 32, 33, 63, 64, 65)) {
 //    for(bitWidth <- Seq(3)) {

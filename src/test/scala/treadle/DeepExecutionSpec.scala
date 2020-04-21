@@ -17,10 +17,11 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class DeepExecutionSpec extends FreeSpec with Matchers {
+class DeepExecutionSpec extends AnyFreeSpec with Matchers {
   "DeepExecutionSpec should pass a basic test" in {
     val stream = getClass.getResourceAsStream("/DeepExecution.fir")
     val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")

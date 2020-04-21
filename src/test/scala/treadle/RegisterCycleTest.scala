@@ -19,10 +19,11 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class RegisterCycleTest extends FreeSpec with Matchers {
+class RegisterCycleTest extends AnyFreeSpec with Matchers {
   "cycle behavior test-only intepreter should not crash on various register init methods" - {
     "method 1" in {
       val input =

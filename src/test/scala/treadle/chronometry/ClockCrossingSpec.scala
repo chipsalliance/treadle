@@ -17,12 +17,13 @@ limitations under the License.
 package treadle.chronometry
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.ClockInfo
 import treadle.{ClockInfoAnnotation, TreadleTester}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //noinspection ScalaStyle
-class ClockCrossingSpec extends FreeSpec with Matchers {
+class ClockCrossingSpec extends AnyFreeSpec with Matchers {
 
   "clocks generated using asClock should function properly by advancing their associated registers" in {
     val chirrtlString =

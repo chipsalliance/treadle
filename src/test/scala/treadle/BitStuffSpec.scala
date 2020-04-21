@@ -20,10 +20,11 @@ import treadle.executable._
 import firrtl.ir.IntWidth
 import treadle.executable.Big
 import treadle.utils.BitUtils
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class BitStuffSpec extends FreeSpec with Matchers {
+class BitStuffSpec extends AnyFreeSpec with Matchers {
   "should be able to limit bigint to bits that fit in type UInt" in {
     val symbol = Symbol("twoBit", firrtl.ir.UIntType(IntWidth(2)))
 

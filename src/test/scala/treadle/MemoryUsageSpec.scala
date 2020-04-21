@@ -21,14 +21,14 @@ import java.io.{File, PrintWriter}
 import firrtl.FileUtils
 import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
-import treadle.executable.StopException
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 /**
   * Created by chick on 4/30/16.
   */
 //scalastyle:off magic.number
-class MemoryUsageSpec extends FreeSpec with Matchers {
+class MemoryUsageSpec extends AnyFreeSpec with Matchers {
 
   "chirrtl mems should parse and run ok" in {
     val chirrtlMemInput =

@@ -18,9 +18,10 @@ package treadle.blackboxes
 
 import firrtl.ir.Type
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle._
 import treadle.executable._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 
@@ -90,7 +91,7 @@ class BlackBoxCounterFactory extends ScalaBlackBoxFactory {
   }
 }
 
-class BlackBoxOutputSpec extends FreeSpec with Matchers {
+class BlackBoxOutputSpec extends AnyFreeSpec with Matchers {
   "this tests black box implmentation that have multiple outputs" - {
     val adderInput =
       """

@@ -18,11 +18,12 @@ package treadle.primops
 
 import treadle.executable._
 import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BigIntTestValuesGenerator, BitTwiddlingUtils}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //noinspection RedundantDefaultArgument
 // scalastyle:off magic.number
-class AsSIntAsUInt extends FreeSpec with Matchers {
+class AsSIntAsUInt extends AnyFreeSpec with Matchers {
   "AsSInt should pass some basic tests" - {
     "Should work for integer sizes" - {
       val bitWidth = 4

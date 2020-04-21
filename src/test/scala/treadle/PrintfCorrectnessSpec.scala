@@ -20,9 +20,10 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
 import logger.{LazyLogging, LogLevel, Logger}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class PrintfCorrectnessSpec extends FreeSpec with Matchers with LazyLogging {
+class PrintfCorrectnessSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "printf needs to capture values at the proper time" in {
     val input =
       """

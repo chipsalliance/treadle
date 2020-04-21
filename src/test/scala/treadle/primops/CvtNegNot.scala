@@ -18,10 +18,11 @@ package treadle.primops
 
 import treadle.executable._
 import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class CvtNegNot extends FreeSpec with Matchers {
+class CvtNegNot extends AnyFreeSpec with Matchers {
   "Cvt, Neg and Not should pass a basic test" - {
     "Cvt is a no-op for the simulator" in {
       true should be(true)
