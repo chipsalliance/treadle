@@ -95,15 +95,17 @@ class ExpressionViewRenderer(
             case ev: ExpressionView =>
               ev.args.head match {
                 case ms: Symbol =>
-                  val arg = args.drop(if (dataStore(ms) > 0) 2 else 1).head
-                  arg match {
-                    case ev2: ExpressionView =>
-                      ev2.args.head match {
-                        case sss: Symbol =>
-                          symbolsSeen += sss
-                        case _ =>
-                      }
-                    case _ =>
+                  if (showValues) {
+                    val arg = args.drop(if (dataStore(ms) > 0) 2 else 1).head
+                    arg match {
+                      case ev2: ExpressionView =>
+                        ev2.args.head match {
+                          case sss: Symbol =>
+                            symbolsSeen += sss
+                          case _ =>
+                        }
+                      case _ =>
+                    }
                   }
                 case value: Big =>
                   val arg = args.drop(if (value > 0) 2 else 1).head
@@ -151,7 +153,11 @@ class ExpressionViewRenderer(
             }
           }
 
-          val value = symbol.normalize(dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))
+          val value = if (showValues) {
+            symbol.normalize(dataArrays.getValueAtIndex(symbol.dataSize, symbol.index))
+          } else {
+            BigInt(0)
+          }
 
           val string = s"${symbol.name}" + (if (showValues) {
                                               " <= " +

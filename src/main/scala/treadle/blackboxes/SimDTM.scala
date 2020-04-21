@@ -107,10 +107,8 @@ class SimDTM(val instanceName: String) extends ScalaBlackBox {
     * @param outputName the output whose dependencies are being described
     * @return
     */
+  //TODO: Figure out the correct dependencies here
   override def outputDependencies(outputName: String): Seq[String] = {
-    Seq(
-      "debug_resp_bits_resp",
-      "debug_resp_bits_data"
-    )
+    Seq.empty
   }
 }

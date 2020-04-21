@@ -567,6 +567,50 @@ object SymbolTable extends LazyLogging {
         throw TreadleException(s"Top level module is not the right kind of module $x")
     }
 
+    /* This builds an expression view system then uses that
+     * to do a better job of showing the loop
+     */
+    def showLoop(badNode: Symbol, symbolTable: SymbolTable): Unit = {
+      val dummyDatastore = new DataStore(10, new DataStoreAllocator)
+      val expressionViews = ExpressionViewBuilder.getExpressionViews(
+        symbolTable,
+        dummyDatastore,
+        new Scheduler(symbolTable),
+        validIfIsRandom = false,
+        circuit,
+        blackBoxFactories
+      )
+      val expressionViewRenderer = new ExpressionViewRenderer(
+        dummyDatastore,
+        symbolTable,
+        expressionViews,
+        maxDependencyDepth = 0
+      )
+
+      def show(symbol: Symbol, highlightPattern: String): Unit = {
+        val expr = expressionViewRenderer.render(symbol, 0L, showValues = false)
+        val line = s"$expr   : ${symbol.info.serialize}"
+        val highlighted = line.replace(highlightPattern, s"${Console.RED}$highlightPattern${Console.RESET}")
+        println(highlighted)
+      }
+
+      val badChildren = symbolTable.getChildren(Seq(badNode))
+      badChildren.exists { node =>
+        try {
+          val path = symbolTable.childrenOf.path(node, badNode) ++ symbolTable.childrenOf.path(badNode, node).tail
+          println(s"Problem path found starting at ${node.name}")
+          path.reverse.zip(path.reverse.tail).foreach {
+            case (symbol, nextSymbol) =>
+              show(symbol, nextSymbol.name)
+          }
+          true
+        } catch {
+          case t: Throwable =>
+            false
+        }
+      }
+    }
+
     logger.trace(s"Build SymbolTable pass 1 -- gather starting")
     processModule("", module)
     logger.trace(s"Build SymbolTable pass 1 -- gather complete: ${nameToSymbol.size} entries found")
@@ -598,16 +642,7 @@ object SymbolTable extends LazyLogging {
         if (allowCycles) {
           symbolTable.symbols.toSeq
         } else {
-          symbolTable.getChildren(Seq(badNode)).exists { node =>
-            try {
-              val path = symbolTable.childrenOf.path(node, badNode)
-              println(s"Problem path:\n  ${badNode.name}\n  ${path.map(_.name).mkString("\n  ")}")
-              true
-            } catch {
-              case _: Throwable =>
-                false
-            }
-          }
+          showLoop(badNode, symbolTable)
           throw e
         }
     }

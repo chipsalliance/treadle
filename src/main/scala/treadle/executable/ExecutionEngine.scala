@@ -16,7 +16,11 @@ limitations under the License.
 
 package treadle.executable
 
+import java.io.PrintWriter
+
 import firrtl.ir.{Circuit, NoInfo}
+import firrtl.options.StageOptions
+import firrtl.options.Viewer.view
 import firrtl.{AnnotationSeq, PortKind}
 import treadle._
 import treadle.blackboxes.PlusArg
@@ -48,10 +52,6 @@ class ExecutionEngine(
   )
 
   scheduler.executionEngineOpt = Some(this)
-
-  if (annotationSeq.collectFirst { case ShowFirrtlAtLoadAnnotation => ShowFirrtlAtLoadAnnotation }.isDefined) {
-    println(ast.serialize)
-  }
 
   val symbolsPokedSinceEvaluation: mutable.HashSet[Symbol] = new mutable.HashSet
 
@@ -476,8 +476,21 @@ object ExecutionEngine {
   def apply(annotationSeq: AnnotationSeq, wallTime: UTC): ExecutionEngine = {
     val timer = new Timer
     val t0 = System.nanoTime()
+    val stageOptions = view[StageOptions](annotationSeq)
 
     val circuit = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(c) => c }.get.circuit
+
+    if (annotationSeq.contains(ShowFirrtlAtLoadAnnotation)) {
+      println(circuit.serialize)
+    }
+
+    if (annotationSeq.contains(SaveFirrtlAtLoadAnnotation)) {
+      val fileName = stageOptions.getBuildFileName(circuit.main, Some(".treadle.lo.fir"))
+      val writer = new PrintWriter(fileName)
+      writer.println(circuit.serialize)
+      writer.close()
+    }
+
     val blackBoxFactories = annotationSeq.flatMap {
       case BlackBoxFactoriesAnnotation(bbf) => bbf
       case _                                => Seq.empty

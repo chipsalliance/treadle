@@ -16,11 +16,11 @@ limitations under the License.
 
 package treadle
 
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
 import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
@@ -101,8 +101,21 @@ case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOp
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-show-firrtl-at-load",
-      toAnnotationSeq = _ => Seq(),
+      toAnnotationSeq = _ => Seq(ShowFirrtlAtLoadAnnotation),
       helpText = "show the low firrtl source treadle is using to build simulator"
+    )
+  )
+}
+
+/**
+  *  Tells treadle to show the low firrtl it is starting out with
+  */
+case object SaveFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-save-firrtl-at-load",
+      toAnnotationSeq = _ => Seq(SaveFirrtlAtLoadAnnotation),
+      helpText = "save the low firrtl source treadle is using to build simulator"
     )
   )
 }
@@ -153,9 +166,7 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
 /**
   *  Sets verilog plus args that will be passed to black boxes
   */
-case class PlusArgsAnnotation(plusArgs: Seq[String])
-    extends NoTargetAnnotation
-    with TreadleOption
+case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation with TreadleOption
 
 case object PlusArgsAnnotation extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -374,6 +385,7 @@ class TreadleLibrary extends RegisteredLibrary {
     AllowCyclesAnnotation,
     RandomSeedAnnotation,
     ShowFirrtlAtLoadAnnotation,
+    SaveFirrtlAtLoadAnnotation,
     DontRunLoweringCompilerLoadAnnotation,
     ValidIfIsRandomAnnotation,
     RollBackBuffersAnnotation,
