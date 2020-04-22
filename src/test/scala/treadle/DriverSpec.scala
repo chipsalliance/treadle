@@ -16,9 +16,10 @@ limitations under the License.
 
 package treadle
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class DriverSpec extends FreeSpec with Matchers {
+class DriverSpec extends AnyFreeSpec with Matchers {
   "The Driver class provides a simple caller with run-time parameters" - {
     "topName must be set" in {
       val input =

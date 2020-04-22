@@ -19,10 +19,11 @@ package treadle.primops
 import firrtl.stage.FirrtlSourceAnnotation
 import treadle.executable.{AndInts, OrInts, XorInts}
 import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils, TreadleTester}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class AndOrXor extends FreeSpec with Matchers {
+class AndOrXor extends AnyFreeSpec with Matchers {
   "And should work with simple bit width" - {
 
     "using SInts" in {

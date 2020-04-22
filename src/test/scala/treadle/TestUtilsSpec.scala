@@ -16,10 +16,11 @@ limitations under the License.
 
 package treadle
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class TestUtilsSpec extends FlatSpec with Matchers {
+class TestUtilsSpec extends AnyFlatSpec with Matchers {
   behavior.of("IntGenerator")
 
   it should "return a bunch of ints" in {

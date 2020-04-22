@@ -20,10 +20,11 @@ import firrtl.annotations.DeletedAnnotation
 import firrtl.options.TargetDirAnnotation
 import firrtl.{AnnotationSeq, HighFirrtlCompiler, HighForm, LowFirrtlCompiler, LowForm, MidForm, MiddleFirrtlCompiler}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.stage.TreadleTesterPhase
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class TesterCreationTest extends FreeSpec with Matchers {
+class TesterCreationTest extends AnyFreeSpec with Matchers {
   "TreadleTester can be created from any form of firrtl" - {
     //scalastyle:off method.length
     def testWithCompiler(compilerAnnotation: CompilerAnnotation): Unit = {

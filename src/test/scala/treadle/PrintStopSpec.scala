@@ -20,11 +20,12 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
 import logger.{LazyLogging, LogLevel, Logger}
-import org.scalatest.{FlatSpec, Matchers}
 import treadle.executable.StopException
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class PrintStopSpec extends FlatSpec with Matchers with LazyLogging {
+class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
   behavior.of("stop")
 
   it should "return not stop if condition is not met" in {
