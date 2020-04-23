@@ -17,11 +17,12 @@ limitations under the License.
 package treadle.asyncreset
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class AsyncResetNativeSpec extends FreeSpec with Matchers {
+class AsyncResetNativeSpec extends AnyFreeSpec with Matchers {
   "async reset should trip registers immediately" in {
     val input =
       """

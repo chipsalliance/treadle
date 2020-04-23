@@ -3,10 +3,11 @@
 package treadle.vcd
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.{TreadleTester, WriteVcdAnnotation}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class VcdRoundTripTest extends FreeSpec with Matchers {
+class VcdRoundTripTest extends AnyFreeSpec with Matchers {
   "create a vcd through treadle and then read it back in" in {
     val input =
       """

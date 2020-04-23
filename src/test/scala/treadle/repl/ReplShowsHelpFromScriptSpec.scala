@@ -20,10 +20,11 @@ import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import firrtl.FileUtils
 import firrtl.options.TargetDirAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.TreadleRepl
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class ReplShowsHelpFromScriptSpec extends FreeSpec with Matchers {
+class ReplShowsHelpFromScriptSpec extends AnyFreeSpec with Matchers {
   "start a repl, run a script containing commands help ; quit" in {
     val targetDir = "test_run_dir/repl/basic-repl-test"
     val replInputFile = targetDir + File.separator + "repl.in"

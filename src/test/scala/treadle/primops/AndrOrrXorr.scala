@@ -19,10 +19,11 @@ package treadle.primops
 import firrtl.stage.FirrtlSourceAnnotation
 import treadle.executable._
 import treadle._
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class AndrOrrXorr extends FreeSpec with Matchers {
+class AndrOrrXorr extends AnyFreeSpec with Matchers {
   "BitReductions should pass a basic test" - {
     "And reduction (Andr) should work for uints with known examples" in {
       val bitWidth = 4

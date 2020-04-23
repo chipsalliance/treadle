@@ -18,10 +18,11 @@ package treadle
 
 import firrtl.CommonOptions
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.executable.StopException
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class StopBehaviorSpec extends FreeSpec with Matchers {
+class StopBehaviorSpec extends AnyFreeSpec with Matchers {
   val input: String =
     """
       |circuit myRisc :

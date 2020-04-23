@@ -21,10 +21,11 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import logger.{LazyLogging, LogLevel, Logger}
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.{PrefixPrintfWithWallTime, TreadleTester, WriteVcdAnnotation}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class PrintfOnDerivedClockSpec extends FreeSpec with Matchers with LazyLogging {
+class PrintfOnDerivedClockSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "Printf in submodule in scope of withClock should appear in output" in {
     val input =
       """

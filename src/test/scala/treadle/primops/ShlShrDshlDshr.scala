@@ -26,10 +26,11 @@ import treadle.{
   TreadleTester,
   VerboseAnnotation
 }
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class ShlShrDshlDshr extends FreeSpec with Matchers {
+class ShlShrDshlDshr extends AnyFreeSpec with Matchers {
   "Shl should work with known examples" - {
     "Using SInts" in {
       val bitWidth = 4

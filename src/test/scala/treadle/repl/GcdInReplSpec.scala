@@ -21,10 +21,11 @@ import java.io.{ByteArrayOutputStream, File, PrintStream}
 import firrtl.FileUtils
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.TreadleRepl
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class GcdInReplSpec extends FreeSpec with Matchers {
+class GcdInReplSpec extends AnyFreeSpec with Matchers {
   "run gcd to compute gcd(8,12) => 4" in {
     val targetDir = "test_run_dir/repl/gcd-test"
     val replInputFile = targetDir + File.separator + "gcd.in"

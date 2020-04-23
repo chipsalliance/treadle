@@ -17,9 +17,10 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class LifeCellSpec extends FlatSpec with Matchers {
+class LifeCellSpec extends AnyFlatSpec with Matchers {
   behavior.of("A Conway Life cell")
 
   it should "observe neighbor transition rules" in {

@@ -22,13 +22,14 @@ import firrtl.options.Viewer.view
 import firrtl.options.{StageOptions, TargetDirAnnotation}
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import firrtl.util.BackendCompilationUtilities
-import org.scalatest.{FlatSpec, Matchers}
 import treadle._
 
 import scala.util.Random
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class VCDSpec extends FlatSpec with Matchers with BackendCompilationUtilities {
+class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities {
   private def getVcd = {
     VCD("test_circuit")
   }

@@ -18,10 +18,11 @@ package treadle.real
 
 import firrtl.stage.FirrtlSourceAnnotation
 import treadle._
-import org.scalatest.{FreeSpec, Matchers}
 import treadle.asyncreset.AsyncResetBlackBoxFactory
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class BlackBoxRealSpec extends FreeSpec with Matchers {
+class BlackBoxRealSpec extends AnyFreeSpec with Matchers {
   "this tests black box implmentation of real numbers" - {
     val adderInput =
       """
