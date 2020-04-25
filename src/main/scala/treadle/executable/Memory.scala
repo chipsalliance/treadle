@@ -18,7 +18,7 @@ package treadle.executable
 
 import treadle._
 import firrtl.{FileUtils, MemKind, RegKind, WireKind}
-import firrtl.ir.{ClockType, DefMemory, Info, IntWidth, ReadUnderWrite}
+import firrtl.ir.{ClockType, DefMemory, Info, IntWidth, ReadUnderWrite, Type}
 import RenderHelper.ExpressionHelper
 import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryLoadFileType, ModuleName}
 
@@ -72,7 +72,7 @@ object Memory {
     val memorySymbol = Symbol(expandedName, memory.dataType, MemKind, memory.depth.toInt)
     val addrWidth = IntWidth(requiredBitsForUInt(memory.depth - 1))
     val addrType = firrtl.ir.UIntType(addrWidth)
-    val dataType = memory.dataType
+    val dataType: Type = memory.dataType
     val booleanType = firrtl.ir.UIntType(IntWidth(1))
 
     val lastValueSymbols = new mutable.ArrayBuffer[Symbol]()
