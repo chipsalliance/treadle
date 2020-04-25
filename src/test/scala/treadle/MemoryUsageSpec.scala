@@ -21,6 +21,7 @@ import java.io.{File, PrintWriter}
 import firrtl.FileUtils
 import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
 import firrtl.stage.FirrtlSourceAnnotation
+import treadle.executable.StopException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
