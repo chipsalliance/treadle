@@ -133,7 +133,11 @@ publishTo := {
 //
 scalacOptions in Compile ++= Seq(
   "-deprecation",
-  "-unchecked"
+  "-unchecked",
+  "-language:reflectiveCalls",
+  "-language:existentials",
+  "-language:implicitConversions",
+  "-Ywarn-unused-import" // required by `RemoveUnused` rule
 )
 
 //
@@ -141,6 +145,8 @@ scalacOptions in Compile ++= Seq(
 //
 scalacOptions in Compile in doc ++= Seq(
   "-deprecation",
+  "-Xfatal-warnings",
+  "-feature",
   "-diagrams",
   "-diagrams-max-classes", "25",
   "-doc-version", version.value,

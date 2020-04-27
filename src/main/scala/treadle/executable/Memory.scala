@@ -464,19 +464,20 @@ object Memory {
       }
     }
 
-    /**
-      * Makes a chain of pipeline registers.
-      * These must be ordered reg0/in, reg0, reg1/in ... regN/in, regN
-      * This will advance the registers on the specified clock,
-      * and combinationally pass the register value to the next register's input down the chain
-      * Data flows from low indexed pipeline elements to high ones
 
-      * @param clock         used to create execution based on this trigger.
-      * @param rootSymbol    the head element of the pipeline, this is one of the mem ports
-      * @param portString    name of the writer
-      * @param pipelineName  string representing the name of the root port
-      * @param latency       pipeline latency
-      */
+    /*
+     * Makes a chain of pipeline registers.
+     * These must be ordered reg0/in, reg0, reg1/in ... regN/in, regN
+     * This will advance the registers on the specified clock,
+     * and combinationally pass the register value to the next register's input down the chain
+     * Data flows from low indexed pipeline elements to high ones
+
+     * @param clock         used to create execution based on this trigger.
+     * @param rootSymbol    the head element of the pipeline, this is one of the mem ports
+     * @param portString    name of the writer
+     * @param pipelineName  string representing the name of the root port
+     * @param latency       pipeline latency
+     */
     def buildPipelineAssigners(clock:        Symbol,
                                rootSymbol:   Symbol,
                                portString:   String,

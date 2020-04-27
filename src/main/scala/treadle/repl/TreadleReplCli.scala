@@ -17,7 +17,6 @@ limitations under the License.
 package treadle.repl
 
 import firrtl.options.Shell
-import treadle._
 
 trait TreadleReplCli { this: Shell =>
   parser.note("TreadleRepl specific options")
