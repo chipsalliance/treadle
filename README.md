@@ -1,6 +1,11 @@
 Treadle -- A Chisel/Firrtl Execution Engine
 ==================
 
+---
+
+[![Join the chat at https://gitter.im/freechipsproject/firrtl](https://badges.gitter.im/freechipsproject/firrtl.svg)](https://gitter.im/freechipsproject/firrtl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/freechipsproject/firrtl.svg?branch=master)](https://travis-ci.org/freechipsproject/firrtl)
+
 **Treadle** is an experimental circuit simulator that executes low Firrtl IR.
 It is based on earlier work on the [firrtl_interpreter](https://github.com/freechipsproject/firrtl-interpreter)
 It will be one of the standard back-ends available as part of
