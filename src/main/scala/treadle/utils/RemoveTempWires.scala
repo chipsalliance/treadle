@@ -16,10 +16,8 @@ limitations under the License.
 
 package treadle.utils
 
-// See LICENSE for license details.
-
 import firrtl.ir._
-import firrtl.{CircuitForm, CircuitState, LowForm, Parser, Transform, WRef, WSubField, WSubIndex}
+import firrtl.{CircuitForm, CircuitState, LowForm, Transform, WRef, WSubField, WSubIndex}
 
 import scala.collection.mutable
 
@@ -42,20 +40,20 @@ class RemoveTempWires extends Transform {
 
     val c = state.circuit
 
-    /**
-      * removes all references to temp wires in module
-      * @param module the module to be altered
-      * @return
-      */
+    /*
+     * removes all references to temp wires in module
+     * @param module the module to be altered
+     * @return
+     */
     def removeTempWiresFromModule(module: Module): Module = {
 
       val toRemove = new mutable.HashMap[String, Expression]()
 
-      /**
-        * Saves reference to the expression associated
-        * with a temp wire associated with a Node statement
-        * @param s statement to be checked
-        */
+      /*
+       * Saves reference to the expression associated
+       * with a temp wire associated with a Node statement
+       * @param s statement to be checked
+       */
       def collectTempExpressions(s: Statement): Unit = s match {
         case block: Block =>
           block.stmts.foreach { substatement =>
@@ -74,12 +72,12 @@ class RemoveTempWires extends Transform {
         case _ => //do nothing
       }
 
-      /**
-        * recursively find any references to temp wires in the expression and replace the
-        * references with the associated expression
-        * @param e expression to be altered
-        * @return
-        */
+      /*
+       * recursively find any references to temp wires in the expression and replace the
+       * references with the associated expression
+       * @param e expression to be altered
+       * @return
+       */
       def removeGen(e: Expression): Expression = {
         e match {
           case wire: WRef =>
@@ -104,11 +102,11 @@ class RemoveTempWires extends Transform {
         }
       }
 
-      /**
-        * Removes node definition statements for temp wires
-        * @param s statement to be altered
-        * @return
-        */
+      /*
+       * Removes node definition statements for temp wires
+       * @param s statement to be altered
+       * @return
+       */
       def removeGenStatement(s: Statement): Option[Statement] = {
         s match {
           case block: Block =>

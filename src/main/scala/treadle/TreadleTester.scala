@@ -19,14 +19,13 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
-import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
+import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
 import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
-import treadle.vcd.VCD
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
@@ -117,7 +116,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   }
 
   /**
-    * Advance time in ticks of the [[UTC]] wallTime, the default is picoseconds, but can be
+    * Advance time in ticks of the [[treadle.chronometry.UTC]] wallTime, the default is picoseconds, but can be
     * read by the scaleName of the wallTime.  One should probably be advancing by some simple factor
     * of a clock period. The clockInfoList of the options should define this (could be more than one).
     * @param interval units are in units of the [[wallTime]] scale.

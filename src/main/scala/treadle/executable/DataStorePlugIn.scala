@@ -16,10 +16,6 @@ limitations under the License.
 
 package treadle.executable
 
-import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.Unserializable
-import treadle.vcd.VCD
-
 import scala.collection.mutable
 
 abstract class DataStorePlugin {

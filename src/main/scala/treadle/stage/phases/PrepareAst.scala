@@ -56,11 +56,9 @@ trait TreadlePhase extends Phase {
   }
 }
 
-/** This provides a series of transforms that
-  * seem to be important to Treadle functionality
-  * This was based on [[firrtl.LowFirrtlOptimization]] but that
-  * has includes [[passes.memlib.VerilogMemDelays]] which can cause combinational loops
-  * for some firrtl files
+/** This was a workaround for a problem in firrtl.LowFirrtlOptimization that
+  * caused problems like combinational loops for treadle's memory simulation.
+  * This code should not be used going forward
   */
 class TreadleLowFirrtlOptimization extends SeqTransform {
   def inputForm:  CircuitForm = LowForm

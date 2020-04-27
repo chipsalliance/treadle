@@ -283,7 +283,7 @@ object TreadleFirrtlFormHint extends HasShellOptions {
 case class TreadleTesterAnnotation(tester: TreadleTester) extends NoTargetAnnotation with TreadleOption
 
 /**
-  * Factory for [[FirrtlSourceAnnotation]], this is an alias for FirrtlCli
+  * Factory for FirrtlSourceAnnotation, this is an alias for FirrtlCli
   */
 object TreadleFirrtlString extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -296,7 +296,7 @@ object TreadleFirrtlString extends HasShellOptions {
 }
 
 /**
-  * Factory for [[FirrtlFileAnnotation]] annotation, this is an alias for Firrtl Cli
+  * Factory for FirrtlFileAnnotation annotation, this is an alias for Firrtl Cli
   */
 object TreadleFirrtlFile extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -315,7 +315,7 @@ case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFacto
 
 /**
   * Using this annotation allows external users of a TreadleTester to supply their own custom
-  * [[DataStorePlugin]]s. See that code for examples of use.
+  * [[treadle.executable.DataStorePlugin]]s. See that code for examples of use.
   *
   * @note this annotation cannot be generated from the command line
   * @param name      A unique name for this plugin
