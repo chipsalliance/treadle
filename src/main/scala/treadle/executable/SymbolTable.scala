@@ -160,7 +160,7 @@ object SymbolTable extends LazyLogging {
   def makeRegisterInputName(name:     String): String = name + RegisterInputSuffix
   def makeRegisterInputName(symbol:   Symbol): String = symbol.name + RegisterInputSuffix
   def makeRegisterInputSymbol(symbol: Symbol): Symbol = {
-    Symbol(makeRegisterInputName(symbol), symbol.firrtlType, WireKind, info = symbol.info)
+    Symbol(makeRegisterInputName(symbol), symbol.firrtlType, RegKind, info = symbol.info)
   }
 
   def makeLastValueName(name:   String): String = name + LastValueSuffix

@@ -29,6 +29,7 @@ import firrtl.{
   CircuitForm,
   CircuitState,
   HighForm,
+  LowFirrtlOptimization,
   LowForm,
   SeqTransform,
   Transform,
@@ -132,7 +133,7 @@ object PrepareAst extends TreadlePhase {
     Seq(
       new ChirrtlToLow,
       new HighToLow,
-      new TreadleLowFirrtlOptimization,
+      new LowFirrtlOptimization,
       new BlackBoxSourceHelper,
       new FixupOps,
       AugmentPrintf

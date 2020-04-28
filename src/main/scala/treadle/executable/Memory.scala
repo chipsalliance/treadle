@@ -17,13 +17,35 @@ limitations under the License.
 package treadle.executable
 
 import treadle._
-import firrtl.{FileUtils, MemKind, WireKind}
-import firrtl.ir.{ClockType, DefMemory, Info, IntWidth}
+import firrtl.{FileUtils, MemKind, RegKind, WireKind}
+import firrtl.ir.{ClockType, DefMemory, Info, IntWidth, ReadUnderWrite, Type}
 import RenderHelper.ExpressionHelper
 import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryLoadFileType, ModuleName}
 
 import scala.collection.mutable
 
+////////////////////////////////////////////////////////////////////////////////
+// IMPORTANT NOTE
+// The primary methods here have been effectively disabled by using
+//     val memory = defMemory.copy(readLatency = 0, writeLatency = 0,
+//         readUnderWrite = ReadUnderWrite.Undefined)
+// appearing at the beginning. This is because the functionality contained here,
+// i.e. adding read and write pipeline registers is now being taken care of in the
+// VerilogMemDelays transform in the LowFirrtlOptimization. This may or may not
+// be the long term solution. So the code here will remain here but disabled for now.
+// Though it is still used to do the trivial case of hooking up memory ports to the
+// wires
+////////////////////////////////////////////////////////////////////////////////
+
+/** Provides three different aspects of the code necessary to create read and write
+  * register pipelines. The three cases are:
+  *  - Adding the symbols for the registers to be created
+  *  - Adding the rendering code necessary to Expression views of the pipelines
+  *  - Actually adding the pipeline registers.
+  *
+  *  NOTE: See IMPORTANT NOTE above.
+  *
+  */
 object Memory {
   //scalastyle:off method.length
   /**
@@ -31,31 +53,35 @@ object Memory {
     * Pipelines are constructed as registers with a regular name and
     * a /in name.  Data travels up-index through a pipeline for both
     * read and write pipelines.
-    * @param memory                  the specified memory
+    * @param defMemory               the specified memory
     * @param expandedName            the full name of the memory
     * @param sensitivityGraphBuilder external graph of dependencies
     * @return
     */
   def buildSymbols(
-    memory:                  DefMemory,
+    defMemory:               DefMemory,
     expandedName:            String,
     sensitivityGraphBuilder: SensitivityGraphBuilder,
     registerNames:           mutable.HashSet[String]
   ): Seq[Symbol] = {
+    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
+
     if (memory.depth >= BigInt(Int.MaxValue)) {
       throw TreadleException(s"Memory $expandedName size ${memory.depth} is too large for treadle")
     }
     val memorySymbol = Symbol(expandedName, memory.dataType, MemKind, memory.depth.toInt)
     val addrWidth = IntWidth(requiredBitsForUInt(memory.depth - 1))
     val addrType = firrtl.ir.UIntType(addrWidth)
-    val dataType = memory.dataType
+    val dataType: Type = memory.dataType
     val booleanType = firrtl.ir.UIntType(IntWidth(1))
 
     val lastValueSymbols = new mutable.ArrayBuffer[Symbol]()
 
+    val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
+
     def buildRegisterTriple(baseName: String, index: Int, dataType: firrtl.ir.Type): Seq[Symbol] = {
 
-      val register = Symbol(s"$baseName$index", dataType, WireKind)
+      val register = Symbol(s"$baseName$index", dataType, RegKind)
       registerNames += register.name
       val registerIn = SymbolTable.makeRegisterInputSymbol(register)
       val lastClockValue = SymbolTable.makeLastValueSymbol(register)
@@ -104,10 +130,10 @@ object Memory {
 
       sensitivityGraphBuilder.addSensitivity(clk, data)
 
-      val pipelineRaddrSymbols = (0 until memory.readLatency).flatMap { n =>
+      val pipelineRaddrSymbols = (0 until effectiveReadLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readerString.pipeline_raddr_", n, addrType)
       }
-      val pipelineEnableSymbols = (0 until memory.readLatency).flatMap { n =>
+      val pipelineEnableSymbols = (0 until effectiveReadLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readerString.pipeline_ren_", n, booleanType)
       }
 
@@ -175,12 +201,12 @@ object Memory {
       sensitivityGraphBuilder.addSensitivity(mode, valid)
       sensitivityGraphBuilder.addSensitivity(mask, valid)
 
-      val pipelineReadDataSymbols = (0 until memory.readLatency).flatMap { n =>
+      val pipelineReadDataSymbols = (0 until effectiveReadLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_raddr_", n, addrType)
       }
       buildPipelineDependencies(addr, pipelineReadDataSymbols, Some(rdata), clockSymbol = Some(clk))
 
-      val pipelineReadEnableSymbols = (0 until memory.readLatency).flatMap { n =>
+      val pipelineReadEnableSymbols = (0 until effectiveReadLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_ren_", n, booleanType)
       }
       buildPipelineDependencies(addr, pipelineReadEnableSymbols, Some(rdata), clockSymbol = Some(clk))
@@ -215,18 +241,19 @@ object Memory {
 
   /**
     * Construct views for all the memory elements
-    * @param memory       current memory
+    * @param defMemory    current memory
     * @param expandedName full path name
     * @param scheduler    handle to execution components
     * @param expressionViews   where to store the generated views
     */
   def buildMemoryExpressions(
-    memory:       DefMemory,
+    defMemory:    DefMemory,
     expandedName: String,
     scheduler:    Scheduler,
 //    compiler     : ExpressionCompiler,
     expressionViews: mutable.HashMap[Symbol, ExpressionView]
   ): Unit = {
+    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
 
     val symbolTable = scheduler.symbolTable
     val memorySymbol = symbolTable(expandedName)
@@ -269,7 +296,9 @@ object Memory {
       enable:       Symbol
     ): Symbol = {
 
-      val pipelineReadSymbols = buildPipeLine(portName, pipelineName, memory.readLatency)
+      val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
+
+      val pipelineReadSymbols = buildPipeLine(portName, pipelineName, effectiveReadLatency)
       val chain = Seq(addr) ++ pipelineReadSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
@@ -391,17 +420,19 @@ object Memory {
 
   /**
     * Construct the machinery to move data into and out of the memory stack
-    * @param memory       current memory
+    * @param defMemory    current memory
     * @param expandedName full path name
     * @param scheduler    handle to execution components
     * @param compiler     needed for assigner generation
     */
   def buildMemoryInternals(
-    memory:       DefMemory,
+    defMemory:    DefMemory,
     expandedName: String,
     scheduler:    Scheduler,
     compiler:     ExpressionCompiler
   ): Unit = {
+    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
+
     val symbolTable = scheduler.symbolTable
     val memorySymbol = symbolTable(expandedName)
     val dataStore = compiler.dataStore
@@ -483,8 +514,10 @@ object Memory {
       val addr = symbolTable(s"$name.addr")
       val data = symbolTable(s"$name.data")
 
-      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", memory.readLatency, memory.info)
-      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", memory.readLatency, memory.info)
+      val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
+
+      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", effectiveReadLatency, memory.info)
+      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", effectiveReadLatency, memory.info)
 
       compiler.makeAssigner(
         data,
