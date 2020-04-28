@@ -20,7 +20,6 @@ import java.io.OutputStream
 
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
-import firrtl.stage.FirrtlFileAnnotation
 
 sealed trait ReplOption extends Unserializable { this: Annotation =>
 }

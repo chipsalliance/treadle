@@ -21,6 +21,7 @@ import java.io.{File, PrintWriter}
 import firrtl.FileUtils
 import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
 import firrtl.stage.FirrtlSourceAnnotation
+import treadle.executable.StopException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -308,7 +309,7 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
     tester.poke("in1", 11)
     tester.poke("addr", 3)
     tester.poke("write_en", 1)
-    tester.expectMemory("m", 3, 0)
+    tester.expectMemory("m", 3, 11)
 
     tester.step()
 
@@ -451,7 +452,7 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
     tester.finish
   }
 
-  val simpleMem =
+  private val simpleMem =
     s"""
        |circuit a :
        |  module a :
@@ -520,5 +521,75 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
     tester.poke("io_r_en", 0)
     tester.step()
     tester.peek("m.r.en") should be(0)
+  }
+
+  "SyncReadMem write collision behaviors should work" in {
+    val input =
+      """
+        |;buildInfoPackage: chisel3, version: 3.3-SNAPSHOT, scalaVersion: 2.12.10, sbtVersion: 1.3.8
+        |circuit SyncReadMemWriteCollisionTester :
+        |  module SyncReadMemWriteCollisionTester :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {}
+        |
+        |    reg cnt : UInt<3>, clock with : (reset => (reset, UInt<3>("h00"))) @[Counter.scala 29:33]
+        |    when UInt<1>("h01") : @[Counter.scala 71:17]
+        |      node _T = eq(cnt, UInt<3>("h04")) @[Counter.scala 37:24]
+        |      node _T_1 = add(cnt, UInt<1>("h01")) @[Counter.scala 38:22]
+        |      node _T_2 = tail(_T_1, 1) @[Counter.scala 38:22]
+        |      cnt <= _T_2 @[Counter.scala 38:13]
+        |      when _T : @[Counter.scala 40:21]
+        |        cnt <= UInt<1>("h00") @[Counter.scala 40:29]
+        |        skip @[Counter.scala 40:21]
+        |      skip @[Counter.scala 71:17]
+        |    node _T_3 = and(UInt<1>("h01"), _T) @[Counter.scala 72:20]
+        |    smem m0 : UInt<2>[2], new @[Mem.scala 40:23]
+        |    node _T_4 = bits(cnt, 0, 0) @[Mem.scala 41:20]
+        |    read mport rd0 = m0[_T_4], clock @[Mem.scala 41:20]
+        |    node _T_5 = bits(cnt, 0, 0)
+        |    write mport _T_6 = m0[_T_5], clock
+        |    _T_6 <= cnt
+        |    smem m1 : UInt<2>[2], old @[Mem.scala 45:23]
+        |    node _T_7 = bits(cnt, 0, 0) @[Mem.scala 46:20]
+        |    read mport rd1 = m1[_T_7], clock @[Mem.scala 46:20]
+        |    node _T_8 = bits(cnt, 0, 0)
+        |    write mport _T_9 = m1[_T_8], clock
+        |    _T_9 <= cnt
+        |    node _T_10 = eq(cnt, UInt<2>("h03")) @[Mem.scala 50:13]
+        |    when _T_10 : @[Mem.scala 50:22]
+        |      node _T_11 = eq(rd0, UInt<2>("h02")) @[Mem.scala 51:16]
+        |      node _T_12 = bits(reset, 0, 0) @[Mem.scala 51:11]
+        |      node _T_13 = or(_T_11, _T_12) @[Mem.scala 51:11]
+        |      node _T_14 = eq(_T_13, UInt<1>("h00")) @[Mem.scala 51:11]
+        |      when _T_14 : @[Mem.scala 51:11]
+        |        printf(clock, UInt<1>(1), "Assertion failed\n    at Mem.scala:51 assert(rd0 === 2.U)\n") @[Mem.scala 51:11]
+        |        stop(clock, UInt<1>(1), 1) @[Mem.scala 51:11]
+        |        skip @[Mem.scala 51:11]
+        |      node _T_15 = eq(rd1, UInt<1>("h00")) @[Mem.scala 52:16]
+        |      node _T_16 = bits(reset, 0, 0) @[Mem.scala 52:11]
+        |      node _T_17 = or(_T_15, _T_16) @[Mem.scala 52:11]
+        |      node _T_18 = eq(_T_17, UInt<1>("h00")) @[Mem.scala 52:11]
+        |      when _T_18 : @[Mem.scala 52:11]
+        |        printf(clock, UInt<1>(1), "Assertion failed\n    at Mem.scala:52 assert(rd1 === 0.U)\n") @[Mem.scala 52:11]
+        |        stop(clock, UInt<1>(1), 1) @[Mem.scala 52:11]
+        |        skip @[Mem.scala 52:11]
+        |      skip @[Mem.scala 50:22]
+        |    node _T_19 = eq(cnt, UInt<3>("h04")) @[Mem.scala 55:13]
+        |    when _T_19 : @[Mem.scala 55:22]
+        |      node _T_20 = bits(reset, 0, 0) @[Mem.scala 56:9]
+        |      node _T_21 = eq(_T_20, UInt<1>("h00")) @[Mem.scala 56:9]
+        |      when _T_21 : @[Mem.scala 56:9]
+        |        stop(clock, UInt<1>(1), 0) @[Mem.scala 56:9]
+        |        skip @[Mem.scala 56:9]
+        |      skip @[Mem.scala 55:22]
+        |
+        |""".stripMargin
+
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation, ShowFirrtlAtLoadAnnotation))
+
+    intercept[StopException] {
+      tester.step(100)
+    }
   }
 }
