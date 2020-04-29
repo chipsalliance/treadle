@@ -29,7 +29,9 @@ trait CommonModule extends CrossUnRootedSbtModule with PublishModule {
   override def scalacOptions = Seq(
     "-deprecation",
     "-explaintypes",
-    "-feature", "-language:reflectiveCalls",
+    "-Xfatal-warnings",
+    "-feature",
+    "-language:reflectiveCalls",
     "-unchecked",
     "-Xcheckinit",
     "-Xlint:infer-any",

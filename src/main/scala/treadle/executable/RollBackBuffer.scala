@@ -16,8 +16,6 @@ limitations under the License.
 
 package treadle.executable
 
-import scala.collection.mutable
-
 /**
   * A RollBackBuffer is the an image of [[DataStore]] at a particular time.
   * @param dataStore the dataStore to be backed up.
