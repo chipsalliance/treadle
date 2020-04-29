@@ -16,15 +16,18 @@ limitations under the License.
 
 package treadle.executable
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import firrtl.graph.CyclicException
 import firrtl.stage.FirrtlSourceAnnotation
 import firrtl.transforms.DontCheckCombLoopsAnnotation
+import logger.{LazyLogging, LogLevel, Logger}
 import treadle._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class SymbolTableSpec extends AnyFreeSpec with Matchers {
+class SymbolTableSpec extends AnyFreeSpec with Matchers with LazyLogging {
   """SymbolTable creates a table with dependency information""" in {
     val simpleFirrtl: String =
       s"""
@@ -63,14 +66,14 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
     symbolTable.registerNames.toList.sorted.foreach { key =>
       val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
 
-      println(s"$key => ${dependents.map(_.name).mkString(",")}")
+      logger.info(s"$key => ${dependents.map(_.name).mkString(",")}")
     }
 
-    println("All dependencies")
+    logger.info("All dependencies")
     symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
       val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
 
-      println(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+      logger.info(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
     }
   }
 
@@ -101,11 +104,11 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should contain(symbolTable("io_out1"))
 
-    println("All dependencies")
+    logger.info("All dependencies")
     symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
       val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
 
-      println(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+      logger.info(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
     }
 
     tester.poke("io_in1", 7)
@@ -146,11 +149,11 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
 
     childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
 
-    println("All dependencies")
+    logger.info("All dependencies")
     symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
       val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
 
-      println(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+      logger.info(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
     }
 
     tester.poke("io_in1", 7)
@@ -206,8 +209,8 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
       .toList
       .sortBy(_.cardinalNumber)
 
-    println("Input dependencies")
-    println(inputChildren.map(s => s"${s.name}:${s.cardinalNumber}").mkString(","))
+    logger.info("Input dependencies")
+    logger.info(inputChildren.map(s => s"${s.name}:${s.cardinalNumber}").mkString(","))
 
     tester.poke("io_in1", 0)
     tester.poke("io_in2", 0)
@@ -261,12 +264,17 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
          |    io_out1 <= sub.out1
        """.stripMargin
 
-    try {
-      TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl), DontCheckCombLoopsAnnotation))
-    } catch {
-      case c: CyclicException =>
-        c.node.asInstanceOf[Symbol].name should be("sub.out1")
 
+    Logger.setLevel(LogLevel.None)
+    val outputBuffer = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(outputBuffer)) {
+      try {
+        TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl), DontCheckCombLoopsAnnotation))
+      } catch {
+        case c: CyclicException =>
+          c.node.asInstanceOf[Symbol].name should be("sub.out1")
+      }
     }
+    outputBuffer.toString.contains(s"io_out1 <= pad(${Console.RED}sub.out1${Console.RED_B})")
   }
 }
