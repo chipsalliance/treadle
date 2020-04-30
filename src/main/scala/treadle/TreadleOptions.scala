@@ -16,11 +16,11 @@ limitations under the License.
 
 package treadle
 
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation =>
@@ -34,7 +34,7 @@ case object WriteVcdAnnotation extends NoTargetAnnotation with TreadleOption wit
     new ShellOption[Unit](
       longOption = "tr-write-vcd",
       toAnnotationSeq = _ => Seq(WriteVcdAnnotation),
-      helpText = "writes vcd executioin log, filename will be based on top-name"
+      helpText = "writes vcd execution log, filename will be based on top-name"
     )
   )
 }
@@ -100,8 +100,21 @@ case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOp
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
       longOption = "tr-show-firrtl-at-load",
-      toAnnotationSeq = _ => Seq(),
+      toAnnotationSeq = _ => Seq(ShowFirrtlAtLoadAnnotation),
       helpText = "show the low firrtl source treadle is using to build simulator"
+    )
+  )
+}
+
+/**
+  *  Tells treadle to show the low firrtl it is starting out with
+  */
+case object SaveFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-save-firrtl-at-load",
+      toAnnotationSeq = _ => Seq(SaveFirrtlAtLoadAnnotation),
+      helpText = "save the low firrtl source treadle is using to build simulator"
     )
   )
 }
@@ -340,6 +353,7 @@ class TreadleLibrary extends RegisteredLibrary {
     AllowCyclesAnnotation,
     RandomSeedAnnotation,
     ShowFirrtlAtLoadAnnotation,
+    SaveFirrtlAtLoadAnnotation,
     DontRunLoweringCompilerLoadAnnotation,
     ValidIfIsRandomAnnotation,
     RollBackBuffersAnnotation,
