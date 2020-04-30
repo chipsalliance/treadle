@@ -20,7 +20,7 @@ import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir._
 import treadle._
-import RenderHelper.ExpressionHelper
+import treadle.executable.RenderHelper.ExpressionHelper
 import treadle.utils.FindModule
 
 import scala.collection.mutable
@@ -283,19 +283,23 @@ class ExpressionViewBuilder(
 
           getDrivingClock(clockExpression) match {
             case Some(clockSymbol) =>
-              val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+              symbolTable.get(SymbolTable.makePreviousValue(clockSymbol)) match {
+                case Some(prevClockSymbol) =>
+                  val mux1 = expression"Mux(And(Gt($clockSymbol, 0), Eq($prevClockSymbol, 0)), $registerInput, $name)"
 
-              val mux1 = expression"Mux(And(Gt($clockSymbol, 0), Eq($prevClockSymbol, 0)), $registerInput, $name)"
+                  if (resetExpression.tpe == AsyncResetType) {
+                    val asyncResetCondition = processExpression(resetExpression)
+                    val resetValue = processExpression(initValueExpression)
 
-              if (resetExpression.tpe == AsyncResetType) {
-                val asyncResetCondition = processExpression(resetExpression)
-                val resetValue = processExpression(initValueExpression)
+                    val mux2 = expression"Mux($asyncResetCondition, $resetValue, $mux1)"
 
-                val mux2 = expression"Mux($asyncResetCondition, $resetValue, $mux1)"
-
-                expressionViews(symbolTable(registerName)) = mux2
-              } else {
-                expressionViews(symbolTable(registerName)) = mux1
+                    expressionViews(symbolTable(registerName)) = mux2
+                  } else {
+                    expressionViews(symbolTable(registerName)) = mux1
+                  }
+                case _ =>
+                  expressionViews(symbolTable(registerName)) =
+                    expression"Mux(?,?) // could not find symbol ${SymbolTable.makePreviousValue(clockSymbol)}"
               }
             case _ =>
               expressionViews(symbolTable(registerName)) = expression"$registerInput"

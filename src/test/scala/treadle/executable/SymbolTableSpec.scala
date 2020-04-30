@@ -21,9 +21,9 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import firrtl.graph.CyclicException
 import firrtl.stage.FirrtlSourceAnnotation
 import firrtl.transforms.DontCheckCombLoopsAnnotation
-import treadle._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
 
 //scalastyle:off magic.number
 class SymbolTableSpec extends AnyFreeSpec with Matchers {
@@ -273,5 +273,6 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
       }
     }
     outputBuffer.toString.contains(s"io_out1 <= pad(${Console.RED}sub.out1${Console.RED_B})")
+    println(outputBuffer.toString)
   }
 }
