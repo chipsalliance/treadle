@@ -21,6 +21,7 @@ import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
+import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation =>
@@ -163,6 +164,22 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
 }
 
 /**
+  *  Sets verilog plus args that will be passed to black boxes
+  */
+case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation with TreadleOption
+
+case object PlusArgsAnnotation extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Seq[String]](
+      longOption = "tr-plus-args",
+      toAnnotationSeq = (args: Seq[String]) => Seq(PlusArgsAnnotation(args)),
+      helpText = s"a comma separated list of plusArgs"
+    )
+  )
+}
+
+
+/**
   *  Controls whether changes to memory locations are written to vcd output
   *  @param specifier controls which memories and which locations of those memories are logged to vcd output
   *                   When not present not memories are logged
@@ -187,6 +204,7 @@ case object MemoryToVCD extends HasShellOptions {
     )
   )
 }
+
 
 /**
   *  Sets one or more clocks including their frequencies and phase
@@ -328,6 +346,22 @@ object TreadleFirrtlFormHint extends HasShellOptions {
   )
 }
 
+/** Provides an input form hint to treadle to know how to best handle the input it receives
+  *
+  * @param form the input form
+  */
+case class TreadleRocketBlackBoxes(form: CircuitForm) extends NoTargetAnnotation
+
+object TreadleRocketBlackBoxes extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-add-rocket-black-boxes",
+      toAnnotationSeq = _ => Seq(BlackBoxFactoriesAnnotation(Seq(new BuiltInBlackBoxFactory))),
+      helpText = "add in the black boxes needed to simulate rocket"
+    )
+  )
+}
+
 /**
   * Used to pass a tester on to a test harness
   *
@@ -403,6 +437,7 @@ class TreadleLibrary extends RegisteredLibrary {
     ResetNameAnnotation,
     RandomizeAtStartupAnnotation,
     CallResetAtStartupAnnotation,
+    TreadleRocketBlackBoxes,
     PrefixPrintfWithWallTime,
     TreadleFirrtlString,
     TreadleFirrtlFile
