@@ -309,7 +309,7 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
     tester.poke("in1", 11)
     tester.poke("addr", 3)
     tester.poke("write_en", 1)
-    tester.expectMemory("m", 3, 11)
+    tester.expectMemory("m", 3, 0)
 
     tester.step()
 
@@ -329,8 +329,10 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
 
   "basic memory with varying latencies" in {
     for {
-      readLatency <- 0 to 2
-      writeLatency <- 1 to 4
+      readLatency <- 0 to 4
+      writeLatency <- 1 to 5
+//      readLatency <- 0 to 2
+//      writeLatency <- 1 to 4
     } {
       println(s"ReadLatency $readLatency WriteLatency $writeLatency")
       val input =
@@ -368,7 +370,35 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
       tester.poke("addr", 3)
       tester.poke("write_en", 1)
 
-      tester.step(writeLatency)
+      // wait for value to show up in memory
+      for (writeSteps <- 0 until writeLatency + 2) {
+        if (writeSteps < writeLatency) {
+          tester.expectMemory("m", index = 3, expectedValue = 0)
+        } else {
+          tester.expectMemory("m", index = 3, expectedValue = 11)
+        }
+        tester.step()
+        tester.poke("write_en", 0)
+        tester.poke("addr", 2)
+      }
+
+      tester.poke("addr", 3)
+
+      // wait for a read value from memory to show up on io
+      // it's only there for 1 cycle because we move address at end of loop
+      for (readSteps <- 0 until readLatency + 2) {
+        if (readSteps < readLatency) {
+          tester.expect("out1", expectedValue = 0)
+        } else if (readSteps == readLatency) {
+          tester.expect("out1", expectedValue = 11)
+        } else {
+          tester.expect("out1", expectedValue = 0)
+        }
+        tester.step()
+        tester.poke("addr", 2)
+      }
+
+      //      tester.step(writeLatency)
 
       tester.expectMemory("m", 3, 11)
 

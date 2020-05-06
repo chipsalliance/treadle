@@ -24,19 +24,6 @@ import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryLoadFileTy
 
 import scala.collection.mutable
 
-////////////////////////////////////////////////////////////////////////////////
-// IMPORTANT NOTE
-// The primary methods here have been effectively disabled by using
-//     val memory = defMemory.copy(readLatency = 0, writeLatency = 0,
-//         readUnderWrite = ReadUnderWrite.Undefined)
-// appearing at the beginning. This is because the functionality contained here,
-// i.e. adding read and write pipeline registers is now being taken care of in the
-// VerilogMemDelays transform in the LowFirrtlOptimization. This may or may not
-// be the long term solution. So the code here will remain here but disabled for now.
-// Though it is still used to do the trivial case of hooking up memory ports to the
-// wires
-////////////////////////////////////////////////////////////////////////////////
-
 /** Provides three different aspects of the code necessary to create read and write
   * register pipelines. The three cases are:
   *  - Adding the symbols for the registers to be created
@@ -64,20 +51,19 @@ object Memory {
     sensitivityGraphBuilder: SensitivityGraphBuilder,
     registerNames:           mutable.HashSet[String]
   ): Seq[Symbol] = {
-    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
 
-    if (memory.depth >= BigInt(Int.MaxValue)) {
-      throw TreadleException(s"Memory $expandedName size ${memory.depth} is too large for treadle")
+    if (defMemory.depth >= BigInt(Int.MaxValue)) {
+      throw TreadleException(s"Memory $expandedName size ${defMemory.depth} is too large for treadle")
     }
-    val memorySymbol = Symbol(expandedName, memory.dataType, MemKind, memory.depth.toInt)
-    val addrWidth = IntWidth(requiredBitsForUInt(memory.depth - 1))
+    val memorySymbol = Symbol(expandedName, defMemory.dataType, MemKind, defMemory.depth.toInt)
+    val addrWidth = IntWidth(requiredBitsForUInt(defMemory.depth - 1))
     val addrType = firrtl.ir.UIntType(addrWidth)
-    val dataType: Type = memory.dataType
+    val dataType: Type = defMemory.dataType
     val booleanType = firrtl.ir.UIntType(IntWidth(1))
 
     val lastValueSymbols = new mutable.ArrayBuffer[Symbol]()
 
-    val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
+    val effectiveReadLatency = defMemory.readLatency + (if (defMemory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
 
     def buildRegisterTriple(baseName: String, index: Int, dataType: firrtl.ir.Type): Seq[Symbol] = {
 
@@ -118,7 +104,7 @@ object Memory {
       }
     }
 
-    val readerSymbols = memory.readers.flatMap { readerString =>
+    val readerSymbols = defMemory.readers.flatMap { readerString =>
       val readerName = s"$expandedName.$readerString"
 
       val en = Symbol(s"$readerName.en", booleanType, WireKind)
@@ -143,7 +129,7 @@ object Memory {
       readerInterfaceSymbols ++ pipelineRaddrSymbols ++ pipelineEnableSymbols
     }
 
-    val writerSymbols = memory.writers.flatMap { writerString =>
+    val writerSymbols = defMemory.writers.flatMap { writerString =>
       val writerName = s"$expandedName.$writerString"
 
       val portSymbol = Symbol(writerName, dataType, WireKind)
@@ -161,17 +147,17 @@ object Memory {
       sensitivityGraphBuilder.addSensitivity(en, valid)
       sensitivityGraphBuilder.addSensitivity(mask, valid)
 
-      val pipelineValidSymbols = (0 until memory.writeLatency).flatMap { n =>
+      val pipelineValidSymbols = (0 until defMemory.writeLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$writerString.pipeline_valid_", n, booleanType)
       }
       buildPipelineDependencies(valid, pipelineValidSymbols, clockSymbol = Some(clk))
 
-      val pipelineDataSymbols = (0 until memory.writeLatency).flatMap { n =>
+      val pipelineDataSymbols = (0 until defMemory.writeLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$writerString.pipeline_data_", n, dataType)
       }
       buildPipelineDependencies(data, pipelineDataSymbols, clockSymbol = Some(clk))
 
-      val pipelineAddrSymbols = (0 until memory.writeLatency).flatMap { n =>
+      val pipelineAddrSymbols = (0 until defMemory.writeLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$writerString.pipeline_addr_", n, addrType)
       }
       buildPipelineDependencies(addr, pipelineAddrSymbols, clockSymbol = Some(clk))
@@ -179,7 +165,7 @@ object Memory {
       memoryInterfaceSymbols ++ pipelineValidSymbols ++ pipelineAddrSymbols ++ pipelineDataSymbols ++ Seq(portSymbol)
     }
 
-    val readerWriterSymbols = memory.readwriters.flatMap { readWriterString =>
+    val readerWriterSymbols = defMemory.readwriters.flatMap { readWriterString =>
       val writerName = s"$expandedName.$readWriterString"
 
       val portSymbol = Symbol(writerName, dataType, WireKind)
@@ -211,17 +197,17 @@ object Memory {
       }
       buildPipelineDependencies(addr, pipelineReadEnableSymbols, Some(rdata), clockSymbol = Some(clk))
 
-      val pipelineEnableSymbols = (0 until memory.writeLatency).flatMap { n =>
+      val pipelineEnableSymbols = (0 until defMemory.writeLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_valid_", n, booleanType)
       }
       buildPipelineDependencies(valid, pipelineEnableSymbols, clockSymbol = Some(clk))
 
-      val pipelineWriteDataSymbols = (0 until memory.writeLatency).flatMap { n =>
+      val pipelineWriteDataSymbols = (0 until defMemory.writeLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_wdata_", n, dataType)
       }
       buildPipelineDependencies(wdata, pipelineWriteDataSymbols, clockSymbol = Some(clk))
 
-      val pipelineAddrSymbols = (0 until memory.writeLatency).flatMap { n =>
+      val pipelineAddrSymbols = (0 until defMemory.writeLatency).flatMap { n =>
         buildRegisterTriple(s"$expandedName.$readWriterString.pipeline_addr_", n, addrType)
       }
       buildPipelineDependencies(addr, pipelineAddrSymbols, clockSymbol = Some(clk))
@@ -250,10 +236,8 @@ object Memory {
     defMemory:    DefMemory,
     expandedName: String,
     scheduler:    Scheduler,
-//    compiler     : ExpressionCompiler,
     expressionViews: mutable.HashMap[Symbol, ExpressionView]
   ): Unit = {
-    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
 
     val symbolTable = scheduler.symbolTable
     val memorySymbol = symbolTable(expandedName)
@@ -296,7 +280,7 @@ object Memory {
       enable:       Symbol
     ): Symbol = {
 
-      val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
+      val effectiveReadLatency = defMemory.readLatency + (if (defMemory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
 
       val pipelineReadSymbols = buildPipeLine(portName, pipelineName, effectiveReadLatency)
       val chain = Seq(addr) ++ pipelineReadSymbols
@@ -318,7 +302,7 @@ object Memory {
       chain.last
     }
 
-    memory.readers.foreach { readerString =>
+    defMemory.readers.foreach { readerString =>
       val readerName = s"$expandedName.$readerString"
       val enable = symbolTable(s"$readerName.en")
       val clock = symbolTable(s"$readerName.clk")
@@ -345,7 +329,7 @@ object Memory {
                                     writerString: String,
                                     pipelineName: String): Symbol = {
 
-      val pipelineSymbols = buildPipeLine(writerString, pipelineName, memory.writeLatency)
+      val pipelineSymbols = buildPipeLine(writerString, pipelineName, defMemory.writeLatency)
       val chain = Seq(rootSymbol) ++ pipelineSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
@@ -365,7 +349,7 @@ object Memory {
       chain.last
     }
 
-    memory.writers.foreach { writerString =>
+    defMemory.writers.foreach { writerString =>
       val writerName = s"$expandedName.$writerString"
 
       val portSymbol = symbolTable(writerName)
@@ -387,7 +371,7 @@ object Memory {
 
     }
 
-    memory.readwriters.foreach { readWriterString =>
+    defMemory.readwriters.foreach { readWriterString =>
       val writerName = s"$expandedName.$readWriterString"
 
       val portSymbol = symbolTable(writerName)
@@ -431,7 +415,6 @@ object Memory {
     scheduler:    Scheduler,
     compiler:     ExpressionCompiler
   ): Unit = {
-    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
 
     val symbolTable = scheduler.symbolTable
     val memorySymbol = symbolTable(expandedName)
@@ -507,26 +490,26 @@ object Memory {
       chain.last
     }
 
-    memory.readers.foreach { readerString =>
+    defMemory.readers.foreach { readerString =>
       val name = s"$expandedName.$readerString"
       val enable = symbolTable(s"$name.en")
       val clock = symbolTable(s"$name.clk")
       val addr = symbolTable(s"$name.addr")
       val data = symbolTable(s"$name.data")
 
-      val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
+      val effectiveReadLatency = defMemory.readLatency + (if (defMemory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
 
-      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", effectiveReadLatency, memory.info)
-      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", effectiveReadLatency, memory.info)
+      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", effectiveReadLatency, defMemory.info)
+      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", effectiveReadLatency, defMemory.info)
 
       compiler.makeAssigner(
         data,
         compiler.makeGetIndirect(memorySymbol, data, endOfEnablePipeline, endOfAddrPipeline),
-        info = memory.info
+        info = defMemory.info
       )
     }
 
-    memory.writers.foreach { writerString =>
+    defMemory.writers.foreach { writerString =>
       val name = s"$expandedName.$writerString"
 
       val portSymbol = symbolTable(name)
@@ -541,11 +524,11 @@ object Memory {
       // compute a valid so we only have to carry a single boolean up the write queue
       compiler.makeAssigner(valid,
                             AndInts(dataStore.GetInt(enable.index).apply _, dataStore.GetInt(mask.index).apply _, 1),
-                            info = memory.info)
+                            info = defMemory.info)
 
-      val endOfValidPipeline = buildPipelineAssigners(clock, valid, name, "valid", memory.writeLatency, memory.info)
-      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "addr", memory.writeLatency, memory.info)
-      val endOfDataPipeline = buildPipelineAssigners(clock, data, name, "data", memory.writeLatency, memory.info)
+      val endOfValidPipeline = buildPipelineAssigners(clock, valid, name, "valid", defMemory.writeLatency, defMemory.info)
+      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "addr", defMemory.writeLatency, defMemory.info)
+      val endOfDataPipeline = buildPipelineAssigners(clock, data, name, "data", defMemory.writeLatency, defMemory.info)
 
       compiler.makeIndirectAssigner(
         portSymbol,
@@ -554,11 +537,11 @@ object Memory {
         enableIndex = endOfValidPipeline.index,
         expressionResult = compiler.makeGet(endOfDataPipeline),
         clock,
-        memory.info
+        defMemory.info
       )
     }
 
-    memory.readwriters.foreach { readWriterString =>
+    defMemory.readwriters.foreach { readWriterString =>
       val name = s"$expandedName.$readWriterString"
 
       val portSymbol = symbolTable(name)
@@ -572,13 +555,13 @@ object Memory {
       val wdata = symbolTable(s"$name.wdata")
       val valid = symbolTable(s"$name.valid")
 
-      val endOfRaddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", memory.readLatency, memory.info)
-      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", memory.readLatency, memory.info)
+      val endOfRaddrPipeline = buildPipelineAssigners(clock, addr, name, "raddr", defMemory.readLatency, defMemory.info)
+      val endOfEnablePipeline = buildPipelineAssigners(clock, enable, name, "ren", defMemory.readLatency, defMemory.info)
 
       compiler.makeAssigner(
         rdata,
         compiler.makeGetIndirect(memorySymbol, rdata, endOfEnablePipeline, endOfRaddrPipeline),
-        info = memory.info
+        info = defMemory.info
       )
 
       // compute a valid so we only have to carry a single boolean up the write queue
@@ -589,12 +572,12 @@ object Memory {
           dataStore.GetInt(mode.index).apply _,
           1
         ),
-        info = memory.info
+        info = defMemory.info
       )
 
-      val endOfValidPipeline = buildPipelineAssigners(clock, valid, name, "valid", memory.writeLatency, memory.info)
-      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "addr", memory.writeLatency, memory.info)
-      val endOfDataPipeline = buildPipelineAssigners(clock, wdata, name, "wdata", memory.writeLatency, memory.info)
+      val endOfValidPipeline = buildPipelineAssigners(clock, valid, name, "valid", defMemory.writeLatency, defMemory.info)
+      val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "addr", defMemory.writeLatency, defMemory.info)
+      val endOfDataPipeline = buildPipelineAssigners(clock, wdata, name, "wdata", defMemory.writeLatency, defMemory.info)
 
       compiler.makeIndirectAssigner(
         portSymbol,
@@ -603,7 +586,7 @@ object Memory {
         endOfValidPipeline.index,
         compiler.makeGet(endOfDataPipeline),
         clock,
-        info = memory.info
+        info = defMemory.info
       )
     }
   }

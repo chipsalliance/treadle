@@ -5,7 +5,7 @@ import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class MemRegTester extends AnyFlatSpec with Matchers {
+class MemRegSpec extends AnyFlatSpec with Matchers {
   behavior.of("MemReg")
 
   //scalastyle:off
@@ -125,35 +125,39 @@ class MemRegTester extends AnyFlatSpec with Matchers {
 
     val startTime = System.nanoTime()
     tester.poke("clock", 1)
-    def wr(addr: BigInt, data: BigInt)  = {
-      tester.poke("io_isWr",   1)
+    def wr(addr: BigInt, data: BigInt): Unit = {
+      tester.poke("io_isWr", 1)
       tester.poke("io_wrAddr", addr)
       tester.poke("io_wrData", data)
-      tester.step(1)
+      tester.step()
     }
-    def boot()  = {
+    def boot(): Unit = {
       tester.poke("io_isWr", 0)
       tester.poke("io_boot", 1)
-      tester.step(1)
+      tester.step()
     }
-    def tick()  = {
+    def tick(): Unit = {
       tester.poke("io_isWr", 0)
       tester.poke("io_boot", 0)
-      tester.step(1)
+      tester.step()
     }
     object OpCode extends Enumeration {
       type OpCode = Value
       val add_op, imm_op = Value
     }
     import OpCode._
-    def I (op: OpCode, rc: Int, ra: Int, rb: Int) =
-      ((op.id & 1) << 24) | ((rc & Integer.parseInt("FF", 16)) << 16) | ((ra & Integer.parseInt("FF", 16)) << 8) | (rb & Integer.parseInt("FF", 16))
-    val app  = Array(I(imm_op,   1, 0, 1), // r1 <- 1
-      I(add_op,   1, 1, 1), // r1 <- r1 + r1
-      I(add_op,   1, 1, 1), // r1 <- r1 + r1
-      I(add_op, 255, 1, 0)) // rh <- r1
+    def I(op: OpCode, rc: Int, ra: Int, rb: Int) =
+      ((op.id & 1) << 24) |
+        ((rc & Integer.parseInt("FF", 16)) << 16) |
+        ((ra & Integer.parseInt("FF", 16)) << 8) |
+        (rb & Integer.parseInt("FF", 16))
+
+    val app = Array(I(imm_op, 1, 0, 1), // r1 <- 1
+                    I(add_op, 1, 1, 1), // r1 <- r1 + r1
+                    I(add_op, 1, 1, 1), // r1 <- r1 + r1
+                    I(add_op, 255, 1, 0)) // rh <- r1
     wr(0, 0) // skip reset
-    for (addr <- 0 until app.length)
+    for (addr <- app.indices)
       wr(addr, app(addr))
     boot()
     var k = 0
