@@ -309,7 +309,6 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
     tester.poke("in1", 11)
     tester.poke("addr", 3)
     tester.poke("write_en", 1)
-    tester.expectMemory("m", 3, 11)
 
     tester.step()
 
