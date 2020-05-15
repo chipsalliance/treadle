@@ -64,7 +64,9 @@ object Memory {
     sensitivityGraphBuilder: SensitivityGraphBuilder,
     registerNames:           mutable.HashSet[String]
   ): Seq[Symbol] = {
-    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
+    require(defMemory.readLatency == 0)
+    require(defMemory.writeLatency == 1)
+    val memory = defMemory.copy(readUnderWrite = ReadUnderWrite.Undefined)
 
     if (memory.depth >= BigInt(Int.MaxValue)) {
       throw TreadleException(s"Memory $expandedName size ${memory.depth} is too large for treadle")
@@ -253,7 +255,9 @@ object Memory {
 //    compiler     : ExpressionCompiler,
     expressionViews: mutable.HashMap[Symbol, ExpressionView]
   ): Unit = {
-    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
+    require(defMemory.readLatency == 0)
+    require(defMemory.writeLatency == 1)
+    val memory = defMemory.copy(readUnderWrite = ReadUnderWrite.Undefined)
 
     val symbolTable = scheduler.symbolTable
     val memorySymbol = symbolTable(expandedName)
@@ -431,7 +435,9 @@ object Memory {
     scheduler:    Scheduler,
     compiler:     ExpressionCompiler
   ): Unit = {
-    val memory = defMemory.copy(readLatency = 0, writeLatency = 0, readUnderWrite = ReadUnderWrite.Undefined)
+    require(defMemory.readLatency == 0)
+    require(defMemory.writeLatency == 1)
+    val memory = defMemory.copy(readUnderWrite = ReadUnderWrite.Undefined)
 
     val symbolTable = scheduler.symbolTable
     val memorySymbol = symbolTable(expandedName)
