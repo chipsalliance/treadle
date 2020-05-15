@@ -16,12 +16,14 @@ limitations under the License.
 
 package treadle.executable
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import firrtl.graph.CyclicException
 import firrtl.stage.FirrtlSourceAnnotation
 import firrtl.transforms.DontCheckCombLoopsAnnotation
-import treadle._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
 
 //scalastyle:off magic.number
 class SymbolTableSpec extends AnyFreeSpec with Matchers {
@@ -261,12 +263,16 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
          |    io_out1 <= sub.out1
        """.stripMargin
 
-    try {
-      TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl), DontCheckCombLoopsAnnotation))
-    } catch {
-      case c: CyclicException =>
-        c.node.asInstanceOf[Symbol].name should be("sub.out1")
-
+    val outputBuffer = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(outputBuffer)) {
+      try {
+        TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl), DontCheckCombLoopsAnnotation))
+      } catch {
+        case c: CyclicException =>
+          c.node.asInstanceOf[Symbol].name should be("sub.out1")
+      }
     }
+    outputBuffer.toString.contains(s"io_out1 <= pad(${Console.RED}sub.out1${Console.RED_B})")
+    println(outputBuffer.toString)
   }
 }
