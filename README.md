@@ -134,4 +134,3 @@ Keep in mind that there is no set of rules that will satisfy everyone.
 ### About ports and names
 The firrtl transformations that result in LoFirrtl alter the names of ports.
 What would be io.a becomes io_a and so forth.
-
