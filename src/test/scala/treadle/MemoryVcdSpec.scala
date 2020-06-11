@@ -86,7 +86,7 @@ class MemoryVcdSpec extends AnyFreeSpec with Matchers {
           FirrtlSourceAnnotation(HasTwoMems),
           TargetDirAnnotation(dir),
           WriteVcdAnnotation,
-          VcdShowUnderScoredAnnotation,
+          VcdShowUnderScoredAnnotation
         ) ++
           annotationSeq
       )
