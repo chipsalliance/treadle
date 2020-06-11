@@ -149,7 +149,7 @@ case object ValidIfIsRandomAnnotation extends NoTargetAnnotation with TreadleOpt
   *  Sets the number of rollback buffers in simulator, useful to see why wires have their values
   */
 case class RollBackBuffersAnnotation(rollbackBufferDepth: Int = TreadleDefaults.RollbackBuffers)
-    extends NoTargetAnnotation
+  extends NoTargetAnnotation
     with TreadleOption
 
 case object RollBackBuffersAnnotation extends HasShellOptions {
@@ -158,6 +158,23 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
       longOption = "tr-rollback-buffers",
       toAnnotationSeq = (buffers: Int) => Seq(RollBackBuffersAnnotation(buffers)),
       helpText = s"number of rollback buffers, 0 is no buffers, default is ${TreadleDefaults.RollbackBuffers}"
+    )
+  )
+}
+
+/**
+  *  Sets the number of rollback buffers in simulator, useful to see why wires have their values
+  */
+case class MemoryToVCD(specifier: String)
+  extends NoTargetAnnotation
+    with TreadleOption
+
+case object MemoryToVCD extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[String](
+      longOption = "tr-mem-to-vcd",
+      toAnnotationSeq = (specifier: String) => Seq(MemoryToVCD(specifier)),
+      helpText = s"""log specified memory/indices to vcd, format "all" or "memoryName:1,2,5-10" """
     )
   )
 }
