@@ -292,18 +292,15 @@ object Memory {
      * @param enable         memory enabled
      */
     def buildReadPipelineAssigners(
-      clock:        Symbol,
       portName:     String,
       pipelineName: String,
-      data:         Symbol,
-      addr:         Symbol,
-      enable:       Symbol
+      symbol:         Symbol
     ): Symbol = {
 
       val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
 
       val pipelineReadSymbols = buildPipeLine(portName, pipelineName, effectiveReadLatency)
-      val chain = Seq(addr) ++ pipelineReadSymbols
+      val chain = Seq(symbol) ++ pipelineReadSymbols
 
       // This produces triggered: reg0 <= reg0/in, reg1 <= reg1/in etc.
       chain.drop(1).grouped(2).withFilter(_.length == 2).toList.foreach {
@@ -329,8 +326,8 @@ object Memory {
       val addr = symbolTable(s"$readerName.addr")
       val data = symbolTable(s"$readerName.data")
 
-      val endOfAddrPipeline = buildReadPipelineAssigners(clock, readerName, "raddr", data, addr, enable)
-      val endOfEnablePipeline = buildReadPipelineAssigners(clock, readerName, "ren", data, addr, enable)
+      val endOfAddrPipeline = buildReadPipelineAssigners(readerName, "raddr", addr)
+      val endOfEnablePipeline = buildReadPipelineAssigners(readerName, "ren", enable)
 
       expressionViews(data) = expression"$memorySymbol($endOfAddrPipeline) enable=$endOfEnablePipeline"
     }
@@ -405,8 +402,8 @@ object Memory {
       val wdata = symbolTable(s"$writerName.wdata")
       val valid = symbolTable(s"$writerName.valid")
 
-      val endOfRaddrPipeline = buildReadPipelineAssigners(clock, writerName, "raddr", rdata, addr, enable)
-      val endOfEnablePipeline = buildReadPipelineAssigners(clock, writerName, "ren", rdata, addr, enable)
+      val endOfRaddrPipeline = buildReadPipelineAssigners(writerName, "raddr", addr)
+      val endOfEnablePipeline = buildReadPipelineAssigners(writerName, "ren", enable)
 
       expressionViews(rdata) = expression"$memorySymbol($endOfRaddrPipeline) enable=$endOfEnablePipeline"
 
