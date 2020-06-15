@@ -85,7 +85,7 @@ class TreadleModule(val crossScalaVersion: String) extends CommonModule {
 
   override def ivyDeps = Agg(
     ivy"org.scala-lang.modules:scala-jline:2.12.1",
-    ivy"org.json4s::json4s-native:3.6.8"
+    ivy"org.json4s::json4s-native:3.6.9"
   ) ++ chiselDeps
 
   object test extends Tests {
