@@ -163,7 +163,18 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
 }
 
 /**
-  *  Sets the number of rollback buffers in simulator, useful to see why wires have their values
+  *  Controls whether changes to memory locations are written to vcd output
+  *  @param specifier controls which memories and which locations of those memories are logged to vcd output
+  *                   When not present not memories are logged
+  *                   "all"             log all values at all locations of all memories
+  *                   "mem1:all"        log all values at all locations for memory mem1
+  *                   "mem1:0-4"        log values at locations 0-4 for memory mem1
+  *                   "mem1:b0-b100"    log values at locations 0-4 but show addresses in binary for memory mem1
+  *                   "mem1:h0-hff"     log values at locations 0-255 but show addresses in hex for memory mem1
+  *                   "mem1:o0-o377"    log values at locations 0-255 but show addresses in octal for memory mem1
+  *
+  * This annotation may occur more than once in order to specify multiple memories
+  *
   */
 case class MemoryToVCD(specifier: String)
   extends NoTargetAnnotation

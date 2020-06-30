@@ -24,7 +24,7 @@ import scala.util.matching.Regex
 
 /** Controls whether a given memory cell should be logged to vcd output
   * if logAllRadixOpt is defined then all indices for all memories should be logged
-  * otherwise if info has an entry then check the memory index
+  * otherwise if memory has an entry then check the memory index
   * if the set contains -1 then all indices should be logged for that memory
   *
   * @param logAllRadixOpt  if defined then log all memories using this radix
@@ -39,9 +39,13 @@ class VcdMemoryLoggingController(
     s"$name(${BigInt(index).toString(radix)})"
   }
 
-  /* generate a vcd element name for a given memory location
-     checking whether the memory and the particular offset is being tracked
-   */
+  /** generate a vcd element name for a given memory location
+    *  checking whether the memory and the particular offset is being tracked
+    *
+    * @param symbol memory symbol to find key for
+    * @param offset index being referenced for memory
+    * @return
+    */
   def vcdKey(symbol: Symbol, offset: Int): Option[String] = {
     logAllRadixOpt match {
       case Some(radix) =>
@@ -59,15 +63,26 @@ class VcdMemoryLoggingController(
     }
   }
 
-  /* Builds a list of all tracked memories and the locations within them that are tracked
-   */
+  /** Builds a list of all tracked memories and the locations within them that are tracked
+    * This is used to construct the VCD directory
+    *
+    * @param memorySymbol Memory symbol to generate tracked names for
+    * @return
+    */
   def getIndexedNames(memorySymbol: Symbol): Seq[String] = {
-    memoriesTracked.get(memorySymbol) match {
-      case Some(IndicesAndRadix(set, radix)) =>
-        set.map { offset =>
-          indexedName(memorySymbol.name, offset, radix)
-        }.toSeq
-      case None => Seq.empty
+    logAllRadixOpt match {
+      case Some(radix) =>
+        Seq.tabulate(memorySymbol.slots) { index =>
+          indexedName(memorySymbol.name, index, radix)
+        }
+      case _ =>
+        memoriesTracked.get(memorySymbol) match {
+          case Some(IndicesAndRadix(set, radix)) =>
+            set.map { offset =>
+              indexedName(memorySymbol.name, offset, radix)
+            }.toSeq
+          case None => Seq.empty
+        }
     }
   }
 }
