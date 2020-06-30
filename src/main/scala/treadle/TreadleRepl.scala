@@ -18,6 +18,8 @@ package treadle
 
 import java.io.{File, PrintWriter}
 
+import treadle.utils.NumberHelpers._
+
 import firrtl.AnnotationSeq
 import firrtl.graph.{CyclicException, DiGraph}
 import firrtl.options.Viewer.view
@@ -206,21 +208,6 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       case e: Exception =>
         console.println(s"Failed to load vcd script $fileName, error: ${e.getMessage}")
     }
-  }
-
-  def parseNumber(numberString: String): BigInt = {
-    def parseWithRadix(numString: String, radix: Int): BigInt = {
-      BigInt(numString, radix)
-    }
-
-    if (numberString.startsWith("0x")) { parseWithRadix(numberString.drop(2), 16) } else if (numberString.startsWith(
-                                                                                               "h"
-                                                                                             )) {
-      parseWithRadix(numberString.drop(1), 16)
-    } else if (numberString.startsWith("o")) { parseWithRadix(numberString.drop(1), 8) } else if (numberString
-                                                                                                    .startsWith("b")) {
-      parseWithRadix(numberString.drop(1), 2)
-    } else { parseWithRadix(numberString, 10) }
   }
 
   val wallTime = UTC()
@@ -620,7 +607,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           getTwoArgs("poke inputSymbol value") match {
             case (Some(portName), Some(valueString)) =>
               try {
-                val numberValue = parseNumber(valueString)
+                val numberValue = parseBigInt(valueString)
                 engine.setValue(portName, numberValue)
               } catch {
                 case e: Exception =>
@@ -657,7 +644,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                 if (valueString.toLowerCase == "clear") {
                   currentTreadleTester.clearForceValue(portName)
                 } else {
-                  val numberValue = parseNumber(valueString)
+                  val numberValue = parseBigInt(valueString)
                   currentTreadleTester.forceValue(portName, numberValue)
                 }
               } catch {
@@ -703,7 +690,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           getTwoArgs("rpoke regex value") match {
             case (Some(pokeRegex), Some(valueString)) =>
               try {
-                val pokeValue = parseNumber(valueString)
+                val pokeValue = parseBigInt(valueString)
                 val portRegex = pokeRegex.r
                 val setThings = settableThings.flatMap { settableThing =>
                   portRegex.findFirstIn(settableThing) match {

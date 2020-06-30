@@ -21,7 +21,7 @@ import java.io.PrintWriter
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
-import firrtl.{AnnotationSeq, PortKind}
+import firrtl.{AnnotationSeq, MemKind, PortKind}
 import treadle._
 import treadle.chronometry.{Timer, UTC}
 import treadle.utils.Render
@@ -121,7 +121,11 @@ class ExecutionEngine(
 
   val memoryInitializer = new MemoryInitializer(this)
 
-  def makeVCDLogger(fileName: String, showUnderscored: Boolean): Unit = {
+  def makeVCDLogger(
+    fileName:        String,
+    showUnderscored: Boolean,
+    memoryLogger:    VcdMemoryLoggingController = new VcdMemoryLoggingController()
+  ): Unit = {
     val vcd = VCD(ast.main, showUnderscoredNames = showUnderscored)
 
     symbolTable.instanceNames.foreach { name =>
@@ -130,13 +134,18 @@ class ExecutionEngine(
     vcd.timeStamp = -1
     symbolTable.symbols.foreach { symbol =>
       vcd.wireChanged(symbol.name, dataStore(symbol), symbol.bitWidth)
+      if (symbol.dataKind == MemKind) {
+        memoryLogger.getIndexedNames(symbol).foreach { indexedMemName =>
+          vcd.wireChanged(indexedMemName, 0, symbol.bitWidth)
+        }
+      }
     }
     vcd.timeStamp = 0
 
     vcdOption = Some(vcd)
     vcdFileName = fileName
 
-    val vcdPlugIn = new VcdHook(this)
+    val vcdPlugIn = new VcdHook(this, memoryLogger)
     dataStore.addPlugin(ExecutionEngine.VCDHookName, vcdPlugIn, enable = true)
   }
 
