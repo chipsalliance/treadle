@@ -18,6 +18,8 @@ package treadle.executable
 
 import java.io.PrintWriter
 
+import firrtl.annotations.ReferenceTarget
+import firrtl.annotations.TargetToken.Instance
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
@@ -359,6 +361,42 @@ class ExecutionEngine(
   def validNames: Iterable[String] = symbolTable.keys
   def symbols:    Iterable[Symbol] = symbolTable.symbols
 
+  /** returns all the symbols identified by the provided referenceTarget
+    *
+    * @param referenceTarget identifies a symbol or symbols
+    * @return
+    */
+  def referenceTargetToSymbols(referenceTarget: ReferenceTarget): Seq[Symbol] = {
+    if (referenceTarget.path.nonEmpty) {
+      // a specific path into the circuit
+      val name = referenceTarget.path.map { case (Instance(name), _) => name }.mkString(".") + "." + referenceTarget.ref
+      symbolTable.get(name) match {
+        case Some(symbol) => Seq(symbol)
+        case _            => Seq.empty
+      }
+    } else if (referenceTarget.module == ast.main) {
+      // top level reference
+      symbolTable.get(referenceTarget.ref) match {
+        case Some(symbol) => Seq(symbol)
+        case _            => Seq.empty
+      }
+    } else if (referenceTarget.module != ast.main) {
+      // module level reference
+      val targetModule = s"${referenceTarget.module}"
+      symbolTable.instanceNameToModuleName.flatMap {
+        case (instance, moduleName) if moduleName == targetModule =>
+          val name = s"$instance.${referenceTarget.ref}"
+          symbolTable.get(name) match {
+            case Some(symbol) => Seq(symbol)
+            case _            => Seq.empty
+          }
+        case _ => Seq.empty
+      }.toSeq
+    } else {
+      Seq.empty
+    }
+  }
+
   def evaluateCircuit(): Unit = {
     if (inputsChanged) {
       inputsChanged = false
@@ -486,7 +524,7 @@ object ExecutionEngine {
     val t0 = System.nanoTime()
     val stageOptions = view[StageOptions](annotationSeq)
 
-    val circuit = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(c)           => c }.get.circuit
+    val circuit = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(c) => c }.get.circuit
 
     if (annotationSeq.contains(ShowFirrtlAtLoadAnnotation)) {
       println(circuit.serialize)
