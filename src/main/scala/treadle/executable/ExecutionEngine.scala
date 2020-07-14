@@ -369,11 +369,14 @@ class ExecutionEngine(
   def referenceTargetToSymbols(referenceTarget: ReferenceTarget): Seq[Symbol] = {
     if (referenceTarget.path.nonEmpty) {
       // a specific path into the circuit
-      val name = referenceTarget.path.map { case (Instance(name), _) => name }.mkString(".") + "." + referenceTarget.ref
-      symbolTable.get(name) match {
-        case Some(symbol) => Seq(symbol)
-        case _            => Seq.empty
-      }
+      val pathName = referenceTarget.path.map { case (Instance(name), _) => name }.mkString(".")
+      val symbols = symbolTable.instanceNameToModuleName.flatMap {
+        case (instanceName, _) if instanceName.endsWith(pathName) =>
+          val symbolName = s"$instanceName.${referenceTarget.ref}"
+          symbolTable.get(symbolName)
+        case _ => None
+      }.toSeq
+      symbols
     } else if (referenceTarget.module == ast.main) {
       // top level reference
       symbolTable.get(referenceTarget.ref) match {
@@ -386,11 +389,8 @@ class ExecutionEngine(
       symbolTable.instanceNameToModuleName.flatMap {
         case (instance, moduleName) if moduleName == targetModule =>
           val name = s"$instance.${referenceTarget.ref}"
-          symbolTable.get(name) match {
-            case Some(symbol) => Seq(symbol)
-            case _            => Seq.empty
-          }
-        case _ => Seq.empty
+          symbolTable.get(name)
+        case _ => None
       }.toSeq
     } else {
       Seq.empty
