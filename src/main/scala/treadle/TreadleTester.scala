@@ -74,6 +74,9 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
   private val verbose = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
   private val stageOptions = view[StageOptions](annotationSeq)
+  private val memoryLogger: VcdMemoryLoggingController = {
+    VcdMemoryLoggingController(annotationSeq.collect { case MemoryToVCD(command) => command }, engine.symbolTable)
+  }
 
   def setVerbose(value: Boolean = true): Unit = {
     wallTime.isVerbose = value
@@ -155,7 +158,8 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   if (writeVcd) {
     engine.makeVCDLogger(
       stageOptions.getBuildFileName(topName, Some(".vcd")),
-      vcdShowUnderscored
+      vcdShowUnderscored,
+      memoryLogger
     )
   }
 

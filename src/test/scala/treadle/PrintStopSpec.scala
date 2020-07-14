@@ -155,7 +155,7 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     logger.debug(output.toString)
 
-    output.toString() should include("HELLO WORLD int '       7' hex '00000001f' SInt '      -2'")
+    output.toString() should include("HELLO WORLD int '       7' hex '0000001f' SInt '      -2'")
   }
 
   it should "support printf formatting with binary" in {
@@ -178,8 +178,8 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     logger.debug(output.toString)
 
-    output.toString() should include("char M int  7 hex 0ff SInt -2  111")
-    output.toString() should include("char 0 int  7 hex 0ff SInt -2 -111")
+    output.toString() should include("char M int  7 hex ff SInt -2  111")
+    output.toString() should include("char 0 int  7 hex ff SInt -2 -111")
 
   }
 
