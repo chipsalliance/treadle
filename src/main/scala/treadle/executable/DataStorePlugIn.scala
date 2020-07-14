@@ -94,7 +94,7 @@ class RenderComputations(
   }
 }
 
-class VcdHook(val executionEngine: ExecutionEngine) extends DataStorePlugin {
+class VcdHook(val executionEngine: ExecutionEngine, memoryLogger: VcdMemoryLoggingController) extends DataStorePlugin {
   val dataStore: DataStore = executionEngine.dataStore
 
   override def run(symbol: Symbol, offset: Int = -1, previousValue: BigInt): Unit = {
@@ -102,6 +102,14 @@ class VcdHook(val executionEngine: ExecutionEngine) extends DataStorePlugin {
       val value = dataStore(symbol)
       executionEngine.vcdOption.foreach { vcd =>
         vcd.wireChanged(symbol.name, value, width = symbol.bitWidth)
+      }
+    } else {
+      val x = memoryLogger.vcdKey(symbol, offset)
+      x.foreach { memoryLocationName =>
+        val value = dataStore(symbol, offset)
+        executionEngine.vcdOption.foreach { vcd =>
+          vcd.wireChanged(memoryLocationName, value, width = symbol.bitWidth)
+        }
       }
     }
   }

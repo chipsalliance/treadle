@@ -45,7 +45,7 @@ case class PrintfOp(
         case _ =>
           throw TreadleException(s"In printf got unknown result in arguments to printf ${string.toString}")
       }
-      val instantiatedString = executeVerilogPrint(formatString, currentArgValues)
+      val instantiatedString = executeVerilogPrint(currentArgValues)
       print(instantiatedString)
     }
 
@@ -86,7 +86,7 @@ case class PrintfOp(
           s = s.drop(offset + 1)
           s.headOption match {
             case Some('%') =>
-              outBuffer ++= "%"
+              outBuffer ++= "%%"
               s = s.tail
             case Some('b') =>
               filters += toBinary
@@ -109,7 +109,7 @@ case class PrintfOp(
             case Some('x') =>
               val maxValue = BigInt("1" * widths.head, 2)
               filters += makeHex(maxValue)
-              outBuffer ++= s"%0${(widths.head / 4) + 1}x"
+              outBuffer ++= s"%0${(widths.head + 3) / 4}x"
               widths = widths.tail
               s = s.tail
             case Some(_) =>
@@ -125,7 +125,7 @@ case class PrintfOp(
     (StringContext.treatEscapes(outBuffer.toString()), filters)
   }
 
-  def executeVerilogPrint(formatString: String, allArgs: Seq[BigInt]): String = {
+  def executeVerilogPrint(allArgs: Seq[BigInt]): String = {
     val processedArgs = allArgs.zip(filterFunctions).map { case (arg, filter) => filter(arg) }
     if (addWallTime) {
       val time = scheduler.executionEngineOpt match {
