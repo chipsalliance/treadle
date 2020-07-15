@@ -29,7 +29,6 @@ import treadle.utils.{NameBasedRandomNumberGenerator, Render}
 import treadle.vcd.VCD
 
 import scala.collection.mutable
-import scala.util.Random
 
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
