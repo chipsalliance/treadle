@@ -100,6 +100,10 @@ jobs:
         run: |
           versionDeps=$(gawk -f repo/.github/scripts/generateVersionOverrides.gawk deps)
           echo "versonDeps: $versionDeps"
+      - name: documentation
+        id: doc
+        run: cat /dev/null | sbt $versionDeps doc
+        working-directory: ./repo
       - name: test
         id: test
         run: cat /dev/null | sbt $versionDeps +test
