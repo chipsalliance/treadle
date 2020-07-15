@@ -21,13 +21,15 @@ import java.io.PrintWriter
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
-import firrtl.{AnnotationSeq, MemKind, PortKind}
+import firrtl.{AnnotationSeq, MemKind, PortKind, RegKind}
+import logger.LazyLogging
 import treadle._
 import treadle.chronometry.{Timer, UTC}
-import treadle.utils.Render
+import treadle.utils.{NameBasedRandomNumberGenerator, Render}
 import treadle.vcd.VCD
 
 import scala.collection.mutable
+import scala.util.Random
 
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
@@ -38,7 +40,7 @@ class ExecutionEngine(
   val scheduler:       Scheduler,
   val expressionViews: Map[Symbol, ExpressionView],
   val wallTime:        UTC
-) {
+) extends LazyLogging {
   val cycleTimeIncrement = 500
 
   var vcdOption:   Option[VCD] = None
@@ -56,6 +58,8 @@ class ExecutionEngine(
 
   var verbose: Boolean = false
   setVerbose(annotationSeq.exists { case VerboseAnnotation => true; case _ => false })
+
+  val userRandomSeed: Long = annotationSeq.collectFirst { case RandomSeedAnnotation(seed) => seed }.getOrElse(0L)
 
   var inputsChanged: Boolean = false
 
@@ -104,6 +108,10 @@ class ExecutionEngine(
   }
 
   val timer = new Timer
+
+  if (annotationSeq.contains { RandomizeAtStartupAnnotation }) {
+    randomize()
+  }
 
   if (verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
@@ -160,6 +168,43 @@ class ExecutionEngine(
     vcdOption.foreach { vcd =>
       vcd.write(vcdFileName)
     }
+  }
+
+  /** Randomize the circuits registers and memories
+    *
+    * @param additonalSeed a seed to move change all the random numbers generated
+    */
+  def randomize(additonalSeed: Long = 0L): Unit = {
+    val randomGenerator = new NameBasedRandomNumberGenerator
+
+    val symbolsToDo: Seq[Symbol] = symbolTable.symbols.toSeq
+
+    symbolsToDo.foreach { symbol =>
+
+      def getRandomValue: BigInt = {
+        val big = randomGenerator.nextBigInt(symbol.name, userRandomSeed + additonalSeed, symbol.bitWidth)
+        val newValue = if (symbol.dataType == SignedInt) {
+          symbol.makeSInt(big, symbol.bitWidth)
+        } else {
+          symbol.makeUInt(big, symbol.bitWidth)
+        }
+        newValue
+      }
+
+      if (symbol.dataKind == RegKind) {
+        val newValue = getRandomValue
+        logger.info(s"setting ${symbol.name} <= $newValue")
+        setValue(symbol.name, getRandomValue)
+      } else if (symbol.dataKind == MemKind) {
+        for (slot <- 0 until symbol.slots) {
+          val newValue = getRandomValue
+          logger.info(s"setting ${symbol.name}($slot) <= $newValue")
+          setValue(symbol.name, getRandomValue, offset = slot)
+        }
+      }
+
+    }
+    evaluateCircuit()
   }
 
   def renderComputation(symbolNames: String, outputFormat: String = "d", showValues: Boolean = true): String = {
@@ -486,7 +531,7 @@ object ExecutionEngine {
     val t0 = System.nanoTime()
     val stageOptions = view[StageOptions](annotationSeq)
 
-    val circuit = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(c)           => c }.get.circuit
+    val circuit = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(c) => c }.get.circuit
 
     if (annotationSeq.contains(ShowFirrtlAtLoadAnnotation)) {
       println(circuit.serialize)

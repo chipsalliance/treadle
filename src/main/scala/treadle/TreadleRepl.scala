@@ -106,7 +106,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   var done = false
 
   var inScript = false
-  val scriptFactory = ScriptFactory(this)
+  val scriptFactory: ScriptFactory = ScriptFactory(this)
   var currentScript: Option[Script] = None
   val IntPattern:    Regex = """(-?\d+)""".r
 
@@ -210,7 +210,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     }
   }
 
-  val wallTime = UTC()
+  val wallTime: UTC = UTC()
   wallTime.onTimeChange = () => {
     engine.vcdOption.foreach { vcd =>
       vcd.setTime(wallTime.currentTime)
@@ -803,16 +803,13 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         }
       },
       new Command("randomize") {
-        def usage: (String, String) = ("randomize", "randomize all symbols except reset)")
+        def usage: (String, String) = ("randomize", "randomize all registers and memory values)")
         def run(args: Array[String]): Unit = {
-          for (symbol <- engine.symbols) {
-            try {
-              val newValue = makeRandom(symbol.firrtlType)
-              engine.setValue(symbol.name, newValue)
-            } catch {
-              case e: Exception =>
-                console.println(s"Error randomize: setting ${symbol.name}, error ${e.getMessage}")
-            }
+          getOneArg("randomize [seed]", Some("0")) match {
+            case Some(additionalSeedString) =>
+              val additionalSeed = additionalSeedString.toLong
+              engine.randomize(additionalSeed)
+            case _ =>
           }
         }
       },

@@ -56,7 +56,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   treadle.random.setSeed(annotationSeq.collectFirst { case RandomSeedAnnotation(seed) => seed }.getOrElse(0L))
 
-  val wallTime = UTC()
+  val wallTime: UTC = UTC()
 
   val engine: ExecutionEngine = ExecutionEngine(annotationSeq, wallTime)
 
@@ -201,6 +201,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
           wallTime.runUntil(wallTime.currentTime + timeRaised)
       }
     }
+  }
+
+  def randomize(): Unit = {
+    engine.randomize()
   }
 
   def makeSnapshot(): Unit = {

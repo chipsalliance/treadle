@@ -251,7 +251,21 @@ case object ResetNameAnnotation extends HasShellOptions {
 }
 
 /**
-  *  Tells treadle to present random value when validIf's condition is off
+  *  Tells treadle to Randomize circuit at startup
+  */
+case object RandomizeAtStartupAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-randomize-at-startup",
+      toAnnotationSeq = _ => Seq(RandomizeAtStartupAnnotation),
+      helpText = "makes treadle do it's own randomization of circuit at startup"
+    )
+  )
+}
+
+/**
+  *  Tell treadle to call it's own internal reset at startup. This is typically handled by the
+  *  unit test framework and not needed for users
   */
 case object CallResetAtStartupAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
