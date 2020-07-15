@@ -20,46 +20,48 @@ import firrtl.stage.FirrtlSourceAnnotation
 import logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import treadle.chronometry.Timer
+import treadle.utils.NameBasedRandomNumberGenerator
 
 import scala.util.Random
 
-class RandomizeCircuit extends AnyFreeSpec with Matchers with LazyLogging {
-  val t = new Timer()
+class RandomizeCircuitTest extends AnyFreeSpec with Matchers with LazyLogging {
+  "name based random numbers should have distributions that are similar to regular random numbers" in {
+    val samples = 10000
 
-  def method1: Unit = {
-    Random.setSeed(System.currentTimeMillis())
-    t("method1") {
-      val a = Array.tabulate(1000) { i =>
-        Random.nextInt()
-      }
-      val sum = a.sum
-      println(s"method1 sum $sum")
-    }
-  }
+    val nameBasedRandomNumberGenerator = new NameBasedRandomNumberGenerator
 
-  def method2: Unit = {
-    t("method2") {
-      val a = Array.tabulate(1000) { i =>
-        Random.setSeed(i)
-        Random.nextInt()
-      }
-      val sum = a.sum
-      println(s"method2 $sum")
+    val a = Array.tabulate(samples) { i =>
+      Random.nextInt(1 << 16).toLong
     }
-  }
+    val b = Array.tabulate(samples) { i =>
+      val registerName = s"reg$i"
+      nameBasedRandomNumberGenerator.nextBigInt(registerName, deviationSeed = 0L, 16).toLong
+    }
 
-  "random numbers should behave properly" in {
-    method1
-    method2
-    method1
-    method2
-    t.clear()
-    for (i <- 0 to 10) {
-      method1
-      method2
+    Logger.setLevel(this.getClass, LogLevel.None)
+
+    a.zip(b).foreach {
+      case (r1, r2) =>
+        logger.debug(f"$r1%10d   $r2%10d")
     }
-    println(t.report())
+
+    val avg1 = a.sum / samples.toDouble
+    val avg2 = b.sum / samples.toDouble
+    def delta(a: Long, b: Double): Double = {
+      (a - b) * (a - b)
+    }
+    val sigma1 = math.sqrt(a.map { a1 =>
+      delta(a1, avg1)
+    }.sum / samples.toDouble)
+    val sigma2 = math.sqrt(b.map { b1 =>
+      delta(b1, avg2)
+    }.sum / samples.toDouble)
+
+    (avg1 - avg2).abs / avg1 must be < 0.03
+    (sigma1 - sigma2).abs / sigma1 must be < 0.03
+
+    logger.info(f"$avg1%10.2f  $avg2%10.2f")
+    logger.info(f"$sigma1%10.2f  $sigma2%10.2f")
   }
 
   "circuits can be randomized" in {
@@ -123,25 +125,41 @@ class RandomizeCircuit extends AnyFreeSpec with Matchers with LazyLogging {
     val tester = TreadleTester(
       Seq(
         FirrtlSourceAnnotation(input),
-        WriteVcdAnnotation
+        RandomizeAtStartupAnnotation
       )
     )
-    // Logger.setLevel(tester.engine.getClass, LogLevel.Info)
+    Logger.setLevel(this.getClass, LogLevel.None)
+
+    val regNames = Seq(1, 2, 3, 4, 11, 12).map { n =>
+      f"reg$n"
+    }
+    val saveRegs = regNames.map { name =>
+      name -> tester.peek(name)
+    }.toMap
+
+    logger.info(regNames.map { s =>
+      f"$s%10s"
+    }.mkString(""))
+    logger.info(regNames.map { s =>
+      f"${tester.peek(s)}%10d"
+    }.mkString(""))
+
     tester.poke("io_in_a", 7)
     tester.step(10)
 
+    logger.info(regNames.map { s =>
+      f"${tester.peek(s)}%10d"
+    }.mkString(""))
+    tester.peek("reg1") must be(BigInt(7))
+    saveRegs.exists { case (name, savedValue) => savedValue != tester.peek(name) } must be(true)
+
     tester.randomize()
 
-    tester.step(10)
-
-    tester.reset(30)
-    tester.step(10)
-
-    tester.randomize()
-    tester.step(10)
-
-    tester.finish
-
-    // GO AND LOOK AT VCD
+    logger.info(regNames.map { s =>
+      f"${tester.peek(s)}%10d"
+    }.mkString(""))
+    regNames.forall { name =>
+      saveRegs(name) == tester.peek(name)
+    } must be(true)
   }
 }

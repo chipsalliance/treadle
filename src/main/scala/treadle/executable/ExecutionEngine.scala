@@ -25,7 +25,7 @@ import firrtl.{AnnotationSeq, MemKind, PortKind, RegKind}
 import logger.LazyLogging
 import treadle._
 import treadle.chronometry.{Timer, UTC}
-import treadle.utils.Render
+import treadle.utils.{NameBasedRandomNumberGenerator, Render}
 import treadle.vcd.VCD
 
 import scala.collection.mutable
@@ -109,6 +109,10 @@ class ExecutionEngine(
 
   val timer = new Timer
 
+  if (annotationSeq.contains { RandomizeAtStartupAnnotation }) {
+    randomize()
+  }
+
   if (verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
       Render.headerBar(s"Executing static assignments", offset = 8)
@@ -166,17 +170,19 @@ class ExecutionEngine(
     }
   }
 
+  /** Randomize the circuits registers and memories
+    *
+    * @param additonalSeed a seed to move change all the random numbers generated
+    */
   def randomize(additonalSeed: Long = 0L): Unit = {
-    val rand = new Random
+    val randomGenerator = new NameBasedRandomNumberGenerator
 
     val symbolsToDo: Seq[Symbol] = symbolTable.symbols.toSeq
 
     symbolsToDo.foreach { symbol =>
-      rand.setSeed(symbol.name.hashCode + userRandomSeed + additonalSeed)
-      rand.setSeed(rand.nextLong())
 
       def getRandomValue: BigInt = {
-        val big = BigInt(symbol.bitWidth, rand)
+        val big = randomGenerator.nextBigInt(symbol.name, userRandomSeed + additonalSeed, symbol.bitWidth)
         val newValue = if (symbol.dataType == SignedInt) {
           symbol.makeSInt(big, symbol.bitWidth)
         } else {
@@ -184,6 +190,7 @@ class ExecutionEngine(
         }
         newValue
       }
+
       if (symbol.dataKind == RegKind) {
         val newValue = getRandomValue
         logger.info(s"setting ${symbol.name} <= $newValue")
