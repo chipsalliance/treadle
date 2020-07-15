@@ -149,7 +149,7 @@ case object ValidIfIsRandomAnnotation extends NoTargetAnnotation with TreadleOpt
   *  Sets the number of rollback buffers in simulator, useful to see why wires have their values
   */
 case class RollBackBuffersAnnotation(rollbackBufferDepth: Int = TreadleDefaults.RollbackBuffers)
-  extends NoTargetAnnotation
+    extends NoTargetAnnotation
     with TreadleOption
 
 case object RollBackBuffersAnnotation extends HasShellOptions {
@@ -176,9 +176,7 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
   * This annotation may occur more than once in order to specify multiple memories
   *
   */
-case class MemoryToVCD(specifier: String)
-  extends NoTargetAnnotation
-    with TreadleOption
+case class MemoryToVCD(specifier: String) extends NoTargetAnnotation with TreadleOption
 
 case object MemoryToVCD extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -399,10 +397,13 @@ class TreadleLibrary extends RegisteredLibrary {
     DontRunLoweringCompilerLoadAnnotation,
     ValidIfIsRandomAnnotation,
     RollBackBuffersAnnotation,
+    MemoryToVCD,
     ClockInfoAnnotation,
     SymbolsToWatchAnnotation,
     ResetNameAnnotation,
+    RandomizeAtStartupAnnotation,
     CallResetAtStartupAnnotation,
+    PrefixPrintfWithWallTime,
     TreadleFirrtlString,
     TreadleFirrtlFile
   ).flatMap(_.options)
