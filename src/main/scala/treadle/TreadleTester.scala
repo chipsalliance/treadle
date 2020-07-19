@@ -19,7 +19,7 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
-import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
+import firrtl.AnnotationSeq
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
