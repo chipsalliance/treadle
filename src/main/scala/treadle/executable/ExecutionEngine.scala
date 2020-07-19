@@ -29,7 +29,6 @@ import treadle.utils.{NameBasedRandomNumberGenerator, Render}
 import treadle.vcd.VCD
 
 import scala.collection.mutable
-import scala.util.Random
 
 //scalastyle:off magic.number number.of.methods
 class ExecutionEngine(
@@ -180,7 +179,6 @@ class ExecutionEngine(
     val symbolsToDo: Seq[Symbol] = symbolTable.symbols.toSeq
 
     symbolsToDo.foreach { symbol =>
-
       def getRandomValue: BigInt = {
         val big = randomGenerator.nextBigInt(symbol.name, userRandomSeed + additonalSeed, symbol.bitWidth)
         val newValue = if (symbol.dataType == SignedInt) {
