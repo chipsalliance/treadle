@@ -240,7 +240,10 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
       case fileName :: _ =>
         repl.loadVcdScript(fileName)
       case Nil =>
-        repl.replConfig.getVcdInputFileName
+        repl.currentTreadleTesterOpt.foreach { tester =>
+          val vcdName = tester.engine.ast.main + ".vcd"
+          repl.loadVcdScript(vcdName)
+        }
     }
   }
 

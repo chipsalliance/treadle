@@ -22,7 +22,7 @@ import java.util.Calendar
 import firrtl.AnnotationSeq
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
-import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
+import firrtl.stage.OutputFileAnnotation
 import treadle.chronometry.UTC
 import treadle.executable._
 import treadle.stage.TreadleTesterPhase
@@ -44,10 +44,6 @@ import treadle.stage.TreadleTesterPhase
   */
 //class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
 class TreadleTester(annotationSeq: AnnotationSeq) {
-
-  def this(input: String, optionsManager: HasTreadleSuite, circuitForm: Any = 0) = {
-    this(optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input))
-  }
 
   var expectationsMet = 0
 
@@ -459,27 +455,11 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 object TreadleTester {
 
   /**
-    * this convenience method avoids files laying around in current directory
-    * @return
-    */
-  def getDefaultManager: HasTreadleSuite = {
-    new TreadleOptionsManager {
-      commonOptions = commonOptions.copy(targetDirName = "test_run_dir")
-    }
-  }
-
-  /**
     * Create a treadle tester
-    * @param input           the firrtl to parse
-    * @param optionsManager  options manager
+    * @param annotations  Annotations containing all the metadata required for execution
+    *                     typical list should include a FirrtlSourceAnnotation
     * @return
     */
-  @deprecated("Use TreadleTester(annotationSeq) instead", "since ")
-  def apply(input: String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
-    val sourceAnnotation = FirrtlSourceAnnotation(input)
-    TreadleTester(sourceAnnotation +: optionsManager.toAnnotationSeq)
-  }
-
   def apply(annotations: AnnotationSeq): TreadleTester = {
     val newAnnotations = (new TreadleTesterPhase).transform(annotations)
     newAnnotations.collectFirst { case TreadleTesterAnnotation(tester) => tester }.getOrElse(

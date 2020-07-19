@@ -22,14 +22,14 @@ import firrtl.options.Viewer.view
 import firrtl.options.{StageOptions, TargetDirAnnotation}
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import firrtl.util.BackendCompilationUtilities
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import treadle._
 
 import scala.util.Random
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities {
+class VCDSpec extends AnyFlatSpec with Matchers {
   private def getVcd = {
     VCD("test_circuit")
   }
@@ -142,7 +142,7 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
   it should "be able to read a file" in {
     val tempFile = File.createTempFile("GCD", ".vcd")
     tempFile.deleteOnExit()
-    copyResourceToFile("/GCD.vcd", tempFile)
+    BackendCompilationUtilities.copyResourceToFile("/GCD.vcd", tempFile)
     val vcdFile = VCD.read(tempFile.getCanonicalPath)
 
     vcdFile.date should be("2016-10-13T16:31+0000")
@@ -323,7 +323,7 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
     val firrtlFileName = stageOptions.getBuildFileName("VcdAdder", Some(".vcd"))
 
     val resourceFileName = resourceName
-    copyResourceToFile(resourceName, new File(firrtlFileName))
+    BackendCompilationUtilities.copyResourceToFile(resourceName, new File(firrtlFileName))
 
     val tester = TreadleTester(options)
 
