@@ -16,11 +16,11 @@ limitations under the License.
 
 package treadle
 
+import firrtl.CircuitState
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation =>
@@ -306,26 +306,18 @@ case class TreadleCircuitStateAnnotation(state: CircuitState) extends NoTargetAn
   *
   * @param form the input form
   */
-case class TreadleFirrtlFormHint(form: CircuitForm) extends NoTargetAnnotation
+@deprecated("Remove references, this has no effect", since = "1.3.x")
+case class TreadleFirrtlFormHint(form: Any) extends NoTargetAnnotation
 
+@deprecated("Remove refernences, this has no effect", since = "1.3.x")
 object TreadleFirrtlFormHint extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "tr-firrtl-input-form",
       toAnnotationSeq = (firrtl: String) => {
-        val form = firrtl match {
-          case "low"     => LowForm
-          case "high"    => HighForm
-          case "chirrtl" => ChirrtlForm
-          case "unknown" => UnknownForm
-          case _ =>
-            throw TreadleException(
-              s"--tr-firrtl-input-form $firrtl is invalid, should be one of high,low,chirrtl,unknown"
-            )
-        }
-        Seq(TreadleFirrtlFormHint(form))
+        Seq(TreadleFirrtlFormHint(0))
       },
-      helpText = "provides firrtl form hint to treadle, should be one of high,low,chirrtl,unknown"
+      helpText = "deprecated. Do not use"
     )
   )
 }

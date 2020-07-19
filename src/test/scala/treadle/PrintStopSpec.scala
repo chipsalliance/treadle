@@ -20,9 +20,9 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
 import logger.{LazyLogging, LogLevel, Logger}
-import treadle.executable.StopException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 //scalastyle:off magic.number
 class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
@@ -387,6 +387,8 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |    printf(clock, UInt<1>(1), "+++ count=%d r0=%d r1=%d\n", count, r0, r1) @[PrintfWrong.scala 19:11]
       """.stripMargin
 
+    Logger.setLevel(this.getClass, LogLevel.None)
+
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
       val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
@@ -537,6 +539,5 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
     } {
       printfLines(line).contains(s"+++ $j") should be(true)
     }
-
   }
 }
