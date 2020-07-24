@@ -16,11 +16,12 @@ limitations under the License.
 
 package treadle.executable
 
-import treadle._
+import firrtl.annotations._
+import firrtl.ir._
 import firrtl.{FileUtils, MemKind, RegKind, WireKind}
-import firrtl.ir.{ClockType, DefMemory, Info, IntWidth, ReadUnderWrite, Type}
-import RenderHelper.ExpressionHelper
-import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryLoadFileType, ModuleName}
+import logger.LazyLogging
+import treadle._
+import treadle.executable.RenderHelper.ExpressionHelper
 
 import scala.collection.mutable
 
@@ -294,7 +295,7 @@ object Memory {
     def buildReadPipelineAssigners(
       portName:     String,
       pipelineName: String,
-      symbol:         Symbol
+      symbol:       Symbol
     ): Symbol = {
 
       val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
@@ -467,7 +468,6 @@ object Memory {
       }
     }
 
-
     /*
      * Makes a chain of pipeline registers.
      * These must be ordered reg0/in, reg0, reg1/in ... regN/in, regN
@@ -612,11 +612,42 @@ object Memory {
   }
 }
 
-class MemoryInitializer(engine: ExecutionEngine) {
+class MemoryInitializer(engine: ExecutionEngine) extends LazyLogging {
   case class MemoryMetadata(symbol: Symbol, fileName: String, radix: Int)
 
   val memoryLoadAnnotations: Seq[LoadMemoryAnnotation] = engine.annotationSeq.collect {
     case mla: LoadMemoryAnnotation => mla
+  }
+
+  handleInitializers()
+
+  def handleInitializers(): Unit = {
+    def loadMemory(referenceTarget: ReferenceTarget, values: Seq[BigInt]): Unit = {
+      engine.referenceTargetToSymbols(referenceTarget).foreach { memorySymbol =>
+        def getNextValue(index: Int): BigInt = {
+          if (values.isEmpty) {
+            BigInt(memorySymbol.bitWidth, util.Random)
+          } else if (index >= values.length) {
+            values.last
+          } else {
+            values(index)
+          }
+        }
+
+        for (slot <- 0 until memorySymbol.slots) {
+          engine.dataStore.update(memorySymbol, slot, getNextValue(slot))
+        }
+      }
+    }
+    engine.annotationSeq.foreach {
+      case MemoryRandomInitAnnotation(referenceTarget) =>
+        loadMemory(referenceTarget, Seq.empty)
+      case MemoryScalarInitAnnotation(referenceTarget, value) =>
+        loadMemory(referenceTarget, Seq(value))
+      case MemoryArrayInitAnnotation(referenceTarget, values) =>
+        loadMemory(referenceTarget, values)
+      case _ =>
+    }
   }
 
   /*
