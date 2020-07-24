@@ -179,7 +179,6 @@ class ExecutionEngine(
     val symbolsToDo: Seq[Symbol] = symbolTable.symbols.toSeq
 
     symbolsToDo.foreach { symbol =>
-
       def getRandomValue: BigInt = {
         val big = randomGenerator.nextBigInt(symbol.name, userRandomSeed + additonalSeed, symbol.bitWidth)
         val newValue = if (symbol.dataType == SignedInt) {

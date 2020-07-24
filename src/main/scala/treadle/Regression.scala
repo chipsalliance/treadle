@@ -16,6 +16,7 @@ limitations under the License.
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import treadle.chronometry.Timer
 
 //scalastyle:off magic.number
@@ -68,21 +69,13 @@ object Regression {
          |    io_v <= T_21
     """.stripMargin
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = false,
-        setVerbose = false,
-        rollbackBuffers = 0
-      )
-    }
-
     val values =
       for {
         x <- 1 to 1000
         y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = TreadleTester(gcdFirrtl, manager)
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(gcdFirrtl)))
 
     val startTime = System.nanoTime()
     tester.poke("clock", 1)
@@ -169,15 +162,7 @@ object MemoryUsageRegression {
 
     val timer = new Timer
 
-    val optionsManager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        setVerbose = false,
-        rollbackBuffers = 0,
-        showFirrtlAtLoad = false
-      )
-    }
-
-    val tester = timer("tester assembly")(TreadleTester(input, optionsManager))
+    val tester = timer("tester assembly")(TreadleTester(Seq(FirrtlSourceAnnotation(input))))
 
     for (trial <- 0 until 4) {
       timer(s"trial_${trial}_$testSize") {

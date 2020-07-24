@@ -16,47 +16,19 @@ limitations under the License.
 
 package treadle.stage
 
+import firrtl.AnnotationSeq
 import firrtl.options.Phase
-import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
 import treadle.stage.phases._
-
-object TreadleCompatibilityPhase extends Phase {
-  private val chirrtlPhases: Seq[Phase] = Seq(
-    GetFirrtlAst,
-    SetImplicitOutputInfo,
-    PrepareAst
-  )
-  private val lowFIRRTLPhases: Seq[Phase] = Seq(
-    GetFirrtlAst,
-    SetImplicitOutputInfo,
-    PrepareAstFromLowFIRRTL
-  )
-
-  override def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    chirrtlPhases.foldLeft(annotations)((a, f) => f.transform(a))
-  }
-
-  /** Here to determine which phases to run based on the circuit form.
-    *
-    */
-  def checkFormTransform(circuitForm: CircuitForm, annotations: AnnotationSeq): AnnotationSeq = {
-    val phases = circuitForm match {
-      case ChirrtlForm => chirrtlPhases
-      case _           => lowFIRRTLPhases
-    }
-    phases.foldLeft(annotations)((a, f) => f.transform(a))
-  }
-}
 
 /**
   * When returns the annotation list with a TreadleTester constructed
   * from either a circuit, a file, or a string
   */
-object TreadleTesterPhase extends Phase {
+class TreadleTesterPhase extends Phase {
   private val phases: Seq[Phase] = Seq(
     GetFirrtlAst,
     SetImplicitOutputInfo,
-    PrepareAst,
+    new PrepareAst,
     CreateTester
   )
 

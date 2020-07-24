@@ -16,6 +16,7 @@ limitations under the License.
 
 package treadle
 
+import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -45,35 +46,23 @@ class GetIntBreakdownSpec extends AnyFreeSpec with Matchers {
     var lastNode = "io_in"
     s ++= "\n"
     for (i <- 0 until n) {
-//      s ++= s"""    node T_$i = add($lastNode, UInt<1>("h1"))\n"""
-//      s ++= s"""    node T_$i = add(io_in, UInt<1>("h1"))\n"""
       s ++= s"""    node T_$i = tail(add(io_in, UInt<1>("h1")), 1)\n"""
-//      s ++= s"""    node T_$i = tail(io_in, 1)\n"""
       lastNode = s"T_$i"
     }
     s ++= s"    io_out <= $lastNode\n"
 
     val firrtlString = input ++ s.toString()
 
-    // println(firrtlString.split("\n").zipWithIndex.map { case (l,n) => f"$n%5d $l"}.mkString("\n"))
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(firrtlString), ShowFirrtlAtLoadAnnotation))
 
-    val manager = new TreadleOptionsManager {
-      treadleOptions = treadleOptions.copy(
-        showFirrtlAtLoad = false,
-        setVerbose = false,
-        rollbackBuffers = 0
-      )
+    for (i <- 0 to 1000) {
+      tester.poke("io_in", 4)
+      tester.step(1000)
+      tester.peek("io_out")
+      tester.expect("io_out", 5)
     }
 
-    new TreadleTester(firrtlString, manager) {
-      for (i <- 0 to 1000) {
-        poke("io_in", 4)
-        step(1000)
-        peek("io_out")
-        expect("io_out", 5)
-      }
-    }
-    true
+    tester.finish
   }
 
   "GetIntBreakdownSpec should pass a basic test" in {
