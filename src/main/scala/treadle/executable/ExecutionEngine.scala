@@ -90,7 +90,7 @@ class ExecutionEngine(
   }
 
   /**
-    * turns on evaluator debugging. Can make output quite
+    * turns on evaluator debugging.  Can make output quite
     * verbose.
     *
     * @param isVerbose  The desired verbose setting
