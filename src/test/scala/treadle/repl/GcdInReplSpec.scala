@@ -16,7 +16,7 @@ limitations under the License.
 
 package treadle.repl
 
-import java.io.{ByteArrayOutputStream, File, PrintStream}
+import java.io.{ByteArrayOutputStream, File, PrintStream, PrintWriter}
 
 import firrtl.FileUtils
 import firrtl.options.TargetDirAnnotation
@@ -61,8 +61,8 @@ class GcdInReplSpec extends AnyFreeSpec with Matchers {
 
     println(textOut)
 
-    textOut.contains("io_v == value 1 in 3 cycle") should be(true)
-    textOut.contains("peek io_z 4") should be(true)
+    textOut should include ("io_v == value 1 in 3 cycle")
+    textOut should include ("peek io_z 4")
 
   }
 

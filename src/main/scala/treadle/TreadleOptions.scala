@@ -16,11 +16,11 @@ limitations under the License.
 
 package treadle
 
+import firrtl.CircuitState
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation =>
@@ -163,6 +163,32 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
 }
 
 /**
+  *  Controls whether changes to memory locations are written to vcd output
+  *  @param specifier controls which memories and which locations of those memories are logged to vcd output
+  *                   When not present not memories are logged
+  *                   "all"             log all values at all locations of all memories
+  *                   "mem1:all"        log all values at all locations for memory mem1
+  *                   "mem1:0-4"        log values at locations 0-4 for memory mem1
+  *                   "mem1:b0-b100"    log values at locations 0-4 but show addresses in binary for memory mem1
+  *                   "mem1:h0-hff"     log values at locations 0-255 but show addresses in hex for memory mem1
+  *                   "mem1:o0-o377"    log values at locations 0-255 but show addresses in octal for memory mem1
+  *
+  * This annotation may occur more than once in order to specify multiple memories
+  *
+  */
+case class MemoryToVCD(specifier: String) extends NoTargetAnnotation with TreadleOption
+
+case object MemoryToVCD extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[String](
+      longOption = "tr-mem-to-vcd",
+      toAnnotationSeq = (specifier: String) => Seq(MemoryToVCD(specifier)),
+      helpText = s"""log specified memory/indices to vcd, format "all" or "memoryName:1,2,5-10" """
+    )
+  )
+}
+
+/**
   *  Sets one or more clocks including their frequencies and phase
   */
 case class ClockInfoAnnotation(clockInfoSeq: Seq[ClockInfo] = Seq(ClockInfo()))
@@ -223,7 +249,21 @@ case object ResetNameAnnotation extends HasShellOptions {
 }
 
 /**
-  *  Tells treadle to present random value when validIf's condition is off
+  *  Tells treadle to Randomize circuit at startup
+  */
+case object RandomizeAtStartupAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-randomize-at-startup",
+      toAnnotationSeq = _ => Seq(RandomizeAtStartupAnnotation),
+      helpText = "makes treadle do it's own randomization of circuit at startup"
+    )
+  )
+}
+
+/**
+  *  Tell treadle to call it's own internal reset at startup. This is typically handled by the
+  *  unit test framework and not needed for users
   */
 case object CallResetAtStartupAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -264,26 +304,18 @@ case class TreadleCircuitStateAnnotation(state: CircuitState) extends NoTargetAn
   *
   * @param form the input form
   */
-case class TreadleFirrtlFormHint(form: CircuitForm) extends NoTargetAnnotation
+@deprecated("Remove references, this has no effect", since = "1.3.x")
+case class TreadleFirrtlFormHint(form: Any) extends NoTargetAnnotation
 
+@deprecated("Remove refernences, this has no effect", since = "1.3.x")
 object TreadleFirrtlFormHint extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "tr-firrtl-input-form",
       toAnnotationSeq = (firrtl: String) => {
-        val form = firrtl match {
-          case "low"     => LowForm
-          case "high"    => HighForm
-          case "chirrtl" => ChirrtlForm
-          case "unknown" => UnknownForm
-          case _ =>
-            throw TreadleException(
-              s"--tr-firrtl-input-form $firrtl is invalid, should be one of high,low,chirrtl,unknown"
-            )
-        }
-        Seq(TreadleFirrtlFormHint(form))
+        Seq(TreadleFirrtlFormHint(0))
       },
-      helpText = "provides firrtl form hint to treadle, should be one of high,low,chirrtl,unknown"
+      helpText = "deprecated. Do not use"
     )
   )
 }
@@ -357,10 +389,13 @@ class TreadleLibrary extends RegisteredLibrary {
     DontRunLoweringCompilerLoadAnnotation,
     ValidIfIsRandomAnnotation,
     RollBackBuffersAnnotation,
+    MemoryToVCD,
     ClockInfoAnnotation,
     SymbolsToWatchAnnotation,
     ResetNameAnnotation,
+    RandomizeAtStartupAnnotation,
     CallResetAtStartupAnnotation,
+    PrefixPrintfWithWallTime,
     TreadleFirrtlString,
     TreadleFirrtlFile
   ).flatMap(_.options)

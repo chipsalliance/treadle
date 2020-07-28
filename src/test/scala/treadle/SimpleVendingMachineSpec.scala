@@ -98,8 +98,8 @@ class SimpleVendingMachineSpec extends AnyFreeSpec with Matchers {
         |    dut.clock <= clock
         |    dut.reset <= reset
         |    reg value : UInt<4>, clock with : (reset => (reset, UInt<4>("h00"))) @[Counter.scala 26:33]
+        |    node _T_6 = eq(value, UInt<4>("h09")) @[Counter.scala 34:24]
         |    when UInt<1>("h01") : @[Counter.scala 63:17]
-        |      node _T_6 = eq(value, UInt<4>("h09")) @[Counter.scala 34:24]
         |      node _T_8 = add(value, UInt<1>("h01")) @[Counter.scala 35:22]
         |      node _T_9 = tail(_T_8, 1) @[Counter.scala 35:22]
         |      value <= _T_9 @[Counter.scala 35:13]
