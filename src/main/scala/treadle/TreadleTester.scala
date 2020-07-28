@@ -19,13 +19,13 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
+import firrtl.AnnotationSeq
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
 import treadle.chronometry.UTC
 import treadle.executable._
-import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
+import treadle.stage.TreadleTesterPhase
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
@@ -45,18 +45,15 @@ import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
 //class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
 class TreadleTester(annotationSeq: AnnotationSeq) {
 
-  def this(input: String, optionsManager: HasTreadleSuite, circuitForm: CircuitForm = ChirrtlForm) = {
-    this(
-      TreadleCompatibilityPhase.checkFormTransform(circuitForm,
-                                                   optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input))
-    )
+  def this(input: String, optionsManager: HasTreadleSuite, circuitForm: Any = 0) = {
+    this(optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input))
   }
 
   var expectationsMet = 0
 
   treadle.random.setSeed(annotationSeq.collectFirst { case RandomSeedAnnotation(seed) => seed }.getOrElse(0L))
 
-  val wallTime = UTC()
+  val wallTime: UTC = UTC()
 
   val engine: ExecutionEngine = ExecutionEngine(annotationSeq, wallTime)
 
@@ -74,6 +71,9 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
   private val verbose = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
   private val stageOptions = view[StageOptions](annotationSeq)
+  private val memoryLogger: VcdMemoryLoggingController = {
+    VcdMemoryLoggingController(annotationSeq.collect { case MemoryToVCD(command) => command }, engine.symbolTable)
+  }
 
   def setVerbose(value: Boolean = true): Unit = {
     wallTime.isVerbose = value
@@ -155,7 +155,8 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   if (writeVcd) {
     engine.makeVCDLogger(
       stageOptions.getBuildFileName(topName, Some(".vcd")),
-      vcdShowUnderscored
+      vcdShowUnderscored,
+      memoryLogger
     )
   }
 
@@ -197,6 +198,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
           wallTime.runUntil(wallTime.currentTime + timeRaised)
       }
     }
+  }
+
+  def randomize(): Unit = {
+    engine.randomize()
   }
 
   def makeSnapshot(): Unit = {
@@ -476,7 +481,7 @@ object TreadleTester {
   }
 
   def apply(annotations: AnnotationSeq): TreadleTester = {
-    val newAnnotations = TreadleTesterPhase.transform(annotations)
+    val newAnnotations = (new TreadleTesterPhase).transform(annotations)
     newAnnotations.collectFirst { case TreadleTesterAnnotation(tester) => tester }.getOrElse(
       throw TreadleException(s"Could not create a TreadleTester")
     )

@@ -533,8 +533,8 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
         |    output io : {}
         |
         |    reg cnt : UInt<3>, clock with : (reset => (reset, UInt<3>("h00"))) @[Counter.scala 29:33]
+        |    node _T = eq(cnt, UInt<3>("h04")) @[Counter.scala 37:24]
         |    when UInt<1>("h01") : @[Counter.scala 71:17]
-        |      node _T = eq(cnt, UInt<3>("h04")) @[Counter.scala 37:24]
         |      node _T_1 = add(cnt, UInt<1>("h01")) @[Counter.scala 38:22]
         |      node _T_2 = tail(_T_1, 1) @[Counter.scala 38:22]
         |      cnt <= _T_2 @[Counter.scala 38:13]

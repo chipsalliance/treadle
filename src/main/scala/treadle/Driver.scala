@@ -213,6 +213,7 @@ trait HasTreadleOptions {
     .text("name of default reset")
 }
 
+@deprecated("Use TreadleStage instead", since = "1.3.x")
 object Driver {
 
   def execute(firrtlInput: String, optionsManager: TreadleOptionsManager): Option[TreadleTester] = {

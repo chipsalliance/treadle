@@ -18,13 +18,16 @@ package treadle.executable
 
 import java.io.PrintWriter
 
+import firrtl.annotations.ReferenceTarget
+import firrtl.annotations.TargetToken.Instance
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
-import firrtl.{AnnotationSeq, PortKind}
+import firrtl.{AnnotationSeq, MemKind, PortKind, RegKind}
+import logger.LazyLogging
 import treadle._
 import treadle.chronometry.{Timer, UTC}
-import treadle.utils.Render
+import treadle.utils.{NameBasedRandomNumberGenerator, Render}
 import treadle.vcd.VCD
 
 import scala.collection.mutable
@@ -38,7 +41,7 @@ class ExecutionEngine(
   val scheduler:       Scheduler,
   val expressionViews: Map[Symbol, ExpressionView],
   val wallTime:        UTC
-) {
+) extends LazyLogging {
   val cycleTimeIncrement = 500
 
   var vcdOption:   Option[VCD] = None
@@ -56,6 +59,8 @@ class ExecutionEngine(
 
   var verbose: Boolean = false
   setVerbose(annotationSeq.exists { case VerboseAnnotation => true; case _ => false })
+
+  val userRandomSeed: Long = annotationSeq.collectFirst { case RandomSeedAnnotation(seed) => seed }.getOrElse(0L)
 
   var inputsChanged: Boolean = false
 
@@ -88,7 +93,7 @@ class ExecutionEngine(
   }
 
   /**
-    * turns on evaluator debugging. Can make output quite
+    * turns on evaluator debugging.  Can make output quite
     * verbose.
     *
     * @param isVerbose  The desired verbose setting
@@ -104,6 +109,10 @@ class ExecutionEngine(
   }
 
   val timer = new Timer
+
+  if (annotationSeq.contains { RandomizeAtStartupAnnotation }) {
+    randomize()
+  }
 
   if (verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
@@ -121,7 +130,11 @@ class ExecutionEngine(
 
   val memoryInitializer = new MemoryInitializer(this)
 
-  def makeVCDLogger(fileName: String, showUnderscored: Boolean): Unit = {
+  def makeVCDLogger(
+    fileName:        String,
+    showUnderscored: Boolean,
+    memoryLogger:    VcdMemoryLoggingController = new VcdMemoryLoggingController()
+  ): Unit = {
     val vcd = VCD(ast.main, showUnderscoredNames = showUnderscored)
 
     symbolTable.instanceNames.foreach { name =>
@@ -130,13 +143,18 @@ class ExecutionEngine(
     vcd.timeStamp = -1
     symbolTable.symbols.foreach { symbol =>
       vcd.wireChanged(symbol.name, dataStore(symbol), symbol.bitWidth)
+      if (symbol.dataKind == MemKind) {
+        memoryLogger.getIndexedNames(symbol).foreach { indexedMemName =>
+          vcd.wireChanged(indexedMemName, 0, symbol.bitWidth)
+        }
+      }
     }
     vcd.timeStamp = 0
 
     vcdOption = Some(vcd)
     vcdFileName = fileName
 
-    val vcdPlugIn = new VcdHook(this)
+    val vcdPlugIn = new VcdHook(this, memoryLogger)
     dataStore.addPlugin(ExecutionEngine.VCDHookName, vcdPlugIn, enable = true)
   }
 
@@ -151,6 +169,42 @@ class ExecutionEngine(
     vcdOption.foreach { vcd =>
       vcd.write(vcdFileName)
     }
+  }
+
+  /** Randomize the circuits registers and memories
+    *
+    * @param additonalSeed a seed to move change all the random numbers generated
+    */
+  def randomize(additonalSeed: Long = 0L): Unit = {
+    val randomGenerator = new NameBasedRandomNumberGenerator
+
+    val symbolsToDo: Seq[Symbol] = symbolTable.symbols.toSeq
+
+    symbolsToDo.foreach { symbol =>
+      def getRandomValue: BigInt = {
+        val big = randomGenerator.nextBigInt(symbol.name, userRandomSeed + additonalSeed, symbol.bitWidth)
+        val newValue = if (symbol.dataType == SignedInt) {
+          symbol.makeSInt(big, symbol.bitWidth)
+        } else {
+          symbol.makeUInt(big, symbol.bitWidth)
+        }
+        newValue
+      }
+
+      if (symbol.dataKind == RegKind) {
+        val newValue = getRandomValue
+        logger.info(s"setting ${symbol.name} <= $newValue")
+        setValue(symbol.name, getRandomValue)
+      } else if (symbol.dataKind == MemKind) {
+        for (slot <- 0 until symbol.slots) {
+          val newValue = getRandomValue
+          logger.info(s"setting ${symbol.name}($slot) <= $newValue")
+          setValue(symbol.name, getRandomValue, offset = slot)
+        }
+      }
+
+    }
+    evaluateCircuit()
   }
 
   def renderComputation(symbolNames: String, outputFormat: String = "d", showValues: Boolean = true): String = {
@@ -350,6 +404,42 @@ class ExecutionEngine(
   def validNames: Iterable[String] = symbolTable.keys
   def symbols:    Iterable[Symbol] = symbolTable.symbols
 
+  /** returns all the symbols identified by the provided referenceTarget
+    *
+    * @param referenceTarget identifies a symbol or symbols
+    * @return
+    */
+  def referenceTargetToSymbols(referenceTarget: ReferenceTarget): Seq[Symbol] = {
+    if (referenceTarget.path.nonEmpty) {
+      // a specific path into the circuit
+      val pathName = referenceTarget.path.map { case (Instance(name), _) => name }.mkString(".")
+      val symbols = symbolTable.instanceNameToModuleName.flatMap {
+        case (instanceName, _) if instanceName.endsWith(pathName) =>
+          val symbolName = s"$instanceName.${referenceTarget.ref}"
+          symbolTable.get(symbolName)
+        case _ => None
+      }.toSeq
+      symbols
+    } else if (referenceTarget.module == ast.main) {
+      // top level reference
+      symbolTable.get(referenceTarget.ref) match {
+        case Some(symbol) => Seq(symbol)
+        case _            => Seq.empty
+      }
+    } else if (referenceTarget.module != ast.main) {
+      // module level reference
+      val targetModule = s"${referenceTarget.module}"
+      symbolTable.instanceNameToModuleName.flatMap {
+        case (instance, moduleName) if moduleName == targetModule =>
+          val name = s"$instance.${referenceTarget.ref}"
+          symbolTable.get(name)
+        case _ => None
+      }.toSeq
+    } else {
+      Seq.empty
+    }
+  }
+
   def evaluateCircuit(): Unit = {
     if (inputsChanged) {
       inputsChanged = false
@@ -477,7 +567,7 @@ object ExecutionEngine {
     val t0 = System.nanoTime()
     val stageOptions = view[StageOptions](annotationSeq)
 
-    val circuit = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(c)           => c }.get.circuit
+    val circuit = annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(c) => c }.get.circuit
 
     if (annotationSeq.contains(ShowFirrtlAtLoadAnnotation)) {
       println(circuit.serialize)

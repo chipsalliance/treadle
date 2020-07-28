@@ -101,9 +101,6 @@ class RegisterCycleTest extends AnyFreeSpec with Matchers {
 
       val output = new ByteArrayOutputStream()
       Console.withOut(new PrintStream(output)) {
-        val optionsManager = new TreadleOptionsManager
-        optionsManager.parser.parse(Array("-tstw", "io_Out,mySubModule_1.io_Out"))
-
         val tester = TreadleTester(
           Seq(FirrtlSourceAnnotation(input), SymbolsToWatchAnnotation(Seq("io_Out", "mySubModule_1.io_Out")))
         )

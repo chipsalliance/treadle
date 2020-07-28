@@ -69,7 +69,7 @@ class BoreSpec extends AnyFreeSpec with Matchers {
     )
 
     annos = (new FirrtlStage).run(annos)
-    val tester = TreadleTester(annos :+ TreadleFirrtlFormHint(LowForm))
+    val tester = TreadleTester(annos)
     tester.expect("y", 42)
     tester.report()
   }
