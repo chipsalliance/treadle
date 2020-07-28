@@ -8,7 +8,7 @@ import mill.contrib.buildinfo.BuildInfo
 
 object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.11") 
 
-// The following stanza is searched for and used when preparing releases.
+// The following stanza is searched for and used when preparing releases. 
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
