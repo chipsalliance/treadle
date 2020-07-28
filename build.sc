@@ -8,7 +8,7 @@ import mill.contrib.buildinfo.BuildInfo
 
 object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.11") 
 
-// The following stanza is searched for and used when preparing releases.
+// The following stanza is searched for and used when preparing releases. 
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
@@ -31,7 +31,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
 
   def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
 
-  def publishVersion = "3.4-SNAPSHOT"
+  def publishVersion = "1.3-SNAPSHOT"
 
   // 2.12.11 -> Array("2", "12", "10") -> "12" -> 12
   protected def majorVersion = crossVersion.split('.')(1).toInt
