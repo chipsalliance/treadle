@@ -71,7 +71,7 @@ assemblyOutputPath in assembly := file("./utils/bin/treadle.jar")
 
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.4-20200728-SNAPSHOT")
 
 // Ignore dependencies on Berkeley artifacts.
 // scala-steward:off
