@@ -83,6 +83,12 @@ trait ScalaBlackBox {
     * Add any parameters to the black box implementation
     */
   def setParams(params: Seq[Param]): Unit = {}
+
+  /** Called by TreadleTester#finish
+    * override this method to perform any cleanup necessary
+    *
+    */
+  def finish(): Unit = {}
 }
 
 /**
