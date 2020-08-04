@@ -274,7 +274,7 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
     if (doUnmatchedWires) {
       showUnmatchedWires()
 
-      def dumpWires(wires: Seq[String], fileName: String) {
+      def dumpWires(wires: Seq[String], fileName: String): Unit = {
         val out = new PrintStream(new File(fileName))
         for (name <- wires) {
           out.println(name)

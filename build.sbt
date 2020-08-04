@@ -48,7 +48,7 @@ version := "1.3-SNAPSHOT"
 
 scalaVersion := "2.12.10"
 
-crossScalaVersions := Seq("2.12.10", "2.11.12")
+crossScalaVersions := Seq("2.12.10", "2.11.12", "2.13.2")
 
 // enables using control-c in sbt CLI
 cancelable in Global := true
@@ -140,7 +140,6 @@ scalacOptions in Compile ++= Seq(
   "-language:reflectiveCalls",
   "-language:existentials",
   "-language:implicitConversions",
-  "-Ywarn-unused-import" // required by `RemoveUnused` rule
 )
 
 //

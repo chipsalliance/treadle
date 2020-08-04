@@ -224,12 +224,8 @@ object SymbolTable extends LazyLogging {
     var printfCardinal: Int = 0
     val lastPrintfInMOdule = new mutable.HashMap[Module, Symbol]
 
-    val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]] {
-      override def default(key: String): mutable.HashSet[Symbol] = {
-        this(key) = new mutable.HashSet[Symbol]()
-        this(key)
-      }
-    }
+    val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]]
+      .withDefault(_ => new mutable.HashSet[Symbol]())
 
     val blackBoxImplementations = new mutable.HashMap[Symbol, ScalaBlackBox]()
 

@@ -155,21 +155,11 @@ object VCD extends LazyLogging {
     )
 
     val wireIdToWire = new mutable.HashMap[String, Wire]
-    val aliasedWires = new mutable.HashMap[String, mutable.HashSet[Wire]] {
-      override def default(key: String): mutable.HashSet[Wire] = {
-        this(key) = new mutable.HashSet[Wire]
-        this(key)
-      }
-    }
+    val aliasedWires = new mutable.HashMap[String, mutable.HashSet[Wire]].withDefault(_ => new mutable.HashSet[Wire])
     val skippedWires = new mutable.HashMap[String, Wire]
 
     var currentTime = -1L
-    val valuesAtTime = new mutable.HashMap[Long, mutable.HashSet[Change]] {
-      override def default(key: Long): mutable.HashSet[Change] = {
-        this(key) = new mutable.HashSet[Change]
-        this(key)
-      }
-    }
+    val valuesAtTime = new mutable.HashMap[Long, mutable.HashSet[Change]].withDefault(_ => new mutable.HashSet[Change])
 
     val initialValues = new mutable.HashSet[Change]
 
@@ -447,7 +437,7 @@ object VCD extends LazyLogging {
     * are specific to a particular module
     * @param args command lines strings use --help to see what they are
     */
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val manager = new VCDOptionsManager
 
     if (manager.parse(args)) {
@@ -504,13 +494,8 @@ case class VCD(
   val initialValues = new mutable.HashSet[Change]
   var scopeRoot = Scope(scope)
   val wires = new mutable.HashMap[String, Wire]
-  var aliasedWires: mutable.HashMap[String, mutable.HashSet[Wire]] =
-    new mutable.HashMap[String, mutable.HashSet[Wire]] {
-      override def default(key: String): mutable.HashSet[Wire] = {
-        this(key) = new mutable.HashSet[Wire]
-        this(key)
-      }
-    }
+  var aliasedWires: mutable.Map[String, mutable.HashSet[Wire]] =
+    new mutable.HashMap[String, mutable.HashSet[Wire]].withDefault(_ => new mutable.HashSet[Wire])
   val wiresToIgnore = new mutable.HashSet[String]
   def events: Array[Long] = valuesAtTime.keys.toArray.sorted
 
@@ -660,7 +645,7 @@ case class VCD(
     }
   }
 
-  def incrementTime(increment: Long = 1L) {
+  def incrementTime(increment: Long = 1L): Unit = {
     timeStamp += increment
   }
 

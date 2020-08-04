@@ -86,7 +86,7 @@ class DynamicMemorySearch extends AnyFreeSpec with Matchers {
     }
 
     def checkSearch(searchValue: BigInt): Unit = {
-      val expectedIndex = list.indexOf(searchValue) match {
+      val expectedIndex = list.indexOf(searchValue.toInt) match {
         case -1 => list.length
         case x  => x
       }

@@ -41,7 +41,6 @@ case class BlackBoxCycler(
     if (isVerbose) {
       println(s"${symbol.name} : clock ${clockSymbol.name} state ($transition)")
     }
-    () =>
-      Unit
+    () => ()
   }
 }

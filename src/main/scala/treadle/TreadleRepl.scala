@@ -981,7 +981,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           }
         }
 
-        def showRelated(direction: String, digraph: DiGraph[Symbol], symbolName: String, maxDepth: Int) {
+        def showRelated(direction: String, digraph: DiGraph[Symbol], symbolName: String, maxDepth: Int): Unit = {
           val table = engine.symbolTable
           val symbol = engine.symbolTable(symbolName)
           val symbolsAtDepth = Array.fill(maxDepth + 1) {
@@ -1024,7 +1024,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               console.println(s"""You must specify a symbol with command "depend childrenOf" """)
             case Some("compare") :: Some(symbolName1) :: Some(symbolName2) :: _ =>
               val (symbol1, symbol2) = (table(symbolName1), table(symbolName2))
-              def showPath(direction: String, digraph: DiGraph[Symbol]) {
+              def showPath(direction: String, digraph: DiGraph[Symbol]): Unit = {
                 try {
                   val path = digraph.path(symbol1, symbol2)
                   console.println(s"$symbol1 is a $direction of $symbol2 via")

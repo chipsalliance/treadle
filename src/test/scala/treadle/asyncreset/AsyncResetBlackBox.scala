@@ -31,7 +31,7 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
   var resetValue:   BigInt = Big0
   var enable:       Boolean = false
 
-  def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
+  override def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     currentValue
   }
 

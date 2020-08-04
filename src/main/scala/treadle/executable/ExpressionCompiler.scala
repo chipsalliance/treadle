@@ -773,7 +773,7 @@ class ExpressionCompiler(
                     val inputSymbols = implementation.outputDependencies(port.name).map { inputName =>
                       symbolTable(expand(instanceName + "." + inputName))
                     }
-                    val shim = dataStore.BlackBoxShim(port.name, portSymbol, inputSymbols, implementation)
+                    val shim = dataStore.BlackBoxShim(port.name, portSymbol, inputSymbols.toSeq, implementation)
                     makeAssigner(portSymbol, shim, info = info)
                   }
                   if (port.tpe == ClockType) {

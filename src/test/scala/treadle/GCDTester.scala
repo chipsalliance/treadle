@@ -41,7 +41,7 @@ class GCDTester extends AnyFlatSpec with Matchers {
   behavior.of("GCD")
 
   //scalastyle:off
-  def sizableTest(width: Int) {
+  def sizableTest(width: Int): Unit = {
     val gcdFirrtl: String =
       s"""
          |circuit GCD :
@@ -114,7 +114,7 @@ class GCDTester extends AnyFlatSpec with Matchers {
   }
 
   //scalastyle:off
-  def manyValuesTest(width: Int) {
+  def manyValuesTest(width: Int): Unit = {
     val gcdFirrtl: String =
       s"""
          |circuit GCD :

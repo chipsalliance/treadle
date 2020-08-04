@@ -9,7 +9,7 @@ class MemRegTester extends AnyFlatSpec with Matchers {
   behavior.of("MemReg")
 
   //scalastyle:off
-  def riscMemRegTest() {
+  def riscMemRegTest(): Unit = {
     val riscFirrtl: String =
       s"""
          |circuit Risc :

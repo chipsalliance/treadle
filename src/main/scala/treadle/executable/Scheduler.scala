@@ -128,7 +128,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     * Execute the seq of assigners
     * @param assigners list of assigners
     */
-  private def executeAssigners(assigners: Seq[Assigner]): Unit = {
+  private def executeAssigners(assigners: mutable.IndexedSeq[Assigner]): Unit = {
     var index = 0
     val lastIndex = assigners.length
 
@@ -156,8 +156,9 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     * de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
-    val deduplicatedAssigns = (combinationalAssigns -- orphanedAssigns).distinct
-    combinationalAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
+    val deduplicatedAssigns = (combinationalAssigns.toSet -- orphanedAssigns.toSet).toSeq
+    combinationalAssigns = mutable.ArrayBuffer() ++
+      deduplicatedAssigns.sortBy { assigner: Assigner =>
       assigner.symbol.cardinalNumber
     } ++ endOfCycleAssigns
   }

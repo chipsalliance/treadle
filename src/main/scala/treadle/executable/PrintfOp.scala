@@ -49,8 +49,7 @@ case class PrintfOp(
       print(instantiatedString)
     }
 
-    () =>
-      Unit
+    () => ()
   }
 
   def asIs(b:       BigInt): BigInt = b
@@ -122,7 +121,7 @@ case class PrintfOp(
           }
       }
     }
-    (StringContext.treatEscapes(outBuffer.toString()), filters)
+    (StringContext.treatEscapes(outBuffer.toString()), filters.toSeq)
   }
 
   def executeVerilogPrint(allArgs: Seq[BigInt]): String = {
