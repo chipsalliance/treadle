@@ -43,6 +43,23 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
 
+val firrtlLibraryDepSettings = Seq(
+  // Ignore dependencies on Berkeley artifacts.
+  // scala-steward:off
+  libraryDependencies ++= (Seq("firrtl").map {
+    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+  // scala-steward:on
+)
+
+// Optionally depend on firrtl from source
+val firrtlDirOpt = sys.props.get("treadle.firrtl.path")
+lazy val firrtl = project in file(firrtlDirOpt.getOrElse(".fake_firrtl"))
+
+def dependOnFirrtl(proj: Project): Project = firrtlDirOpt match {
+  case None    => proj.settings(firrtlLibraryDepSettings)
+  case Some(_) => proj.dependsOn(firrtl)
+}
+
 lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
@@ -56,11 +73,6 @@ lazy val baseSettings = Seq(
     Resolver.sonatypeRepo("releases"),
     Resolver.sonatypeRepo("public")
   ),
-  // Ignore dependencies on Berkeley artifacts.
-  // scala-steward:off
-  libraryDependencies ++= (Seq("firrtl").map {
-    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
-  // scala-steward:on
   // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
   // when compiling tests under 2.11.12
   // An explicit dependency on junit seems to alleviate this.
@@ -139,7 +151,7 @@ lazy val docSettings = Seq(
   ) ++ scalacOptionsVersion(scalaVersion.value),
 )
 
-lazy val treadle = (project in file("."))
+lazy val treadle = dependOnFirrtl(project in file("."))
   .settings(baseSettings)
   .settings(assemblySettings)
   .settings(publishSettings)
