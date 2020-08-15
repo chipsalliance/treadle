@@ -40,122 +40,107 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-name := "treadle"
-
-organization := "edu.berkeley.cs"
-
-version := "1.3-SNAPSHOT"
-
-scalaVersion := "2.12.10"
-
-crossScalaVersions := Seq("2.12.10", "2.11.12")
-
-// enables using control-c in sbt CLI
-cancelable in Global := true
-
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases"),
-  Resolver.sonatypeRepo("public")
-)
-
-// Assembly
-
-assemblyJarName in assembly := "treadle.jar"
-
-mainClass in assembly := Some("treadle.TreadleRepl")
-
-test in assembly := {} // Should there be tests?
-
-assemblyOutputPath in assembly := file("./utils/bin/treadle.jar")
-
-
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
 
-// Ignore dependencies on Berkeley artifacts.
-// scala-steward:off
-libraryDependencies ++= (Seq("firrtl").map {
-  dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })
-// scala-steward:on
-
-// sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
-// when compiling tests under 2.11.12
-// An explicit dependency on junit seems to alleviate this.
-libraryDependencies ++= Seq(
-  "junit" % "junit" % "4.13" % "test",
-  "org.scalatest" %% "scalatest" % "3.1.2" % "test",
-  "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
-  "com.github.scopt" %% "scopt" % "3.7.1",
-  "org.scala-lang.modules" % "scala-jline" % "2.12.1",
-  "org.json4s" %% "json4s-native" % "3.6.8"
+lazy val baseSettings = Seq(
+  name := "treadle",
+  organization := "edu.berkeley.cs",
+  version := "1.3-SNAPSHOT",
+  scalaVersion := "2.12.10",
+  crossScalaVersions := Seq("2.12.10", "2.11.12"),
+  // enables using control-c in sbt CLI
+  cancelable in Global := true,
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases"),
+    Resolver.sonatypeRepo("public")
+  ),
+  // Ignore dependencies on Berkeley artifacts.
+  // scala-steward:off
+  libraryDependencies ++= (Seq("firrtl").map {
+    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+  // scala-steward:on
+  // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
+  // when compiling tests under 2.11.12
+  // An explicit dependency on junit seems to alleviate this.
+  libraryDependencies ++= Seq(
+    "junit" % "junit" % "4.13" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.1" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
+    "com.github.scopt" %% "scopt" % "3.7.1",
+    "org.scala-lang.modules" % "scala-jline" % "2.12.1",
+    "org.json4s" %% "json4s-native" % "3.6.8"
+  ),
+  scalacOptions in Compile ++= Seq(
+    "-deprecation",
+    "-unchecked",
+    "-language:reflectiveCalls",
+    "-language:existentials",
+    "-language:implicitConversions",
+    "-Ywarn-unused-import" // required by `RemoveUnused` rule
+  ),
+  javacOptions ++= javacOptionsVersion(scalaVersion.value)
 )
 
-//javaOptions in run ++= Seq(
-    //"-Xms2G", "-Xmx4G", "-XX:MaxPermSize=1024M", "-XX:+UseConcMarkSweepGC")
-//)
-
-publishMavenStyle := true
-
-publishArtifact in Test := false
-pomIncludeRepository := { x => false }
-
-pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
-<licenses>
-  <license>
-    <name>BSD-style</name>
-    <url>http://www.opensource.org/licenses/bsd-license.php</url>
-    <distribution>repo</distribution>
-  </license>
-</licenses>
-<scm>
-  <url>https://github.com/freechipsproject/treadle.git</url>
-  <connection>scm:git:github.com/freechipsproject/treadle.git</connection>
-</scm>
-<developers>
-  <developer>
-    <id>chick</id>
-    <name>Charles Markley</name>
-    <url>https://aspire.eecs.berkeley.edu/author/chick/</url>
-  </developer>
-</developers>)
-
-publishTo := {
-  val v = version.value
-  val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT")) {
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  }
-  else {
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  }
-}
-
-//
-// This is for regular compilation
-//
-scalacOptions in Compile ++= Seq(
-  "-deprecation",
-  "-unchecked",
-  "-language:reflectiveCalls",
-  "-language:existentials",
-  "-language:implicitConversions",
-  "-Ywarn-unused-import" // required by `RemoveUnused` rule
+lazy val assemblySettings = Seq(
+  assemblyJarName in assembly := "treadle.jar",
+  mainClass in assembly := Some("treadle.TreadleRepl"),
+  test in assembly := {}, // Should there be tests?
+  assemblyOutputPath in assembly := file("./utils/bin/treadle.jar")
 )
 
-//
-// This is for doc building
-//
-scalacOptions in Compile in doc ++= Seq(
-  "-deprecation",
-  "-Xfatal-warnings",
-  "-feature",
-  "-diagrams",
-  "-diagrams-max-classes", "25",
-  "-doc-version", version.value,
-  "-doc-source-url", "https://github.com/freechipsproject/treadle/tree/master/€{FILE_PATH}.scala",
-  "-sourcepath", baseDirectory.value.getAbsolutePath,
-  "-unchecked"
-) ++ scalacOptionsVersion(scalaVersion.value)
+lazy val publishSettings = Seq(
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { x => false },
+  pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
+  <licenses>
+    <license>
+      <name>BSD-style</name>
+      <url>http://www.opensource.org/licenses/bsd-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/freechipsproject/treadle.git</url>
+    <connection>scm:git:github.com/freechipsproject/treadle.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>chick</id>
+      <name>Charles Markley</name>
+      <url>https://aspire.eecs.berkeley.edu/author/chick/</url>
+    </developer>
+  </developers>),
+  publishTo := {
+    val v = version.value
+    val nexus = "https://oss.sonatype.org/"
+    if (v.trim.endsWith("SNAPSHOT")) {
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    }
+    else {
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    }
+  }
+)
 
-javacOptions ++= javacOptionsVersion(scalaVersion.value)
+lazy val docSettings = Seq(
+  scalacOptions in Compile in doc ++= Seq(
+    "-deprecation",
+    "-Xfatal-warnings",
+    "-feature",
+    "-diagrams",
+    "-diagrams-max-classes", "25",
+    "-doc-version", version.value,
+    "-doc-source-url", "https://github.com/freechipsproject/treadle/tree/master/€{FILE_PATH}.scala",
+    "-sourcepath", baseDirectory.value.getAbsolutePath,
+    "-unchecked"
+  ) ++ scalacOptionsVersion(scalaVersion.value),
+)
+
+lazy val treadle = (project in file("."))
+  .settings(baseSettings)
+  .settings(assemblySettings)
+  .settings(publishSettings)
+  .settings(docSettings)
