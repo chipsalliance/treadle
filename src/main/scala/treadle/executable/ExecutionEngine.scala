@@ -497,6 +497,14 @@ class ExecutionEngine(
     lastStopResult.isDefined
   }
 
+  def finish(): Unit = {
+    symbols.foreach { symbol =>
+      symbolTable.getBlackboxImplementation(symbol).foreach { blackBox =>
+        blackBox.finish()
+      }
+    }
+  }
+
   def fieldsHeader: String = {
     "Buf " +
       symbolTable.keys.toArray.sorted.map { name =>
