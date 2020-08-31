@@ -127,7 +127,7 @@ case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation wit
     new ShellOption[Unit](
       longOption = "tr-dont-run-lower-compiler-on-load",
       toAnnotationSeq = _ => Seq(),
-      helpText = "do not run its own lowering pass on firrtl input (not recommended)"
+      helpText = "Deprecated: This option has no effect and will be removed in treadle 1.4"
     )
   )
 }
@@ -307,7 +307,7 @@ case class TreadleCircuitStateAnnotation(state: CircuitState) extends NoTargetAn
 @deprecated("Remove references, this has no effect", since = "1.3.x")
 case class TreadleFirrtlFormHint(form: Any) extends NoTargetAnnotation
 
-@deprecated("Remove refernences, this has no effect", since = "1.3.x")
+@deprecated("Remove references, this has no effect", since = "1.3.x")
 object TreadleFirrtlFormHint extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
@@ -315,7 +315,7 @@ object TreadleFirrtlFormHint extends HasShellOptions {
       toAnnotationSeq = (firrtl: String) => {
         Seq(TreadleFirrtlFormHint(0))
       },
-      helpText = "deprecated. Do not use"
+      helpText = "Deprecated: This option has no effect and will be removed in treadle 1.4"
     )
   )
 }
