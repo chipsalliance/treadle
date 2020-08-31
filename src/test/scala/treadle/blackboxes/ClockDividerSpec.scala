@@ -17,7 +17,6 @@ limitations under the License.
 package treadle.blackboxes
 
 import firrtl.stage.FirrtlSourceAnnotation
-import org.scalatest.Matchers
 import org.scalatest.freespec.AnyFreeSpec
 import treadle.{BlackBoxFactoriesAnnotation, TreadleTester, WriteVcdAnnotation}
 

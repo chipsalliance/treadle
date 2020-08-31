@@ -21,7 +21,6 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, HighForm, LowForm, UnknownForm}
 import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
@@ -179,7 +178,6 @@ case object PlusArgsAnnotation extends HasShellOptions {
   )
 }
 
-
 /**
   *  Controls whether changes to memory locations are written to vcd output
   *  @param specifier controls which memories and which locations of those memories are logged to vcd output
@@ -331,19 +329,15 @@ object TreadleFirrtlFormHint extends HasShellOptions {
     new ShellOption[String](
       longOption = "tr-firrtl-input-form",
       toAnnotationSeq = (firrtl: String) => {
-        Seq(TreadleFirrtlFormHint(0))
+        Seq()
       },
       helpText = "Deprecated: This option has no effect and will be removed in treadle 1.4"
     )
   )
 }
 
-/** Provides an input form hint to treadle to know how to best handle the input it receives
-  *
-  * @param form the input form
+/** Adds the treadle blackboxes for rocket black box factory
   */
-case class TreadleRocketBlackBoxes(form: CircuitForm) extends NoTargetAnnotation
-
 object TreadleRocketBlackBoxes extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[Unit](
