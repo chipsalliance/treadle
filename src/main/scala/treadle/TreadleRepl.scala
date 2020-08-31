@@ -158,7 +158,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     val input = sourceReader.mkString
     sourceReader.close()
 
-    annotationSeq = TreadleTesterPhase.transform(annotationSeq.filter {
+    annotationSeq = (new TreadleTesterPhase).transform(annotationSeq.filter {
       case _: OutputFileAnnotation          => false
       case _: FirrtlCircuitAnnotation       => false
       case _: FirrtlSourceAnnotation        => false
@@ -1544,7 +1544,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 
 object TreadleRepl {
   def apply(annotationSeq: AnnotationSeq): TreadleRepl = {
-    val newAnnos = TreadleTesterPhase.transform(annotationSeq)
+    val newAnnos = (new TreadleTesterPhase).transform(annotationSeq)
     new TreadleRepl(newAnnos)
   }
 

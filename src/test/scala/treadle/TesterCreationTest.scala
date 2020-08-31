@@ -18,11 +18,11 @@ package treadle
 
 import firrtl.annotations.DeletedAnnotation
 import firrtl.options.TargetDirAnnotation
-import firrtl.{AnnotationSeq, HighFirrtlCompiler, HighForm, LowFirrtlCompiler, LowForm, MidForm, MiddleFirrtlCompiler}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
-import treadle.stage.TreadleTesterPhase
+import firrtl.{AnnotationSeq, HighFirrtlCompiler, LowFirrtlCompiler, MiddleFirrtlCompiler}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.stage.TreadleTesterPhase
 
 class TesterCreationTest extends AnyFreeSpec with Matchers {
   "TreadleTester can be created from any form of firrtl" - {
@@ -65,29 +65,12 @@ class TesterCreationTest extends AnyFreeSpec with Matchers {
         compilerAnnotation
       )
 
-      val formHint = TreadleFirrtlFormHint(compilerAnnotation.compiler match {
-        case c: HighFirrtlCompiler   => HighForm
-        case c: MiddleFirrtlCompiler => MidForm
-        case c: LowFirrtlCompiler    => LowForm
-      })
-
       annos = (new FirrtlStage).run(annos)
-
-      println(
-        s"Post compiler Annotations\n" +
-          annos
-//            .filterNot(_.isInstanceOf[DeletedAnnotation])
-            .map(_.toString.split("\n"))
-            .map { l =>
-              l.head + (if (l.length > 1) "\n" + l.last else "")
-            }
-            .mkString("\n")
-      )
 
       annos.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be(true)
       annos.exists(_.isInstanceOf[FirrtlSourceAnnotation]) should be(false)
 
-      annos = TreadleTesterPhase.transform(annos :+ formHint)
+      annos = (new TreadleTesterPhase).transform(annos)
       annos.exists(_.isInstanceOf[TreadleTesterAnnotation]) should be(true)
 
       println(

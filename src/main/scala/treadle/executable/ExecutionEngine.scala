@@ -18,6 +18,8 @@ package treadle.executable
 
 import java.io.PrintWriter
 
+import firrtl.annotations.ReferenceTarget
+import firrtl.annotations.TargetToken.Instance
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
@@ -92,7 +94,7 @@ class ExecutionEngine(
   }
 
   /**
-    * turns on evaluator debugging. Can make output quite
+    * turns on evaluator debugging.  Can make output quite
     * verbose.
     *
     * @param isVerbose  The desired verbose setting
@@ -180,7 +182,6 @@ class ExecutionEngine(
     val symbolsToDo: Seq[Symbol] = symbolTable.symbols.toSeq
 
     symbolsToDo.foreach { symbol =>
-
       def getRandomValue: BigInt = {
         val big = randomGenerator.nextBigInt(symbol.name, userRandomSeed + additonalSeed, symbol.bitWidth)
         val newValue = if (symbol.dataType == SignedInt) {
@@ -404,6 +405,42 @@ class ExecutionEngine(
   def validNames: Iterable[String] = symbolTable.keys
   def symbols:    Iterable[Symbol] = symbolTable.symbols
 
+  /** returns all the symbols identified by the provided referenceTarget
+    *
+    * @param referenceTarget identifies a symbol or symbols
+    * @return
+    */
+  def referenceTargetToSymbols(referenceTarget: ReferenceTarget): Seq[Symbol] = {
+    if (referenceTarget.path.nonEmpty) {
+      // a specific path into the circuit
+      val pathName = referenceTarget.path.map { case (Instance(name), _) => name }.mkString(".")
+      val symbols = symbolTable.instanceNameToModuleName.flatMap {
+        case (instanceName, _) if instanceName.endsWith(pathName) =>
+          val symbolName = s"$instanceName.${referenceTarget.ref}"
+          symbolTable.get(symbolName)
+        case _ => None
+      }.toSeq
+      symbols
+    } else if (referenceTarget.module == ast.main) {
+      // top level reference
+      symbolTable.get(referenceTarget.ref) match {
+        case Some(symbol) => Seq(symbol)
+        case _            => Seq.empty
+      }
+    } else if (referenceTarget.module != ast.main) {
+      // module level reference
+      val targetModule = s"${referenceTarget.module}"
+      symbolTable.instanceNameToModuleName.flatMap {
+        case (instance, moduleName) if moduleName == targetModule =>
+          val name = s"$instance.${referenceTarget.ref}"
+          symbolTable.get(name)
+        case _ => None
+      }.toSeq
+    } else {
+      Seq.empty
+    }
+  }
+
   def evaluateCircuit(): Unit = {
     if (inputsChanged) {
       inputsChanged = false
@@ -459,6 +496,14 @@ class ExecutionEngine(
     */
   def stopped: Boolean = {
     lastStopResult.isDefined
+  }
+
+  def finish(): Unit = {
+    symbols.foreach { symbol =>
+      symbolTable.getBlackboxImplementation(symbol).foreach { blackBox =>
+        blackBox.finish()
+      }
+    }
   }
 
   def fieldsHeader: String = {

@@ -19,13 +19,13 @@ package treadle
 import java.io.PrintWriter
 import java.util.Calendar
 
+import firrtl.AnnotationSeq
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import firrtl.{AnnotationSeq, ChirrtlForm, CircuitForm}
 import treadle.chronometry.UTC
 import treadle.executable._
-import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
+import treadle.stage.TreadleTesterPhase
 
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
@@ -45,11 +45,8 @@ import treadle.stage.{TreadleCompatibilityPhase, TreadleTesterPhase}
 //class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
 class TreadleTester(annotationSeq: AnnotationSeq) {
 
-  def this(input: String, optionsManager: HasTreadleSuite, circuitForm: CircuitForm = ChirrtlForm) = {
-    this(
-      TreadleCompatibilityPhase.checkFormTransform(circuitForm,
-                                                   optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input))
-    )
+  def this(input: String, optionsManager: HasTreadleSuite, circuitForm: Any = 0) = {
+    this(optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input))
   }
 
   var expectationsMet = 0
@@ -454,6 +451,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   }
 
   def finish: Boolean = {
+    engine.finish()
     engine.writeVCD()
     isOK
   }
@@ -484,7 +482,7 @@ object TreadleTester {
   }
 
   def apply(annotations: AnnotationSeq): TreadleTester = {
-    val newAnnotations = TreadleTesterPhase.transform(annotations)
+    val newAnnotations = (new TreadleTesterPhase).transform(annotations)
     newAnnotations.collectFirst { case TreadleTesterAnnotation(tester) => tester }.getOrElse(
       throw TreadleException(s"Could not create a TreadleTester")
     )

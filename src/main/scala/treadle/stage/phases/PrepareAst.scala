@@ -16,37 +16,40 @@ limitations under the License.
 
 package treadle.stage.phases
 
-import firrtl.CompilerUtils.getLoweringTransforms
-import firrtl.options.Phase
-import firrtl.passes.RemoveCHIRRTL
-import firrtl.passes.memlib.ReplSeqMem
-import firrtl.stage.FirrtlCircuitAnnotation
+import firrtl.options.{Dependency, Phase}
+import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
 import firrtl.transforms.BlackBoxSourceHelper
-import firrtl.{
-  passes,
-  AnnotationSeq,
-  ChirrtlForm,
-  CircuitForm,
-  CircuitState,
-  HighForm,
-  LowFirrtlOptimization,
-  LowForm,
-  SeqTransform,
-  Transform,
-  UnknownForm
-}
-import treadle.{TreadleCircuitStateAnnotation, TreadleFirrtlFormHint}
+import firrtl.{AnnotationSeq, CircuitState, passes}
+import treadle.TreadleCircuitStateAnnotation
 import treadle.utils.{AugmentPrintf, FixupOps}
 
-trait TreadlePhase extends Phase {
-  val transforms: Seq[Transform]
+/**
+  * Call a bunch of transforms so TreadleTester can operate
+  */
+class PrepareAst extends Phase {
+  private val targets = Seq(
+    Dependency[BlackBoxSourceHelper],
+    Dependency[FixupOps],
+    Dependency[AugmentPrintf]
+  ) ++ Forms.LowForm ++ Seq(
+    Dependency(passes.RemoveValidIf),
+    Dependency(passes.memlib.VerilogMemDelays),
+    Dependency(passes.SplitExpressions),
+    Dependency[firrtl.transforms.LegalizeAndReductionsTransform],
+    Dependency[firrtl.transforms.ConstantPropagation],
+    Dependency[firrtl.transforms.CombineCats],
+    Dependency(passes.CommonSubexpressionElimination),
+    Dependency[firrtl.transforms.DeadCodeElimination]
+  )
+
+  private def compiler = new firrtl.stage.transforms.Compiler(targets, currentState = Nil)
+  private val transforms = compiler.flattenedTransformOrder
 
   override def transform(annotationSeq: AnnotationSeq): AnnotationSeq = {
-    val form = annotationSeq.collectFirst { case TreadleFirrtlFormHint(form) => form }.getOrElse(UnknownForm)
 
     annotationSeq.flatMap {
       case FirrtlCircuitAnnotation(circuit) =>
-        val state = CircuitState(circuit, form, annotationSeq)
+        val state = CircuitState(circuit, annotationSeq)
         val newState = transforms.foldLeft(state) {
           case (prevState, transform) => transform.runTransform(prevState)
         }
@@ -54,89 +57,5 @@ trait TreadlePhase extends Phase {
       case other =>
         Some(other)
     }
-  }
-}
-
-/** This was a workaround for a problem in firrtl.LowFirrtlOptimization that
-  * caused problems like combinational loops for treadle's memory simulation.
-  * This code should not be used going forward
-  */
-class TreadleLowFirrtlOptimization extends SeqTransform {
-  def inputForm:  CircuitForm = LowForm
-  def outputForm: CircuitForm = LowForm
-
-  def transforms: Seq[Transform] = Seq(
-    passes.RemoveValidIf,
-    new firrtl.transforms.ConstantPropagation,
-    passes.Legalize,
-    new firrtl.transforms.ConstantPropagation,
-    passes.SplitExpressions,
-    new firrtl.transforms.CombineCats,
-    passes.CommonSubexpressionElimination,
-    new firrtl.transforms.DeadCodeElimination
-  )
-}
-
-class ChirrtlToLow extends Transform {
-  override def inputForm: CircuitForm = ChirrtlForm
-
-  override def outputForm: CircuitForm = LowForm
-
-  override protected def execute(state: CircuitState): CircuitState = {
-    if (state.form == ChirrtlForm || state.form == UnknownForm) {
-      val transformSeq = new SeqTransform {
-        override def inputForm:  CircuitForm = ChirrtlForm
-        override def outputForm: CircuitForm = LowForm
-
-        override def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, LowForm)
-      }
-      transformSeq.execute(state)
-    } else {
-      state
-    }
-  }
-}
-
-class HighToLow extends Transform {
-  override def inputForm: CircuitForm = HighForm
-
-  override def outputForm: CircuitForm = LowForm
-
-  override protected def execute(state: CircuitState): CircuitState = {
-    if (state.form == HighForm) {
-      val transformSeq = new SeqTransform {
-        override def inputForm:  CircuitForm = HighForm
-        override def outputForm: CircuitForm = LowForm
-
-        override def transforms: Seq[Transform] =
-          Seq(new ReplSeqMem, RemoveCHIRRTL) ++ getLoweringTransforms(HighForm, LowForm)
-      }
-      transformSeq.execute(state)
-    } else {
-      state
-    }
-  }
-}
-
-/** Prepare the AST from low FIRRTL.
-  *
-  */
-object PrepareAstFromLowFIRRTL extends TreadlePhase {
-  val transforms: Seq[Transform] = Seq(new FixupOps, AugmentPrintf)
-}
-
-/**
-  * Call a bunch of transforms so TreadleTester can operate
-  */
-object PrepareAst extends TreadlePhase {
-  val transforms: Seq[Transform] = {
-    Seq(
-      new ChirrtlToLow,
-      new HighToLow,
-      new LowFirrtlOptimization,
-      new BlackBoxSourceHelper,
-      new FixupOps,
-      AugmentPrintf
-    )
   }
 }

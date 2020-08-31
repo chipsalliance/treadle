@@ -16,8 +16,10 @@ limitations under the License.
 
 package treadle.utils
 
-import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
 import firrtl.ir.Circuit
+import firrtl.options.Dependency
+import firrtl.stage.{Forms, TransformManager}
+import firrtl.{CircuitState, DependencyAPIMigration, Emitter, Transform}
 
 import scala.collection.mutable
 
@@ -25,10 +27,15 @@ import scala.collection.mutable
   * Printf statements that print registers will show wrong values
   * unless this pass adds a delay for each register
   */
-object AugmentPrintf extends Transform {
+class AugmentPrintf extends Transform with DependencyAPIMigration {
+  override def prerequisites: Seq[TransformManager.TransformDependency] = Forms.LowForm
+  override def optionalPrerequisites: Seq[TransformManager.TransformDependency] = Forms.LowFormOptimized
+  override def optionalPrerequisiteOf: Seq[Dependency[Emitter]] = Forms.LowEmitters
+  override def invalidates(a: Transform): Boolean = false
+
   def apply(circuit: Circuit): Circuit = {
-    import firrtl.ir._
     import firrtl._
+    import firrtl.ir._
     def insert(newStmts: mutable.ArrayBuffer[Statement], namespace: Namespace, info: Info, clockExpression: Expression)(
       a:                 Expression
     ): Expression = {
@@ -63,10 +70,6 @@ object AugmentPrintf extends Transform {
       m.mapStmt(fixPrintsStmt(ns))
     }
   }
-
-  override def inputForm: CircuitForm = LowForm
-
-  override def outputForm: CircuitForm = LowForm
 
   override protected def execute(state: CircuitState): CircuitState = {
     state.copy(circuit = apply(state.circuit))
