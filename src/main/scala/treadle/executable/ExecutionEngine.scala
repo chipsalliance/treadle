@@ -26,6 +26,7 @@ import firrtl.options.Viewer.view
 import firrtl.{AnnotationSeq, MemKind, PortKind, RegKind}
 import logger.LazyLogging
 import treadle._
+import treadle.blackboxes.PlusArg
 import treadle.chronometry.{Timer, UTC}
 import treadle.utils.{NameBasedRandomNumberGenerator, Render}
 import treadle.vcd.VCD
@@ -588,15 +589,22 @@ object ExecutionEngine {
       writer.close()
     }
 
-    val blackBoxFactories = annotationSeq.collectFirst { case BlackBoxFactoriesAnnotation(bbf) => bbf }.getOrElse(
-      Seq.empty
-    )
+    val blackBoxFactories = annotationSeq.flatMap {
+      case BlackBoxFactoriesAnnotation(bbf) => bbf
+      case _                                => Seq.empty
+    }
     val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation             => true; case _ => false }
     val prefixPrintfWithTime = annotationSeq.exists { case PrefixPrintfWithWallTime => true; case _ => false }
 
     val rollbackBuffers = annotationSeq.collectFirst { case RollBackBuffersAnnotation(rbb) => rbb }.getOrElse(
       TreadleDefaults.RollbackBuffers
     )
+    val plusArgs = annotationSeq.collectFirst { case PlusArgsAnnotation(seq) => seq }
+      .getOrElse(Seq.empty)
+      .map { s =>
+        PlusArg(s)
+      }
+
     val validIfIsRandom = annotationSeq.exists { case ValidIfIsRandomAnnotation => true; case _ => false }
     val verbose = annotationSeq.exists { case VerboseAnnotation                 => true; case _ => false }
 
@@ -622,7 +630,8 @@ object ExecutionEngine {
       scheduler,
       validIfIsRandom,
       prefixPrintfWithTime,
-      blackBoxFactories
+      blackBoxFactories,
+      plusArgs
     )
 
     timer("Build Compiled Expressions") {
