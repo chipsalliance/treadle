@@ -20,6 +20,7 @@ import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir._
 import treadle._
+import treadle.blackboxes.PlusArg
 import treadle.utils.FindModule
 
 import scala.collection.mutable
@@ -30,7 +31,8 @@ class ExpressionCompiler(
   scheduler:            Scheduler,
   validIfIsRandom:      Boolean,
   prefixPrintfWithTime: Boolean,
-  blackBoxFactories:    Seq[ScalaBlackBoxFactory]
+  blackBoxFactories:    Seq[ScalaBlackBoxFactory],
+  plusArgs:             Seq[PlusArg]
 ) extends logger.LazyLogging {
 
   case class ExternalInputParams(instance: ScalaBlackBox, portName: String)
@@ -766,6 +768,8 @@ class ExpressionCompiler(
                 val instanceSymbol = symbolTable(expand(instanceName))
 
                 implementation.setParams(extModule.params)
+
+                implementation.setPlusArgs(plusArgs)
 
                 for (port <- extModule.ports) {
                   if (port.direction == Output) {
