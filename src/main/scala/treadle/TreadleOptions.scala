@@ -21,6 +21,7 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
 sealed trait TreadleOption extends Unserializable { this: Annotation =>
@@ -127,7 +128,7 @@ case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation wit
     new ShellOption[Unit](
       longOption = "tr-dont-run-lower-compiler-on-load",
       toAnnotationSeq = _ => Seq(),
-      helpText = "do not run its own lowering pass on firrtl input (not recommended)"
+      helpText = "Deprecated: This option has no effect and will be removed in treadle 1.4"
     )
   )
 }
@@ -158,6 +159,21 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
       longOption = "tr-rollback-buffers",
       toAnnotationSeq = (buffers: Int) => Seq(RollBackBuffersAnnotation(buffers)),
       helpText = s"number of rollback buffers, 0 is no buffers, default is ${TreadleDefaults.RollbackBuffers}"
+    )
+  )
+}
+
+/**
+  *  Sets verilog plus args that will be passed to black boxes
+  */
+case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation with TreadleOption
+
+case object PlusArgsAnnotation extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Seq[String]](
+      longOption = "tr-plus-args",
+      toAnnotationSeq = (args: Seq[String]) => Seq(PlusArgsAnnotation(args)),
+      helpText = s"a comma separated list of plusArgs"
     )
   )
 }
@@ -307,15 +323,27 @@ case class TreadleCircuitStateAnnotation(state: CircuitState) extends NoTargetAn
 @deprecated("Remove references, this has no effect", since = "1.3.x")
 case class TreadleFirrtlFormHint(form: Any) extends NoTargetAnnotation
 
-@deprecated("Remove refernences, this has no effect", since = "1.3.x")
+@deprecated("Remove references, this has no effect", since = "1.3.x")
 object TreadleFirrtlFormHint extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "tr-firrtl-input-form",
       toAnnotationSeq = (firrtl: String) => {
-        Seq(TreadleFirrtlFormHint(0))
+        Seq()
       },
-      helpText = "deprecated. Do not use"
+      helpText = "Deprecated: This option has no effect and will be removed in treadle 1.4"
+    )
+  )
+}
+
+/** Adds the treadle blackboxes for rocket black box factory
+  */
+object TreadleRocketBlackBoxes extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-add-rocket-black-boxes",
+      toAnnotationSeq = _ => Seq(BlackBoxFactoriesAnnotation(Seq(new BuiltInBlackBoxFactory))),
+      helpText = "add in the black boxes needed to simulate rocket"
     )
   )
 }
@@ -395,6 +423,7 @@ class TreadleLibrary extends RegisteredLibrary {
     ResetNameAnnotation,
     RandomizeAtStartupAnnotation,
     CallResetAtStartupAnnotation,
+    TreadleRocketBlackBoxes,
     PrefixPrintfWithWallTime,
     TreadleFirrtlString,
     TreadleFirrtlFile

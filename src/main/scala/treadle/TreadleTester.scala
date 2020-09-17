@@ -451,6 +451,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   }
 
   def finish: Boolean = {
+    engine.finish()
     engine.writeVCD()
     isOK
   }

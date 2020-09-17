@@ -350,8 +350,9 @@ object SymbolTable extends LazyLogging {
                       }
                     }
                     if (port.tpe == ClockType) {
-                      val portSymbol = nameToSymbol(expand(instanceName + "." + port.name))
-                      addDependency(instanceSymbol, Set(portSymbol))
+                      val portClock = nameToSymbol(expand(instanceName + "." + port.name))
+                      createPrevClock(portClock.name, portClock.firrtlType, portClock.info)
+                      addDependency(instanceSymbol, Set(portClock))
                     }
                   }
                 case _ =>

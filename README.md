@@ -15,15 +15,15 @@ and thus one of the tools in the
 This project provides a test harness supporting a peek, poke expect model.  
 It also provides a interactive simulator shell or repl (see treadle.sh) that allows fine grained incremental
 execution of a circuit. 
-In combination with a scala debugger such as Eclipse or IntelliJ it can be a very power way of analyzing problematic
+In combination with a scala debugger such as Eclipse or IntelliJ it can be a very powerful way of analyzing problematic
 behavior.
 
 [Chisel3](https://github.com/ucb-bar/chisel3.git) is a high-level functional circuit generator. It produces **Flexible Intermediate
 Representation for RTL** or **FIRRTL**.  The [Firrtl](https://github.com/ucb-bar/firrtl.git) project parses and
 transforms firrtl.  It also provides mechanisms for emitting verilog, for processing by downstream toolchains.
-**Treadle** parses and execute the LoFirrtl subset of Firrtl. **Treadle** has a short spin up time and is close to 
+**Treadle** parses and execute the LoFirrtl subset of Firrtl. **Treadle** has a short spin up time and is close to
 the performance of verilator simulations.
-It can useful for a initial debugging of Chisel circuits and is also used for other forms of circuit analysis. 
+It can be useful for an initial debugging of Chisel circuits and is also used for other forms of circuit analysis.
 
 ## Using Treadle
 ### Attach it to your project
