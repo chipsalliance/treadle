@@ -39,7 +39,9 @@ case class TreadleOptions(
   clockInfo:          Seq[ClockInfo] = Seq.empty,
   resetName:          String = "reset",
   callResetAtStartUp: Boolean = false,
-  symbolsToWatch:     Seq[String] = Seq.empty
+  symbolsToWatch:     Seq[String] = Seq.empty,
+  memoryToVcd:        Seq[String] = Seq.empty,
+  saveFirrtlAtLoad:   Boolean = false
 ) extends firrtl.ComposableOptions {
 
   def vcdOutputFileName(optionsManager: ExecutionOptionsManager): String = {
@@ -59,7 +61,11 @@ case class TreadleOptions(
     if (showFirrtlAtLoad) { annotations += ShowFirrtlAtLoadAnnotation }
     if (validIfIsRandom) { annotations += ValidIfIsRandomAnnotation }
     if (callResetAtStartUp) { annotations += CallResetAtStartupAnnotation }
+    memoryToVcd.foreach { specifier =>
+      annotations += MemoryToVCD(specifier)
+    }
     if (!lowCompileAtLoad) { annotations += DontRunLoweringCompilerLoadAnnotation }
+    if (saveFirrtlAtLoad) { annotations += SaveFirrtlAtLoadAnnotation }
 
     if (rollbackBuffers != TreadleOptions().rollbackBuffers) {
       annotations += RollBackBuffersAnnotation(rollbackBuffers)
@@ -112,7 +118,7 @@ trait HasTreadleOptions {
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(setOrderedExec = true)
     }
-    .text("operates on dependencies optimally, can increase overhead, makes verbose mode easier to read")
+    .text("Deprecated: This option has no effect and will be removed in treadle 1.4")
 
   parser
     .opt[Unit]("fr-allow-cycles")
@@ -140,12 +146,20 @@ trait HasTreadleOptions {
     .text("compiled low firrtl at firrtl load time")
 
   parser
+    .opt[Unit]("save-firrtl-at-load")
+    .abbr("tisffas")
+    .foreach { _ =>
+      treadleOptions = treadleOptions.copy(saveFirrtlAtLoad = true)
+    }
+    .text("save treadle's compiled low firrtl to a file")
+
+  parser
     .opt[Unit]("dont-run-lower-compiler-on-load")
     .abbr("tilcol")
     .foreach { _ =>
       treadleOptions = treadleOptions.copy(lowCompileAtLoad = false)
     }
-    .text("run lowering compiler when firrtl file is loaded")
+    .text("Deprecated: This option has no effect and will be removed in treadle 1.4")
 
   parser
     .opt[Unit]("validif-random")
@@ -171,6 +185,15 @@ trait HasTreadleOptions {
       treadleOptions = treadleOptions.copy(rollbackBuffers = x)
     }
     .text("number of rollback buffers, 0 is no buffers, default is 4")
+
+  parser
+    .opt[String]("tr-mem-to-vcd")
+    .unbounded()
+    .valueName("<string>")
+    .foreach { x =>
+      treadleOptions = treadleOptions.copy(memoryToVcd = treadleOptions.memoryToVcd :+ x)
+    }
+    .text(s"""log specified memory/indices to vcd, format "all" or "memoryName:1,2,5-10" """)
 
   def parseClockInfo(input: String): ClockInfo = {
     input.split(":").map(_.trim).toList match {
