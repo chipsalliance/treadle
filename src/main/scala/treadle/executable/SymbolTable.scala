@@ -143,8 +143,8 @@ object SymbolTable extends LazyLogging {
   val LastValueSuffix = "/last"
   val PrevSuffix = "/prev"
 
-  def makeRegisterInputName(name:     String): String = name + RegisterInputSuffix
-  def makeRegisterInputName(symbol:   Symbol): String = symbol.name + RegisterInputSuffix
+  def makeRegisterInputName(name:   String): String = name + RegisterInputSuffix
+  def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
   def makeRegisterInputSymbol(symbol: Symbol): Symbol = {
     Symbol(makeRegisterInputName(symbol), symbol.firrtlType, RegKind, info = symbol.info)
   }
@@ -620,21 +620,22 @@ object SymbolTable extends LazyLogging {
 
     symbolTable.moduleMemoryToMemorySymbol ++= moduleMemoryToMemorySymbol
 
-    val sorted: Seq[Symbol] = try {
-      symbolTable.childrenOf.linearize
-    } catch {
-      case e: firrtl.graph.CyclicException =>
-        val badNode = e.node.asInstanceOf[Symbol]
-        println(s"Combinational loop detected at $badNode")
-        if (allowCycles) {
-          symbolTable.symbols.toSeq
-        } else {
-          showLoop(badNode, symbolTable)
-          throw e
-        }
-      case t: Throwable =>
-        throw t
-    }
+    val sorted: Seq[Symbol] =
+      try {
+        symbolTable.childrenOf.linearize
+      } catch {
+        case e: firrtl.graph.CyclicException =>
+          val badNode = e.node.asInstanceOf[Symbol]
+          println(s"Combinational loop detected at $badNode")
+          if (allowCycles) {
+            symbolTable.symbols.toSeq
+          } else {
+            showLoop(badNode, symbolTable)
+            throw e
+          }
+        case t: Throwable =>
+          throw t
+      }
     logger.trace(s"Build SymbolTable pass 2 -- linearize complete")
 
     sorted.zipWithIndex.foreach {

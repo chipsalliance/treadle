@@ -61,8 +61,8 @@ class ReportAssignments(val executionEngine: ExecutionEngine) extends DataStoreP
 
 class RenderComputations(
   val executionEngine: ExecutionEngine,
-  symbolNamesToWatch:  Seq[String]
-) extends DataStorePlugin {
+  symbolNamesToWatch:  Seq[String])
+    extends DataStorePlugin {
 
   val dataStore:      DataStore = executionEngine.dataStore
   val symbolsToWatch: mutable.HashSet[Symbol] = new mutable.HashSet

@@ -39,8 +39,7 @@ class ExpressionViewRenderer(
   dataStore:          DataStore,
   symbolTable:        SymbolTable,
   expressionViews:    Map[Symbol, ExpressionView],
-  maxDependencyDepth: Int = 8
-) {
+  maxDependencyDepth: Int = 8) {
 
   private def order(symbolAtDepth: SymbolAtDepth) = symbolAtDepth.displayDepth
 
@@ -130,10 +129,12 @@ class ExpressionViewRenderer(
       builder ++= sc.parts.head
       val argStrings = args.map {
         case symbol: Symbol =>
-          if (!(
-                symbolTable.inputPortsNames.contains(symbol.name) ||
-                  symbolsSeen.contains(symbol)
-              )) {
+          if (
+            !(
+              symbolTable.inputPortsNames.contains(symbol.name) ||
+                symbolsSeen.contains(symbol)
+            )
+          ) {
             if (displayDepth < maxDependencyDepth) {
               symbolsToDo.enqueue(SymbolAtDepth(symbol, displayDepth + 1, dataTime, dataArrays))
             }

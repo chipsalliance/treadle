@@ -24,7 +24,9 @@ case class ClockTransitionGetter(clockSymbol: Symbol, prevClockSymbol: Symbol, d
   def isNegEdge: Boolean = intData(clockIndex) == 0 && intData(prevClockIndex) > 0
 
   def transition: Transition = {
-    if (isPosEdge) { PositiveEdge } else if (isNegEdge) { NegativeEdge } else { NoTransition }
+    if (isPosEdge) { PositiveEdge }
+    else if (isNegEdge) { NegativeEdge }
+    else { NoTransition }
   }
 }
 
@@ -33,8 +35,8 @@ case class ClockBasedAssigner(
   clockSymbol:        Symbol,
   prevClockSymbol:    Symbol,
   dataStore:          DataStore,
-  requiredTransition: Transition
-) extends Assigner {
+  requiredTransition: Transition)
+    extends Assigner {
 
   override val symbol: Symbol = assigner.symbol
   override val info:   Info = assigner.info

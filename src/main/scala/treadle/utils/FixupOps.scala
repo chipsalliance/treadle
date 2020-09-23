@@ -25,7 +25,7 @@ class FixupOps extends Transform with DependencyAPIMigration {
 
   private def onStmt(stmt: Statement): Statement = stmt.map(onStmt).map(onExpr)
   private def onMod(mod:   DefModule): DefModule = mod.map(onStmt)
-  def execute(state:       CircuitState): CircuitState = {
+  def execute(state: CircuitState): CircuitState = {
     state.copy(circuit = state.circuit.map(onMod))
   }
 }

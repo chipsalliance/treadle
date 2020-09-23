@@ -17,7 +17,6 @@ import treadle.executable._
   *
   *  output  clk_out Divided Clock
   *  input   clk_in  Clock Input
-  *
   */
 class ClockDivider2(val instanceName: String) extends ScalaBlackBox {
   override def name: String = "ClockDivider2"
@@ -60,7 +59,6 @@ class ClockDivider2(val instanceName: String) extends ScalaBlackBox {
   *
   *  output  clk_out Divided Clock
   *  input   clk_in  Clock Input
-  *
   */
 class ClockDivider3(val instanceName: String) extends ScalaBlackBox {
   override def name: String = "ClockDivider3"

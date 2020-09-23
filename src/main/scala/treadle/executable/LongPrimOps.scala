@@ -170,7 +170,8 @@ case class OrrLongs(f1: FuncLong, width: Int) extends IntExpressionResult {
 
   def apply(): Int = {
     val uInt = f1() & bitMask
-    if (uInt > 0) { 1 } else { 0 }
+    if (uInt > 0) { 1 }
+    else { 0 }
   }
 }
 

@@ -166,7 +166,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
 
     def runFull(): Unit = {
       val previousValue = apply(symbol)
-      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
+      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt }
+      else { expression() }
       intData(index) = value
       runPlugins(symbol, previousValue = previousValue)
     }
@@ -181,16 +182,15 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     symbol:             Symbol,
     portName:           String,
     blackBox:           ScalaBlackBox,
-    underlyingAssigner: Assigner
-  ) extends Assigner {
+    underlyingAssigner: Assigner)
+      extends Assigner {
 
     val info: Info = underlyingAssigner.info
 
     override def run: FuncUnit = {
       underlyingAssigner.run()
       blackBox.inputChanged(portName, apply(symbol))
-      () =>
-        Unit
+      () => Unit
     }
   }
 
@@ -207,7 +207,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
 
     def runFull(): Unit = {
       val previousValue = apply(symbol)
-      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
+      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong }
+      else { expression() }
 
       longData(index) = value
       runPlugins(symbol, previousValue = previousValue)
@@ -235,7 +236,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     }
     def runFull(): Unit = {
       val previousValue = apply(symbol)
-      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
+      val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get }
+      else { expression() }
 
       bigData(index) = value
       runPlugins(symbol, previousValue = previousValue)
@@ -251,8 +253,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
   case class GetIntIndirect(
     memorySymbol:   Symbol,
     getMemoryIndex: FuncInt,
-    enable:         FuncInt
-  ) extends IntExpressionResult {
+    enable:         FuncInt)
+      extends IntExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Int = {
       intData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
@@ -262,8 +264,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
   case class GetLongIndirect(
     memorySymbol:   Symbol,
     getMemoryIndex: FuncInt,
-    enable:         FuncInt
-  ) extends LongExpressionResult {
+    enable:         FuncInt)
+      extends LongExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Long = {
       longData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
@@ -273,8 +275,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
   case class GetBigIndirect(
     memorySymbol:   Symbol,
     getMemoryIndex: FuncInt,
-    enable:         FuncInt
-  ) extends BigExpressionResult {
+    enable:         FuncInt)
+      extends BigExpressionResult {
     val memoryLocation: Int = memorySymbol.index
     def apply(): Big = {
       bigData(memoryLocation + (getMemoryIndex() % memorySymbol.slots))
@@ -287,8 +289,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     getMemoryIndex: FuncInt,
     enable:         FuncInt,
     expression:     FuncInt,
-    info:           Info
-  ) extends Assigner {
+    info:           Info)
+      extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {
@@ -299,7 +301,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
 
     def runFull(): Unit = {
       if (enable() > 0) {
-        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt } else { expression() }
+        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toInt }
+        else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
         val previousValue = intData(index + (memoryIndex % memorySymbol.slots))
@@ -320,8 +323,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     getMemoryIndex: FuncInt,
     enable:         FuncInt,
     expression:     FuncLong,
-    info:           Info
-  ) extends Assigner {
+    info:           Info)
+      extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {
@@ -332,7 +335,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
 
     def runFull(): Unit = {
       if (enable() > 0) {
-        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong } else { expression() }
+        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get.toLong }
+        else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
         val previousValue = longData(index + (memoryIndex % memorySymbol.slots))
@@ -353,8 +357,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     getMemoryIndex: FuncInt,
     enable:         FuncInt,
     expression:     FuncBig,
-    info:           Info
-  ) extends Assigner {
+    info:           Info)
+      extends Assigner {
     val index: Int = memorySymbol.index
 
     def runLean(): Unit = {
@@ -365,7 +369,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
 
     def runFull(): Unit = {
       if (enable() > 0) {
-        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get } else { expression() }
+        val value = if (symbol.forcedValue.isDefined) { symbol.forcedValue.get }
+        else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
         val previousValue = bigData(index + (memoryIndex % memorySymbol.slots))
@@ -384,8 +389,8 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     unexpandedName: String,
     outputName:     Symbol,
     inputs:         Seq[Symbol],
-    implementation: ScalaBlackBox
-  ) extends BigExpressionResult {
+    implementation: ScalaBlackBox)
+      extends BigExpressionResult {
 
     val dataStore: DataStore = DataStore.this
 

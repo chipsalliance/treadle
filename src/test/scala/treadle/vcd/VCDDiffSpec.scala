@@ -21,7 +21,7 @@ class VCDDiffSpec extends AnyFreeSpec with Matchers {
       )
     }
     val s = outputBuffer.toString
-    s.contains("3                                 7   wire1                                     wire1") should be (true)
-    s.contains("6                                 8   wire2                                     wire2") should be (true)
+    s.contains("3                                 7   wire1                                     wire1") should be(true)
+    s.contains("6                                 8   wire2                                     wire2") should be(true)
   }
 }

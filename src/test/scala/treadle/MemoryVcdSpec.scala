@@ -90,15 +90,21 @@ class MemoryVcdSpec extends AnyFreeSpec with Matchers {
       val vcdText = FileUtils.getLines(fileName)
 
       for (text <- shouldAppear) {
-        assert(vcdText.exists { line =>
-          line.contains(text)
-        }, s""""$text" should appear in $fileName""")
+        assert(
+          vcdText.exists { line =>
+            line.contains(text)
+          },
+          s""""$text" should appear in $fileName"""
+        )
       }
 
       for (text <- shouldNotAppear) {
-        assert(!vcdText.exists { line =>
-          line.contains(text)
-        }, s""""$text" should NOT appear in $fileName""")
+        assert(
+          !vcdText.exists { line =>
+            line.contains(text)
+          },
+          s""""$text" should NOT appear in $fileName"""
+        )
       }
 
       true
@@ -113,21 +119,29 @@ class MemoryVcdSpec extends AnyFreeSpec with Matchers {
     "all memories can be included with the command all" in {
       val dir = "test_run_dir/memory_vcd_test_all"
       runTest(dir, Seq(MemoryToVCD("all")))
-      checkResults(dir, Seq.tabulate(20) { i =>
-        s"memory1($i)"
-      } ++ Seq.tabulate(20) { i =>
-        s"memory2($i)"
-      }, Seq.empty)
+      checkResults(
+        dir,
+        Seq.tabulate(20) { i =>
+          s"memory1($i)"
+        } ++ Seq.tabulate(20) { i =>
+          s"memory2($i)"
+        },
+        Seq.empty
+      )
     }
 
     "all of just one memory can be included with the command memoryName:all" in {
       val dir = "test_run_dir/memory_vcd_test_all_memory1"
       runTest(dir, Seq(MemoryToVCD("memory1:all")))
-      checkResults(dir, Seq.tabulate(20) { i =>
-        s"memory1($i)"
-      }, Seq.tabulate(20) { i =>
-        s"memory2($i)"
-      })
+      checkResults(
+        dir,
+        Seq.tabulate(20) { i =>
+          s"memory1($i)"
+        },
+        Seq.tabulate(20) { i =>
+          s"memory2($i)"
+        }
+      )
     }
 
     "specific indices of a given memory can be logged" in {
@@ -167,25 +181,24 @@ class MemoryVcdSpec extends AnyFreeSpec with Matchers {
 
     "throw a chisel exception if radices are changed within one memory" in {
       val dir = "test_run_dir/memory_vcd_index_radix"
-      intercept [TreadleException] {
+      intercept[TreadleException] {
         runTest(dir, Seq(MemoryToVCD("memory1:b11,x111")))
       }
     }
 
     "throw a chisel exception memory not found" in {
       val dir = "test_run_dir/memory_vcd_index_radix"
-      intercept [TreadleException] {
+      intercept[TreadleException] {
         runTest(dir, Seq(MemoryToVCD("memory3:b11,b111")))
       }
     }
 
     "throw a chisel exception if index ranges is bad" in {
       val dir = "test_run_dir/memory_vcd_index_radix"
-      intercept [TreadleException] {
+      intercept[TreadleException] {
         runTest(dir, Seq(MemoryToVCD("memory3:d77-d66")))
       }
     }
-
 
   }
 }

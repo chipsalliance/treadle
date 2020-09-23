@@ -21,9 +21,9 @@ object VcdComparator {
 //scalastyle:off magic.number
 class VcdComparator(annotationSeq: AnnotationSeq) {
   val ignoreTempWires:      Boolean = annotationSeq.exists { case IgnoreTempWires => true; case _ => false }
-  val doCompareDirectories: Boolean = annotationSeq.exists { case CompareWires    => true; case _ => false }
-  val doUnmatchedWires:     Boolean = annotationSeq.exists { case UnmatchedWires  => true; case _ => false }
-  val dontDiffValues:       Boolean = annotationSeq.exists { case DontDiffValues  => true; case _ => false }
+  val doCompareDirectories: Boolean = annotationSeq.exists { case CompareWires => true; case _ => false }
+  val doUnmatchedWires:     Boolean = annotationSeq.exists { case UnmatchedWires => true; case _ => false }
+  val dontDiffValues:       Boolean = annotationSeq.exists { case DontDiffValues => true; case _ => false }
 
   private val (removePrefix1, addPrefix1) = annotationSeq.collectFirst {
     case wp: WirePrefix1 => (wp.removePrefix, wp.addPrefix)
@@ -117,11 +117,13 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
     }
 
     trait NextOption[T] { self: Iterator[T] =>
-      def nextOption: Option[T] = if (hasNext) { Some(next()) } else { None }
+      def nextOption: Option[T] = if (hasNext) { Some(next()) }
+      else { None }
     }
 
     def showUnmatchedWires(): Unit = {
-      def nextOption(i: Iterator[String]): Option[String] = if (i.hasNext) { Some(i.next()) } else { None }
+      def nextOption(i: Iterator[String]): Option[String] = if (i.hasNext) { Some(i.next()) }
+      else { None }
 
       def show(nameOpt1: Option[String], nameOpt2: Option[String]): Unit = {
         println(f"${nameOpt1.getOrElse("---")}%60s ${nameOpt2.getOrElse("---")}%-60s")

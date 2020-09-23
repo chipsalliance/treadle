@@ -17,14 +17,14 @@ import treadle.executable._
   */
 class HasCustomFinish extends ScalaBlackBox {
   override def name: String = "HasCustomFinish"
-  var myFactoryOpt: Option[HasCustomFinishFactory] = None
+  var myFactoryOpt:  Option[HasCustomFinishFactory] = None
 
   override def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     BigInt(42) // always returns 42
   }
 
   override def clockChange(transition: Transition, clockName: String): Unit = {
-    if(transition == PositiveEdge) {
+    if (transition == PositiveEdge) {
       myFactoryOpt.get.clockUpCount += 1
     }
   }

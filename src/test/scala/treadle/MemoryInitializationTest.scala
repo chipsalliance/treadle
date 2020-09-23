@@ -44,9 +44,12 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
         FirrtlSourceAnnotation(firrtlText),
         MemoryRandomInitAnnotation(getMemoryReference(1)),
         MemoryScalarInitAnnotation(getMemoryReference(2), 7),
-        MemoryArrayInitAnnotation(getMemoryReference(3), Seq.tabulate(16) { i =>
-          i
-        })
+        MemoryArrayInitAnnotation(
+          getMemoryReference(3),
+          Seq.tabulate(16) { i =>
+            i
+          }
+        )
       )
     )
 

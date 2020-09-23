@@ -72,7 +72,9 @@ class RollBackBufferRing(dataStore: DataStore) {
     if (currentNumberOfBuffers > 0 && time < ringBuffer(latestBufferIndex).time) {
       // It's an error to record something earlier in time
       throw TreadleException(s"rollback buffer requested has earlier time that last used buffer")
-    } else if (currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time)) {
+    } else if (
+      currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time)
+    ) {
       // time has advanced so get a new buffer or re-use the oldest one
       // if time did not advance just fall through and newest buffer to be used again
       latestBufferIndex += 1

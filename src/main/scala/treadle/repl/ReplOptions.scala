@@ -7,8 +7,7 @@ import java.io.OutputStream
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
-sealed trait ReplOption extends Unserializable { this: Annotation =>
-}
+sealed trait ReplOption extends Unserializable { this: Annotation => }
 
 case class OverrideOutputStream(outputStream: OutputStream) extends NoTargetAnnotation
 

@@ -13,7 +13,7 @@ trait ClockStepper {
   def getCycleCount: Long = cycleCount
   def addTask(taskTime: Long)(task: () => Unit): Unit
   val clockAssigners: mutable.HashMap[Symbol, ClockAssigners] = new mutable.HashMap()
-  def bumpClock(clockSymbol:   Symbol, value: BigInt): Unit = {}
+  def bumpClock(clockSymbol: Symbol, value: BigInt): Unit = {}
   def combinationalBump(value: Long): Unit = {}
 }
 
@@ -36,8 +36,8 @@ case class SimpleSingleClockStepper(
   resetSymbolOpt:     Option[Symbol],
   clockPeriod:        Long,
   clockInitialOffset: Long,
-  wallTime:           UTC
-) extends ClockStepper {
+  wallTime:           UTC)
+    extends ClockStepper {
 
   var clockIsHigh: Boolean = false
   def clockIsLow:  Boolean = !clockIsHigh

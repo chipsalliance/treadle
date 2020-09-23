@@ -16,8 +16,8 @@ case class PrintfOp(
   clockTransition: ClockTransitionGetter,
   condition:       IntExpressionResult,
   scheduler:       Scheduler,
-  addWallTime:     Boolean
-) extends Assigner {
+  addWallTime:     Boolean)
+    extends Assigner {
 
   private val formatString = string.escape
 
@@ -35,8 +35,7 @@ case class PrintfOp(
       print(instantiatedString)
     }
 
-    () =>
-      Unit
+    () => Unit
   }
 
   def asIs(b:       BigInt): BigInt = b

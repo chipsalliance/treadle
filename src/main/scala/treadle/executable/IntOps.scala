@@ -177,7 +177,8 @@ case class AndrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
   private val bitMask = BitMasks.getBitMasksInts(width).allBitsMask
 
   def apply(): Int = {
-    if ((f1() & bitMask) == bitMask) { 1 } else { 0 }
+    if ((f1() & bitMask) == bitMask) { 1 }
+    else { 0 }
   }
 }
 
@@ -191,7 +192,8 @@ case class OrrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
 
   def apply(): Int = {
     val uInt = f1() & mask
-    if (uInt > 0) { 1 } else { 0 }
+    if (uInt > 0) { 1 }
+    else { 0 }
   }
 }
 

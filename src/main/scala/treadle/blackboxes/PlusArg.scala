@@ -8,7 +8,7 @@ import scala.util.matching.Regex
 
 object PlusArg {
   val ReceiverLinePattern: Regex = """(\w*)=%\d?(.*)""".r
-  val CommandLinePattern: Regex = """[+](\w*)=(.*)""".r
+  val CommandLinePattern:  Regex = """[+](\w*)=(.*)""".r
 
   def apply(s: String): PlusArg = {
     s match {

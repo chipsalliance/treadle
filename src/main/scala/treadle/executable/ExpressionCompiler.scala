@@ -18,8 +18,8 @@ class ExpressionCompiler(
   validIfIsRandom:      Boolean,
   prefixPrintfWithTime: Boolean,
   blackBoxFactories:    Seq[ScalaBlackBoxFactory],
-  plusArgs:             Seq[PlusArg]
-) extends logger.LazyLogging {
+  plusArgs:             Seq[PlusArg])
+    extends logger.LazyLogging {
 
   case class ExternalInputParams(instance: ScalaBlackBox, portName: String)
 
@@ -166,23 +166,27 @@ class ExpressionCompiler(
       case (IntSize, result: IntExpressionResult) =>
         dataStore.AssignIntIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (LongSize, result: IntExpressionResult) =>
-        dataStore.AssignLongIndirect(portSymbol,
-                                     memorySymbol,
-                                     getIndex,
-                                     getEnable,
-                                     ToLong(result.apply _).apply _,
-                                     info)
+        dataStore.AssignLongIndirect(
+          portSymbol,
+          memorySymbol,
+          getIndex,
+          getEnable,
+          ToLong(result.apply _).apply _,
+          info
+        )
       case (LongSize, result: LongExpressionResult) =>
         dataStore.AssignLongIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (BigSize, result: IntExpressionResult) =>
         dataStore.AssignBigIndirect(portSymbol, memorySymbol, getIndex, getEnable, ToBig(result.apply _).apply _, info)
       case (BigSize, result: LongExpressionResult) =>
-        dataStore.AssignBigIndirect(portSymbol,
-                                    memorySymbol,
-                                    getIndex,
-                                    getEnable,
-                                    LongToBig(result.apply _).apply _,
-                                    info)
+        dataStore.AssignBigIndirect(
+          portSymbol,
+          memorySymbol,
+          getIndex,
+          getEnable,
+          LongToBig(result.apply _).apply _,
+          info
+        )
       case (BigSize, result: BigExpressionResult) =>
         dataStore.AssignBigIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (size, result) =>

@@ -27,8 +27,8 @@ case class TreadleOptions(
   callResetAtStartUp: Boolean = false,
   symbolsToWatch:     Seq[String] = Seq.empty,
   memoryToVcd:        Seq[String] = Seq.empty,
-  saveFirrtlAtLoad:   Boolean = false
-) extends firrtl.ComposableOptions {
+  saveFirrtlAtLoad:   Boolean = false)
+    extends firrtl.ComposableOptions {
 
   def vcdOutputFileName(optionsManager: ExecutionOptionsManager): String = {
     if (writeVCD) {

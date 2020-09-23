@@ -11,8 +11,8 @@ case class StopOp(
   condition:       IntExpressionResult,
   hasStopped:      Symbol,
   dataStore:       DataStore,
-  clockTransition: ClockTransitionGetter
-) extends Assigner {
+  clockTransition: ClockTransitionGetter)
+    extends Assigner {
 
   def run: FuncUnit = {
     val conditionValue = condition.apply() > 0
@@ -29,8 +29,7 @@ case class StopOp(
       }
     }
 
-    () =>
-      Unit
+    () => Unit
   }
 }
 

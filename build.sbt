@@ -44,8 +44,9 @@ lazy val baseSettings = Seq(
   ),
   // Ignore dependencies on Berkeley artifacts.
   // scala-steward:off
-  libraryDependencies ++= (Seq("firrtl").map {
-    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+  libraryDependencies ++= (Seq("firrtl").map { dep: String =>
+    "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+  }),
   // scala-steward:on
   // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
   // when compiling tests under 2.11.12
@@ -103,10 +104,9 @@ lazy val publishSettings = Seq(
     val v = version.value
     val nexus = "https://oss.sonatype.org/"
     if (v.trim.endsWith("SNAPSHOT")) {
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    }
-    else {
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      Some("snapshots".at(nexus + "content/repositories/snapshots"))
+    } else {
+      Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
     }
   }
 )
@@ -117,12 +117,16 @@ lazy val docSettings = Seq(
     "-Xfatal-warnings",
     "-feature",
     "-diagrams",
-    "-diagrams-max-classes", "25",
-    "-doc-version", version.value,
-    "-doc-source-url", "https://github.com/freechipsproject/treadle/tree/master/€{FILE_PATH}.scala",
-    "-sourcepath", baseDirectory.value.getAbsolutePath,
+    "-diagrams-max-classes",
+    "25",
+    "-doc-version",
+    version.value,
+    "-doc-source-url",
+    "https://github.com/freechipsproject/treadle/tree/master/€{FILE_PATH}.scala",
+    "-sourcepath",
+    baseDirectory.value.getAbsolutePath,
     "-unchecked"
-  ) ++ scalacOptionsVersion(scalaVersion.value),
+  ) ++ scalacOptionsVersion(scalaVersion.value)
 )
 
 lazy val treadle = (project in file("."))
