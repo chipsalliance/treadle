@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // Build script for mill 0.6.0
 import mill._
 import mill.scalalib._
