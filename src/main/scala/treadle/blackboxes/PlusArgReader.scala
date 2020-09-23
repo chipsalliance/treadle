@@ -41,7 +41,7 @@ class PlusArgReader(val instanceName: String) extends ScalaBlackBox {
   override def setPlusArgs(plusArgs: Seq[PlusArg]): Unit = {
     if (plusArgName.nonEmpty) {
       plusArgs.foreach { arg =>
-        if(arg.name == plusArgName) {
+        if (arg.name == plusArgName) {
           try {
             myPlus = plusArgType match {
               case "b" => BigInt(arg.value, 2)
@@ -50,8 +50,7 @@ class PlusArgReader(val instanceName: String) extends ScalaBlackBox {
               case "h" => BigInt(arg.value, 16)
               case "x" => BigInt(arg.value, 16)
             }
-          }
-          catch {
+          } catch {
             case t: Throwable =>
               val exception = TreadleException(
                 s"""PlusArgReader("$instanceName) "$plusArgName=$plusArgType could not parse

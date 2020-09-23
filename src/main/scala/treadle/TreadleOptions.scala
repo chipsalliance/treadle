@@ -10,8 +10,7 @@ import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
 
-sealed trait TreadleOption extends Unserializable { this: Annotation =>
-}
+sealed trait TreadleOption extends Unserializable { this: Annotation => }
 
 /**
   * Tells treadle to write a vcd file during simulation
@@ -176,7 +175,6 @@ case object PlusArgsAnnotation extends HasShellOptions {
   *                   "mem1:o0-o377"    log values at locations 0-255 but show addresses in octal for memory mem1
   *
   * This annotation may occur more than once in order to specify multiple memories
-  *
   */
 case class MemoryToVCD(specifier: String) extends NoTargetAnnotation with TreadleOption
 
@@ -382,8 +380,8 @@ case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFacto
   */
 case class DataStorePlugInAnnotation(
   name:      String,
-  getPlugin: ExecutionEngine => DataStorePlugin
-) extends NoTargetAnnotation
+  getPlugin: ExecutionEngine => DataStorePlugin)
+    extends NoTargetAnnotation
     with TreadleOption
 
 /** Constructs this as a registered library that will be auto-detected by

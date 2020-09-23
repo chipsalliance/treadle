@@ -236,7 +236,8 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
 
     val options = Seq(
       Some(WriteVcdAnnotation),
-      if (hasTempWires) { Some(VcdShowUnderScoredAnnotation) } else { None },
+      if (hasTempWires) { Some(VcdShowUnderScoredAnnotation) }
+      else { None },
       Some(TargetDirAnnotation("test_run_dir/vcd_register_delay/")),
       Some(OutputFileAnnotation("pwminCount"))
     ).flatten

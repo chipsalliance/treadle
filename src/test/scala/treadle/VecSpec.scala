@@ -44,9 +44,11 @@ class VecSpec extends AnyFreeSpec with Matchers {
 
     def show(): Unit = {
       println("Rendering register assignments")
-      for (name <- Seq.tabulate(1) { i =>
-             s"shifter_$i"
-           }) {
+      for (
+        name <- Seq.tabulate(1) { i =>
+          s"shifter_$i"
+        }
+      ) {
         println(s"${tester.engine.renderComputation(name)}")
       }
     }

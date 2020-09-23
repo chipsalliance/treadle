@@ -198,7 +198,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     println(s"Writing snapshot file $snapshotName")
   }
 
-  /** Indicate a failure has occurred.  */
+  /** Indicate a failure has occurred. */
   private var failureTime = -1L
   private var failCode: Option[Int] = None
   def fail(code: Int): Unit = {
@@ -379,8 +379,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     if (symbolNames.length == 0) {
       symbolNames.zipWithIndex.foreach {
         case (symbolName, counter) =>
-          assert(engine.symbolTable.contains(symbolName),
-                 s""""$symbolName" : argument is not an element of this circuit""")
+          assert(
+            engine.symbolTable.contains(symbolName),
+            s""""$symbolName" : argument is not an element of this circuit"""
+          )
           symbols.update(counter, engine.symbolTable(symbolName))
       }
     }

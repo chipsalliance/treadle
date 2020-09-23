@@ -4,13 +4,14 @@ package treadle.vcd
 
 import firrtl.ExecutionOptionsManager
 
-case class VCDConfig(vcdSourceName:     String = "",
-                     vcdTargetName:     String = "",
-                     startScope:        String = "",
-                     renameStartScope:  String = "",
-                     varPrefix:         String = "",
-                     newVarPrefix:      String = "",
-                     dumpHumanReadable: Boolean = false)
+case class VCDConfig(
+  vcdSourceName:     String = "",
+  vcdTargetName:     String = "",
+  startScope:        String = "",
+  renameStartScope:  String = "",
+  varPrefix:         String = "",
+  newVarPrefix:      String = "",
+  dumpHumanReadable: Boolean = false)
     extends firrtl.ComposableOptions {}
 
 trait HasVCDConfig {

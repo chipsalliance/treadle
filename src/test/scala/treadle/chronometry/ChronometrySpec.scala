@@ -117,8 +117,7 @@ class ChronometrySpec extends AnyFreeSpec with Matchers {
       cycle += 1
     }
 
-    utc.addRecurringTask(1000, 1000) { () =>
-      }
+    utc.addRecurringTask(1000, 1000) { () => }
 
     val startTime = System.currentTimeMillis()
     for (_ <- 1L to toDo) {
@@ -146,22 +145,19 @@ class ChronometrySpec extends AnyFreeSpec with Matchers {
       cycle += 1
     }
 
-    utc.addRecurringTask(1000, 1000) { () =>
-      }
+    utc.addRecurringTask(1000, 1000) { () => }
 
     utc.addRecurringTask(3000, 2000) { () =>
       cycle += 1
     }
 
-    utc.addRecurringTask(3000, 1000) { () =>
-      }
+    utc.addRecurringTask(3000, 1000) { () => }
 
     utc.addRecurringTask(900, 500) { () =>
       cycle += 1
     }
 
-    utc.addRecurringTask(900, 1000) { () =>
-      }
+    utc.addRecurringTask(900, 1000) { () => }
 
     val startTime = System.currentTimeMillis()
     for (_ <- 1L to toDo) {

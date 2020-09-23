@@ -18,8 +18,7 @@ package treadle.executable
 case class ClockInfo(
   name:          String = ClockInfo.DefaultName,
   period:        Long = ClockInfo.DefaultPeriod,
-  initialOffset: Long = ClockInfo.DefaultOffset
-) {
+  initialOffset: Long = ClockInfo.DefaultOffset) {
   if (period % 2 != 0) {
     throw TreadleException(s"Error: Clock period must be divisible by 2: Found $this")
   }

@@ -15,8 +15,7 @@ case class Symbol(
   bitWidth:   Int,
   slots:      Int,
   firrtlType: firrtl.ir.Type,
-  info:       Info
-) {
+  info:       Info) {
   var index:          Int = -1
   var cardinalNumber: Int = -1
 
@@ -85,19 +84,23 @@ case class Symbol(
 }
 
 object Symbol {
-  def apply(name:       String,
-            firrtlType: firrtl.ir.Type,
-            firrtlKind: Kind = WireKind,
-            slots:      Int = 1,
-            info:       Info = NoInfo): Symbol = {
-    Symbol(name,
-           DataSize(firrtlType),
-           DataType(firrtlType),
-           firrtlKind,
-           DataSize.getBitWidth(firrtlType),
-           slots,
-           firrtlType,
-           info)
+  def apply(
+    name:       String,
+    firrtlType: firrtl.ir.Type,
+    firrtlKind: Kind = WireKind,
+    slots:      Int = 1,
+    info:       Info = NoInfo
+  ): Symbol = {
+    Symbol(
+      name,
+      DataSize(firrtlType),
+      DataType(firrtlType),
+      firrtlKind,
+      DataSize.getBitWidth(firrtlType),
+      slots,
+      firrtlType,
+      info
+    )
   }
 
   def renderHeader: String = {

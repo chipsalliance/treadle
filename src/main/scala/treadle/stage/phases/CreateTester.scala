@@ -9,11 +9,13 @@ import treadle.{TreadleCircuitStateAnnotation, TreadleTester, TreadleTesterAnnot
 
 object CreateTester extends Phase {
   override def transform(a: AnnotationSeq): AnnotationSeq = {
-    if (a.exists {
-          case FirrtlCircuitAnnotation(_)       => true
-          case TreadleCircuitStateAnnotation(_) => true
-          case _                                => false
-        }) {
+    if (
+      a.exists {
+        case FirrtlCircuitAnnotation(_)       => true
+        case TreadleCircuitStateAnnotation(_) => true
+        case _                                => false
+      }
+    ) {
       val tester = new TreadleTester(a)
       a :+ TreadleTesterAnnotation(tester)
     } else {

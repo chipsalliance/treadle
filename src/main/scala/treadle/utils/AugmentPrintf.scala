@@ -14,16 +14,20 @@ import scala.collection.mutable
   * unless this pass adds a delay for each register
   */
 class AugmentPrintf extends Transform with DependencyAPIMigration {
-  override def prerequisites: Seq[TransformManager.TransformDependency] = Forms.LowForm
-  override def optionalPrerequisites: Seq[TransformManager.TransformDependency] = Forms.LowFormOptimized
+  override def prerequisites:          Seq[TransformManager.TransformDependency] = Forms.LowForm
+  override def optionalPrerequisites:  Seq[TransformManager.TransformDependency] = Forms.LowFormOptimized
   override def optionalPrerequisiteOf: Seq[Dependency[Emitter]] = Forms.LowEmitters
   override def invalidates(a: Transform): Boolean = false
 
   def apply(circuit: Circuit): Circuit = {
     import firrtl._
     import firrtl.ir._
-    def insert(newStmts: mutable.ArrayBuffer[Statement], namespace: Namespace, info: Info, clockExpression: Expression)(
-      a:                 Expression
+    def insert(
+      newStmts:        mutable.ArrayBuffer[Statement],
+      namespace:       Namespace,
+      info:            Info,
+      clockExpression: Expression
+    )(a:               Expression
     ): Expression = {
       val newName = namespace.newTemp
       val wref = WRef(newName, a.tpe, NodeKind, SourceFlow)

@@ -17,8 +17,7 @@ case class ReplConfig(
   useVcdScript:      Boolean = false,
   vcdScriptOverride: String = "",
   runScriptAtStart:  Boolean = false,
-  outputFormat:      String = "d"
-) {
+  outputFormat:      String = "d") {
   def getVcdInputFileName: String = {
     if (vcdScriptOverride.nonEmpty) {
       vcdScriptOverride

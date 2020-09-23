@@ -75,9 +75,9 @@ trait ScalaBlackBox {
     * @param plusArgs  list of args
     */
   def setPlusArgs(plusArgs: Seq[PlusArg]): Unit = {}
+
   /** Called by TreadleTester#finish
     * override this method to perform any cleanup necessary
-    *
     */
   def finish(): Unit = {}
 }

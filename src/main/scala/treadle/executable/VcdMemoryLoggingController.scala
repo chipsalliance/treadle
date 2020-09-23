@@ -18,8 +18,7 @@ import scala.util.matching.Regex
   */
 class VcdMemoryLoggingController(
   logAllRadixOpt:  Option[Int] = None,
-  memoriesTracked: Map[Symbol, IndicesAndRadix] = Map.empty
-) {
+  memoriesTracked: Map[Symbol, IndicesAndRadix] = Map.empty) {
 
   private def indexedName(name: String, index: Int, radix: Int): String = {
     s"$name(${BigInt(index).toString(radix)})"

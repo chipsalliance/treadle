@@ -34,7 +34,9 @@ class DataStoreSpec extends AnyFreeSpec with Matchers {
 
       case class Extrema(low: BigInt, high: BigInt) {
         def update(value: BigInt): Extrema = {
-          if (value < low) { Extrema(value, high) } else if (value > high) { Extrema(low, value) } else { this }
+          if (value < low) { Extrema(value, high) }
+          else if (value > high) { Extrema(low, value) }
+          else { this }
         }
       }
 

@@ -17,8 +17,8 @@ class ExpressionViewBuilder(
   dataStore:         DataStore,
   scheduler:         Scheduler,
   validIfIsRandom:   Boolean,
-  blackBoxFactories: Seq[ScalaBlackBoxFactory]
-) extends logger.LazyLogging {
+  blackBoxFactories: Seq[ScalaBlackBoxFactory])
+    extends logger.LazyLogging {
 
   val expressionViews: mutable.HashMap[Symbol, ExpressionView] = new mutable.HashMap
 
@@ -338,12 +338,14 @@ class ExpressionViewBuilder(
 
 object ExpressionViewBuilder {
 
-  def getExpressionViews(symbolTable:       SymbolTable,
-                         dataStore:         DataStore,
-                         scheduler:         Scheduler,
-                         validIfIsRandom:   Boolean,
-                         circuit:           Circuit,
-                         blackBoxFactories: Seq[ScalaBlackBoxFactory]): Map[Symbol, ExpressionView] = {
+  def getExpressionViews(
+    symbolTable:       SymbolTable,
+    dataStore:         DataStore,
+    scheduler:         Scheduler,
+    validIfIsRandom:   Boolean,
+    circuit:           Circuit,
+    blackBoxFactories: Seq[ScalaBlackBoxFactory]
+  ): Map[Symbol, ExpressionView] = {
     val builder = new ExpressionViewBuilder(symbolTable, dataStore, scheduler, validIfIsRandom, blackBoxFactories)
     builder.compile(circuit, blackBoxFactories)
     builder.expressionViews.toMap

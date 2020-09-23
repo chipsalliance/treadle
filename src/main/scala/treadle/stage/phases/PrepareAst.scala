@@ -5,7 +5,7 @@ package treadle.stage.phases
 import firrtl.options.{Dependency, Phase}
 import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
 import firrtl.transforms.BlackBoxSourceHelper
-import firrtl.{AnnotationSeq, CircuitState, passes}
+import firrtl.{passes, AnnotationSeq, CircuitState}
 import treadle.TreadleCircuitStateAnnotation
 import treadle.utils.{AugmentPrintf, FixupOps}
 

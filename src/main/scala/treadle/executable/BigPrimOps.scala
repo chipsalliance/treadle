@@ -166,7 +166,8 @@ case class OrrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
 
   def apply(): Int = {
     val uInt = f1() & bitMask
-    if (uInt > 0) { 1 } else { 0 }
+    if (uInt > 0) { 1 }
+    else { 0 }
   }
 }
 

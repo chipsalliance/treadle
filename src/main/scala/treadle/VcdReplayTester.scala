@@ -61,7 +61,7 @@ class VcdReplayTester(annotationSeq: AnnotationSeq) extends LazyLogging {
     vcdRunner.setInitialValues()
 
     val start = annotationSeq.collectFirst { case VcdReplaySkipEvents(n) => n }.getOrElse(0)
-    val end = annotationSeq.collectFirst { case VcdReplaySkipEvents(n)   => start + n }.getOrElse(vcdRunner.events.length)
+    val end = annotationSeq.collectFirst { case VcdReplaySkipEvents(n) => start + n }.getOrElse(vcdRunner.events.length)
 
     vcdRunner.setNextEvent(start)
 
@@ -112,8 +112,7 @@ class VcdReplayTesterStage extends Stage {
 
 object VcdReplayTester extends StageMain(new VcdReplayTesterStage)
 
-sealed trait VcdReplayTesterOptions extends Unserializable { this: Annotation =>
-}
+sealed trait VcdReplayTesterOptions extends Unserializable { this: Annotation => }
 
 case class VcdReplayVcdFile(fileName: String) extends NoTargetAnnotation with VcdReplayTesterOptions
 

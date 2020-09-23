@@ -27,8 +27,8 @@ class ExecutionEngine(
   val dataStore:       DataStore,
   val scheduler:       Scheduler,
   val expressionViews: Map[Symbol, ExpressionView],
-  val wallTime:        UTC
-) extends LazyLogging {
+  val wallTime:        UTC)
+    extends LazyLogging {
   val cycleTimeIncrement = 500
 
   var vcdOption:   Option[VCD] = None
@@ -223,7 +223,8 @@ class ExecutionEngine(
 
       if (lastStopResult.isDefined) {
         writeVCD()
-        val stopKind = if (lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
+        val stopKind = if (lastStopResult.get > 0) { "Failure Stop" }
+        else { "Stopped" }
         throw StopException(s"$stopKind: result ${lastStopResult.get}")
       }
     } catch {
@@ -291,8 +292,10 @@ class ExecutionEngine(
     }
 
     if (!force) {
-      assert(symbol.dataKind == PortKind,
-             s"Error: setValue($name) not on input, use setValue($name, force=true) to override")
+      assert(
+        symbol.dataKind == PortKind,
+        s"Error: setValue($name) not on input, use setValue($name, force=true) to override"
+      )
       return Big0
     }
 
@@ -579,7 +582,7 @@ object ExecutionEngine {
       case BlackBoxFactoriesAnnotation(bbf) => bbf
       case _                                => Seq.empty
     }
-    val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation             => true; case _ => false }
+    val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation => true; case _ => false }
     val prefixPrintfWithTime = annotationSeq.exists { case PrefixPrintfWithWallTime => true; case _ => false }
 
     val rollbackBuffers = annotationSeq.collectFirst { case RollBackBuffersAnnotation(rbb) => rbb }.getOrElse(
@@ -592,7 +595,7 @@ object ExecutionEngine {
       }
 
     val validIfIsRandom = annotationSeq.exists { case ValidIfIsRandomAnnotation => true; case _ => false }
-    val verbose = annotationSeq.exists { case VerboseAnnotation                 => true; case _ => false }
+    val verbose = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
 
     val symbolTable: SymbolTable = timer("Build Symbol Table") {
       SymbolTable(circuit, blackBoxFactories, allowCycles)
@@ -624,12 +627,14 @@ object ExecutionEngine {
       compiler.compile(circuit, blackBoxFactories)
     }
 
-    val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(symbolTable,
-                                                                                                dataStore,
-                                                                                                scheduler,
-                                                                                                validIfIsRandom,
-                                                                                                circuit,
-                                                                                                blackBoxFactories)
+    val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(
+      symbolTable,
+      dataStore,
+      scheduler,
+      validIfIsRandom,
+      circuit,
+      blackBoxFactories
+    )
 
     scheduler.organizeAssigners()
 

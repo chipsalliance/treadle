@@ -16,13 +16,13 @@ class EicgWrapper(val instanceName: String) extends ScalaBlackBox {
 
   override def inputChanged(name: String, value: BigInt): Unit = {
     name match {
-      case "en"      =>
+      case "en" =>
         enableValue = value & 1
-      case "in"      =>
+      case "in" =>
         inputValue = value & 1
       case "test_en" =>
         testEnable = value & 1
-      case _         =>
+      case _ =>
     }
   }
 

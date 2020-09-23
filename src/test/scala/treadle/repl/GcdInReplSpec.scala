@@ -47,8 +47,8 @@ class GcdInReplSpec extends AnyFreeSpec with Matchers {
 
     println(textOut)
 
-    textOut should include ("io_v == value 1 in 3 cycle")
-    textOut should include ("peek io_z 4")
+    textOut should include("io_v == value 1 in 3 cycle")
+    textOut should include("peek io_z 4")
 
   }
 

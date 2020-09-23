@@ -73,7 +73,9 @@ object BitTwiddlingUtils {
 
   def orr(a: Big, bitWidth: Int, aIsSInt: Boolean): Big = {
     if (aIsSInt) {
-      if (a < 0) { Big1 } else if (a != 0) { Big1 } else { Big0 }
+      if (a < 0) { Big1 }
+      else if (a != 0) { Big1 }
+      else { Big0 }
     } else {
       val bits = (0 until bitWidth).map(i => a.testBit(i))
       boolToBigInt(bits.reduce(_ || _))
