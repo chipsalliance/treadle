@@ -10,6 +10,7 @@ import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import treadle.chronometry.UTC
+import treadle.coverage.CoverageParser
 import treadle.executable._
 import treadle.stage.TreadleTesterPhase
 
@@ -37,6 +38,9 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   var expectationsMet = 0
 
+  //Keeps track of coverage
+  var lineValidators : List[Int] = Nil
+
   treadle.random.setSeed(annotationSeq.collectFirst { case RandomSeedAnnotation(seed) => seed }.getOrElse(0L))
 
   val wallTime: UTC = UTC()
@@ -59,6 +63,13 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   private val stageOptions = view[StageOptions](annotationSeq)
   private val memoryLogger: VcdMemoryLoggingController = {
     VcdMemoryLoggingController(annotationSeq.collect { case MemoryToVCD(command) => command }, engine.symbolTable)
+  }
+
+  /**
+    * Initializes the lineValidators attribute. Must be done after construction of the AST
+    */
+  def initLineValidators(): Unit = {
+    lineValidators = (for(_ <- 0 until CoverageParser.getNumValidators(engine.ast.serialize)) yield 0).toList
   }
 
   def setVerbose(value: Boolean = true): Unit = {
@@ -308,6 +319,13 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
       )
     }
     expectationsMet += 1
+
+    //Initialize coverage validators if not done yet
+    if(lineValidators.isEmpty) initLineValidators()
+
+    //Keep track of coverage
+    lineValidators = lineValidators.zip(CoverageParser.getValidators(engine.ast.serialize, this))
+      .map(v => v._1 | v._2.toInt)
   }
 
   def cycleCount: Long = clockStepper.cycleCount
@@ -436,6 +454,9 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   def report(): Unit = {
     engine.writeVCD()
     println(reportString)
+
+    //report coverage
+    CoverageParser.reportCoverage(engine.ast.serialize, this)
   }
 
   def finish: Boolean = {
