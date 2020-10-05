@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
@@ -58,8 +44,9 @@ lazy val baseSettings = Seq(
   ),
   // Ignore dependencies on Berkeley artifacts.
   // scala-steward:off
-  libraryDependencies ++= (Seq("firrtl").map {
-    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+  libraryDependencies ++= (Seq("firrtl").map { dep: String =>
+    "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+  }),
   // scala-steward:on
   // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
   // when compiling tests under 2.11.12
@@ -97,8 +84,8 @@ lazy val publishSettings = Seq(
   pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
   <licenses>
     <license>
-      <name>BSD-style</name>
-      <url>http://www.opensource.org/licenses/bsd-license.php</url>
+      <name>apache_v2</name>
+      <url>https://opensource.org/licenses/Apache-2.0</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
@@ -117,10 +104,9 @@ lazy val publishSettings = Seq(
     val v = version.value
     val nexus = "https://oss.sonatype.org/"
     if (v.trim.endsWith("SNAPSHOT")) {
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    }
-    else {
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      Some("snapshots".at(nexus + "content/repositories/snapshots"))
+    } else {
+      Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
     }
   }
 )
@@ -131,12 +117,16 @@ lazy val docSettings = Seq(
     "-Xfatal-warnings",
     "-feature",
     "-diagrams",
-    "-diagrams-max-classes", "25",
-    "-doc-version", version.value,
-    "-doc-source-url", "https://github.com/freechipsproject/treadle/tree/master/€{FILE_PATH}.scala",
-    "-sourcepath", baseDirectory.value.getAbsolutePath,
+    "-diagrams-max-classes",
+    "25",
+    "-doc-version",
+    version.value,
+    "-doc-source-url",
+    "https://github.com/freechipsproject/treadle/tree/master/€{FILE_PATH}.scala",
+    "-sourcepath",
+    baseDirectory.value.getAbsolutePath,
     "-unchecked"
-  ) ++ scalacOptionsVersion(scalaVersion.value),
+  ) ++ scalacOptionsVersion(scalaVersion.value)
 )
 
 lazy val treadle = (project in file("."))

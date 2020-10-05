@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.executable
 
@@ -157,8 +143,8 @@ object SymbolTable extends LazyLogging {
   val LastValueSuffix = "/last"
   val PrevSuffix = "/prev"
 
-  def makeRegisterInputName(name:     String): String = name + RegisterInputSuffix
-  def makeRegisterInputName(symbol:   Symbol): String = symbol.name + RegisterInputSuffix
+  def makeRegisterInputName(name:   String): String = name + RegisterInputSuffix
+  def makeRegisterInputName(symbol: Symbol): String = symbol.name + RegisterInputSuffix
   def makeRegisterInputSymbol(symbol: Symbol): Symbol = {
     Symbol(makeRegisterInputName(symbol), symbol.firrtlType, RegKind, info = symbol.info)
   }
@@ -634,21 +620,22 @@ object SymbolTable extends LazyLogging {
 
     symbolTable.moduleMemoryToMemorySymbol ++= moduleMemoryToMemorySymbol
 
-    val sorted: Seq[Symbol] = try {
-      symbolTable.childrenOf.linearize
-    } catch {
-      case e: firrtl.graph.CyclicException =>
-        val badNode = e.node.asInstanceOf[Symbol]
-        println(s"Combinational loop detected at $badNode")
-        if (allowCycles) {
-          symbolTable.symbols.toSeq
-        } else {
-          showLoop(badNode, symbolTable)
-          throw e
-        }
-      case t: Throwable =>
-        throw t
-    }
+    val sorted: Seq[Symbol] =
+      try {
+        symbolTable.childrenOf.linearize
+      } catch {
+        case e: firrtl.graph.CyclicException =>
+          val badNode = e.node.asInstanceOf[Symbol]
+          println(s"Combinational loop detected at $badNode")
+          if (allowCycles) {
+            symbolTable.symbols.toSeq
+          } else {
+            showLoop(badNode, symbolTable)
+            throw e
+          }
+        case t: Throwable =>
+          throw t
+      }
     logger.trace(s"Build SymbolTable pass 2 -- linearize complete")
 
     sorted.zipWithIndex.foreach {

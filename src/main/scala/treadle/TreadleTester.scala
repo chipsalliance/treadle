@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
@@ -212,7 +198,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     println(s"Writing snapshot file $snapshotName")
   }
 
-  /** Indicate a failure has occurred.  */
+  /** Indicate a failure has occurred. */
   private var failureTime = -1L
   private var failCode: Option[Int] = None
   def fail(code: Int): Unit = {
@@ -393,8 +379,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     if (symbolNames.length == 0) {
       symbolNames.zipWithIndex.foreach {
         case (symbolName, counter) =>
-          assert(engine.symbolTable.contains(symbolName),
-                 s""""$symbolName" : argument is not an element of this circuit""")
+          assert(
+            engine.symbolTable.contains(symbolName),
+            s""""$symbolName" : argument is not an element of this circuit"""
+          )
           symbols.update(counter, engine.symbolTable(symbolName))
       }
     }

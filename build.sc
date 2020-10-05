@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // Build script for mill 0.6.0
 import mill._
 import mill.scalalib._
@@ -6,13 +8,13 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.11") 
+object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.11")
 
-// The following stanza is searched for and used when preparing releases. 
+// The following stanza is searched for and used when preparing releases.
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "firrtl" -> "1.4-SNAPSHOT",
+  "firrtl" -> "1.4-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -23,11 +25,13 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 trait CommonModule extends ScalaModule with SbtModule with PublishModule {
   def firrtlModule: Option[PublishModule] = None
 
-  def firrtlIvyDeps = if(firrtlModule.isEmpty) Agg(
-    getVersion("firrtl")
-  ) else Agg.empty[Dep]
+  def firrtlIvyDeps = if (firrtlModule.isEmpty)
+    Agg(
+      getVersion("firrtl")
+    )
+  else Agg.empty[Dep]
 
-  def moduleDeps = Seq() ++ firrtlModule 
+  def moduleDeps = Seq() ++ firrtlModule
 
   def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
 
@@ -47,19 +51,19 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
 
   private def scalacCrossOptions = majorVersion match {
     case i if i < 12 => Seq()
-    case _ => Seq("-Xsource:2.11")
+    case _           => Seq("-Xsource:2.11")
   }
-  
+
   private def javacCrossOptions = majorVersion match {
     case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
-    case _ => Seq("-source", "1.8", "-target", "1.8")
+    case _           => Seq("-source", "1.8", "-target", "1.8")
   }
 
   override def scalacOptions = super.scalacOptions() ++ Agg(
     "-deprecation",
     "-feature"
   ) ++ scalacCrossOptions
-  
+
   override def javacOptions = super.javacOptions() ++ javacCrossOptions
 
   private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
@@ -98,13 +102,13 @@ class treadleCrossModule(crossVersionValue: String) extends CommonModule with Pu
   object test extends Tests {
     private def ivyCrossDeps = majorVersion match {
       case i if i < 12 => Agg(ivy"junit:junit:4.13")
-      case _ => Agg()
+      case _           => Agg()
     }
-   
+
     def ivyDeps = Agg(
       ivy"org.scalatest::scalatest:3.2.2",
-      ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0",
-    ) ++ ivyCrossDeps 
+      ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
+    ) ++ ivyCrossDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
 
