@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.blackboxes
 
@@ -55,7 +41,7 @@ class PlusArgReader(val instanceName: String) extends ScalaBlackBox {
   override def setPlusArgs(plusArgs: Seq[PlusArg]): Unit = {
     if (plusArgName.nonEmpty) {
       plusArgs.foreach { arg =>
-        if(arg.name == plusArgName) {
+        if (arg.name == plusArgName) {
           try {
             myPlus = plusArgType match {
               case "b" => BigInt(arg.value, 2)
@@ -64,8 +50,7 @@ class PlusArgReader(val instanceName: String) extends ScalaBlackBox {
               case "h" => BigInt(arg.value, 16)
               case "x" => BigInt(arg.value, 16)
             }
-          }
-          catch {
+          } catch {
             case t: Throwable =>
               val exception = TreadleException(
                 s"""PlusArgReader("$instanceName) "$plusArgName=$plusArgType could not parse

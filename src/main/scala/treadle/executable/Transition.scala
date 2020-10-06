@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.executable
 import firrtl.ir.Info
@@ -38,7 +24,9 @@ case class ClockTransitionGetter(clockSymbol: Symbol, prevClockSymbol: Symbol, d
   def isNegEdge: Boolean = intData(clockIndex) == 0 && intData(prevClockIndex) > 0
 
   def transition: Transition = {
-    if (isPosEdge) { PositiveEdge } else if (isNegEdge) { NegativeEdge } else { NoTransition }
+    if (isPosEdge) { PositiveEdge }
+    else if (isNegEdge) { NegativeEdge }
+    else { NoTransition }
   }
 }
 
@@ -47,8 +35,8 @@ case class ClockBasedAssigner(
   clockSymbol:        Symbol,
   prevClockSymbol:    Symbol,
   dataStore:          DataStore,
-  requiredTransition: Transition
-) extends Assigner {
+  requiredTransition: Transition)
+    extends Assigner {
 
   override val symbol: Symbol = assigner.symbol
   override val info:   Info = assigner.info

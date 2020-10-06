@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.executable
 
@@ -86,7 +72,9 @@ class RollBackBufferRing(dataStore: DataStore) {
     if (currentNumberOfBuffers > 0 && time < ringBuffer(latestBufferIndex).time) {
       // It's an error to record something earlier in time
       throw TreadleException(s"rollback buffer requested has earlier time that last used buffer")
-    } else if (currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time)) {
+    } else if (
+      currentNumberOfBuffers == 0 || (currentNumberOfBuffers > 0 && time > ringBuffer(latestBufferIndex).time)
+    ) {
       // time has advanced so get a new buffer or re-use the oldest one
       // if time did not advance just fall through and newest buffer to be used again
       latestBufferIndex += 1
