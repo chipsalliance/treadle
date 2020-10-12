@@ -2,14 +2,13 @@
 
 package treadle.vcd
 
-import java.io.PrintWriter
+import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 import java.text.SimpleDateFormat
+import java.util.{Date, TimeZone}
 
 import logger.LazyLogging
 
-import collection._
-import java.util.{Date, TimeZone}
-
+import scala.collection._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
@@ -506,6 +505,17 @@ case class VCD(
   val wiresToIgnore = new mutable.HashSet[String]
   def events: Array[Long] = valuesAtTime.keys.toArray.sorted
 
+  var streamingWriterOpt:  Option[BufferedWriter] = None
+  var streamingIsBuffered: Boolean = false
+
+  def setStreaming(fileName: String, isBuffered: Boolean): Unit = {
+    streamingWriterOpt = Some(new BufferedWriter(new FileWriter(new File(fileName))))
+    streamingWriterOpt.get.write(serializeHeader)
+    setTime(0L)
+    streamingWriterOpt.get.flush()
+    streamingIsBuffered = isBuffered
+  }
+
   def info: String = {
     val infoLines = Seq(
       "vcd" -> version,
@@ -534,6 +544,14 @@ case class VCD(
       for (change <- changes) {
         println(f"${change.wire.fullName}%64s -> ${change.value}%32x")
       }
+    }
+  }
+
+  def finish(): Unit = {
+    streamingWriterOpt.foreach { streamingWriter =>
+      streamingWriter.flush()
+      streamingWriter.close()
+      streamingWriterOpt = None
     }
   }
 
@@ -631,12 +649,20 @@ case class VCD(
       val change = Change(wire, value)
       lastValues(wireName) = change
 
-      if (timeStamp < 0) {
-        initialValues += change
-      } else {
-        val changeSet = valuesAtTime.getOrElseUpdate(timeStamp, new mutable.HashSet[Change])
-        changeSet -= change // This removes a previous value for the wire associated with this change, if there is one.
-        changeSet += change
+      streamingWriterOpt match {
+        case Some(bufferedWriter) =>
+          bufferedWriter.write(change.serialize + "\n")
+          if (!streamingIsBuffered) {
+            bufferedWriter.flush()
+          }
+        case None =>
+          if (timeStamp < 0) {
+            initialValues += change
+          } else {
+            val changeSet = valuesAtTime.getOrElseUpdate(timeStamp, new mutable.HashSet[Change])
+            changeSet -= change // This removes a previous value for the wire associated with this change, if there is one.
+            changeSet += change
+          }
       }
     }
 
@@ -653,11 +679,17 @@ case class VCD(
   }
 
   def incrementTime(increment: Long = 1L) {
-    timeStamp += increment
+    setTime(timeStamp + increment)
   }
 
   def setTime(time: Long): Unit = {
     timeStamp = time
+    streamingWriterOpt.foreach { streamingWriter =>
+      streamingWriter.write(s"#$timeStamp\n")
+      if (!streamingIsBuffered) {
+        streamingWriter.flush()
+      }
+    }
   }
 
   def wiresFor(change: Change): Set[Wire] = {
@@ -685,42 +717,51 @@ case class VCD(
   }
 
   def serialize(writer: PrintWriter): Unit = {
-    writer.print(VCD.DateDeclaration + "\n")
-    writer.print(date + "\n")
-    writer.print(VCD.End + "\n")
-    writer.print(VCD.VersionDeclaration + "\n")
-    writer.print(version + "\n")
-    writer.print(VCD.End + "\n")
-    writer.print(VCD.CommentDeclaration + "\n")
-    writer.print(comment + "\n")
-    writer.print(VCD.End + "\n")
-    writer.print(s"${VCD.TimeScaleDeclaration} $timeScale  ${VCD.End}\n")
+    writer.print(serializeHeader)
+    writer.print(serializeChanges)
+  }
+
+  def serializeHeader: String = {
+    val string = new StringBuilder()
+    string ++= VCD.DateDeclaration + "\n"
+    string ++= date + "\n"
+    string ++= VCD.End + "\n"
+    string ++= VCD.VersionDeclaration + "\n"
+    string ++= version + "\n"
+    string ++= VCD.End + "\n"
+    string ++= VCD.CommentDeclaration + "\n"
+    string ++= comment + "\n"
+    string ++= VCD.End + "\n"
+    string ++= s"${VCD.TimeScaleDeclaration} $timeScale  ${VCD.End}\n"
 
     def doScope(scope: Scope, depth: Int = 0): Unit = {
       def indent(inc: Int = 0): String = " " * (depth + inc)
-      writer.print(s"${indent()}${VCD.ScopeDeclaration} module ${scope.name} ${VCD.End}\n")
+      string ++= s"${indent()}${VCD.ScopeDeclaration} module ${scope.name} ${VCD.End}\n"
       scope.wires.foreach { wire =>
-        writer.print(indent(1) + wire.toString + "\n")
+        string ++= indent(1) + wire.toString + "\n"
       }
       scope.subScopes.foreach { subScope =>
         doScope(subScope, depth + 2)
       }
-      writer.print(s"${indent()}${VCD.UpScopeDeclaration} ${VCD.End}\n")
+      string ++= s"${indent()}${VCD.UpScopeDeclaration} ${VCD.End}\n"
     }
 
     doScope(scopeRoot)
-    writer.print(s"${VCD.EndDefinitionsDeclaration} ${VCD.End}\n")
+    string ++= s"${VCD.EndDefinitionsDeclaration} ${VCD.End}\n"
     if (initialValues.nonEmpty) {
-      writer.print(s"${VCD.DumpVarsDeclaration}\n")
-      writer.print(serializeStartup + s"\n${VCD.End}\n")
+      string ++= s"${VCD.DumpVarsDeclaration}\n"
+      string ++= serializeStartup + s"\n${VCD.End}\n"
     }
-    writer.print(serializeChanges)
+    string.toString
   }
 
   def write(fileName: String): Unit = {
-    val writer = new PrintWriter(fileName)
-    serialize(writer)
-    writer.close()
+    // Don't write this out if streaming because it will clobber file
+    if (streamingWriterOpt.isEmpty) {
+      val writer = new PrintWriter(fileName)
+      serialize(writer)
+      writer.close()
+    }
   }
 }
 

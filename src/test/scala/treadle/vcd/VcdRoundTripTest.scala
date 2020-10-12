@@ -3,7 +3,7 @@
 package treadle.vcd
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.{TreadleTester, WriteVcdAnnotation}
+import treadle.{StreamVcdAnnotation, TreadleTester, WriteVcdAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -91,7 +91,7 @@ class VcdRoundTripTest extends AnyFreeSpec with Matchers {
         |
         |""".stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation, StreamVcdAnnotation))
 
     for {
       a <- (3 until 10)

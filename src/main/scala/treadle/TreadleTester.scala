@@ -52,6 +52,15 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   val resetName: String = annotationSeq.collectFirst { case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
   private val clockInfo = annotationSeq.collectFirst { case ClockInfoAnnotation(cia) => cia }.getOrElse(Seq.empty)
   private val writeVcd = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
+  private val (streamVcd, isBufferedStream) = {
+    if (annotationSeq.exists { case StreamVcdAnnotation => true; case _ => false }) {
+      (true, false)
+    } else if (annotationSeq.exists { case BufferedStreamVcdAnnotation => true; case _ => false }) {
+      (true, true)
+    } else {
+      (false, false)
+    }
+  }
   val vcdShowUnderscored: Boolean = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
   private val callResetAtStartUp = annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }
   val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
@@ -142,7 +151,9 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     engine.makeVCDLogger(
       stageOptions.getBuildFileName(topName, Some(".vcd")),
       vcdShowUnderscored,
-      memoryLogger
+      memoryLogger,
+      streamVcd,
+      isBufferedStream
     )
   }
 

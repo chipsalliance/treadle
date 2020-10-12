@@ -120,7 +120,9 @@ class ExecutionEngine(
   def makeVCDLogger(
     fileName:        String,
     showUnderscored: Boolean,
-    memoryLogger:    VcdMemoryLoggingController = new VcdMemoryLoggingController()
+    memoryLogger:    VcdMemoryLoggingController = new VcdMemoryLoggingController(),
+    doStreaming:     Boolean = false,
+    isBuffered:      Boolean = false
   ): Unit = {
     val vcd = VCD(ast.main, showUnderscoredNames = showUnderscored)
 
@@ -137,6 +139,9 @@ class ExecutionEngine(
       }
     }
     vcd.timeStamp = 0
+    if (doStreaming) {
+      vcd.setStreaming(fileName, isBuffered)
+    }
 
     vcdOption = Some(vcd)
     vcdFileName = fileName
@@ -492,6 +497,9 @@ class ExecutionEngine(
       symbolTable.getBlackboxImplementation(symbol).foreach { blackBox =>
         blackBox.finish()
       }
+    }
+    vcdOption.foreach { vcd =>
+      vcd.finish()
     }
   }
 

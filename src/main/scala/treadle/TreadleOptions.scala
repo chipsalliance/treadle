@@ -20,7 +20,33 @@ case object WriteVcdAnnotation extends NoTargetAnnotation with TreadleOption wit
     new ShellOption[Unit](
       longOption = "tr-write-vcd",
       toAnnotationSeq = _ => Seq(WriteVcdAnnotation),
-      helpText = "writes vcd execution log, filename will be based on top-name"
+      helpText = "writes vcd execution log at end of run, filename will be based on top-name"
+    )
+  )
+}
+
+/**
+  * Tells treadle to write a vcd file during simulation
+  */
+case object StreamVcdAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-vcd-stream",
+      toAnnotationSeq = _ => Seq(StreamVcdAnnotation),
+      helpText = "writes vcd execution log as program runs, must be run with tr-write-vcd (WriteVcdAnnotation)"
+    )
+  )
+}
+
+/**
+  * Tells treadle to write a vcd file during simulation
+  */
+case object BufferedStreamVcdAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-vcd-buffered-stream",
+      toAnnotationSeq = _ => Seq(StreamVcdAnnotation),
+      helpText = "writes vcd execution log as program runs, must be run with tr-write-vcd (WriteVcdAnnotation)"
     )
   )
 }
