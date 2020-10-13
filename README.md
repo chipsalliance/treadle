@@ -158,7 +158,7 @@ These are all of the modifications that are needed to keep track of line coverag
   
 ### Generating a Coverage report  
 The main work here was interpreting the meaning of the outputs added to the FIRRTL source. The idea here was to do a second pass of the coverage parser once a given test was done. The big difference now is that we have access to the values of the different _coverage validators_, which allows us to know which multiplexer paths were taken during the different tests. So we can compile the data retrieved from the _coverage validators_ througout an entire test suite to find out which paths were taken and which were skipped. The results are then shown in a coverage report that has the following structure:  
-```  
+```scala  
 COVERAGE: 50.0% of multiplexer paths tested
 COVERAGE REPORT:
 
@@ -182,7 +182,7 @@ Here the first line gives a general percentage of how many of the possible contr
   
 #### Interpreting the Coverage Report  
 What this report tells us (in the above example) is that one of our artificially added FIRRTL lines wasn't covered. This information can be used to deduce which path of our multiplexer was taken. For example, in the above COVERAGE REPORT:  
-```
+```scala
 +     io_cov_valid_0 <= in$a
 -     io_cov_valid_1 <= mux(in$a, UInt<1>("h0"), UInt<1>("h1"))
 +     out <= mux(in$a, in$b$0, in$b$1)  
