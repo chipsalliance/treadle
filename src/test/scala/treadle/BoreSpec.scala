@@ -54,9 +54,9 @@ class BoreSpec extends AnyFreeSpec with Matchers {
       RunFirrtlTransformAnnotation(new firrtl.passes.wiring.WiringTransform)
     )
 
-    annos = (new FirrtlStage).run(annos)
-    val tester = TreadleTester(annos)
-    tester.expect("y", 42)
-    tester.report()
+    annos = (new FirrtlStage).transform(annos)
+    TreadleTestHarness(annos, Array("-ll", "info")) { tester =>
+      tester.expect("y", 42)
+    }
   }
 }
