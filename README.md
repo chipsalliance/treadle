@@ -181,16 +181,16 @@ Here the first line gives a general percentage of how many of the possible contr
 - `-` means that the line was missed during all of the test suite's tests.  
   
 #### Interpreting the Coverage Report  
-What this report tells us (in the above example) is that one of our artificially added FIRRTL lines wasn't covered. This information can be used to deduce which path of our multiplexer was taken. For example, in the above COVERAGE REPORT:  
+What this report tells us (in the above example) is that one of our artificially added FIRRTL lines wasn't covered. This information can be used to deduce which path of our multiplexer was taken. For example, the above `COVERAGE REPORT`:  
 ```scala
 +     io_cov_valid_0 <= in$a
 -     io_cov_valid_1 <= mux(in$a, UInt<1>("h0"), UInt<1>("h1"))
 +     out <= mux(in$a, in$b$0, in$b$1)  
 ```  
-Actually tells us that the case where `in$a == 0` was never tested and thus one of our potential outputs was never tested.  
+actually tells us that the case where `in$a == 0` was never tested and thus one of our potential outputs was never tested.  
   
 ### Mapping loFIRRTL to Chisel  
-For now, the coverage report isn't very interesting, since it's giving us information about a Intermediate Representation of our original Chisel code. A more interesting report would contain the same line coverage information, but shown directly in our original source description. The main problem about this is that Treadle actually functions using a low-level FIRRTL representation of our original source code and contains no direct reference to the original Chisel code, appart from a few `source locators` that can be found for lines that don't contain multiplexers and map them back to the source Chisel code.   
+For now, the coverage report isn't very interesting, since it's giving us information about an Intermediate Representation of our original Chisel code. A more interesting report would contain the same line coverage information, but shown directly in our original source description. The main problem about this is that Treadle actually functions using a low-level FIRRTL representation of our original source code and contains no direct reference to the original Chisel code, appart from a few `source locators` that can be found for lines that don't contain multiplexers and map them back to the source Chisel code.   
    
 ***Future work*** on this part of the project could thus be to find a way to reconstruct the original Chisel source using the source locators and some smart guessing. A better version of the coverage report would thus be:  
 ```scala
