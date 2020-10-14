@@ -192,7 +192,7 @@ Actually tells us that the case where `in$a == 0` was never tested and thus one 
 ### Mapping loFIRRTL to Chisel  
 For now, the coverage report isn't very interesting, since it's giving us information about a Intermediate Representation of our original Chisel code. A more interesting report would contain the same line coverage information, but shown directly in our original source description. The main problem about this is that Treadle actually functions using a low-level FIRRTL representation of our original source code and contains no direct reference to the original Chisel code, appart from a few `source locators` that can be found for lines that don't contain multiplexers and map them back to the source Chisel code.   
    
-***Future work*** on this part of the project could thus be find a way to reconstruct the original Chisel source using the source locators and some smart guessing. A better version of the coverage report would thus be:  
+***Future work*** on this part of the project could thus be to find a way to reconstruct the original Chisel source using the source locators and some smart guessing. A better version of the coverage report would thus be:  
 ```scala
 ORIGINAL REPORT:
 
