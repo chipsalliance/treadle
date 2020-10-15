@@ -5,7 +5,7 @@ package treadle.blackboxes
 import firrtl.stage.FirrtlSourceAnnotation
 import logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.freespec.AnyFreeSpec
-import treadle.{BlackBoxFactoriesAnnotation, TreadleTester, WriteVcdAnnotation}
+import treadle.{BlackBoxFactoriesAnnotation, TreadleTestHarness, TreadleTester, WriteVcdAnnotation}
 
 // scalastyle:off magic.number
 class EicgWrapperSpec extends AnyFreeSpec with LazyLogging {
@@ -50,30 +50,29 @@ class EicgWrapperSpec extends AnyFreeSpec with LazyLogging {
       BlackBoxFactoriesAnnotation(Seq(new BuiltInBlackBoxFactory))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-    Logger.setLevel(LogLevel.Warn)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      Logger.setLevel(LogLevel.Warn)
 
-    tester.poke("enable", 0)
+      tester.poke("enable", 0)
 
-    for (_ <- 0 to 20) {
-      tester.step()
-      tester.expect("count", 0)
+      for (_ <- 0 to 20) {
+        tester.step()
+        tester.expect("count", 0)
+      }
+
+      tester.poke("enable", 1)
+
+      for (trial <- 1 to 20) {
+        tester.step()
+        tester.expect("count", trial)
+      }
+
+      tester.poke("enable", 0)
+
+      for (_ <- 1 to 20) {
+        tester.step()
+        tester.expect("count", 20)
+      }
     }
-
-    tester.poke("enable", 1)
-
-    for (trial <- 1 to 20) {
-      tester.step()
-      tester.expect("count", trial)
-    }
-
-    tester.poke("enable", 0)
-
-    for (_ <- 1 to 20) {
-      tester.step()
-      tester.expect("count", 20)
-    }
-
-    tester.finish
   }
 }

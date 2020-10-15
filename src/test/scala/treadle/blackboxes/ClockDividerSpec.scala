@@ -4,7 +4,7 @@ package treadle.blackboxes
 
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
-import treadle.{BlackBoxFactoriesAnnotation, TreadleTester, WriteVcdAnnotation}
+import treadle.{BlackBoxFactoriesAnnotation, TreadleTestHarness, WriteVcdAnnotation}
 
 // scalastyle:off magic.number
 class ClockDividerSpec extends AnyFreeSpec {
@@ -50,16 +50,15 @@ class ClockDividerSpec extends AnyFreeSpec {
       BlackBoxFactoriesAnnotation(Seq(new BuiltInBlackBoxFactory))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      for (trial <- 0 to 20) {
+        tester.expect("main_clock", BigInt(0))
+        tester.expect("divided_clock_2", trial % 2)
+        tester.expect("divided_clock_3", if (trial % 3 == 2) 0 else 1)
 
-    for (trial <- 0 to 20) {
-      tester.expect("main_clock", BigInt(0))
-      tester.expect("divided_clock_2", trial % 2)
-      tester.expect("divided_clock_3", if (trial % 3 == 2) 0 else 1)
+        tester.step()
+      }
 
-      tester.step()
     }
-
-    tester.finish
   }
 }
