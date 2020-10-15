@@ -58,7 +58,6 @@ class AsSIntAsUInt extends AnyFreeSpec with Matchers {
           for (i <- BigIntTestValuesGenerator(extremaOfUIntOfWidth(bitWidth))) {
             val input = i.toLong
             val expected = BitTwiddlingUtils.asSInt(i, bitWidth, inputIsSInt = false).toLong
-            // println(s"input $input ${(input + 32).toBinaryString.takeRight(4)} expected $expected")
 
             AsSIntLongs(() => input, width = bitWidth).apply() should be(expected)
           }

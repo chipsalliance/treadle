@@ -3,13 +3,15 @@
 package treadle.primops
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.{AndInts, OrInts, XorInts}
-import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils, TreadleTester}
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.{AndInts, OrInts, XorInts}
+import treadle.utils.Render
+import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils, TreadleTestHarness}
 
 // scalastyle:off magic.number
-class AndOrXor extends AnyFreeSpec with Matchers {
+class AndOrXor extends AnyFreeSpec with Matchers with LazyLogging {
   "And should work with simple bit width" - {
 
     "using SInts" in {
@@ -24,9 +26,11 @@ class AndOrXor extends AnyFreeSpec with Matchers {
         val primpOp = AndInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.and(a, b, bitWidth).toInt
 
-        // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
-        //   f" & $b%5d (${Render.binary(b, 4)})" +
-        //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" & $b%5d (${Render.binary(b, 4)})" +
+            f" $expected%5d (${Render.binary(expected, bitWidth)})"
+        )
 
         primpOp() should be(expected)
       }
@@ -44,9 +48,11 @@ class AndOrXor extends AnyFreeSpec with Matchers {
         val primpOp = AndInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.and(a, b, bitWidth).toInt
 
-        // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
-        //   f" & $b%5d (${Render.binary(b, 4)})" +
-        //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" & $b%5d (${Render.binary(b, 4)})" +
+            f" $expected%5d (${Render.binary(expected, bitWidth)})"
+        )
 
         primpOp() should be(expected)
       }
@@ -66,9 +72,11 @@ class AndOrXor extends AnyFreeSpec with Matchers {
         val primpOp = OrInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.or(a, b, bitWidth).toInt
 
-        // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
-        //   f" | $b%5d (${Render.binary(b, 4)})" +
-        //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" | $b%5d (${Render.binary(b, 4)})" +
+            f" $expected%5d (${Render.binary(expected, bitWidth)})"
+        )
 
         primpOp() should be(expected)
       }
@@ -86,9 +94,11 @@ class AndOrXor extends AnyFreeSpec with Matchers {
         val primpOp = OrInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.or(a, b, bitWidth).toInt
 
-        // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
-        //   f" | $b%5d (${Render.binary(b, 4)})" +
-        //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" | $b%5d (${Render.binary(b, 4)})" +
+            f" $expected%5d (${Render.binary(expected, bitWidth)})"
+        )
 
         primpOp() should be(expected)
       }
@@ -108,9 +118,11 @@ class AndOrXor extends AnyFreeSpec with Matchers {
         val primpOp = XorInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.xor(a, b, bitWidth).toInt
 
-        // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
-        //   f" ^ $b%5d (${Render.binary(b, 4)})" +
-        //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" ^ $b%5d (${Render.binary(b, 4)})" +
+            f" $expected%5d (${Render.binary(expected, bitWidth)})"
+        )
 
         primpOp() should be(expected)
       }
@@ -128,9 +140,11 @@ class AndOrXor extends AnyFreeSpec with Matchers {
         val primpOp = XorInts(() => a, () => b, bitWidth).apply _
         val expected = BitTwiddlingUtils.xor(a, b, bitWidth).toInt
 
-        // println(f"inputs $a%5d (${Render.binary(a, 4)})" +
-        //   f" ^ $b%5d (${Render.binary(b, 4)})" +
-        //   f" $expected%5d (${Render.binary(expected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" ^ $b%5d (${Render.binary(b, 4)})" +
+            f" $expected%5d (${Render.binary(expected, bitWidth)})"
+        )
 
         primpOp() should be(expected)
       }
@@ -151,20 +165,18 @@ class AndOrXor extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
     val bitWidth = 4
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-    val (lo, hi) = extremaOfSIntOfWidth(bitWidth)
-    for {
-      a <- lo to hi
-      b <- lo to hi
-    } {
-      tester.poke("a", a)
-      tester.poke("b", b)
-      val expected = BitTwiddlingUtils.and(a, b, bitWidth)
-      // println(s"and test $a & $b => ${tester.peek("c")}")
-      tester.expect("c", expected)
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      val (lo, hi) = extremaOfSIntOfWidth(bitWidth)
+      for {
+        a <- lo to hi
+        b <- lo to hi
+      } {
+        tester.poke("a", a)
+        tester.poke("b", b)
+        val expected = BitTwiddlingUtils.and(a, b, bitWidth)
+        tester.expect("c", expected)
+      }
     }
-    tester.report()
   }
 
   "And should work with known examples of UInts" in {
@@ -177,9 +189,11 @@ class AndOrXor extends AnyFreeSpec with Matchers {
       val a = i.toInt
       val b = j.toInt
       val expected = BitTwiddlingUtils.and(a, b, bitWidth).toInt
-      // println(f"inputs $a%5d (${(a + 32).toBinaryString.takeRight(4)})" +
-      //  f" $b%5d (${(b + 32).toBinaryString.takeRight(4)})" +
-      //  f" $expected%5d (${(expected + 32).toBinaryString.takeRight(4)})")
+      logger.debug(
+        f"inputs $a%5d (${(a + 32).toBinaryString.takeRight(4)})" +
+          f" $b%5d (${(b + 32).toBinaryString.takeRight(4)})" +
+          f" $expected%5d (${(expected + 32).toBinaryString.takeRight(4)})"
+      )
 
       AndInts(() => a, () => b, bitWidth).apply() should be(expected)
     }

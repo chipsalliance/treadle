@@ -27,7 +27,6 @@ class CvtNegNot extends AnyFreeSpec with Matchers {
           BitTwiddlingUtils.neg(num1)
         )
 
-        // println(s"i $i got $got expected $expected")
         got should be(expected)
       }
 
@@ -72,7 +71,6 @@ class CvtNegNot extends AnyFreeSpec with Matchers {
           BitTwiddlingUtils.not(num1, width)
         )
 
-        println(s"i $num1 got $got expected $expected")
         got should be(expected)
       }
 
