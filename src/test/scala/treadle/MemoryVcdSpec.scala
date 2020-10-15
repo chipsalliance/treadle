@@ -67,7 +67,7 @@ class MemoryVcdSpec extends AnyFreeSpec with Matchers {
 
   "memory vcd writing tests" - {
     def runTest(dir: String, annotationSeq: AnnotationSeq): Unit = {
-      val tester = TreadleTester(
+      TreadleTestHarness(
         Seq(
           FirrtlSourceAnnotation(HasTwoMems),
           TargetDirAnnotation(dir),
@@ -75,14 +75,13 @@ class MemoryVcdSpec extends AnyFreeSpec with Matchers {
           VcdShowUnderScoredAnnotation
         ) ++
           annotationSeq
-      )
-
-      for (i <- 0 to 20) {
-        tester.poke("data1_in", i)
-        tester.poke("data2_in", i)
-        tester.step()
+      ) { tester =>
+        for (i <- 0 to 20) {
+          tester.poke("data1_in", i)
+          tester.poke("data2_in", i)
+          tester.step()
+        }
       }
-      tester.finish
     }
 
     def checkResults(dir: String, shouldAppear: Seq[String], shouldNotAppear: Seq[String]): Boolean = {
@@ -199,6 +198,5 @@ class MemoryVcdSpec extends AnyFreeSpec with Matchers {
         runTest(dir, Seq(MemoryToVCD("memory3:d77-d66")))
       }
     }
-
   }
 }

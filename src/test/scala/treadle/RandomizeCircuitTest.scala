@@ -108,44 +108,45 @@ class RandomizeCircuitTest extends AnyFreeSpec with Matchers with LazyLogging {
          |
          |""".stripMargin
 
-    val tester = TreadleTester(
+    TreadleTestHarness(
       Seq(
         FirrtlSourceAnnotation(input),
         RandomizeAtStartupAnnotation
       )
-    )
-    Logger.setLevel(this.getClass, LogLevel.None)
+    ) { tester =>
+      Logger.setLevel(this.getClass, LogLevel.None)
 
-    val regNames = Seq(1, 2, 3, 4, 11, 12).map { n =>
-      f"reg$n"
+      val regNames = Seq(1, 2, 3, 4, 11, 12).map { n =>
+        f"reg$n"
+      }
+      val saveRegs = regNames.map { name =>
+        name -> tester.peek(name)
+      }.toMap
+
+      logger.info(regNames.map { s =>
+        f"$s%10s"
+      }.mkString(""))
+      logger.info(regNames.map { s =>
+        f"${tester.peek(s)}%10d"
+      }.mkString(""))
+
+      tester.poke("io_in_a", 7)
+      tester.step(10)
+
+      logger.info(regNames.map { s =>
+        f"${tester.peek(s)}%10d"
+      }.mkString(""))
+      tester.peek("reg1") must be(BigInt(7))
+      saveRegs.exists { case (name, savedValue) => savedValue != tester.peek(name) } must be(true)
+
+      tester.randomize()
+
+      logger.info(regNames.map { s =>
+        f"${tester.peek(s)}%10d"
+      }.mkString(""))
+      regNames.forall { name =>
+        saveRegs(name) == tester.peek(name)
+      } must be(true)
     }
-    val saveRegs = regNames.map { name =>
-      name -> tester.peek(name)
-    }.toMap
-
-    logger.info(regNames.map { s =>
-      f"$s%10s"
-    }.mkString(""))
-    logger.info(regNames.map { s =>
-      f"${tester.peek(s)}%10d"
-    }.mkString(""))
-
-    tester.poke("io_in_a", 7)
-    tester.step(10)
-
-    logger.info(regNames.map { s =>
-      f"${tester.peek(s)}%10d"
-    }.mkString(""))
-    tester.peek("reg1") must be(BigInt(7))
-    saveRegs.exists { case (name, savedValue) => savedValue != tester.peek(name) } must be(true)
-
-    tester.randomize()
-
-    logger.info(regNames.map { s =>
-      f"${tester.peek(s)}%10d"
-    }.mkString(""))
-    regNames.forall { name =>
-      saveRegs(name) == tester.peek(name)
-    } must be(true)
   }
 }

@@ -83,8 +83,6 @@ class ForceValueSpec extends AnyFreeSpec with Matchers {
 
     "clear force should work" in {
       TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleCircuit))) { tester =>
-        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleCircuit)))
-
         val bigNum = BigInt("1" * 66, 2)
 
         tester.poke("in_a", 7)
