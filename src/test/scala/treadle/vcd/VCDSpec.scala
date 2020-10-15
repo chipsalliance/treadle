@@ -225,20 +225,21 @@ class VCDSpec extends AnyFlatSpec with Matchers {
 
     val options = Seq(
       Some(WriteVcdAnnotation),
-      if (hasTempWires) { Some(VcdShowUnderScoredAnnotation) }
-      else { None },
+      if (hasTempWires) {
+        Some(VcdShowUnderScoredAnnotation)
+      }
+      else {
+        None
+      },
       Some(TargetDirAnnotation("test_run_dir/vcd_register_delay/")),
       Some(OutputFileAnnotation("pwminCount"))
     ).flatten
 
-    val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-    engine.poke("reset", 0)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
+      engine.poke("reset", 0)
+      engine.step(50)
 
-    engine.step(50)
-
-    engine.report()
-    engine.finish
-
+    }
     val vcd = VCD.read("test_run_dir/vcd_register_delay/pwminCount.vcd")
 
     /* create an ordered indexed list of all the changes to testReg */

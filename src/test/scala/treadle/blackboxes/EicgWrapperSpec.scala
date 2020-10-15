@@ -5,7 +5,7 @@ package treadle.blackboxes
 import firrtl.stage.FirrtlSourceAnnotation
 import logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.freespec.AnyFreeSpec
-import treadle.{BlackBoxFactoriesAnnotation, TreadleTestHarness, TreadleTester, WriteVcdAnnotation}
+import treadle.{BlackBoxFactoriesAnnotation, TreadleTestHarness, WriteVcdAnnotation}
 
 // scalastyle:off magic.number
 class EicgWrapperSpec extends AnyFreeSpec with LazyLogging {

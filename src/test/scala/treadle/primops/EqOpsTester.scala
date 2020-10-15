@@ -61,7 +61,7 @@ class EqOpsTester extends AnyFreeSpec with Matchers {
       BlackBoxFactoriesAnnotation(Seq(factory))
     )
 
-    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
       tester.peek("out") should be(1)
     }

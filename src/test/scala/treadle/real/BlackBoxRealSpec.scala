@@ -78,10 +78,9 @@ class BlackBoxRealSpec extends AnyFreeSpec with Matchers {
       RandomSeedAnnotation(0L)
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-
-    tester.poke("io_a_node", doubleToBigIntBits(3.14159))
-
-    tester.expect("io_c_node", doubleToBigIntBits(3.0))
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      tester.poke("io_a_node", doubleToBigIntBits(3.14159))
+      tester.expect("io_c_node", doubleToBigIntBits(3.0))
+    }
   }
 }
