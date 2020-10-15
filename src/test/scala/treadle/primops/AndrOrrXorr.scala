@@ -4,10 +4,10 @@ package treadle.primops
 
 import firrtl.stage.FirrtlSourceAnnotation
 import logger.LazyLogging
-import treadle.executable._
-import treadle._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
+import treadle.executable._
 
 // scalastyle:off magic.number
 class AndrOrrXorr extends AnyFreeSpec with Matchers with LazyLogging {

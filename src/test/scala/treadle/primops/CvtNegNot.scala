@@ -2,10 +2,10 @@
 
 package treadle.primops
 
-import treadle.executable._
-import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable._
+import treadle.{BitTwiddlingUtils, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
 
 // scalastyle:off magic.number
 class CvtNegNot extends AnyFreeSpec with Matchers {

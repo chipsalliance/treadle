@@ -4,11 +4,11 @@ package treadle.primops
 
 import firrtl.stage.FirrtlSourceAnnotation
 import logger.LazyLogging
-import treadle.executable._
-import treadle.{BitTwiddlingUtils, ShowFirrtlAtLoadAnnotation, TreadleTestHarness, TreadleTester, VerboseAnnotation, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable._
 import treadle.utils.Render
+import treadle.{BitTwiddlingUtils, TreadleTestHarness, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
 
 // scalastyle:off magic.number
 class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
