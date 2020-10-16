@@ -4,10 +4,9 @@ package treadle
 
 import firrtl._
 import firrtl.annotations._
-import firrtl.transforms._
-import firrtl.stage._
 import firrtl.passes.wiring._
-
+import firrtl.stage._
+import firrtl.transforms._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -55,7 +54,7 @@ class BoreSpec extends AnyFreeSpec with Matchers {
     )
 
     annos = (new FirrtlStage).transform(annos)
-    TreadleTestHarness(annos, Array("-ll", "info")) { tester =>
+    TreadleTestHarness(annos) { tester =>
       tester.expect("y", 42)
     }
   }

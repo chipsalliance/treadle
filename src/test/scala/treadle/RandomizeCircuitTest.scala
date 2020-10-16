@@ -3,7 +3,7 @@
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LazyLogging, LogLevel, Logger}
+import logger.{LazyLogging, LogLevel, LogLevelAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import treadle.utils.NameBasedRandomNumberGenerator
@@ -23,8 +23,6 @@ class RandomizeCircuitTest extends AnyFreeSpec with Matchers with LazyLogging {
       val registerName = s"reg$i"
       nameBasedRandomNumberGenerator.nextBigInt(registerName, deviationSeed = 0L, 16).toLong
     }
-
-    Logger.setLevel(this.getClass, LogLevel.None)
 
     a.zip(b).foreach {
       case (r1, r2) =>
@@ -111,11 +109,10 @@ class RandomizeCircuitTest extends AnyFreeSpec with Matchers with LazyLogging {
     TreadleTestHarness(
       Seq(
         FirrtlSourceAnnotation(input),
-        RandomizeAtStartupAnnotation
+        RandomizeAtStartupAnnotation,
+        LogLevelAnnotation(LogLevel.None)
       )
     ) { tester =>
-      Logger.setLevel(this.getClass, LogLevel.None)
-
       val regNames = Seq(1, 2, 3, 4, 11, 12).map { n =>
         f"reg$n"
       }

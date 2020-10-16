@@ -5,7 +5,7 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LazyLogging, LogLevel, Logger}
+import logger.LazyLogging
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable.StopException
@@ -181,55 +181,49 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |  module Stop0 :
         |    input clock : Clock
         |    input reset: UInt<1>
-        |    input in1 : UInt<16>
-        |    input in2 : UInt<16>
         |    input enable: UInt<1>
-        |
-        |    node x = add(in1, UInt<1>("h1"))
         |
         |    reg reg : UInt<8>, clock with :
         |      reset => (reset, UInt<8>("h0"))
-        |
         |    reg <= add(reg, UInt<1>("h1"))
-        |    node clockInt = asUInt(clock)
         |
-        |    printf(clock, enable, "in1: %d, x : %d, reg: %d, clock %d, enable: %d\n", in1, x, reg, clockInt, enable)
+        |    printf(clock, enable, "reg,%d", reg)
         |
         """.stripMargin
 
-    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
-      tester.poke("enable", 0)
-      tester.poke("in1", 1)
-      println("before peek")
-      println(s"x ${tester.peek("x")}")
-      println("after peek")
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.step(7)
+        tester.poke("enable", 0)
+        print("printf should ")
+        tester.peek("reg")
+        println("not fire on peek, when not enabled")
 
-      tester.poke("in2", 2)
-      println("before cycle")
-      tester.step()
-      println("after cycle")
-      println("before peek")
-      println(s"x ${tester.peek("x")}")
-      println("after peek")
+        tester.poke("enable", 1)
+        print("printf should ")
+        tester.peek("reg")
+        println("not fire on peek, when enabled")
 
-      tester.poke("enable", 1)
-      tester.poke("in1", 1)
-      println("before peek")
-      println(s"x ${tester.peek("x")}")
-      println("after peek")
+        val regValue = tester.peek("reg")
+        print("printf,")
+        tester.step()
+        println(s",expect-reg,$regValue")
 
-      tester.poke("in2", 2)
-      println("before cycle")
-      tester.step()
-      println("after cycle")
-      println("before peek")
-      println(s"x ${tester.peek("x")}")
-      println("after peek")
-
-      println("before peek")
-      tester.step()
-      println("after peek")
+        tester.poke("enable", 0)
+        print("printf should ")
+        tester.step()
+        println("not fire on step when not enabled")
+      }
     }
+
+    output.toString should include(
+      """printf should not fire on peek, when not enabled
+        |printf should not fire on peek, when enabled
+        |printf,reg,   7,expect-reg,7
+        |printf should not fire on step when not enabled
+        |""".stripMargin
+    )
   }
 
   it should "print rry=480 in the following example" in {
@@ -280,7 +274,6 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
     // "+++ count=    0 r0=   0 r1=   0"
     // "+++ count=    0 r0=   0 r1=   1"
 
-    Logger.setLevel("treadle.PrintStopSpec", LogLevel.Debug)
     logger.debug(output.toString)
 
     output.toString
@@ -374,8 +367,6 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |    io.out <= r1
         |    printf(clock, UInt<1>(1), "+++ count=%d r0=%d r1=%d\n", count, r0, r1) @[PrintfWrong.scala 19:11]
       """.stripMargin
-
-    Logger.setLevel(this.getClass, LogLevel.None)
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {

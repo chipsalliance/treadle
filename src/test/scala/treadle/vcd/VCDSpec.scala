@@ -171,7 +171,6 @@ class VCDSpec extends AnyFlatSpec with Matchers {
 
       engine.step()
       engine.peek("c") should be(BigInt(-8))
-      engine.report()
     }
 
   }

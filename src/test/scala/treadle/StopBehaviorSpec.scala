@@ -2,11 +2,12 @@
 
 package treadle
 
-import firrtl.CommonOptions
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.StopException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 class StopBehaviorSpec extends AnyFreeSpec with Matchers {
   val input: String =
@@ -51,17 +52,20 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
 
   "Stop should abort engine immediately" in {
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
+    Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation)) { tester =>
 
-    tester.poke("reset", 0)
-    tester.poke("io_wrData", (0 << 24) + (255 << 16))
-    println(s"reset value is ${tester.peek("reset")}")
+        tester.poke("reset", 0)
+        tester.poke("io_wrData", (0 << 24) + (255 << 16))
+        tester.expect("reset", 0)
 
-    intercept[StopException] {
-      tester.step()
+        intercept[StopException] {
+          tester.step()
+        }
+
+        tester.reportString should include("Failed: Stop result 47")
+      }
     }
-
-    tester.reportString should include("Failed: Stop result 47")
   }
 
   "stop should say stopped if return value is 0" in {
@@ -83,15 +87,15 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         |
     """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      val caught = intercept[StopException] {
+        tester.step(100)
+        tester.finish
+      }
+      caught.getMessage should include("Stopped: result 0")
 
-    val caught = intercept[StopException] {
-      tester.step(100)
-      tester.finish
+      tester.getStopResult should be(Some(0))
     }
-    caught.getMessage should include("Stopped: result 0")
-
-    tester.getStopResult should be(Some(0))
   }
 
   "stop should say failed if return value is > 0" in {
@@ -113,14 +117,14 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         |
     """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      val caught = intercept[StopException] {
+        tester.step(100)
+        tester.finish
+      }
+      caught.getMessage should include("Failure Stop: result 44")
 
-    val caught = intercept[StopException] {
-      tester.step(100)
-      tester.finish
+      tester.getStopResult should be(Some(44))
     }
-    caught.getMessage should include("Failure Stop: result 44")
-
-    tester.getStopResult should be(Some(44))
   }
 }
