@@ -194,7 +194,7 @@ For now, the coverage report isn't very interesting, since it's giving us inform
    
 ***Future work*** on this part of the project could thus be to find a way to reconstruct the original Chisel source using the source locators and some smart guessing. A better version of the coverage report would thus be:  
 ```scala
-ORIGINAL REPORT:
+COVERAGE REPORT:
 
 + circuit Test_1 :
 +   module Test_1 :
