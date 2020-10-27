@@ -4,7 +4,7 @@ package treadle.blackboxes
 
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
-import treadle.{BlackBoxFactoriesAnnotation, PlusArgsAnnotation, TreadleTester, WriteVcdAnnotation}
+import treadle.{BlackBoxFactoriesAnnotation, PlusArgsAnnotation, TreadleTestHarness, WriteVcdAnnotation}
 
 // scalastyle:off magic.number
 class PlusArgReaderSpec extends AnyFreeSpec {
@@ -38,12 +38,11 @@ class PlusArgReaderSpec extends AnyFreeSpec {
       PlusArgsAnnotation(Seq("+value=11"))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-
-    tester.expect("out", BigInt(11))
-
-    tester.finish
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      tester.expect("out", BigInt(11))
+    }
   }
+
   "make sure we can handle more than one plus-args from command line" in {
     val input =
       """
@@ -86,11 +85,9 @@ class PlusArgReaderSpec extends AnyFreeSpec {
       PlusArgsAnnotation(Seq("+value=11", "+second_value=22"))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-
-    tester.expect("out", BigInt(11))
-    tester.expect("out2", BigInt(22))
-
-    tester.finish
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      tester.expect("out", BigInt(11))
+      tester.expect("out2", BigInt(22))
+    }
   }
 }

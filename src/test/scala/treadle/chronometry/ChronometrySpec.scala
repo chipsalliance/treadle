@@ -2,11 +2,12 @@
 
 package treadle.chronometry
 
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class ChronometrySpec extends AnyFreeSpec with Matchers {
+class ChronometrySpec extends AnyFreeSpec with Matchers with LazyLogging {
   "UTC can schedule a single task" in {
     val utc = UTC()
     var x = 0
@@ -14,7 +15,7 @@ class ChronometrySpec extends AnyFreeSpec with Matchers {
     utc.hasNextTask should be(false)
 
     utc.addOneTimeTask(10) { () =>
-      println(s"task number one")
+      logger.debug(s"task number one")
       x = 1
     }
 
@@ -32,14 +33,14 @@ class ChronometrySpec extends AnyFreeSpec with Matchers {
     var cycle = 0
 
     utc.addRecurringTask(1000, 500) { () =>
-      println(s"clock up at ${utc.currentTime}")
+      logger.debug(s"clock up at ${utc.currentTime}")
       cycle += 1
     }
 
-    println(s"first tasks at " + utc.eventQueue.head.time)
+    logger.debug(s"first tasks at " + utc.eventQueue.head.time)
 
     utc.addRecurringTask(1000, 1000) { () =>
-      println(s"clock down at ${utc.currentTime}")
+      logger.debug(s"clock down at ${utc.currentTime}")
     }
 
     for (i <- 1 to 10) {
@@ -57,17 +58,17 @@ class ChronometrySpec extends AnyFreeSpec with Matchers {
     var cycle = 0
 
     utc.addRecurringTask(1000, 500, "clock/up") { () =>
-      println(s"clock up at ${utc.currentTime}")
+      logger.debug(s"clock up at ${utc.currentTime}")
       cycle += 1
     }
 
     utc.addRecurringTask(1000, 1000) { () =>
-      println(s"clock down at ${utc.currentTime}")
+      logger.debug(s"clock down at ${utc.currentTime}")
       cycle += 7
     }
 
     utc.addOneTimeTask(155, "samuel") { () =>
-      println(s"one time task samuel")
+      logger.debug(s"one time task samuel")
       cycle += 4
     }
 
@@ -83,21 +84,21 @@ class ChronometrySpec extends AnyFreeSpec with Matchers {
     var cycleB = 0
 
     utc.addRecurringTask(1000) { () =>
-      println(s"clock fast up   at ${utc.currentTime}")
+      logger.debug(s"clock fast up   at ${utc.currentTime}")
       cycleA += 1
     }
 
     utc.addRecurringTask(1000, 500) { () =>
-      println(s"clock fast down at ${utc.currentTime}")
+      logger.debug(s"clock fast down at ${utc.currentTime}")
     }
 
     utc.addRecurringTask(3000) { () =>
-      println(s"clock slow up   at ${utc.currentTime}")
+      logger.debug(s"clock slow up   at ${utc.currentTime}")
       cycleB += 1
     }
 
     utc.addRecurringTask(3000, 1500) { () =>
-      println(s"clock slow down at ${utc.currentTime}")
+      logger.debug(s"clock slow down at ${utc.currentTime}")
     }
 
     for (_ <- 0 to 30) {
@@ -126,7 +127,7 @@ class ChronometrySpec extends AnyFreeSpec with Matchers {
     val stopTime = System.currentTimeMillis()
 
     val eps = toDo.toDouble / (stopTime - startTime)
-    println(
+    logger.debug(
       f"$toDo events in ${(stopTime - startTime) / 1000.0}%10.5f seconds," +
         f"rate = $eps%10.5f KHz utc = ${utc.currentTime}"
     )
@@ -166,7 +167,7 @@ class ChronometrySpec extends AnyFreeSpec with Matchers {
     val stopTime = System.currentTimeMillis()
 
     val eps = toDo.toDouble / (stopTime - startTime)
-    println(
+    logger.debug(
       f"$toDo events in ${(stopTime - startTime) / 1000.0}%10.5f seconds," +
         f"rate = $eps%10.5f KHz utc = ${utc.currentTime}"
     )

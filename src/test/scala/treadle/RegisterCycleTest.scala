@@ -5,11 +5,12 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class RegisterCycleTest extends AnyFreeSpec with Matchers {
+class RegisterCycleTest extends AnyFreeSpec with Matchers with LazyLogging {
   "cycle behavior test-only intepreter should not crash on various register init methods" - {
     "method 1" in {
       val input =
@@ -41,19 +42,19 @@ class RegisterCycleTest extends AnyFreeSpec with Matchers {
         """.stripMargin
 
       for (i <- 0 to 10) {
-        println(s"experiment $i")
+        logger.debug(s"experiment $i")
         scala.util.Random.setSeed(i.toLong)
-        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-        tester.poke("reset", 1)
-        tester.step()
-        tester.poke("io_In", 1)
-        tester.poke("reset", 0)
-        tester.step()
-        println(s"System state:")
-        println(s"${tester.engine.header}")
-        println(s"System state: ${tester.engine.dataInColumns}")
-        tester.expect("io_Out", 1)
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          tester.poke("reset", 1)
+          tester.step()
+          tester.poke("io_In", 1)
+          tester.poke("reset", 0)
+          tester.step()
+          logger.debug(s"System state:")
+          logger.debug(s"${tester.engine.header}")
+          logger.debug(s"System state: ${tester.engine.dataInColumns}")
+          tester.expect("io_Out", 1)
+        }
       }
     }
 
@@ -87,15 +88,15 @@ class RegisterCycleTest extends AnyFreeSpec with Matchers {
 
       val output = new ByteArrayOutputStream()
       Console.withOut(new PrintStream(output)) {
-        val tester = TreadleTester(
+        TreadleTestHarness(
           Seq(FirrtlSourceAnnotation(input), SymbolsToWatchAnnotation(Seq("io_Out", "mySubModule_1.io_Out")))
-        )
+        ) { tester =>
 
-        tester.poke("io_In", 1)
-        tester.step(3)
-        tester.expect("io_Out", 1)
+          tester.poke("io_In", 1)
+          tester.step(3)
+          tester.expect("io_Out", 1)
+        }
       }
-
       output.toString.contains("io_Out <= 1") should be(true)
     }
   }

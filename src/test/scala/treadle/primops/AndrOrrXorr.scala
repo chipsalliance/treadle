@@ -3,13 +3,14 @@
 package treadle.primops
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable._
-import treadle._
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
+import treadle.executable._
 
 // scalastyle:off magic.number
-class AndrOrrXorr extends AnyFreeSpec with Matchers {
+class AndrOrrXorr extends AnyFreeSpec with Matchers with LazyLogging {
   "BitReductions should pass a basic test" - {
     "And reduction (Andr) should work for uints with known examples" in {
       val bitWidth = 4
@@ -37,7 +38,7 @@ class AndrOrrXorr extends AnyFreeSpec with Matchers {
       for (i <- lo to hi) {
         val input = i.toInt
         val expected = BitTwiddlingUtils.orr(i, bitWidth, aIsSInt = false).toInt
-        // println(s"input $input ${(input + 32).toBinaryString.takeRight(4)} expected $expected")
+        logger.debug(s"input $input ${(input + 32).toBinaryString.takeRight(4)} expected $expected")
         OrrInts(() => input, bitWidth).apply() should be(expected)
       }
     }
@@ -48,7 +49,7 @@ class AndrOrrXorr extends AnyFreeSpec with Matchers {
       for (i <- lo to hi) {
         val input = i.toInt
         val expected = BitTwiddlingUtils.orr(i, bitWidth, aIsSInt = true).toInt
-        // println(s"input $input ${(input + 32).toBinaryString.takeRight(4)} expected $expected")
+        logger.debug(s"input $input ${(input + 32).toBinaryString.takeRight(4)} expected $expected")
         OrrInts(() => input, bitWidth).apply() should be(expected)
       }
     }
@@ -59,7 +60,7 @@ class AndrOrrXorr extends AnyFreeSpec with Matchers {
       for (i <- lo to hi) {
         val input = i.toInt
         val expected = BitTwiddlingUtils.xorr(i, bitWidth, aIsSInt = false).toInt
-        // println(s"input $input ${(input + 32).toBinaryString.takeRight(4)} expected $expected")
+        logger.debug(s"input $input ${(input + 32).toBinaryString.takeRight(4)} expected $expected")
         XorrInts(() => input, bitWidth).apply() should be(expected)
       }
     }
@@ -70,7 +71,7 @@ class AndrOrrXorr extends AnyFreeSpec with Matchers {
       for (i <- lo to hi) {
         val input = i.toInt
         val expected = BitTwiddlingUtils.xorr(i, bitWidth, aIsSInt = true).toInt
-        // println(s"input $input ${(input + 1024).toBinaryString.takeRight(4)} expected $expected")
+        logger.debug(s"input $input ${(input + 1024).toBinaryString.takeRight(4)} expected $expected")
         XorrInts(() => input, bitWidth).apply() should be(expected)
       }
     }
@@ -106,7 +107,7 @@ class AndrOrrXorr extends AnyFreeSpec with Matchers {
             BitTwiddlingUtils.xorr(i, bitWidth, aIsSInt = false)
           )
 
-          // println(s"bitWidth $bitWidth i $i orrResult $orrResult expected $orrExpected")
+          logger.debug(s"bitWidth $bitWidth i $i orrResult $orrResult expected $orrExpected")
 
           andrResult should be(andrExpected)
           orrResult should be(orrExpected)
@@ -153,27 +154,26 @@ class AndrOrrXorr extends AnyFreeSpec with Matchers {
         if ((0 until width).exists(i => x.testBit(i))) 1 else 0
       }
 
-      val t = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { t =>
+        for {
+          i0 <- 0 to 1
+          i1 <- 0 to 1
+          i2 <- 0 to 1
+          i3 <- 0 to 1
+        } {
+          t.poke(s"io_in1_0", i0)
+          t.poke(s"io_in1_1", i1)
+          t.poke(s"io_in1_2", i2)
+          t.poke(s"io_in1_3", i3)
 
-      for {
-        i0 <- 0 to 1
-        i1 <- 0 to 1
-        i2 <- 0 to 1
-        i3 <- 0 to 1
-      } {
-        t.poke(s"io_in1_0", i0)
-        t.poke(s"io_in1_1", i1)
-        t.poke(s"io_in1_2", i2)
-        t.poke(s"io_in1_3", i3)
+          t.expect("io_out_andr", scalaAndReduce(i0 + (i1 << 1) + (i2 << 2) + (i3 << 3), 4))
+          t.expect("io_out_orr", scalaOrReduce(i0 + (i1 << 1) + (i2 << 2) + (i3 << 3), 4))
+          t.expect("io_out_xorr", scalaXorReduce(i0 + (i1 << 1) + (i2 << 2) + (i3 << 3), 4))
 
-        t.expect("io_out_andr", scalaAndReduce(i0 + (i1 << 1) + (i2 << 2) + (i3 << 3), 4))
-        t.expect("io_out_orr", scalaOrReduce(i0 + (i1 << 1) + (i2 << 2) + (i3 << 3), 4))
-        t.expect("io_out_xorr", scalaXorReduce(i0 + (i1 << 1) + (i2 << 2) + (i3 << 3), 4))
-
-//        println(s"got $i0$i1$i2$i3 " + t.peek("io_out_andr") + " " +
-//                t.peek("io_out_orr") + " " + t.peek("io_out_xorr"))
+          logger.debug(s"got $i0$i1$i2$i3 " + t.peek("io_out_andr") + " " +
+            t.peek("io_out_orr") + " " + t.peek("io_out_xorr"))
+        }
       }
-      t.report()
     }
 
     "Reductions should pass for different bit widths when using SInt" in {
@@ -207,7 +207,7 @@ class AndrOrrXorr extends AnyFreeSpec with Matchers {
             BitTwiddlingUtils.xorr(i, bitWidth, aIsSInt = true)
           )
 
-//          println(s"bitWidth $bitWidth i $i orrResult $orrResult expected $orrExpected")
+          logger.debug(s"bitWidth $bitWidth i $i orrResult $orrResult expected $orrExpected")
 
           andrResult should be(andrExpected)
           orrResult should be(orrExpected)
