@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Build script for mill 0.6.0
-import mill._
-import mill.scalalib._
-import mill.scalalib.publish._
-import coursier.maven.MavenRepository
-import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
-import mill.contrib.buildinfo.BuildInfo
 
 object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.11")
 
@@ -101,7 +95,6 @@ class treadleCrossModule(crossVersionValue: String) extends CommonModule with Pu
 
   object test extends Tests {
     private def ivyCrossDeps = majorVersion match {
-      case i if i < 12 => Agg(ivy"junit:junit:4.13")
       case _           => Agg()
     }
 
