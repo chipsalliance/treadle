@@ -2,9 +2,9 @@
 
 package treadle
 
-import treadle.chronometry.Timer
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.chronometry.Timer
 
 // scalastyle:off magic.number
 class TimerSpec extends AnyFlatSpec with Matchers {
@@ -20,6 +20,5 @@ class TimerSpec extends AnyFlatSpec with Matchers {
     timer.timingLog.size should be(1)
     timer.timingLog(tag).events should be(1)
     timer.timingLog(tag).nanoseconds should be > 2000000000L
-    println(timer.report())
   }
 }

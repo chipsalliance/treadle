@@ -2,11 +2,10 @@
 
 package treadle
 
-import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.ClockInfo
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.ClockInfo
 
 //scalastyle:off magic.number
 class CombinationalDelaySpec extends AnyFreeSpec with Matchers {
@@ -35,37 +34,35 @@ class CombinationalDelaySpec extends AnyFreeSpec with Matchers {
       ClockInfoAnnotation(Seq(ClockInfo("clock", period = 1000L, initialOffset = 500L)))
     )
 
-    val t = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { t =>
 
-    t.poke("in_0", 20)
-    t.poke("in_1", 11)
-    t.expect("add_out", 31)
-    t.expect("sub_out", 9)
-    t.expect("eq_out", 0)
+      t.poke("in_0", 20)
+      t.poke("in_1", 11)
+      t.expect("add_out", 31)
+      t.expect("sub_out", 9)
+      t.expect("eq_out", 0)
 
-    assert(t.wallTime.currentTime == 10)
+      assert(t.wallTime.currentTime == 10)
 
-    t.poke("in_0", 5)
-    t.poke("in_1", 25)
-    t.expect("add_out", 30)
-    t.expect("sub_out", -20)
-    t.expect("eq_out", 0)
+      t.poke("in_0", 5)
+      t.poke("in_1", 25)
+      t.expect("add_out", 30)
+      t.expect("sub_out", -20)
+      t.expect("eq_out", 0)
 
-    assert(t.wallTime.currentTime == 20)
+      assert(t.wallTime.currentTime == 20)
 
-    t.poke("in_0", 5)
-    t.poke("in_1", 5)
-    t.expect("add_out", 10)
-    t.expect("sub_out", 0)
-    t.expect("eq_out", 1)
+      t.poke("in_0", 5)
+      t.poke("in_1", 5)
+      t.expect("add_out", 10)
+      t.expect("sub_out", 0)
+      t.expect("eq_out", 1)
 
-    assert(t.wallTime.currentTime == 30)
+      assert(t.wallTime.currentTime == 30)
 
-    t.step()
+      t.step()
 
-    assert(t.wallTime.currentTime == 1000)
-
-    t.report()
-
+      assert(t.wallTime.currentTime == 1000)
+    }
   }
 }

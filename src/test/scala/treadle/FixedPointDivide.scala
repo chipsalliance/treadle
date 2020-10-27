@@ -2,6 +2,8 @@
 
 package treadle
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -25,11 +27,10 @@ class FixedPointDivide extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-    tester.poke("io_in", 256)
-    tester.expect("io_out", 64)
-    tester.report()
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("io_in", 256)
+      tester.expect("io_out", 64)
+    }
   }
 }
 
@@ -38,46 +39,38 @@ class SignedAdder extends AnyFreeSpec with Matchers {
   "Check adding numbers on DataSize transition boundaries" - {
 //    for(bitWidth <- Seq(16, 31, 32, 33, 63, 64, 65)) {
     for (bitWidth <- Seq(16)) {
-//    for(bitWidth <- Seq(3)) {
-//    for(bitWidth <- Seq(32)) {
       s"Testing with width 16" in {
-
-        val input = s"""
-                       |circuit SignedAdder : @[:@2.0]
-                       |  module SignedAdder : @[:@3.2]
-                       |    input clock : Clock @[:@4.4]
-                       |    input reset : UInt<1> @[:@5.4]
-                       |    input io_in0 : SInt<$bitWidth>
-                       |    input io_in1 : SInt<$bitWidth>
-                       |    output io_out : SInt<$bitWidth>
-                       |
-                       |    node _T_5 = add(io_in0, io_in1)
-                       |    node _T_6 = tail(_T_5, 1)
-                       |    node _T_7 = asSInt(_T_6)
-                       |    io_out <= _T_7
+        val input =
+          s"""
+             |circuit SignedAdder : @[:@2.0]
+             |  module SignedAdder : @[:@3.2]
+             |    input clock : Clock @[:@4.4]
+             |    input reset : UInt<1> @[:@5.4]
+             |    input io_in0 : SInt<$bitWidth>
+             |    input io_in1 : SInt<$bitWidth>
+             |    output io_out : SInt<$bitWidth>
+             |
+             |    node _T_5 = add(io_in0, io_in1)
+             |    node _T_6 = tail(_T_5, 1)
+             |    node _T_7 = asSInt(_T_6)
+             |    io_out <= _T_7
         """.stripMargin
 
-        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-        for {
-          i <- BigIntTestValuesGenerator(extremaOfSIntOfWidth(bitWidth))
-          j <- BigIntTestValuesGenerator(extremaOfSIntOfWidth(bitWidth))
-//          j <- -10 to 10 by 10
-//          i <- Seq(BigInt(-8)) ++ BigIntTestValuesGenerator(extremaOfSIntOfWidth(bitWidth))
-//          j <- Seq(-6) ++ (-10 to 10 by 10)
-//          i <- Seq(-4)
-//          j <- Seq(0)
-        } {
-          val expected = {
-            val a = BitTwiddlingUtils.plus(i, j)
-            val b = BitTwiddlingUtils.tail(a, dropBits = 1, originalBitWidth = bitWidth + 1)
-            val c = BitTwiddlingUtils.asSInt(b, bitWidth)
-            c
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          for {
+            i <- BigIntTestValuesGenerator(extremaOfSIntOfWidth(bitWidth))
+            j <- BigIntTestValuesGenerator(extremaOfSIntOfWidth(bitWidth))
+          } {
+            val expected = {
+              val a = BitTwiddlingUtils.plus(i, j)
+              val b = BitTwiddlingUtils.tail(a, dropBits = 1, originalBitWidth = bitWidth + 1)
+              val c = BitTwiddlingUtils.asSInt(b, bitWidth)
+              c
+            }
+            tester.poke("io_in0", i)
+            tester.poke("io_in1", j)
+            tester.expect("io_out", expected, s"$i + $j got ${tester.peek(s"io_out")} expected $expected")
           }
-          tester.poke("io_in0", i)
-          tester.poke("io_in1", j)
-          // println(s"adding $i + $j => ${tester.peek(s"io_out")} expected ${expected}")
-          tester.expect("io_out", expected, s"$i + $j got ${tester.peek(s"io_out")} expected $expected")
         }
       }
     }
@@ -87,8 +80,6 @@ class SignedAdder extends AnyFreeSpec with Matchers {
 // scalastyle:off magic.number
 class DynamicShiftRight extends AnyFreeSpec with Matchers {
   "Check shifting numbers on DataSize transition boundaries" - {
-//    for(bitWidth <- Seq(16, 31, 32, 33, 63, 64, 65)) {
-//    for(bitWidth <- Seq(3)) {
     for (bitWidth <- Seq(32)) {
       s"Testing with width $bitWidth" in {
 
@@ -159,27 +150,21 @@ class DynamicShiftRight extends AnyFreeSpec with Matchers {
             |
         """.stripMargin
 
-        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-        val mask = BigInt("1" * bitWidth, 2)
-
-        for {
-//          i <- BigIntTestValuesGenerator(extremaOfUIntOfWidth(bitWidth))
-//          j <- BigIntTestValuesGenerator(extremaOfUIntOfWidth(bitWidth))
-//          j <- -10 to 10 by 10
-//          i <- Seq(BigInt(-8)) ++ BigIntTestValuesGenerator(extremaOfSIntOfWidth(bitWidth))
-//          j <- Seq(-6) ++ (-10 to 10 by 10)
-          i <- Seq(BigInt("f0000000", 16))
-          j <- Seq(4)
-        } {
-          tester.poke("io_in1", i)
-          tester.poke("io_in2", j)
-          tester.poke("io_alu_opcode", 9)
-          tester.step()
-          tester.expect("io_out", 0xff000000L)
+        // run capture with Console.out because replay tester dumps some reports while running
+        Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
+          TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+            for {
+              i <- Seq(BigInt("f0000000", 16))
+              j <- Seq(4)
+            } {
+              tester.poke("io_in1", i)
+              tester.poke("io_in2", j)
+              tester.poke("io_alu_opcode", 9)
+              tester.step()
+              tester.expect("io_out", 0xff000000L)
+            }
+          }
         }
-
-        tester.report()
       }
     }
   }

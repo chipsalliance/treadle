@@ -5,9 +5,9 @@ package treadle.primops
 import firrtl.ir
 import firrtl.ir.Type
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
 
 class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
   var returnValue: BigInt = 0
@@ -22,7 +22,7 @@ class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
       case valueParam: firrtl.ir.RawStringParam =>
         returnValue = BigInt("deadbeef", 16)
       case _ =>
-        println(s"huh?")
+        throw new Exception("huh? should not get here")
     }
   }
 
@@ -61,9 +61,10 @@ class EqOpsTester extends AnyFreeSpec with Matchers {
       BlackBoxFactoriesAnnotation(Seq(factory))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
-    tester.peek("out") should be(1)
+      tester.peek("out") should be(1)
+    }
   }
 
   "results of equals on large numbers should have widths all work" in {
@@ -82,9 +83,8 @@ class EqOpsTester extends AnyFreeSpec with Matchers {
         |
           """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-    tester.peek("out") should be(BigInt(0))
-    println(s"peek out ${tester.peek("out") != BigInt(0)}")
-    tester.report()
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.peek("out") should be(BigInt(0))
+    }
   }
 }

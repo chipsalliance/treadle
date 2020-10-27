@@ -2,10 +2,11 @@
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
+import logger.LazyLogging
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class MemRegTester extends AnyFlatSpec with Matchers {
+class MemRegTester extends AnyFlatSpec with Matchers with LazyLogging {
   behavior.of("MemReg")
 
   //scalastyle:off
@@ -121,65 +122,70 @@ class MemRegTester extends AnyFlatSpec with Matchers {
          |    code._T_4.mask <= _GEN_20 @[Risc.scala 44:9 Risc.scala 44:21]
          |    pc <= mux(reset, UInt<8>("h0"), _GEN_22) @[Risc.scala 46:8 Risc.scala 58:8]
     """.stripMargin
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(riscFirrtl)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(riscFirrtl))) { tester =>
+      val startTime = System.nanoTime()
+      tester.poke("clock", 1)
 
-    val startTime = System.nanoTime()
-    tester.poke("clock", 1)
-    def wr(addr: BigInt, data: BigInt) = {
-      tester.poke("io_isWr", 1)
-      tester.poke("io_wrAddr", addr)
-      tester.poke("io_wrData", data)
-      tester.step(1)
-    }
-    def boot() = {
-      tester.poke("io_isWr", 0)
-      tester.poke("io_boot", 1)
-      tester.step(1)
-    }
-    def tick() = {
-      tester.poke("io_isWr", 0)
-      tester.poke("io_boot", 0)
-      tester.step(1)
-    }
-    object OpCode extends Enumeration {
-      type OpCode = Value
-      val add_op, imm_op = Value
-    }
-    import OpCode._
-    def I(op: OpCode, rc: Int, ra: Int, rb: Int) =
-      ((op.id & 1) << 24) | ((rc & Integer
-        .parseInt("FF", 16)) << 16) | ((ra & Integer.parseInt("FF", 16)) << 8) | (rb & Integer.parseInt("FF", 16))
-    val app = Array(
-      I(imm_op, 1, 0, 1), // r1 <- 1
-      I(add_op, 1, 1, 1), // r1 <- r1 + r1
-      I(add_op, 1, 1, 1), // r1 <- r1 + r1
-      I(add_op, 255, 1, 0)
-    ) // rh <- r1
-    wr(0, 0) // skip reset
-    for (addr <- 0 until app.length)
-      wr(addr, app(addr))
-    boot()
-    var k = 0
-    do {
-      tick(); k += 1
-      val pcv = tester.peek("io_state_pc")
-      val rav = tester.peek("io_state_ra")
-      val rbv = tester.peek("io_state_rb")
-      val rcv = tester.peek("io_state_rc")
-      println(s"k $k, pc $pcv, ra = $rav, rb = $rbv, rc = $rcv")
-    } while (tester.peek("io_valid") == 0 && k < 10)
-    assert(k < 10, "TIME LIMIT")
-    tester.expect("io_out", 4)
+      def wr(addr: BigInt, data: BigInt) = {
+        tester.poke("io_isWr", 1)
+        tester.poke("io_wrAddr", addr)
+        tester.poke("io_wrData", data)
+        tester.step(1)
+      }
 
-    val endTime = System.nanoTime()
-    val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
+      def boot() = {
+        tester.poke("io_isWr", 0)
+        tester.poke("io_boot", 1)
+        tester.step(1)
+      }
 
-    val cycle = k
+      def tick() = {
+        tester.poke("io_isWr", 0)
+        tester.poke("io_boot", 0)
+        tester.step(1)
+      }
 
-    println(
-      f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
-    )
-    tester.report()
+      object OpCode extends Enumeration {
+        type OpCode = Value
+        val add_op, imm_op = Value
+      }
+      import OpCode._
+      def I(op: OpCode, rc: Int, ra: Int, rb: Int) =
+        ((op.id & 1) << 24) | ((rc & Integer
+          .parseInt("FF", 16)) << 16) | ((ra & Integer.parseInt("FF", 16)) << 8) | (rb & Integer.parseInt("FF", 16))
+
+      val app = Array(
+        I(imm_op, 1, 0, 1), // r1 <- 1
+        I(add_op, 1, 1, 1), // r1 <- r1 + r1
+        I(add_op, 1, 1, 1), // r1 <- r1 + r1
+        I(add_op, 255, 1, 0)
+      ) // rh <- r1
+      wr(0, 0) // skip reset
+      for (addr <- 0 until app.length)
+        wr(addr, app(addr))
+      boot()
+      var k = 0
+      do {
+        tick();
+        k += 1
+        val pcv = tester.peek("io_state_pc")
+        val rav = tester.peek("io_state_ra")
+        val rbv = tester.peek("io_state_rb")
+        val rcv = tester.peek("io_state_rc")
+        logger.debug(s"k $k, pc $pcv, ra = $rav, rb = $rbv, rc = $rcv")
+      } while (tester.peek("io_valid") == 0 && k < 10)
+      assert(k < 10, "TIME LIMIT")
+      tester.expect("io_out", 4)
+
+      val endTime = System.nanoTime()
+      val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
+
+      val cycle = k
+
+      logger.debug(
+        f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
+      )
+    }
   }
 
   it should "update registers correctly" in {

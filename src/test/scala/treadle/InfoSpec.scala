@@ -5,9 +5,9 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.TreadleException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.TreadleException
 
 //scalastyle:off magic.number
 class InfoSpec extends AnyFreeSpec with Matchers {
@@ -30,25 +30,20 @@ class InfoSpec extends AnyFreeSpec with Matchers {
     val outputBuffer = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputBuffer)) {
 
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-      tester.poke("in1", 7)
-
-      try {
-        tester.expect("out1", 24)
-      } catch {
-        case t: TreadleException => println(t.getMessage)
-        case t: Throwable        => throw t
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.poke("in1", 7)
+        try {
+          tester.expect("out1", 24)
+        } catch {
+          case t: TreadleException => println(t.getMessage)
+          case t: Throwable => throw t
+        }
+        tester.expect("out2", 21)
       }
-      tester.expect("out2", 21)
-
-      tester.finish
-      tester.report()
     }
 
     val output = outputBuffer.toString
 
     output.contains("Assigned at:  @[HasInfo.scala 18:51]") should be(true)
-
-    println(output.toString)
   }
 }

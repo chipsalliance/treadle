@@ -5,7 +5,7 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LazyLogging, LogLevel, Logger}
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -72,17 +72,14 @@ class PrintfCorrectnessSpec extends AnyFreeSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))
-      tester.step()
-      tester.poke("moveTail", 1)
-      tester.step()
-      tester.step()
-      tester.step()
-      tester.finish
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
+        tester.step()
+        tester.poke("moveTail", 1)
+        tester.step()
+        tester.step()
+        tester.step()
+      }
     }
-
-    Logger.setLevel("treadle.PrintfCorrectnessSpec", LogLevel.Debug)
-    logger.debug(output.toString)
 
     val outputString = output.toString
     Seq(
@@ -117,14 +114,14 @@ class PrintfCorrectnessSpec extends AnyFreeSpec with Matchers with LazyLogging {
 
     val outputBuffer = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputBuffer)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-      tester.poke("a", 0xabcd)
-      tester.poke("b", 0x3d)
-      tester.step()
-      tester.poke("a", 0x1)
-      tester.poke("b", 0x1)
-      tester.step()
-      tester.finish
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.poke("a", 0xabcd)
+        tester.poke("b", 0x3d)
+        tester.step()
+        tester.poke("a", 0x1)
+        tester.poke("b", 0x1)
+        tester.step()
+      }
     }
     val output = outputBuffer.toString
     output.contains("formats: %b for binary   1010101111001101") should be(true)
@@ -152,10 +149,10 @@ class PrintfCorrectnessSpec extends AnyFreeSpec with Matchers with LazyLogging {
 
       val outputBuffer = new ByteArrayOutputStream()
       Console.withOut(new PrintStream(outputBuffer)) {
-        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-        tester.poke("a", 0x01)
-        tester.step()
-        tester.finish
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          tester.poke("a", 0x01)
+          tester.step()
+        }
       }
       val output = outputBuffer.toString
       val leadingZeroes = (width - 1) % 4
@@ -183,13 +180,13 @@ class PrintfCorrectnessSpec extends AnyFreeSpec with Matchers with LazyLogging {
 
       val outputBuffer = new ByteArrayOutputStream()
       Console.withOut(new PrintStream(outputBuffer)) {
-        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-        val (start, stop) = extremaOfSIntOfWidth(width)
-        for (value <- start to stop) {
-          tester.poke("a", value)
-          tester.step()
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          val (start, stop) = extremaOfSIntOfWidth(width)
+          for (value <- start to stop) {
+            tester.poke("a", value)
+            tester.step()
+          }
         }
-        tester.finish
       }
       val output = outputBuffer.toString
       val leadingZeroes = (width - 1) % 4

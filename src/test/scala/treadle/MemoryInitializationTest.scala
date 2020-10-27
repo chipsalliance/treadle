@@ -39,7 +39,7 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
       CircuitTarget("HasMemories").module("HasMemories").ref(s"memory$memoryNumber")
     }
 
-    val tester = TreadleTester(
+    TreadleTestHarness(
       Seq(
         FirrtlSourceAnnotation(firrtlText),
         MemoryRandomInitAnnotation(getMemoryReference(1)),
@@ -51,13 +51,14 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
           }
         )
       )
-    )
+    ) { tester =>
 
-    Logger.setLevel(classOf[MemoryInitializationTest], LogLevel.None)
-    for (i <- 0 until 16) {
-      tester.poke("address", i)
-      tester.step()
-      logger.debug(s"${tester.peek("out1")} : ${tester.peek("out2")} : ${tester.peek("out3")}")
+      Logger.setLevel(classOf[MemoryInitializationTest], LogLevel.None)
+      for (i <- 0 until 16) {
+        tester.poke("address", i)
+        tester.step()
+        logger.debug(s"${tester.peek("out1")} : ${tester.peek("out2")} : ${tester.peek("out3")}")
+      }
     }
   }
 
@@ -166,7 +167,7 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
 
     util.Random.setSeed(0L)
 
-    val tester = TreadleTester(
+    TreadleTestHarness(
       Seq(
         FirrtlSourceAnnotation(firrtlText),
         SaveFirrtlAtLoadAnnotation,
@@ -196,54 +197,55 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
           }
         )
       )
-    )
+    ) { tester =>
 
-    Logger.setLevel(classOf[MemoryInitializationTest], LogLevel.None)
+      Logger.setLevel(classOf[MemoryInitializationTest], LogLevel.None)
 
-    logger.debug {
-      val headers = Seq(
-        ("out1", "t.m1"),
-        ("out2", "t.mm.m1"),
-        ("out3", "t.mm.bm.m1"),
-        ("out4", "t.mm.bm2.m1"),
-        ("out5", "t.m2"),
-        ("out6", "t.mm2.m1"),
-        ("out7", "t.mm2.bm.m1"),
-        ("out8", "t.mm2.bm2.m1")
-      )
+      logger.debug {
+        val headers = Seq(
+          ("out1", "t.m1"),
+          ("out2", "t.mm.m1"),
+          ("out3", "t.mm.bm.m1"),
+          ("out4", "t.mm.bm2.m1"),
+          ("out5", "t.m2"),
+          ("out6", "t.mm2.m1"),
+          ("out7", "t.mm2.bm.m1"),
+          ("out8", "t.mm2.bm2.m1")
+        )
 
-      headers.map { a =>
-        f"${a._1}%12s"
-      }.mkString("") + "\n" +
         headers.map { a =>
-          f"${a._2}%12s"
-        }.mkString("") + "\n"
+          f"${a._1}%12s"
+        }.mkString("") + "\n" +
+          headers.map { a =>
+            f"${a._2}%12s"
+          }.mkString("") + "\n"
+      }
+
+      var out5Sum = 0
+
+      for (i <- 0 until 16) {
+        tester.poke("address", i)
+        tester.step()
+
+        logger.debug(
+          (1 to 8).map { outNum =>
+            f"""${tester.peek(s"out$outNum")}%12d"""
+          }.mkString("")
+        )
+
+        tester.expect("out1", 7)
+        tester.expect("out2", (i * 2) % 16)
+        tester.expect("out3", 0)
+        tester.expect("out4", 15 - i)
+        // out5 is random
+        out5Sum = out5Sum + tester.peek("out5").toInt
+        tester.expect("out6", (i * 2) % 16)
+        tester.expect("out7", (i + 7) % 16)
+        tester.expect("out8", 15 - i)
+      }
+
+      logger.debug(f"Average of out5 (random) is ${out5Sum / 16.0}%6.2f")
+      out5Sum must be > 0
     }
-
-    var out5Sum = 0
-
-    for (i <- 0 until 16) {
-      tester.poke("address", i)
-      tester.step()
-
-      logger.debug(
-        (1 to 8).map { outNum =>
-          f"""${tester.peek(s"out$outNum")}%12d"""
-        }.mkString("")
-      )
-
-      tester.expect("out1", 7)
-      tester.expect("out2", (i * 2) % 16)
-      tester.expect("out3", 0)
-      tester.expect("out4", 15 - i)
-      // out5 is random
-      out5Sum = out5Sum + tester.peek("out5").toInt
-      tester.expect("out6", (i * 2) % 16)
-      tester.expect("out7", (i + 7) % 16)
-      tester.expect("out8", 15 - i)
-    }
-
-    logger.debug(f"Average of out5 (random) is ${out5Sum / 16.0}%6.2f")
-    out5Sum must be > 0
   }
 }
