@@ -16,17 +16,14 @@ limitations under the License.
 
 package treadle.executable
 
-import treadle._
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.{BigIntTestValuesGenerator, DataStorePlugInAnnotation, TreadleTester}
-
-import scala.collection.mutable
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.{BigIntTestValuesGenerator, DataStorePlugInAnnotation, _}
+
+import scala.collection.mutable
 
 class DataStoreSpec extends AnyFreeSpec with Matchers {
-
-  info("this")
 
   "DataStore Plugins can be added via an annotation" - {
     "They can be useful for analytics on a circuit simulation" in {
@@ -65,28 +62,28 @@ class DataStoreSpec extends AnyFreeSpec with Matchers {
           override def run(symbol: Symbol, offset: Int, previousValue: Big): Unit = {
             extrema(symbol.name) = extrema.get(symbol.name) match {
               case Some(extrema) => extrema.update(dataStore(symbol))
-              case None          => Extrema(dataStore(symbol), dataStore(symbol))
+              case None => Extrema(dataStore(symbol), dataStore(symbol))
             }
           }
         }
+
       }
 
       val dataCollector = new DataCollector
       val annos = Seq(
         DataStorePlugInAnnotation("DataCollector", dataCollector.getPlugin)
       )
-      val tester = TreadleTester(annos :+ FirrtlSourceAnnotation(input))
-
-      val extremes = extremaOfSIntOfWidth(8)
-      for {
-        a <- BigIntTestValuesGenerator(extremes)
-        b <- BigIntTestValuesGenerator(extremes)
-      } {
-        tester.poke("a", a)
-        tester.poke("b", b)
-        tester.step()
+      TreadleTestHarness(annos :+ FirrtlSourceAnnotation(input)) { tester =>
+        val extremes = extremaOfSIntOfWidth(8)
+        for {
+          a <- BigIntTestValuesGenerator(extremes)
+          b <- BigIntTestValuesGenerator(extremes)
+        } {
+          tester.poke("a", a)
+          tester.poke("b", b)
+          tester.step()
+        }
       }
-      tester.finish
 
       dataCollector.extrema("c") should be(Extrema(-256, 254))
       dataCollector.extrema("d") should be(Extrema(-384, 381))

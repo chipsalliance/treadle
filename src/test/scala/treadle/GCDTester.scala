@@ -17,12 +17,11 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
+import logger.LazyLogging
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-// scalastyle:off magic.number
-
-class GCDTester extends AnyFlatSpec with Matchers {
+class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
   def computeGcd(a: Int, b: Int): (Int, Int) = {
     var x = a
     var y = b
@@ -40,7 +39,6 @@ class GCDTester extends AnyFlatSpec with Matchers {
 
   behavior.of("GCD")
 
-  //scalastyle:off
   def sizableTest(width: Int) {
     val gcdFirrtl: String =
       s"""
@@ -78,39 +76,38 @@ class GCDTester extends AnyFlatSpec with Matchers {
         y <- 10 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(gcdFirrtl)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(gcdFirrtl))) { tester =>
 
-    val startTime = System.nanoTime()
-    tester.poke("clock", 1)
+      val startTime = System.nanoTime()
+      tester.poke("clock", 1)
 
-    for ((x, y, z) <- values) {
-      tester.step()
-      tester.poke("io_a", x)
-      tester.poke("io_b", y)
-      tester.poke("io_e", 1)
-      tester.step()
-
-      tester.poke("io_e", 0)
-      tester.step()
-
-      var count = 0
-      while (tester.peek("io_v") != Big1) {
-        count += 1
+      for ((x, y, z) <- values) {
         tester.step()
+        tester.poke("io_a", x)
+        tester.poke("io_b", y)
+        tester.poke("io_e", 1)
+        tester.step()
+
+        tester.poke("io_e", 0)
+        tester.step()
+
+        var count = 0
+        while (tester.peek("io_v") != Big1) {
+          count += 1
+          tester.step()
+        }
+
+        tester.expect("io_z", BigInt(z))
       }
+      val endTime = System.nanoTime()
+      val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
 
-      tester.expect("io_z", BigInt(z))
+      val cycle = 11 // tester.engine.circuitState.stateCounter
+
+      logger.info(
+        f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
+      )
     }
-    val endTime = System.nanoTime()
-    val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
-
-    val cycle = 11 // tester.engine.circuitState.stateCounter
-
-    println(
-      f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
-    )
-    tester.report()
-
   }
 
   //scalastyle:off
@@ -151,36 +148,35 @@ class GCDTester extends AnyFlatSpec with Matchers {
         y <- 1 to 100
       } yield (x, y, computeGcd(x, y)._1)
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(gcdFirrtl)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(gcdFirrtl))) { tester =>
+      val startTime = System.nanoTime()
+      tester.poke("clock", 1)
 
-    val startTime = System.nanoTime()
-    tester.poke("clock", 1)
-
-    for ((x, y, z) <- values) {
-      tester.step()
-      tester.poke("io_a", x)
-      tester.poke("io_b", y)
-      tester.poke("io_e", 1)
-      tester.step()
-
-      tester.poke("io_e", 0)
-      tester.step()
-
-      while (tester.peek("io_v") != Big1) {
+      for ((x, y, z) <- values) {
         tester.step()
+        tester.poke("io_a", x)
+        tester.poke("io_b", y)
+        tester.poke("io_e", 1)
+        tester.step()
+
+        tester.poke("io_e", 0)
+        tester.step()
+
+        while (tester.peek("io_v") != Big1) {
+          tester.step()
+        }
+
+        tester.expect("io_z", z)
       }
+      val endTime = System.nanoTime()
+      val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
 
-      tester.expect("io_z", z)
+      val cycle = tester.cycleCount
+
+      logger.info(
+        f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
+      )
     }
-    val endTime = System.nanoTime()
-    val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
-
-    val cycle = tester.cycleCount
-
-    println(
-      f"processed $cycle cycles $elapsedSeconds%.6f seconds ${cycle.toDouble / (1000000.0 * elapsedSeconds)}%5.3f MHz"
-    )
-    tester.report()
 
   }
 

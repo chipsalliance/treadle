@@ -36,12 +36,11 @@ class OutputAsSourceSpec extends AnyFreeSpec with Matchers {
         |    out2 <= T_1
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("in1", 1)
 
-    tester.poke("in1", 1)
-
-    println(s"out2 is ${tester.peek("out2")}")
-    tester.expect("out1", 1)
-    tester.expect("out2", 2)
+      tester.expect("out1", 1)
+      tester.expect("out2", 2)
+    }
   }
 }

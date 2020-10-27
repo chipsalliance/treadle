@@ -19,7 +19,7 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LazyLogging, LogLevel, Logger}
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -86,17 +86,14 @@ class PrintfCorrectnessSpec extends AnyFreeSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))
-      tester.step()
-      tester.poke("moveTail", 1)
-      tester.step()
-      tester.step()
-      tester.step()
-      tester.finish
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
+        tester.step()
+        tester.poke("moveTail", 1)
+        tester.step()
+        tester.step()
+        tester.step()
+      }
     }
-
-    Logger.setLevel("treadle.PrintfCorrectnessSpec", LogLevel.Debug)
-    logger.debug(output.toString)
 
     val outputString = output.toString
     Seq(
@@ -107,4 +104,110 @@ class PrintfCorrectnessSpec extends AnyFreeSpec with Matchers with LazyLogging {
       outputString should include(targetLine)
     }
   }
+<<<<<<< HEAD
+=======
+
+  "printf needs to support the valid data formats" in {
+    val input =
+      """
+        |circuit HasPrintf :
+        |  module HasPrintf :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |
+        |    input  a : UInt<16>
+        |    input  b : UInt<5>
+        |    output c : UInt<16>
+        |
+        |    printf(clock, UInt(1), "formats: %%b for binary   %b\n", a)
+        |    printf(clock, UInt(1), "formats: %%d for decimal  %d\n", a)
+        |    printf(clock, UInt(1), "formats: %%x for hex      %x\n", a)
+        |    printf(clock, UInt(1), "formats: %%x for hex      %x\n", b)
+        |
+        |    c <= a
+        |
+        |""".stripMargin
+
+    val outputBuffer = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(outputBuffer)) {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.poke("a", 0xabcd)
+        tester.poke("b", 0x3d)
+        tester.step()
+        tester.poke("a", 0x1)
+        tester.poke("b", 0x1)
+        tester.step()
+      }
+    }
+    val output = outputBuffer.toString
+    output.contains("formats: %b for binary   1010101111001101") should be(true)
+    output.contains("formats: %d for decimal   43981") should be(true)
+    output.contains("formats: %x for hex      abcd") should be(true)
+  }
+
+  "printf hex leading zeros should work properly" in {
+    for (width <- 1 to 16) {
+      val input =
+        s"""
+           |circuit PrintfHex$width :
+           |  module PrintfHex$width :
+           |    input clock : Clock
+           |    input reset : UInt<1>
+           |
+           |    input  a : UInt<$width>
+           |    output c : UInt<$width>
+           |
+           |    printf(clock, UInt(1), "formats: %%x for hex UInt<$width> => %x", a)
+           |
+           |    c <= a
+           |
+           |""".stripMargin
+
+      val outputBuffer = new ByteArrayOutputStream()
+      Console.withOut(new PrintStream(outputBuffer)) {
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          tester.poke("a", 0x01)
+          tester.step()
+        }
+      }
+      val output = outputBuffer.toString
+      val leadingZeroes = (width - 1) % 4
+      output.contains(f"hex UInt<$width> => ${"0" * leadingZeroes}1")
+    }
+  }
+
+  "printf hex leading zeros should work properly with SInt's also" in {
+    for (width <- 1 to 8) {
+      val input =
+        s"""
+           |circuit PrintfHex$width :
+           |  module PrintfHex$width :
+           |    input clock : Clock
+           |    input reset : UInt<1>
+           |
+           |    input  a : UInt<$width>
+           |    output c : UInt<$width>
+           |
+           |    printf(clock, UInt(1), "formats: %%x for hex UInt<$width> => %x\\n", a)
+           |
+           |    c <= a
+           |
+           |""".stripMargin
+
+      val outputBuffer = new ByteArrayOutputStream()
+      Console.withOut(new PrintStream(outputBuffer)) {
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          val (start, stop) = extremaOfSIntOfWidth(width)
+          for (value <- start to stop) {
+            tester.poke("a", value)
+            tester.step()
+          }
+        }
+      }
+      val output = outputBuffer.toString
+      val leadingZeroes = (width - 1) % 4
+      output.contains(f"hex UInt<$width> => ${"0" * leadingZeroes}1")
+    }
+  }
+>>>>>>> 7b786e8... Clean up Treadle: TestHarness (#257)
 }

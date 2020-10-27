@@ -46,40 +46,37 @@ class NativeAsyncResetSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(firrtlSource)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
+      tester.poke("in", 7)
+      tester.expect("out_reg", 0)
+      tester.expect("out_async_reg", 0)
 
-    tester.poke("in", 7)
-    tester.expect("out_reg", 0)
-    tester.expect("out_async_reg", 0)
+      tester.step()
 
-    tester.step()
+      tester.expect("out_reg", 7)
+      tester.expect("out_async_reg", 7)
 
-    tester.expect("out_reg", 7)
-    tester.expect("out_async_reg", 7)
+      tester.poke("in", 23)
+      tester.poke("reset", 1)
 
-    tester.poke("in", 23)
-    tester.poke("reset", 1)
+      tester.expect("reg", 7)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("reg", 7)
-    tester.expect("out_async_reg", 17)
+      tester.step()
 
-    tester.step()
+      tester.expect("reg", 17)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("reg", 17)
-    tester.expect("out_async_reg", 17)
+      tester.poke("reset", 0)
 
-    tester.poke("reset", 0)
+      tester.expect("out_reg", 17)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("out_reg", 17)
-    tester.expect("out_async_reg", 17)
+      tester.step()
 
-    tester.step()
-
-    tester.expect("out_reg", 23)
-    tester.expect("out_async_reg", 23)
-
-    tester.report()
-    tester.finish
+      tester.expect("out_reg", 23)
+      tester.expect("out_async_reg", 23)
+    }
   }
   "async reset should work when declared as IO" in {
     val firrtlSource =
@@ -105,41 +102,38 @@ class NativeAsyncResetSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(firrtlSource)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
+      tester.poke("in", 7)
+      tester.expect("out_reg", 0)
+      tester.expect("out_async_reg", 0)
 
-    tester.poke("in", 7)
-    tester.expect("out_reg", 0)
-    tester.expect("out_async_reg", 0)
+      tester.step()
 
-    tester.step()
+      tester.expect("out_reg", 7)
+      tester.expect("out_async_reg", 7)
 
-    tester.expect("out_reg", 7)
-    tester.expect("out_async_reg", 7)
+      tester.poke("in", 23)
+      tester.poke("reset", 1)
+      tester.poke("a_reset", 1)
 
-    tester.poke("in", 23)
-    tester.poke("reset", 1)
-    tester.poke("a_reset", 1)
+      tester.expect("reg", 7)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("reg", 7)
-    tester.expect("out_async_reg", 17)
+      tester.step()
 
-    tester.step()
+      tester.expect("reg", 17)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("reg", 17)
-    tester.expect("out_async_reg", 17)
+      tester.poke("reset", 0)
+      tester.poke("a_reset", 0)
 
-    tester.poke("reset", 0)
-    tester.poke("a_reset", 0)
+      tester.expect("out_reg", 17)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("out_reg", 17)
-    tester.expect("out_async_reg", 17)
+      tester.step()
 
-    tester.step()
-
-    tester.expect("out_reg", 23)
-    tester.expect("out_async_reg", 23)
-
-    tester.report()
-    tester.finish
+      tester.expect("out_reg", 23)
+      tester.expect("out_async_reg", 23)
+    }
   }
 }

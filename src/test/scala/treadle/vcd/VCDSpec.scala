@@ -16,20 +16,20 @@ limitations under the License.
 
 package treadle.vcd
 
-import java.io.File
+import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import firrtl.options.Viewer.view
 import firrtl.options.{StageOptions, TargetDirAnnotation}
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import firrtl.util.BackendCompilationUtilities
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import treadle._
 
 import scala.util.Random
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 // scalastyle:off magic.number
-class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities {
+class VCDSpec extends AnyFlatSpec with Matchers {
   private def getVcd = {
     VCD("test_circuit")
   }
@@ -116,7 +116,6 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
     for (i <- -8 to 7) {
       val change = Change(wire, i)
       val string = s"$i => ${change.serialize}"
-      println(string)
       s ++= string + "\n"
     }
     s.toString().contains("-8 => b1000") should be(true)
@@ -142,7 +141,7 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
   it should "be able to read a file" in {
     val tempFile = File.createTempFile("GCD", ".vcd")
     tempFile.deleteOnExit()
-    copyResourceToFile("/GCD.vcd", tempFile)
+    BackendCompilationUtilities.copyResourceToFile("/GCD.vcd", tempFile)
     val vcdFile = VCD.read(tempFile.getCanonicalPath)
 
     vcdFile.date should be("2016-10-13T16:31+0000")
@@ -170,24 +169,23 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
       OutputFileAnnotation("vcd_reader_1")
     )
 
-    val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
+      engine.poke("a", -1)
+      engine.peek("a") should be(BigInt(-1))
+      engine.poke("b", -7)
+      engine.peek("b") should be(BigInt(-7))
 
-    engine.poke("a", -1)
-    engine.peek("a") should be(BigInt(-1))
-    engine.poke("b", -7)
-    engine.peek("b") should be(BigInt(-7))
+      engine.step()
+      engine.peek("c") should be(BigInt(-8))
 
-    engine.step()
-    engine.peek("c") should be(BigInt(-8))
+      engine.poke("a", 255)
+      engine.peek("a") should be(BigInt(-1))
+      engine.poke("b", 249)
+      engine.peek("b") should be(BigInt(-7))
 
-    engine.poke("a", 255)
-    engine.peek("a") should be(BigInt(-1))
-    engine.poke("b", 249)
-    engine.peek("b") should be(BigInt(-7))
-
-    engine.step()
-    engine.peek("c") should be(BigInt(-8))
-    engine.report()
+      engine.step()
+      engine.peek("c") should be(BigInt(-8))
+    }
 
   }
 
@@ -203,26 +201,16 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
       OutputFileAnnotation("vcd_reader_2")
     )
 
-    val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
+      engine.step()
+      engine.poke("io_a", 3)
+      engine.poke("io_b", 5)
+      engine.peek("io_a") should be(BigInt(3))
+      engine.peek("io_b") should be(BigInt(5))
 
-    engine.step()
-    engine.poke("io_a", 3)
-    engine.poke("io_b", 5)
-    engine.peek("io_a") should be(BigInt(3))
-    engine.peek("io_b") should be(BigInt(5))
-
-    engine.step()
-    engine.peek("io_c") should be(BigInt(8))
-
-//    engine.poke("io_a", -1)
-//    engine.poke("io_b", -7)
-//    engine.peek("io_a") should be (BigInt(-1))
-//    engine.peek("io_b") should be (BigInt(-7))
-//
-//    engine.step()
-//    engine.peek("io_c") should be (BigInt(-8))
-
-    engine.report()
+      engine.step()
+      engine.peek("io_c") should be(BigInt(8))
+    }
   }
 
   behavior.of("vcd can record temp vars or not")
@@ -250,19 +238,25 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
 
     val options = Seq(
       Some(WriteVcdAnnotation),
+<<<<<<< HEAD
       if (hasTempWires) { Some(VcdShowUnderScoredAnnotation) } else { None },
+=======
+      if (hasTempWires) {
+        Some(VcdShowUnderScoredAnnotation)
+      }
+      else {
+        None
+      },
+>>>>>>> 7b786e8... Clean up Treadle: TestHarness (#257)
       Some(TargetDirAnnotation("test_run_dir/vcd_register_delay/")),
       Some(OutputFileAnnotation("pwminCount"))
     ).flatten
 
-    val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-    engine.poke("reset", 0)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
+      engine.poke("reset", 0)
+      engine.step(50)
 
-    engine.step(50)
-
-    engine.report()
-    engine.finish
-
+    }
     val vcd = VCD.read("test_run_dir/vcd_register_delay/pwminCount.vcd")
 
     /* create an ordered indexed list of all the changes to testReg */
@@ -322,28 +316,28 @@ class VCDSpec extends AnyFlatSpec with Matchers with BackendCompilationUtilities
     val stageOptions = view[StageOptions](options)
     val firrtlFileName = stageOptions.getBuildFileName("VcdAdder", Some(".vcd"))
 
-    val resourceFileName = resourceName
-    copyResourceToFile(resourceName, new File(firrtlFileName))
+    BackendCompilationUtilities.copyResourceToFile(resourceName, new File(firrtlFileName))
 
-    val tester = TreadleTester(options)
+    TreadleTestHarness(options) { tester =>
+      tester.poke("io_a", 3)
+      tester.poke("io_b", 5)
 
-    tester.poke("io_a", 3)
-    tester.poke("io_b", 5)
+      tester.step()
 
-    tester.step()
-
-    tester.expect("io_c", 8)
-
-    tester.report()
-    tester.finish
+      tester.expect("io_c", 8)
+    }
 
     val replayOptions = options.filter {
       case WriteVcdAnnotation => false
-      case _                  => true
+      case _ => true
     }
 
     val replayTester = new VcdReplayTester(replayOptions)
-    replayTester.run()
+
+    // run capture with Console.out because replay tester dumps some reports while running
+    Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
+      replayTester.run()
+    }
 
     replayTester.testSuccesses should be(7)
     replayTester.testFailures should be(0)

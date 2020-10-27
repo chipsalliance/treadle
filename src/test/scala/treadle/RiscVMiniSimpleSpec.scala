@@ -16,32 +16,40 @@ limitations under the License.
 
 package treadle
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.{ClockInfo, StopException}
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.{ClockInfo, StopException}
 
 //scalastyle:off magic.number
-class RiscVMiniSimpleSpec extends AnyFreeSpec with Matchers {
+class RiscVMiniSimpleSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "riscv-mini simple core test should run then stop" in {
 
     val stream = getClass.getResourceAsStream("/core-simple.lo.fir")
     val input =
       scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
-    val tester = TreadleTester(
-      Seq(
-        FirrtlSourceAnnotation(input),
-        ClockInfoAnnotation(
-          Seq(ClockInfo("clock", period = 10, initialOffset = 1))
-        )
-      )
-    )
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
 
-    intercept[StopException] {
-      tester.step(400)
+      TreadleTestHarness(
+        Seq(
+          FirrtlSourceAnnotation(input),
+          ClockInfoAnnotation(
+            Seq(ClockInfo("clock", period = 10, initialOffset = 1))
+          )
+        )
+      ) { tester =>
+
+        intercept[StopException] {
+          tester.step(400)
+        }
+        tester.engine.lastStopResult should be(Some(0))
+      }
     }
-    tester.report()
-    tester.engine.lastStopResult should be(Some(0))
+    logger.debug(output.toString)
   }
 }

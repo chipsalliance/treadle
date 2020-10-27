@@ -16,10 +16,10 @@ limitations under the License.
 
 package treadle.primops
 
-import treadle.executable._
-import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BigIntTestValuesGenerator, BitTwiddlingUtils}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable._
+import treadle.{BigIntTestValuesGenerator, BitTwiddlingUtils, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
 
 //noinspection RedundantDefaultArgument
 // scalastyle:off magic.number
@@ -72,7 +72,6 @@ class AsSIntAsUInt extends AnyFreeSpec with Matchers {
           for (i <- BigIntTestValuesGenerator(extremaOfUIntOfWidth(bitWidth))) {
             val input = i.toLong
             val expected = BitTwiddlingUtils.asSInt(i, bitWidth, inputIsSInt = false).toLong
-            // println(s"input $input ${(input + 32).toBinaryString.takeRight(4)} expected $expected")
 
             AsSIntLongs(() => input, width = bitWidth).apply() should be(expected)
           }

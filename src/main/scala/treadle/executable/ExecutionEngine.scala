@@ -461,7 +461,7 @@ class ExecutionEngine(
   }
 }
 
-object ExecutionEngine {
+object ExecutionEngine extends LazyLogging {
 
   val VCDHookName = "log-vcd"
 
@@ -555,7 +555,7 @@ object ExecutionEngine {
 
     val t1 = System.nanoTime()
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
-    println(
+    logger.info(
       s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
         s"${scheduler.combinationalAssigns.size} statements"
     )

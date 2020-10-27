@@ -17,19 +17,20 @@ limitations under the License.
 package treadle.asyncreset
 
 import firrtl.ir.{Param, Type}
+import logger.LazyLogging
 import treadle._
 import treadle.executable._
 
 /**
   * Implements a single bit register with asynchronous reset
   */
-class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
+class AsyncResetReg(val instanceName: String) extends ScalaBlackBox with LazyLogging {
   override def name: String = "AsyncResetReg"
 
-  var nextValue:    BigInt = Big0
+  var nextValue: BigInt = Big0
   var currentValue: BigInt = Big0
-  var resetValue:   BigInt = Big0
-  var enable:       Boolean = false
+  var resetValue: BigInt = Big0
+  var enable: Boolean = false
 
   def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     currentValue
@@ -46,7 +47,7 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
         }
       case _ =>
     }
-    println(s"next $nextValue cur $currentValue, en $enable")
+    logger.debug(s"next $nextValue cur $currentValue, en $enable")
   }
 
   override def clockChange(transition: Transition, clockName: String): Unit = {

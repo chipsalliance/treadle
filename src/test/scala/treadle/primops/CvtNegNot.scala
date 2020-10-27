@@ -16,10 +16,10 @@ limitations under the License.
 
 package treadle.primops
 
-import treadle.executable._
-import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable._
+import treadle.{BitTwiddlingUtils, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
 
 // scalastyle:off magic.number
 class CvtNegNot extends AnyFreeSpec with Matchers {
@@ -41,7 +41,6 @@ class CvtNegNot extends AnyFreeSpec with Matchers {
           BitTwiddlingUtils.neg(num1)
         )
 
-        // println(s"i $i got $got expected $expected")
         got should be(expected)
       }
 
@@ -86,7 +85,6 @@ class CvtNegNot extends AnyFreeSpec with Matchers {
           BitTwiddlingUtils.not(num1, width)
         )
 
-        println(s"i $num1 got $got expected $expected")
         got should be(expected)
       }
 

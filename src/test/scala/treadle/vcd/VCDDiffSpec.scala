@@ -19,9 +19,9 @@ package treadle.vcd
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.options.ProgramArgsAnnotation
-import treadle.vcd.diff.VcdDiffStage
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.vcd.diff.VcdDiffStage
 
 class VCDDiffSpec extends AnyFreeSpec with Matchers {
   "VCDDiff should detect differences between two related vcd files" in {

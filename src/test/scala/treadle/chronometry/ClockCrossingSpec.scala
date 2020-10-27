@@ -17,10 +17,10 @@ limitations under the License.
 package treadle.chronometry
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.ClockInfo
-import treadle.{ClockInfoAnnotation, TreadleTester}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.ClockInfo
+import treadle.{ClockInfoAnnotation, TreadleTestHarness}
 
 //noinspection ScalaStyle
 class ClockCrossingSpec extends AnyFreeSpec with Matchers {
@@ -54,19 +54,18 @@ class ClockCrossingSpec extends AnyFreeSpec with Matchers {
       ClockInfoAnnotation(Seq(ClockInfo(name = "clock", period = 2, initialOffset = 1)))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(chirrtlString) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(chirrtlString) +: options) { tester =>
 
-    tester.reset(8)
+      tester.reset(8)
 
-    tester.poke("io_divIn", 0x42)
-    tester.expect("io_mainOut", 0) // initial register value
-    tester.step()
-    tester.expect("io_mainOut", 1) // initial value of divReg
-    tester.step() // for divided clock to have a rising edge
-    tester.expect("io_mainOut", 1) // one-cycle-delay divReg
-    tester.step() // for main clock register to propagate
-    tester.expect("io_mainOut", 0x42) // updated value propagates
-    tester.finish
+      tester.poke("io_divIn", 0x42)
+      tester.expect("io_mainOut", 0) // initial register value
+      tester.step()
+      tester.expect("io_mainOut", 1) // initial value of divReg
+      tester.step() // for divided clock to have a rising edge
+      tester.expect("io_mainOut", 1) // one-cycle-delay divReg
+      tester.step() // for main clock register to propagate
+      tester.expect("io_mainOut", 0x42) // updated value propagates
+    }
   }
-
 }

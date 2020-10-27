@@ -17,10 +17,9 @@ limitations under the License.
 package treadle.real
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle._
-import treadle.asyncreset.AsyncResetBlackBoxFactory
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
 
 class BlackBoxRealSpec extends AnyFreeSpec with Matchers {
   "this tests black box implmentation of real numbers" - {
@@ -58,13 +57,13 @@ class BlackBoxRealSpec extends AnyFreeSpec with Matchers {
         BlackBoxFactoriesAnnotation(Seq(new DspRealFactory))
       )
 
-      val tester = TreadleTester(FirrtlSourceAnnotation(adderInput) +: options)
+      TreadleTestHarness(FirrtlSourceAnnotation(adderInput) +: options) { tester =>
+        tester.poke("io_a1_node", doubleToBigIntBits(1.5))
+        tester.poke("io_a2_node", doubleToBigIntBits(3.25))
+        tester.step()
 
-      tester.poke("io_a1_node", doubleToBigIntBits(1.5))
-      tester.poke("io_a2_node", doubleToBigIntBits(3.25))
-      tester.step()
-
-      tester.expect("io_c_node", doubleToBigIntBits(4.75))
+        tester.expect("io_c_node", doubleToBigIntBits(4.75))
+      }
     }
   }
 
@@ -93,10 +92,9 @@ class BlackBoxRealSpec extends AnyFreeSpec with Matchers {
       RandomSeedAnnotation(0L)
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-
-    tester.poke("io_a_node", doubleToBigIntBits(3.14159))
-
-    tester.expect("io_c_node", doubleToBigIntBits(3.0))
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      tester.poke("io_a_node", doubleToBigIntBits(3.14159))
+      tester.expect("io_c_node", doubleToBigIntBits(3.0))
+    }
   }
 }

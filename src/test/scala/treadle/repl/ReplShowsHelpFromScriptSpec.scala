@@ -20,11 +20,12 @@ import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import firrtl.FileUtils
 import firrtl.options.TargetDirAnnotation
-import treadle.TreadleRepl
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.TreadleRepl
 
-class ReplShowsHelpFromScriptSpec extends AnyFreeSpec with Matchers {
+class ReplShowsHelpFromScriptSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "start a repl, run a script containing commands help ; quit" in {
     val targetDir = "test_run_dir/repl/basic-repl-test"
     val replInputFile = targetDir + File.separator + "repl.in"
@@ -50,7 +51,7 @@ class ReplShowsHelpFromScriptSpec extends AnyFreeSpec with Matchers {
 
     val textOut = output.toString()
 
-    // println(textOut)
+    logger.debug(textOut)
 
     textOut.contains("show command history") should be(true)
     textOut.contains("load/replace the current firrtl file") should be(true)

@@ -44,7 +44,9 @@ class ShowLoweredFirrtlSpec extends AnyFreeSpec with Matchers {
     if (firrtlFile.exists) {
       firrtlFile.delete()
     }
-    TreadleTester(Seq(FirrtlSourceAnnotation(input), SaveFirrtlAtLoadAnnotation, TargetDirAnnotation(directory)))
+    TreadleTestHarness(
+      Seq(FirrtlSourceAnnotation(input), SaveFirrtlAtLoadAnnotation, TargetDirAnnotation(directory))
+    ) { _ => }
 
     firrtlFile.exists() should be(true)
   }

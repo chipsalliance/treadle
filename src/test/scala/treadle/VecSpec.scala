@@ -18,12 +18,13 @@ package treadle
 
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import treadle.executable.StopException
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 // scalastyle:off magic.number
-class VecSpec extends AnyFreeSpec with Matchers {
+class VecSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "simple register chain should work" in {
     val input =
       """
@@ -54,40 +55,50 @@ class VecSpec extends AnyFreeSpec with Matchers {
       OutputFileAnnotation("vec_spec_1")
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
+<<<<<<< HEAD
     def show(): Unit = {
       println("Rendering register assignments")
       for (name <- Seq.tabulate(1) { i =>
              s"shifter_$i"
            }) {
         println(s"${tester.engine.renderComputation(name)}")
+=======
+      def show(): Unit = {
+        logger.debug("Rendering register assignments")
+        for (
+          name <- Seq.tabulate(1) { i =>
+            s"shifter_$i"
+          }
+        ) {
+          logger.debug(s"${tester.engine.renderComputation(name)}")
+        }
+>>>>>>> 7b786e8... Clean up Treadle: TestHarness (#257)
       }
+
+      def testRegisterValues(value0: BigInt, value1: BigInt, value2: BigInt, value3: BigInt) {
+        tester.expect("shifter_0", value0)
+        tester.expect("shifter_1", value1)
+        tester.expect("shifter_2", value2)
+        tester.expect("shifter_3", value3)
+      }
+
+      tester.step()
+      testRegisterValues(0, 0, 0, 0)
+      tester.step()
+      show()
+      testRegisterValues(0, 0, 0, 1)
+      tester.step()
+      testRegisterValues(0, 0, 1, 2)
+      tester.step()
+      testRegisterValues(0, 1, 2, 3)
+      tester.step()
+      testRegisterValues(1, 2, 3, 4)
+      tester.step()
+      testRegisterValues(2, 3, 4, 5)
+      show()
     }
-
-    def testRegisterValues(value0: BigInt, value1: BigInt, value2: BigInt, value3: BigInt) {
-      tester.expect("shifter_0", value0)
-      tester.expect("shifter_1", value1)
-      tester.expect("shifter_2", value2)
-      tester.expect("shifter_3", value3)
-    }
-
-    tester.step()
-    testRegisterValues(0, 0, 0, 0)
-    tester.step()
-    show()
-    testRegisterValues(0, 0, 0, 1)
-    tester.step()
-    testRegisterValues(0, 0, 1, 2)
-    tester.step()
-    testRegisterValues(0, 1, 2, 3)
-    tester.step()
-    testRegisterValues(1, 2, 3, 4)
-    tester.step()
-    testRegisterValues(2, 3, 4, 5)
-    show()
-
-    tester.report()
   }
 
   "VecSpec should pass a basic test" in {

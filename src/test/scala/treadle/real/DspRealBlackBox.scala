@@ -201,4 +201,3 @@ class DspRealFactory extends ScalaBlackBoxFactory {
     }
   }
 }
-//scalastyle:on cyclomatic.complexity

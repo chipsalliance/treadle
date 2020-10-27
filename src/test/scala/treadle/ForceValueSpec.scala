@@ -58,66 +58,65 @@ class ForceValueSpec extends AnyFreeSpec with Matchers {
   "force value operates on any internal wire" - {
     "no forces should work as expected" in {
 
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleCircuit)))
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleCircuit))) { tester =>
+        val bigNum = BigInt("1" * 66, 2)
 
-      val bigNum = BigInt("1" * 66, 2)
+        tester.poke("in_a", 7)
+        tester.poke("in_b", 77)
+        tester.poke("in_c", bigNum)
 
-      tester.poke("in_a", 7)
-      tester.poke("in_b", 77)
-      tester.poke("in_c", bigNum)
+        tester.step()
 
-      tester.step()
-
-      tester.expect("out_a", 7)
-      tester.expect("wire_out", 161)
-      tester.expect("reg_out", 7)
-      tester.expect("out_a_plus_b", 84)
-      tester.expect("out_c", bigNum)
+        tester.expect("out_a", 7)
+        tester.expect("wire_out", 161)
+        tester.expect("reg_out", 7)
+        tester.expect("out_a_plus_b", 84)
+        tester.expect("out_c", bigNum)
+      }
     }
+
     "force register should work" in {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleCircuit))) { tester =>
+        val bigNum = BigInt("1" * 66, 2)
 
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleCircuit)))
+        tester.poke("in_a", 7)
+        tester.poke("in_b", 77)
+        tester.poke("in_c", bigNum)
 
-      val bigNum = BigInt("1" * 66, 2)
+        tester.forceValue("x", 3)
 
-      tester.poke("in_a", 7)
-      tester.poke("in_b", 77)
-      tester.poke("in_c", bigNum)
+        tester.step()
 
-      tester.forceValue("x", 3)
-
-      tester.step()
-
-      tester.expect("out_a", 7)
-      tester.expect("wire_out", 161)
-      tester.expect("reg_out", 3)
-      tester.expect("out_a_plus_b", 84)
-      tester.expect("out_c", bigNum)
+        tester.expect("out_a", 7)
+        tester.expect("wire_out", 161)
+        tester.expect("reg_out", 3)
+        tester.expect("out_a_plus_b", 84)
+        tester.expect("out_c", bigNum)
+      }
     }
-    "force wire should work" in {
 
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleCircuit)))
+    "clear force should work" in {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleCircuit))) { tester =>
+        val bigNum = BigInt("1" * 66, 2)
 
-      val bigNum = BigInt("1" * 66, 2)
+        tester.poke("in_a", 7)
+        tester.poke("in_b", 77)
+        tester.poke("in_c", bigNum)
 
-      tester.poke("in_a", 7)
-      tester.poke("in_b", 77)
-      tester.poke("in_c", bigNum)
+        tester.step()
 
-      tester.step()
+        tester.forceValue("wire_1", 10)
 
-      tester.forceValue("wire_1", 10)
+        tester.expect("out_a", 7)
+        tester.expect("wire_out", 17)
+        tester.expect("reg_out", 7)
+        tester.expect("out_a_plus_b", 84)
+        tester.expect("out_c", bigNum)
 
-      tester.expect("out_a", 7)
-      tester.expect("wire_out", 17)
-      tester.expect("reg_out", 7)
-      tester.expect("out_a_plus_b", 84)
-      tester.expect("out_c", bigNum)
+        tester.clearForceValue("wire_1")
 
-      tester.clearForceValue("wire_1")
-
-      tester.expect("wire_out", 161)
-
+        tester.expect("wire_out", 161)
+      }
     }
   }
 }

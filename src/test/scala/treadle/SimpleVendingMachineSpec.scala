@@ -17,9 +17,9 @@ limitations under the License.
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.StopException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 //scalastyle:off magic.number
 class SimpleVendingMachineSpec extends AnyFreeSpec with Matchers {
@@ -166,12 +166,12 @@ class SimpleVendingMachineSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
 
-    intercept[StopException] {
-      tester.step(80)
+      intercept[StopException] {
+        tester.step(80)
+      }
+      tester.engine.lastStopResult should be(Some(0))
     }
-    tester.engine.lastStopResult should be(Some(0))
-    tester.report()
   }
 }

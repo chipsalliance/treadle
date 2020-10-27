@@ -41,29 +41,29 @@ class RegisterSpec extends AnyFlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation)) { tester =>
+      tester.poke("reset1", 1)
+      tester.step()
+      tester.peek("reg1") should be(3)
 
-    tester.poke("reset1", 1)
-    tester.step()
-    tester.peek("reg1") should be(3)
+      tester.poke("reset1", 0)
+      tester.step()
+      tester.peek("reg1") should be(4)
 
-    tester.poke("reset1", 0)
-    tester.step()
-    tester.peek("reg1") should be(4)
+      tester.peek("reg1") should be(4)
 
-    tester.peek("reg1") should be(4)
+      tester.poke("reset1", 0)
+      tester.step()
+      tester.peek("reg1") should be(5)
 
-    tester.poke("reset1", 0)
-    tester.step()
-    tester.peek("reg1") should be(5)
+      tester.poke("reset1", 1)
+      tester.step()
+      tester.peek("reg1") should be(3)
 
-    tester.poke("reset1", 1)
-    tester.step()
-    tester.peek("reg1") should be(3)
-
-    tester.poke("reset1", 0)
-    tester.step()
-    tester.peek("reg1") should be(4)
+      tester.poke("reset1", 0)
+      tester.step()
+      tester.peek("reg1") should be(4)
+    }
   }
 
   it should "be able to initialize registers from other places" in {
@@ -90,55 +90,54 @@ class RegisterSpec extends AnyFlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation)) { tester =>
+      tester.poke("reset1", 1)
+      tester.poke("reset2", 0)
+      tester.step()
+      tester.peek("reg1") should be(0)
 
-    tester.poke("reset1", 1)
-    tester.poke("reset2", 0)
-    tester.step()
-    tester.peek("reg1") should be(0)
+      tester.poke("reset1", 0)
+      tester.poke("reset2", 1)
+      tester.step()
+      tester.peek("reg1") should be(1)
+      tester.peek("reg2") should be(0)
 
-    tester.poke("reset1", 0)
-    tester.poke("reset2", 1)
-    tester.step()
-    tester.peek("reg1") should be(1)
-    tester.peek("reg2") should be(0)
+      tester.poke("reset1", 1)
+      tester.poke("reset2", 1)
+      tester.step()
+      tester.peek("reg1") should be(0)
+      tester.peek("reg2") should be(1)
 
-    tester.poke("reset1", 1)
-    tester.poke("reset2", 1)
-    tester.step()
-    tester.peek("reg1") should be(0)
-    tester.peek("reg2") should be(1)
+      tester.poke("reset1", 0)
+      tester.poke("reset2", 0)
+      tester.step()
+      tester.peek("reg1") should be(1)
+      tester.peek("reg2") should be(4)
 
-    tester.poke("reset1", 0)
-    tester.poke("reset2", 0)
-    tester.step()
-    tester.peek("reg1") should be(1)
-    tester.peek("reg2") should be(4)
+      tester.poke("reset1", 0)
+      tester.poke("reset2", 0)
+      tester.step()
+      tester.peek("reg1") should be(2)
+      tester.peek("reg2") should be(7)
 
-    tester.poke("reset1", 0)
-    tester.poke("reset2", 0)
-    tester.step()
-    tester.peek("reg1") should be(2)
-    tester.peek("reg2") should be(7)
+      tester.poke("reset1", 1)
+      tester.poke("reset2", 0)
+      tester.step()
+      tester.peek("reg1") should be(0)
+      tester.peek("reg2") should be(10)
 
-    tester.poke("reset1", 1)
-    tester.poke("reset2", 0)
-    tester.step()
-    tester.peek("reg1") should be(0)
-    tester.peek("reg2") should be(10)
+      tester.poke("reset1", 0)
+      tester.poke("reset2", 0)
+      tester.step()
+      tester.peek("reg1") should be(1)
+      tester.peek("reg2") should be(13)
 
-    tester.poke("reset1", 0)
-    tester.poke("reset2", 0)
-    tester.step()
-    tester.peek("reg1") should be(1)
-    tester.peek("reg2") should be(13)
-
-    tester.poke("reset1", 0)
-    tester.poke("reset2", 1)
-    tester.step()
-    tester.peek("reg1") should be(2)
-    tester.peek("reg2") should be(1)
-
+      tester.poke("reset1", 0)
+      tester.poke("reset2", 1)
+      tester.step()
+      tester.peek("reg1") should be(2)
+      tester.peek("reg2") should be(1)
+    }
   }
 
   behavior.of("reset support")
@@ -160,13 +159,12 @@ class RegisterSpec extends AnyFlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-    tester.poke("reset", 1)
-    tester.step()
-    tester.poke("reset", 0)
-    tester.step()
-    tester.finish
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("reset", 1)
+      tester.step()
+      tester.poke("reset", 0)
+      tester.step()
+    }
   }
 
   behavior.of("reset support, 2")
@@ -188,37 +186,37 @@ class RegisterSpec extends AnyFlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation)) { tester =>
+      tester.poke("reset1", 1)
+      tester.step()
+      tester.peek("reg1") should be(3)
+      tester.step()
+      tester.peek("reg1") should be(3)
+      tester.step()
+      tester.peek("reg1") should be(3)
 
-    tester.poke("reset1", 1)
-    tester.step()
-    tester.peek("reg1") should be(3)
-    tester.step()
-    tester.peek("reg1") should be(3)
-    tester.step()
-    tester.peek("reg1") should be(3)
+      tester.poke("reset1", 0)
+      tester.step()
+      tester.peek("reg1") should be(4)
 
-    tester.poke("reset1", 0)
-    tester.step()
-    tester.peek("reg1") should be(4)
+      tester.peek("reg1") should be(4)
 
-    tester.peek("reg1") should be(4)
+      tester.poke("reset1", 0)
+      tester.step()
+      tester.peek("reg1") should be(5)
 
-    tester.poke("reset1", 0)
-    tester.step()
-    tester.peek("reg1") should be(5)
+      tester.poke("reset1", 1)
+      tester.peek("reg1") should be(5)
+      tester.step()
+      tester.peek("reg1") should be(3)
+      tester.step()
+      tester.peek("reg1") should be(3)
 
-    tester.poke("reset1", 1)
-    tester.peek("reg1") should be(5)
-    tester.step()
-    tester.peek("reg1") should be(3)
-    tester.step()
-    tester.peek("reg1") should be(3)
-
-    tester.poke("reset1", 0)
-    tester.peek("reg1") should be(3)
-    tester.step()
-    tester.peek("reg1") should be(4)
+      tester.poke("reset1", 0)
+      tester.peek("reg1") should be(3)
+      tester.step()
+      tester.peek("reg1") should be(4)
+    }
   }
 
   behavior.of("poking registers")
@@ -245,21 +243,21 @@ class RegisterSpec extends AnyFlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation)) { tester =>
+      tester.poke("in", 7)
+      tester.step()
+      tester.peek("reg1") should be(7)
+      tester.poke("in", 3)
+      tester.step()
+      tester.peek("reg1") should be(3)
 
-    tester.poke("in", 7)
-    tester.step()
-    tester.peek("reg1") should be(7)
-    tester.poke("in", 3)
-    tester.step()
-    tester.peek("reg1") should be(3)
-
-    tester.poke("in", 8)
-    tester.poke("reg1", 42)
-    tester.peek("reg1") should be(42)
-    tester.step()
-    tester.peek("reg2") should be(42)
-    tester.peek("reg1") should be(8)
+      tester.poke("in", 8)
+      tester.poke("reg1", 42)
+      tester.peek("reg1") should be(42)
+      tester.step()
+      tester.peek("reg2") should be(42)
+      tester.peek("reg1") should be(8)
+    }
   }
 
   behavior.of("multi-clock registers")
@@ -302,31 +300,30 @@ class RegisterSpec extends AnyFlatSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(
+    TreadleTestHarness(
       Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation, RollBackBuffersAnnotation(15))
-    )
+    ) { tester =>
+      tester.poke("io_in", 77)
+      tester.poke("io_en", 0)
+      tester.poke("reset", 1)
+      tester.step()
+      tester.expect("reg1/in", 77)
+      tester.expect("reg2/in", 51)
 
-    tester.poke("io_in", 77)
-    tester.poke("io_en", 0)
-    tester.poke("reset", 1)
-    tester.step()
-    tester.expect("reg1/in", 77)
-    tester.expect("reg2/in", 51)
+      tester.poke("reset", 0)
+      tester.step()
+      tester.expect("reg1", 78)
+      tester.expect("reg2", 52)
 
-    tester.poke("reset", 0)
-    tester.step()
-    tester.expect("reg1", 78)
-    tester.expect("reg2", 52)
+      tester.step()
+      tester.expect("reg1", 79)
+      tester.expect("reg2", 53)
 
-    tester.step()
-    tester.expect("reg1", 79)
-    tester.expect("reg2", 53)
-
-    tester.poke("io_en", 1)
-    tester.step()
-    tester.expect("reg1", 80)
-    tester.expect("reg2", 54)
-
+      tester.poke("io_en", 1)
+      tester.step()
+      tester.expect("reg1", 80)
+      tester.expect("reg2", 54)
+    }
   }
 
   behavior.of("mutually connected registers")
@@ -352,32 +349,32 @@ class RegisterSpec extends AnyFlatSpec with Matchers {
         |    reg1 <= mux(reset, UInt<1>("h1"), reg0) @[AsyncResetRegTest.scala 160:12]
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), ShowFirrtlAtLoadAnnotation, NoDCEAnnotation))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), NoDCEAnnotation)) { tester =>
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 0)
+      tester.step()
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 0)
 
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 0)
-    tester.step()
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 0)
+      tester.poke("reset", 1)
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 0)
 
-    tester.poke("reset", 1)
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 0)
+      tester.step()
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 1)
 
-    tester.step()
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 1)
+      tester.poke("reset", 0)
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 1)
 
-    tester.poke("reset", 0)
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 1)
+      tester.step()
+      tester.expect("io_out_0", 1)
+      tester.expect("io_out_1", 0)
 
-    tester.step()
-    tester.expect("io_out_0", 1)
-    tester.expect("io_out_1", 0)
-
-    tester.step()
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 1)
+      tester.step()
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 1)
+    }
   }
 }

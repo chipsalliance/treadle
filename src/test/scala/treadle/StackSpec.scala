@@ -95,35 +95,29 @@ class StackSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("io_en", 1)
+      tester.poke("io_push", 1)
+      tester.poke("io_dataIn", 11)
+      tester.poke("io_pop", 0)
 
-    tester.poke("io_en", 1)
-    tester.poke("io_push", 1)
-    tester.poke("io_dataIn", 11)
-    tester.poke("io_pop", 0)
+      tester.step()
 
-    println(s"======== first push done sp ${tester.peek("sp")}")
+      tester.expect("sp", 1)
 
-    tester.step()
+      tester.poke("io_dataIn", 22)
+      tester.step()
 
-    println(s"======== first push done sp ${tester.peek("sp")}")
+      tester.expect("io_dataOut", 11)
 
-    tester.expect("sp", 1)
+      tester.expect("sp", 2)
 
-    tester.poke("io_dataIn", 22)
-    tester.step()
-
-    tester.expect("io_dataOut", 11)
-
-    tester.expect("sp", 2)
-
-    tester.poke("io_dataIn", 33)
-    tester.step()
-    tester.expect("io_dataOut", 22)
-    tester.step()
-    tester.expect("io_dataOut", 33)
-    tester.expect("sp", 4)
-
-    tester.report()
+      tester.poke("io_dataIn", 33)
+      tester.step()
+      tester.expect("io_dataOut", 22)
+      tester.step()
+      tester.expect("io_dataOut", 33)
+      tester.expect("sp", 4)
+    }
   }
 }

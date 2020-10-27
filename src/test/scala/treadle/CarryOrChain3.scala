@@ -66,23 +66,21 @@ class CarryOrChain3 extends AnyFreeSpec with Matchers {
       bin.toList.map("01".indexOf(_)).map(BigInt(_)).reverse.toArray
     }
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-    val lst = List((v("001"), v("111")))
-    for ((a, co) <- lst) {
-      assert(N == a.length)
-      assert(N == co.length)
-      for ((y, idx) <- a.zipWithIndex) {
-        tester.poke(s"io_a_$idx", y)
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      val lst = List((v("001"), v("111")))
+      for ((a, co) <- lst) {
+        assert(N == a.length)
+        assert(N == co.length)
+        for ((y, idx) <- a.zipWithIndex) {
+          tester.poke(s"io_a_$idx", y)
+        }
+        tester.step()
+        for ((y, idx) <- co.zipWithIndex) {
+          tester.expect(s"io_co_$idx", y)
+        }
+        tester.step()
       }
-      tester.step()
-      for ((y, idx) <- co.zipWithIndex) {
-        tester.expect(s"io_co_$idx", y)
-      }
-      tester.step()
     }
-
-    tester.report()
 
   }
 }

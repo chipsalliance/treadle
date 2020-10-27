@@ -58,39 +58,38 @@ class ClockedManuallySpec extends AnyFreeSpec with Matchers {
       TargetDirAnnotation("test_run_dir/manually_clocked_pos")
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
-    tester.advanceTime(300)
+      tester.advanceTime(300)
 
-    tester.poke("clock", 0)
-    tester.poke("reset", 0)
-    tester.poke("in1", 0)
+      tester.poke("clock", 0)
+      tester.poke("reset", 0)
+      tester.poke("in1", 0)
 
-    tester.expect("out_direct", 0)
-    tester.expect("out_from_reg", 0)
-    tester.expect("inverted_clock", 1)
+      tester.expect("out_direct", 0)
+      tester.expect("out_from_reg", 0)
+      tester.expect("inverted_clock", 1)
 
-    tester.advanceTime(100)
+      tester.advanceTime(100)
 
-    tester.poke("in1", 3)
+      tester.poke("in1", 3)
 
-    tester.expect("out_direct", 3)
-    tester.expect("out_from_reg", 0)
-    tester.expect("inverted_clock", 1)
+      tester.expect("out_direct", 3)
+      tester.expect("out_from_reg", 0)
+      tester.expect("inverted_clock", 1)
 
-    tester.poke("clock", 1)
+      tester.poke("clock", 1)
 
-    tester.expect("out_direct", 3)
-    tester.expect("out_from_reg", 3)
-    tester.expect("inverted_clock", 0)
+      tester.expect("out_direct", 3)
+      tester.expect("out_from_reg", 3)
+      tester.expect("inverted_clock", 0)
 
-    tester.advanceTime(100)
+      tester.advanceTime(100)
 
-    tester.expect("out_direct", 3)
-    tester.expect("out_from_reg", 3)
-    tester.expect("inverted_clock", 0)
-
-    tester.report()
+      tester.expect("out_direct", 3)
+      tester.expect("out_from_reg", 3)
+      tester.expect("inverted_clock", 0)
+    }
   }
 
   "clock up should advance registers off negative edge" in {
@@ -101,36 +100,35 @@ class ClockedManuallySpec extends AnyFreeSpec with Matchers {
       TargetDirAnnotation("test_run_dir/manually_clocked_neg")
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
-    tester.advanceTime(10)
+      tester.advanceTime(10)
 
-    tester.poke("in1", 1)
-    tester.poke("clock", 1)
-    tester.poke("reset", 0)
+      tester.poke("in1", 1)
+      tester.poke("clock", 1)
+      tester.poke("reset", 0)
 
-    tester.expect("out_direct", 1)
-    tester.expect("out_from_reg", 0)
-    tester.expect("inverted_clock", 0)
+      tester.expect("out_direct", 1)
+      tester.expect("out_from_reg", 0)
+      tester.expect("inverted_clock", 0)
 
-    tester.advanceTime(10)
+      tester.advanceTime(10)
 
-    tester.poke("in1", 2)
-    tester.poke("clock", 0)
+      tester.poke("in1", 2)
+      tester.poke("clock", 0)
 
-    tester.expect("out_direct", 2)
-    tester.expect("out_from_reg", 0)
-    tester.expect("inverted_clock", 1)
+      tester.expect("out_direct", 2)
+      tester.expect("out_from_reg", 0)
+      tester.expect("inverted_clock", 1)
 
-    tester.advanceTime(10)
+      tester.advanceTime(10)
 
-    tester.poke("clock", 1)
+      tester.poke("clock", 1)
 
-    tester.expect("out_direct", 2)
-    tester.expect("out_from_reg", 2)
-    tester.expect("inverted_clock", 0)
-
-    tester.report()
+      tester.expect("out_direct", 2)
+      tester.expect("out_from_reg", 2)
+      tester.expect("inverted_clock", 0)
+    }
   }
 
   private val circuit2 =
@@ -150,23 +148,24 @@ class ClockedManuallySpec extends AnyFreeSpec with Matchers {
 
   "should support (basic) UInt<1> clocks" in {
     val options = Seq(TargetDirAnnotation("test_run_dir/manually_clocked_neg"))
-    val tester = TreadleTester(FirrtlSourceAnnotation(circuit2) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(circuit2) +: options) { tester =>
 
-    // init
-    tester.poke("clock", 0)
-    tester.poke("reset", 0)
-    tester.poke("inp", 0)
-    tester.step()
-    tester.peek("out") should be(0)
+      // init
+      tester.poke("clock", 0)
+      tester.poke("reset", 0)
+      tester.poke("inp", 0)
+      tester.step()
+      tester.peek("out") should be(0)
 
-    // no matter how often we poke r/in, r should never take on a new value unless we step the clock
-    tester.poke("inp", 7)
-    tester.peek("out") should be(0)
-    tester.poke("inp", 5)
-    tester.peek("out") should be(0)
+      // no matter how often we poke r/in, r should never take on a new value unless we step the clock
+      tester.poke("inp", 7)
+      tester.peek("out") should be(0)
+      tester.poke("inp", 5)
+      tester.peek("out") should be(0)
 
-    // step
-    tester.step()
-    tester.peek("out") should be(5)
+      // step
+      tester.step()
+      tester.peek("out") should be(5)
+    }
   }
 }

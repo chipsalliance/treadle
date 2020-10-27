@@ -16,10 +16,12 @@ limitations under the License.
 
 package treadle
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.StopException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 // scalastyle:off magic.number
 class ShiftRegisterSpec extends AnyFreeSpec with Matchers {
@@ -50,12 +52,14 @@ class ShiftRegisterSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(4)))
+    Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(4))) { tester =>
 
-    intercept[StopException] {
-      tester.step(8)
+        intercept[StopException] {
+          tester.step(8)
+        }
+        tester.engine.lastStopResult should be(Some(1))
+      }
     }
-    tester.engine.lastStopResult should be(Some(1))
-    tester.report()
   }
 }

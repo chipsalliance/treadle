@@ -17,9 +17,9 @@ limitations under the License.
 package treadle.asyncreset
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
 
 //scalastyle:off magic.number
 class AsyncResetNativeSpec extends AnyFreeSpec with Matchers {
@@ -44,43 +44,41 @@ class AsyncResetNativeSpec extends AnyFreeSpec with Matchers {
       FirrtlSourceAnnotation(input),
       CallResetAtStartupAnnotation
     )
-    val tester = TreadleTester(annotations)
+    TreadleTestHarness(annotations) { tester =>
+      // output is reg reset value because of CallResetAtStartupAnnotation annotation
+      tester.poke("io_in", 7)
+      tester.expect("io_out", 11)
 
-    // output is reg reset value because of CallResetAtStartupAnnotation annotation
-    tester.poke("io_in", 7)
-    tester.expect("io_out", 11)
+      // register takes on io_in value after step
+      tester.step()
+      tester.expect("io_out", 7)
 
-    // register takes on io_in value after step
-    tester.step()
-    tester.expect("io_out", 7)
+      // register changes to new input only after step has occurred
+      tester.poke("io_in", 8)
+      tester.expect("io_out", 7)
+      tester.step()
+      tester.expect("io_out", 8)
 
-    // register changes to new input only after step has occurred
-    tester.poke("io_in", 8)
-    tester.expect("io_out", 7)
-    tester.step()
-    tester.expect("io_out", 8)
+      // register immediately returns to reset value when reset asserted
+      tester.poke("reset", 1)
+      tester.poke("io_in", 3)
+      tester.expect("io_out", 11)
 
-    // register immediately returns to reset value when reset asserted
-    tester.poke("reset", 1)
-    tester.poke("io_in", 3)
-    tester.expect("io_out", 11)
+      // register stays at reset value despite changing inputs and clocks while reset asserted
+      tester.poke("io_in", 4)
+      tester.expect("io_out", 11)
+      tester.step()
+      tester.expect("io_out", 11)
+      tester.poke("io_in", 5)
+      tester.expect("io_out", 11)
+      tester.step()
+      tester.expect("io_out", 11)
 
-    // register stays at reset value despite changing inputs and clocks while reset asserted
-    tester.poke("io_in", 4)
-    tester.expect("io_out", 11)
-    tester.step()
-    tester.expect("io_out", 11)
-    tester.poke("io_in", 5)
-    tester.expect("io_out", 11)
-    tester.step()
-    tester.expect("io_out", 11)
-
-    // register returns to input value after reset de-asserted and clock is advanced
-    tester.poke("reset", 0)
-    tester.expect("io_out", 11)
-    tester.step()
-    tester.expect("io_out", 5)
-
-    tester.report()
+      // register returns to input value after reset de-asserted and clock is advanced
+      tester.poke("reset", 0)
+      tester.expect("io_out", 11)
+      tester.step()
+      tester.expect("io_out", 5)
+    }
   }
 }

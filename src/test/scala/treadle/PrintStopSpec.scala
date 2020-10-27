@@ -19,8 +19,12 @@ package treadle
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
+<<<<<<< HEAD
 import logger.{LazyLogging, LogLevel, Logger}
 import treadle.executable.StopException
+=======
+import logger.LazyLogging
+>>>>>>> 7b786e8... Clean up Treadle: TestHarness (#257)
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -38,10 +42,11 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-    for (_ <- 0 to 10) {
-      tester.step(2)
-      tester.engine.stopped should be(false)
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      for (_ <- 0 to 10) {
+        tester.step(2)
+        tester.engine.stopped should be(false)
+      }
     }
   }
 
@@ -55,12 +60,13 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-    intercept[StopException] {
-      tester.step(2)
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      intercept[StopException] {
+        tester.step(2)
+      }
+      tester.engine.stopped should be(true)
+      tester.engine.lastStopResult.get should be(2)
     }
-    tester.engine.stopped should be(true)
-    tester.engine.lastStopResult.get should be(2)
   }
 
   it should "return success if a stop with zero result" in {
@@ -73,12 +79,13 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-    intercept[StopException] {
-      tester.step(2)
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      intercept[StopException] {
+        tester.step(2)
+      }
+      tester.engine.stopped should be(true)
+      tester.engine.lastStopResult.get should be(0)
     }
-    tester.engine.stopped should be(true)
-    tester.engine.lastStopResult.get should be(0)
   }
 
   it should "have stops happen in order they appear in a module" in {
@@ -100,13 +107,13 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-      intercept[StopException] {
-        tester.step(2)
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        intercept[StopException] {
+          tester.step(2)
+        }
+        tester.engine.stopped should be(true)
+        tester.engine.lastStopResult.get should be(0)
       }
-      tester.engine.stopped should be(true)
-      tester.engine.lastStopResult.get should be(0)
 
     }
   }
@@ -126,11 +133,11 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
           |
       """.stripMargin
 
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-      tester.step(2)
-      tester.finish
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.step(2)
+      }
     }
+
     output.toString().contains("HELLO WORLD") should be(true)
     output.toString.split("\n").count(_.contains("HELLO WORLD")) should be(2)
 
@@ -149,8 +156,9 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
           |
       """.stripMargin
 
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-      tester.step(2)
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.step(2)
+      }
     }
 
     logger.debug(output.toString)
@@ -172,8 +180,9 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
           |
         """.stripMargin
 
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-      tester.step(2)
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.step(2)
+      }
     }
 
     logger.debug(output.toString)
@@ -190,55 +199,49 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |  module Stop0 :
         |    input clock : Clock
         |    input reset: UInt<1>
-        |    input in1 : UInt<16>
-        |    input in2 : UInt<16>
         |    input enable: UInt<1>
-        |
-        |    node x = add(in1, UInt<1>("h1"))
         |
         |    reg reg : UInt<8>, clock with :
         |      reset => (reset, UInt<8>("h0"))
-        |
         |    reg <= add(reg, UInt<1>("h1"))
-        |    node clockInt = asUInt(clock)
         |
-        |    printf(clock, enable, "in1: %d, x : %d, reg: %d, clock %d, enable: %d\n", in1, x, reg, clockInt, enable)
+        |    printf(clock, enable, "reg,%d", reg)
         |
         """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    val output = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(output)) {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.step(7)
+        tester.poke("enable", 0)
+        print("printf should ")
+        tester.peek("reg")
+        println("not fire on peek, when not enabled")
 
-    tester.poke("enable", 0)
-    tester.poke("in1", 1)
-    println("before peek")
-    println(s"x ${tester.peek("x")}")
-    println("after peek")
+        tester.poke("enable", 1)
+        print("printf should ")
+        tester.peek("reg")
+        println("not fire on peek, when enabled")
 
-    tester.poke("in2", 2)
-    println("before cycle")
-    tester.step()
-    println("after cycle")
-    println("before peek")
-    println(s"x ${tester.peek("x")}")
-    println("after peek")
+        val regValue = tester.peek("reg")
+        print("printf,")
+        tester.step()
+        println(s",expect-reg,$regValue")
 
-    tester.poke("enable", 1)
-    tester.poke("in1", 1)
-    println("before peek")
-    println(s"x ${tester.peek("x")}")
-    println("after peek")
+        tester.poke("enable", 0)
+        print("printf should ")
+        tester.step()
+        println("not fire on step when not enabled")
+      }
+    }
 
-    tester.poke("in2", 2)
-    println("before cycle")
-    tester.step()
-    println("after cycle")
-    println("before peek")
-    println(s"x ${tester.peek("x")}")
-    println("after peek")
-
-    println("before peek")
-    tester.step()
-    println("after peek")
+    output.toString should include(
+      """printf should not fire on peek, when not enabled
+        |printf should not fire on peek, when enabled
+        |printf,reg,   7,expect-reg,7
+        |printf should not fire on step when not enabled
+        |""".stripMargin
+    )
   }
 
   it should "print rry=480 in the following example" in {
@@ -274,24 +277,21 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation, PrefixPrintfWithWallTime))
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation, PrefixPrintfWithWallTime)) { tester =>
+        tester.poke("io_in", 479)
+        tester.step()
 
-      tester.poke("io_in", 479)
-      tester.step()
+        tester.poke("io_in", 480)
+        tester.step()
 
-      tester.poke("io_in", 480)
-      tester.step()
-
-      tester.poke("io_in", 481)
-      tester.step(3)
-      tester.finish
-
+        tester.poke("io_in", 481)
+        tester.step(3)
+      }
     }
 
     // "+++ count=    0 r0=   0 r1=   0"
     // "+++ count=    0 r0=   0 r1=   1"
 
-    Logger.setLevel("treadle.PrintStopSpec", LogLevel.Debug)
     logger.debug(output.toString)
 
     output.toString
@@ -336,17 +336,16 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.poke("io_in", 479)
+        tester.step()
 
-      tester.poke("io_in", 479)
-      tester.step()
+        tester.poke("io_in", 480)
+        tester.step()
 
-      tester.poke("io_in", 480)
-      tester.step()
-
-      tester.poke("io_in", 481)
-      tester.step(5)
-
+        tester.poke("io_in", 481)
+        tester.step(5)
+      }
     }
 
     logger.debug(output.toString)
@@ -389,14 +388,13 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.poke("reset", 1)
+        tester.step()
+        tester.poke("reset", 0)
 
-      tester.poke("reset", 1)
-      tester.step()
-      tester.poke("reset", 0)
-
-      tester.step(10)
-
+        tester.step(10)
+      }
     }
 
     val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
@@ -439,11 +437,11 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-      for (i <- 0 until 32) {
-        tester.poke("io_in", i)
-        tester.step()
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        for (i <- 0 until 32) {
+          tester.poke("io_in", i)
+          tester.step()
+        }
       }
     }
     logger.debug(output.toString)
@@ -475,10 +473,9 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-      tester.step(3)
-
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.step(3)
+      }
     }
 
     val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
@@ -516,16 +513,16 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val output = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(output)) {
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-      tester.poke("io_in", 1)
-      tester.step()
-      tester.poke("io_in", 0)
-      tester.step()
-      tester.poke("io_in", 1)
-      tester.step()
-      tester.poke("io_in", 1)
-      tester.step()
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.poke("io_in", 1)
+        tester.step()
+        tester.poke("io_in", 0)
+        tester.step()
+        tester.poke("io_in", 1)
+        tester.step()
+        tester.poke("io_in", 1)
+        tester.step()
+      }
     }
 
     val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
