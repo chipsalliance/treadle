@@ -36,7 +36,7 @@ object CoverageParser {
     */
   def transform(firrtlSource: String): String = {
 
-    /**
+    /*
       * Genereated the loFIRRTL source needed to defined the additional validators
       * @param firrtlSourceList the loFIRRTL source we are transforming
       * @param neededVals the amount of validators that should be generated
@@ -52,7 +52,7 @@ object CoverageParser {
         )).toList.flatten
     }
 
-    /**
+    /*
       * Constructs the second part of the transformed source code (containing the validators)
       * @param sourcePostDecl The FIRRTL source after the i/o declaration
       * @param muxLines the lines of source code containing multiplexers
@@ -77,7 +77,7 @@ object CoverageParser {
       }
     }
 
-    /**
+    /*
       * Constructs the validator code to add to the firrtl source as follows
       * for each mux do the following:
       *        r_1 <= mux(c, in_a, in_b_1)
@@ -113,7 +113,7 @@ object CoverageParser {
         )}
     }
 
-    /**
+    /*
       * Retrieves the condition (select) used in a mux
       * @param muxLine the line of code in which the mux is used
       * @return the condition used inside the given mux
@@ -122,7 +122,7 @@ object CoverageParser {
       "\\bmux.*\\b".r.findFirstMatchIn(muxLine).get.matched.split(",").head.split('(').tail.head
 
 
-    /**
+    /*
       * Computes the index at which the last input is found in the firrtl source
       * @param firrtlSourceList the firrtl source split by lines
       * @return the index of the last input in the source
