@@ -193,7 +193,7 @@ object CoverageParser {
     * @param tester the tester currently running the DUT
     */
   def reportCoverage(firrtlSource: String, tester: TreadleTester): Unit = {
-    /**
+    /*
       * Constructs a new version of the given source that contains line coverage information
       * in the form of "+ line" if covered and "- line" otherwise
       * @param firrtlSourceList the DUT's source code split by line
