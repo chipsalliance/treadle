@@ -150,8 +150,8 @@ The first thing that needed to be done was to add ports to the given design. Thi
 - At each multiplexer use in the FIRRTL source, output the path taken to 2 coverage validators as follows:  
   ```scala  
   out_a <= mux(cond, in_a, in_b)  //Example use of a multiplexer  
-  io_cov_valid_1 <= mux(cond, 1, 0)  
-  io_cov_valid_2 <= mux(cond, 0, 1)  //Use of coverage validators to keep track of the path that was taken  
+  io_cov_valid_1 <= cond  
+  io_cov_valid_2 <= not(cond)  //Use of coverage validators to keep track of the path that was taken  
   ```    
     
 These are all of the modifications that are needed to keep track of line coverage during a simulation.  
@@ -164,17 +164,17 @@ COVERAGE REPORT:
 
 + circuit Test_1 :
 +   module Test_1 :
-+     input in$a : UInt<1>
-+     input in$b$0 : UInt<2>
-+     input in$b$1 : UInt<2>
++     input io$a : UInt<1>
++     input io$b$0 : UInt<2>
++     input io$b$1 : UInt<2>
 +     input clock : Clock
 +     output io_cov_valid_0 : UInt<1>
 +     output io_cov_valid_1 : UInt<1>
 +     output out : UInt<2>
 +   
-+     io_cov_valid_0 <= in$a
--     io_cov_valid_1 <= mux(in$a, UInt<1>("h0"), UInt<1>("h1"))
-+     out <= mux(in$a, in$b$0, in$b$1)  
++     io_cov_valid_0 <= io$a
+-     io_cov_valid_1 <= not(io$a)
++     out <= mux(io$a, io$b$0, io$b$1)  
 ```
 Here the first line gives a general percentage of how many of the possible control paths were taken and then the `COVERAGE REPORT` shows a modified version of the FIRRTL source with coverage prefixes added to each line:  
 - `+` means that the line was covered by a test in the test suite.  
@@ -183,9 +183,9 @@ Here the first line gives a general percentage of how many of the possible contr
 #### Interpreting the Coverage Report  
 What this report tells us (in the above example) is that one of our artificially added FIRRTL lines wasn't covered. This information can be used to deduce which path of our multiplexer was taken. For example, the above `COVERAGE REPORT`:  
 ```scala
-+     io_cov_valid_0 <= in$a
--     io_cov_valid_1 <= mux(in$a, UInt<1>("h0"), UInt<1>("h1"))
-+     out <= mux(in$a, in$b$0, in$b$1)  
++     io_cov_valid_0 <= io$a
+-     io_cov_valid_1 <= not(io$a)
++     out <= mux(io$a, io$b$0, io$b$1)  
 ```  
 actually tells us that the case where `in$a == 0` was never tested and thus one of our potential outputs was never tested.  
   
@@ -199,17 +199,17 @@ COVERAGE REPORT:
 
 + circuit Test_1 :
 +   module Test_1 :
-+     input in$a : UInt<1>
-+     input in$b$0 : UInt<2>
-+     input in$b$1 : UInt<2>
++     input io$a : UInt<1>
++     input io$b$0 : UInt<2>
++     input io$b$1 : UInt<2>
 +     input clock : Clock
 +     output io_cov_valid_0 : UInt<1>
 +     output io_cov_valid_1 : UInt<1>
 +     output out : UInt<2>
 +   
 +     io_cov_valid_0 <= in$a
--     io_cov_valid_1 <= mux(in$a, UInt<1>("h0"), UInt<1>("h1"))
-+     out <= mux(in$a, in$b$0, in$b$1)  
+-     io_cov_valid_1 <= not(io$a)
++     out <= mux(io$a, io$b$0, io$b$1)  
 ```  
 ```scala
 NEW REPORT:
