@@ -457,6 +457,9 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
     //report coverage
     CoverageParser.reportCoverage(engine.ast.serialize, this)
+
+    //Testing de-compilation
+    //println("RENDERED SYMBOLS:\n" + engine.symbolTable.render)
   }
 
   def finish: Boolean = {
