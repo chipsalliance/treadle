@@ -189,6 +189,19 @@ case object MemoryToVCD extends HasShellOptions {
 }
 
 /**
+  * Controls whether coverage information will be gathered or not during the execution of a test.
+  */
+case object EnableCoverageAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[String](
+      longOption = "tr-enable-coverage",
+      toAnnotationSeq = _ => Seq(EnableCoverageAnnotation),
+      helpText = s"""Enables automatic line coverage on tests"""
+    )
+  )
+}
+
+/**
   *  Sets one or more clocks including their frequencies and phase
   */
 case class ClockInfoAnnotation(clockInfoSeq: Seq[ClockInfo] = Seq(ClockInfo()))
@@ -392,6 +405,7 @@ class TreadleLibrary extends RegisteredLibrary {
 
   val options: Seq[ShellOption[_]] = Seq(
     WriteVcdAnnotation,
+    EnableCoverageAnnotation,
     VcdShowUnderScoredAnnotation,
     VerboseAnnotation,
     AllowCyclesAnnotation,

@@ -38,7 +38,7 @@ class CoverageTest extends AnyFlatSpec with Matchers {
         |    out <= mux(in$a, in$b$0, in$b$1)
     """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(testFirrtl)))
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(testFirrtl), EnableCoverageAnnotation))
     println("SOURCE: " + tester.engine.ast.serialize)
 
     val startTime = System.nanoTime()
@@ -79,7 +79,7 @@ class CoverageTest extends AnyFlatSpec with Matchers {
         |    out <= c
     """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(testFirrtl)))
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(testFirrtl), EnableCoverageAnnotation))
     println("SOURCE: " + tester.engine.ast.serialize)
 
     val startTime = System.nanoTime()
@@ -109,7 +109,7 @@ class CoverageTest extends AnyFlatSpec with Matchers {
         |    out <= in$b$0
     """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(testFirrtl)))
+    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(testFirrtl), EnableCoverageAnnotation))
     println("SOURCE: " + tester.engine.ast.serialize)
 
     val startTime = System.nanoTime()

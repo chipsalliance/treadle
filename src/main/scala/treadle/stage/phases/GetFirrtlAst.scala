@@ -5,6 +5,7 @@ package treadle.stage.phases
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import firrtl.{AnnotationSeq, Parser}
+import treadle.EnableCoverageAnnotation
 import treadle.coverage.CoverageParser
 
 /**
@@ -30,7 +31,11 @@ object GetFirrtlAst extends Phase {
     def handleFirrtlSource(): Option[AnnotationSeq] = {
       annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtlText) => firrtlText } match {
         case Some(text) =>
-          val circuit = Parser.parse(CoverageParser.transform(text))
+          val circuit = if(annotationSeq.contains(EnableCoverageAnnotation)) {
+            Parser.parse(CoverageParser.transform(text))
+          } else {
+            Parser.parse(text)
+          }
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
         case _ =>
           None
@@ -44,7 +49,11 @@ object GetFirrtlAst extends Phase {
           val file = io.Source.fromFile(fileName)
           val text = file.mkString
           file.close()
-          val circuit = Parser.parse(CoverageParser.transform(text))
+          val circuit = if(annotationSeq.contains(EnableCoverageAnnotation)) {
+              Parser.parse(CoverageParser.transform(text))
+            } else {
+              Parser.parse(text)
+            }
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
         case _ =>
           None

@@ -455,11 +455,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     engine.writeVCD()
     println(reportString)
 
-    //report coverage
-    CoverageParser.reportCoverage(engine.ast.serialize, this)
-
-    //Testing de-compilation
-    //println("RENDERED SYMBOLS:\n" + engine.symbolTable.render)
+    //report coverage if requested
+    if(annotationSeq.contains(EnableCoverageAnnotation)) {
+      CoverageParser.reportCoverage(engine.ast.serialize, this)
+    }
   }
 
   def finish: Boolean = {
