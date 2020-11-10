@@ -405,7 +405,6 @@ class TreadleLibrary extends RegisteredLibrary {
 
   val options: Seq[ShellOption[_]] = Seq(
     WriteVcdAnnotation,
-    EnableCoverageAnnotation,
     VcdShowUnderScoredAnnotation,
     VerboseAnnotation,
     AllowCyclesAnnotation,
@@ -424,7 +423,8 @@ class TreadleLibrary extends RegisteredLibrary {
     TreadleRocketBlackBoxes,
     PrefixPrintfWithWallTime,
     TreadleFirrtlString,
-    TreadleFirrtlFile
+    TreadleFirrtlFile,
+    EnableCoverageAnnotation
   ).flatMap(_.options)
 }
 
