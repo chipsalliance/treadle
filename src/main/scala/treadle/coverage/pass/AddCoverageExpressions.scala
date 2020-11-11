@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 package treadle.coverage.pass
 
-import firrtl.{Namespace, Utils}
-import firrtl.ir.{Block, Circuit, Connect, DefModule, Expression, ExtModule, HasInfo, Info, IntWidth, Module, Mux,
-    NoInfo, Output, Port, Reference, Statement, UIntType}
+import firrtl.Namespace
+import firrtl.PrimOps.Not
+import firrtl.ir.{Block, Circuit, Connect, DefModule, DoPrim, Expression, ExtModule, HasInfo, Module, Mux, Statement}
 import firrtl.passes.Pass
 import firrtl.stage.TransformManager.TransformDependency
-import treadle.coverage.pass.AddCoverageExpressions.coverageName
+import treadle.coverage.{CoverageExpressionInfo, Ledger}
 
 import scala.collection.mutable
 
@@ -21,7 +21,11 @@ object AddCoverageExpressions extends Pass {
 
     override def name = "Coverage!"
 
-    /** Run coverage on every module **/
+    /**
+      * Run the coverage extension on every module
+      * @param c the circuit on with we want to add the coverage extensions
+      * @return the newly modified version of the circuit including coverage validators
+      */
     override def run(c: Circuit): Circuit = {
         val ledger = new Ledger()
         c.copy(modules = c.modules map coverM(ledger))
@@ -30,10 +34,13 @@ object AddCoverageExpressions extends Pass {
     /**
       * Run coverage on every statement and then add additional coverage statements
       */
-    def coverM(ledger: Ledger)(module: DefModule): DefModule = {
+    private def coverM(ledger: Ledger)(module: DefModule): DefModule = {
         val namespace = Namespace(module)
         val newModule = module mapStmt coverS(ledger, namespace)
         val newPorts = newModule.ports ++ ledger.ports
+
+        //Set the module name in the ledger
+        ledger.setModuleName(module.name)
 
         //Add new ports to the module
         newModule match {
@@ -43,9 +50,9 @@ object AddCoverageExpressions extends Pass {
     }
 
     /**
-      * TODO: Traverse statements, find muxes and insert coverage ports there
+      * Traverse statements, find muxes and insert coverage expressions there
       */
-    def coverS(ledger: Ledger, namespace: Namespace)(s: Statement) : Statement = {
+    private def coverS(ledger: Ledger, namespace: Namespace)(s: Statement) : Statement = {
         val block = mutable.ArrayBuffer[Statement]()
         s match {
             case s: HasInfo =>
@@ -58,73 +65,20 @@ object AddCoverageExpressions extends Pass {
         }
     }
 
-    def coverE(ledger: Ledger, namespace: Namespace, block: mutable.ArrayBuffer[Statement])(e: Expression): Expression =
+    private def coverE(ledger: Ledger, namespace: Namespace, block: mutable.ArrayBuffer[Statement])(e: Expression): Expression =
         e.mapExpr(coverE(ledger, namespace, block)) match {
-            //Look for muxes, if we find one, add a coverage statement
-            case Mux(cond, _, _, _) =>
+            //Look for muxes, if we find one, add the two coverage statements
+            case Mux(cond, _, _, tpe) =>
                 ledger.foundMux()
+
+                //Create the two new ports that we will use as coverage validators
                 val ref1 = ledger.addCoveragePort(namespace)
                 val ref2 = ledger.addCoveragePort(namespace)
-                block += Connect(NoInfo, ref1, cond)
-                //block += Connect(NoInfo, ref2, notCond)
+                block += Connect(CoverageExpressionInfo, ref1, cond)
+                block += Connect(CoverageExpressionInfo, ref2, DoPrim(Not, Seq(cond), Seq(), tpe))
                 e
 
+            //We don't care about non-mux expressions
             case notmux => notmux
         }
-}
-
-class Ledger {
-    private var moduleName: Option[String] = None
-    private val modules = mutable.Set[String]()
-    private val moduleMuxMap = mutable.Map[String, Int]()
-    private val coveragePorts = mutable.ArrayBuffer[Port]()
-    private var curCovName: Int = 0
-
-    def ports: Seq[Port] = coveragePorts
-
-    def nextCoveragePort: Port =
-        if(coveragePorts.length <= curCovName) throw new IllegalAccessException("No more names to use")
-        else coveragePorts({
-                val oldName = curCovName
-                curCovName += 1
-                oldName
-            })
-
-    def addCoveragePort(namespace: Namespace): Reference = {
-        val port = Port(NoInfo, namespace.newName(coverageName), Output, UIntType(IntWidth(1)))
-        coveragePorts += port
-        Reference(port)
-    }
-
-
-    def foundMux(): Unit = moduleName match {
-        case None       => sys.error("Module name not defined in Ledger!")
-        case Some(name) => moduleMuxMap(name) = moduleMuxMap.getOrElse(name, 0) + 1
-    }
-
-    def getModuleName: String = moduleName match {
-        case None       => Utils.error("Module name not defined in Ledger!")
-        case Some(name) => name
-    }
-
-    def setModuleName(myName: String): Unit = {
-        modules += myName
-        moduleName = Some(myName)
-    }
-
-    /**
-      * Counts the total number of muxes in our circuit
-      */
-    def totalMuxes: Int = moduleMuxMap.foldLeft(0)(_ + _._2)
-
-    /**
-      * Counts the number of muxes in a given module
-      */
-    def nMux(module: String) : Int = moduleMuxMap.getOrElse(module, 0)
-
-    def serialize: String = {
-        modules.map { myName =>
-            s"$myName => ${nMux(myName)} muxes!"
-        }.mkString("\n")
-    }
 }
