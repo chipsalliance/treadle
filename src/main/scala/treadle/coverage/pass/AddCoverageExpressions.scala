@@ -2,15 +2,13 @@
 package treadle.coverage.pass
 
 import firrtl.{Namespace, Utils}
-import firrtl.ir.{Block, Circuit, Connect, DefModule, Expression, ExtModule, HasInfo, Info, IntWidth, Module, Mux, NoInfo, Output, Port, Reference, Statement, UIntLiteral, UIntType}
+import firrtl.ir.{Block, Circuit, Connect, DefModule, Expression, ExtModule, HasInfo, Info, IntWidth, Module, Mux,
+    NoInfo, Output, Port, Reference, Statement, UIntType}
 import firrtl.passes.Pass
 import firrtl.stage.TransformManager.TransformDependency
 import treadle.coverage.pass.AddCoverageExpressions.coverageName
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
-
 
 /**
   * Adds additional coverage statements to the Low FIRRTL source at every mux location.
@@ -51,7 +49,7 @@ object AddCoverageExpressions extends Pass {
         val block = mutable.ArrayBuffer[Statement]()
         s match {
             case s: HasInfo =>
-                val newStmt = s.mapExpr(coverE(ledger, namespace, block, s.info))
+                val newStmt = s.mapExpr(coverE(ledger, namespace, block))
                 block.length match {
                     case 0 => newStmt
                     case _ => Block(block :+ newStmt)
@@ -60,8 +58,8 @@ object AddCoverageExpressions extends Pass {
         }
     }
 
-    def coverE(ledger: Ledger, namespace: Namespace, block: mutable.ArrayBuffer[Statement], info: Info)(e: Expression): Expression =
-        e.mapExpr(coverE(ledger, namespace, block, info)) match {
+    def coverE(ledger: Ledger, namespace: Namespace, block: mutable.ArrayBuffer[Statement])(e: Expression): Expression =
+        e.mapExpr(coverE(ledger, namespace, block)) match {
             //Look for muxes, if we find one, add a coverage statement
             case Mux(cond, _, _, _) =>
                 ledger.foundMux()
