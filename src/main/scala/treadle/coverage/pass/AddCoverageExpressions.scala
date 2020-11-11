@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+
 package treadle.coverage.pass
 
 import firrtl.Namespace

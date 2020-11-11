@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package treadle
 
 import firrtl.Namespace
-import firrtl.ir.{Info, IntWidth, Output, Port, Reference, UIntType}
+import firrtl.ir.{Info, IntWidth, MultiInfo, Output, Port, Reference, UIntType}
 import treadle.coverage.pass.AddCoverageExpressions.coverageName
 
 import scala.collection.mutable
@@ -12,7 +14,11 @@ package object coverage {
       */
     abstract class CoverageInfo extends Info {
         override def toString: String = "Coverage Validator"
-        override def ++(that: Info): Info = this
+        override def ++(that: Info): Info = that match {
+            case CoverageExpressionInfo => MultiInfo(Seq(this, that))
+            case CoveragePortInfo => MultiInfo(Seq(this, that))
+            case _ => this
+        }
     }
 
     case object CoverageExpressionInfo extends CoverageInfo
