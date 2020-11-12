@@ -6,7 +6,7 @@ import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import firrtl.{AnnotationSeq, Parser}
 import treadle.EnableCoverageAnnotation
-import treadle.coverage.CoverageParser
+import treadle.coverage.pass.AddCoverageExpressions
 
 /**
   * There are multiple ways to get a FirrtlCircuit into treadle.
@@ -31,12 +31,15 @@ object GetFirrtlAst extends Phase {
     def handleFirrtlSource(): Option[AnnotationSeq] = {
       annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtlText) => firrtlText } match {
         case Some(text) =>
-          val circuit = if(annotationSeq.contains(EnableCoverageAnnotation)) {
-            Parser.parse(CoverageParser.transform(text))
+
+          //Run the additional coverage firrtl passes if needed
+          val circuit = if (annotationSeq.contains(EnableCoverageAnnotation)) {
+            AddCoverageExpressions.run(Parser.parse(text))
           } else {
             Parser.parse(text)
           }
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
+
         case _ =>
           None
       }
@@ -49,12 +52,15 @@ object GetFirrtlAst extends Phase {
           val file = io.Source.fromFile(fileName)
           val text = file.mkString
           file.close()
-          val circuit = if(annotationSeq.contains(EnableCoverageAnnotation)) {
-              Parser.parse(CoverageParser.transform(text))
-            } else {
-              Parser.parse(text)
-            }
+
+          //Run the additional coverage firrtl passes if needed
+          val circuit = if (annotationSeq.contains(EnableCoverageAnnotation)) {
+            AddCoverageExpressions.run(Parser.parse(text))
+          } else {
+            Parser.parse(text)
+          }
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
+
         case _ =>
           None
       }
