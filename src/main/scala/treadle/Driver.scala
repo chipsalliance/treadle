@@ -11,6 +11,7 @@ import scala.collection.mutable
 //scalastyle:off magic.number
 case class TreadleOptions(
   writeVCD:           Boolean = false,
+  enableCoverage:     Boolean = false,
   vcdShowUnderscored: Boolean = false,
   setVerbose:         Boolean = false,
   setOrderedExec:     Boolean = false,
@@ -42,6 +43,7 @@ case class TreadleOptions(
     var annotations = new mutable.ArrayBuffer[Annotation]
 
     if (writeVCD) { annotations += WriteVcdAnnotation }
+    if (enableCoverage) { annotations += EnableCoverageAnnotation }
     if (setVerbose) { annotations += VerboseAnnotation }
     if (allowCycles) { annotations += AllowCyclesAnnotation }
     if (showFirrtlAtLoad) { annotations += ShowFirrtlAtLoadAnnotation }
@@ -81,6 +83,14 @@ trait HasTreadleOptions {
       treadleOptions = treadleOptions.copy(writeVCD = true)
     }
     .text("writes vcd execution log, filename will be base on top")
+
+  parser
+    .opt[Unit]("tr-enable-coverage")
+    .abbr("cov")
+    .foreach { _ =>
+      treadleOptions = treadleOptions.copy(enableCoverage = true)
+    }
+    .text("Enables line coverage on all tests")
 
   parser
     .opt[Unit]("tr-vcd-show-underscored-vars")
