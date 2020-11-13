@@ -30,7 +30,6 @@ object GetFirrtlAst extends Phase {
       annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtlText) => firrtlText } match {
         case Some(text) =>
 
-          //Run the additional coverage firrtl passes if needed
           val circuit = Parser.parse(text)
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
 
@@ -47,7 +46,6 @@ object GetFirrtlAst extends Phase {
           val text = file.mkString
           file.close()
 
-          //Run the additional coverage firrtl passes if needed
           val circuit = Parser.parse(text)
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
 
