@@ -5,8 +5,6 @@ package treadle.stage.phases
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import firrtl.{AnnotationSeq, Parser}
-import treadle.EnableCoverageAnnotation
-import treadle.coverage.pass.AddCoverageExpressions
 
 /**
   * There are multiple ways to get a FirrtlCircuit into treadle.
