@@ -33,11 +33,7 @@ object GetFirrtlAst extends Phase {
         case Some(text) =>
 
           //Run the additional coverage firrtl passes if needed
-          val circuit = if (annotationSeq.contains(EnableCoverageAnnotation)) {
-            AddCoverageExpressions.run(Parser.parse(text))
-          } else {
-            Parser.parse(text)
-          }
+          val circuit = Parser.parse(text)
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
 
         case _ =>
@@ -54,11 +50,7 @@ object GetFirrtlAst extends Phase {
           file.close()
 
           //Run the additional coverage firrtl passes if needed
-          val circuit = if (annotationSeq.contains(EnableCoverageAnnotation)) {
-            AddCoverageExpressions.run(Parser.parse(text))
-          } else {
-            Parser.parse(text)
-          }
+          val circuit = Parser.parse(text)
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
 
         case _ =>

@@ -2,11 +2,14 @@
 
 package treadle.coverage.pass
 
-import firrtl.{Namespace, Transform}
+import firrtl.{CircuitState, Namespace, Transform}
 import firrtl.PrimOps.Not
 import firrtl.ir.{Block, Circuit, Connect, DefModule, DoPrim, Expression, ExtModule, HasInfo, Module, Mux, NoInfo, Statement}
+import firrtl.options.Dependency
 import firrtl.passes.{InferTypes, Pass, ResolveFlows, ResolveKinds}
 import firrtl.stage.TransformManager.TransformDependency
+import firrtl.transforms.BlackBoxSourceHelper
+import treadle.EnableCoverageAnnotation
 import treadle.coverage.{CoverageInfo, Ledger}
 
 import scala.collection.mutable
@@ -24,6 +27,22 @@ object AddCoverageExpressions extends Pass {
   override def invalidates(a: Transform): Boolean = a match {
     case InferTypes | ResolveKinds | ResolveFlows => true
     case _                                        => false
+  }
+
+  override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(Dependency[BlackBoxSourceHelper])
+
+  /**
+    * Only run this pass if there is an EnableCoverageAnnotation present
+    *
+    * @param state
+    * @return
+    */
+  override def execute(state: CircuitState): CircuitState = {
+    if(state.annotations.contains(EnableCoverageAnnotation)) {
+      state.copy(circuit = run(state.circuit))
+    } else {
+      state
+    }
   }
 
   /**
