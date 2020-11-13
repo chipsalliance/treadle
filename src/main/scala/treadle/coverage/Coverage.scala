@@ -79,76 +79,8 @@ object Coverage {
     * @param circuit the DUT's firrtl AST
     * @param tester the tester currently running the DUT
     */
-  def reportCoverage(circuit: Circuit, tester: TreadleTester): Unit = {
-    /*
-      * Constructs a new version of the given source that contains line coverage information
-      * in the form of "+ line" if covered and "- line" otherwise
-      * (WARNING CONTAINS STRING PARSING)
-      *
-      * @param firrtlSourceList the DUT's source code split by line
-      * @param coveredValidators the line indexes that where covered
-      * @param acc the accumulator for the new source
-      * @param index the accumulator for the current line index
-      * @param validIndex the accumulator for the current validator index
-      * @return a new version of the source containing coverage information
-      */
-    @tailrec
-    def constructNewSource(
-                            firrtlSourceList: List[String],
-                            coveredValidators: List[Int],
-                            acc: List[String],
-                            index: Int,
-                            validIndex: Int
-                          ): String = {
-
-      if(firrtlSourceList.isEmpty) {
-        acc.foldLeft("")(_ + "\n" + _)
-      } else {
-        //Check if the source line contains a validator
-        if(s"$coverageName.*\\b <=.*\\b".r.findFirstMatchIn(firrtlSourceList.head).isEmpty) {
-          constructNewSource(
-            firrtlSourceList.tail,
-            coveredValidators,
-            acc :+ s"+ ${firrtlSourceList.head}",
-            index + 1,
-            validIndex
-          )
-        }
-        //If not check if the line's validator is covered
-        else if(coveredValidators.contains(index)) {
-          constructNewSource(
-            firrtlSourceList.tail,
-            coveredValidators,
-            acc :+ s"+ ${firrtlSourceList.head}",
-            index + 1,
-            validIndex + 1
-          )
-        } else {
-          constructNewSource(
-            firrtlSourceList.tail,
-            coveredValidators,
-            acc :+ s"- ${firrtlSourceList.head}",
-            index + 1,
-            validIndex + 1
-          )
-        }
-      }
-    }
-
-    val firrtlSourceList = circuit.serialize.split("\n").toList
-
-    //Compute and print out the final coverage percentage
-    println("COVERAGE: " + getCoverage(tester.lineValidators) * 100 + "% of multiplexer paths tested")
-
-    //Print out the final coverage report
-    println("COVERAGE REPORT:\n" +
-      constructNewSource(
-        firrtlSourceList,
-        getLineCoverage(circuit, tester, tester.lineValidators),
-        Nil,
-        0,
-        0
-      )
-    )
-  }
+  def reportCoverage(circuit: Circuit, tester: TreadleTester): CoverageReport =
+    CoverageReport((getCoverage(tester.lineValidators) * 100).toInt,
+      getLineCoverage(circuit, tester, tester.lineValidators),
+      circuit.serialize.split("\n").toList)
 }

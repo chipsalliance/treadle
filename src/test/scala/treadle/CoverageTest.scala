@@ -61,7 +61,7 @@ class CoverageTest extends AnyFlatSpec with Matchers {
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
 
     println("Test run in " + elapsedSeconds + "seconds.")
-    tester.report()
+    assert(tester.reportCoverage().coverage == 100)
   }
 
   def halfCoverageTest(): Unit = {
@@ -95,7 +95,7 @@ class CoverageTest extends AnyFlatSpec with Matchers {
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
 
     println("Test run in " + elapsedSeconds + "seconds.")
-    tester.report()
+    assert(tester.reportCoverage().coverage == 50)
   }
 
   def noMuxCoverageTest(): Unit = {
@@ -123,7 +123,7 @@ class CoverageTest extends AnyFlatSpec with Matchers {
     val elapsedSeconds = (endTime - startTime).toDouble / 1000000000.0
 
     println("Test run in " + elapsedSeconds + "seconds.")
-    tester.report()
+    assert(tester.reportCoverage().coverage == 100)
   }
 
   it should "Get 100% coverage" in {

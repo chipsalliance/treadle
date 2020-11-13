@@ -10,7 +10,7 @@ import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
 import treadle.chronometry.UTC
-import treadle.coverage.Coverage
+import treadle.coverage.{Coverage, CoverageReport}
 import treadle.executable._
 import treadle.stage.TreadleTesterPhase
 
@@ -453,12 +453,16 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   def report(): Unit = {
     engine.writeVCD()
     println(reportString)
-
-    //report coverage if requested
-    if(annotationSeq.contains(EnableCoverageAnnotation)) {
-      Coverage.reportCoverage(engine.ast, this)
-    }
   }
+
+  /**
+    * Prints out the coverage report
+    */
+  def reportCoverage(): CoverageReport =
+    if(annotationSeq.contains(EnableCoverageAnnotation))
+      Coverage.reportCoverage(engine.ast, this)
+    else throw new IllegalStateException("Coverage isn't enabled!")
+
 
   def finish: Boolean = {
     engine.finish()

@@ -2,10 +2,10 @@
 
 package treadle.coverage.pass
 
-import firrtl.Namespace
+import firrtl.{Namespace, Transform}
 import firrtl.PrimOps.Not
 import firrtl.ir.{Block, Circuit, Connect, DefModule, DoPrim, Expression, ExtModule, HasInfo, Module, Mux, NoInfo, Statement}
-import firrtl.passes.Pass
+import firrtl.passes.{InferTypes, Pass, ResolveFlows, ResolveKinds}
 import firrtl.stage.TransformManager.TransformDependency
 import treadle.coverage.{CoverageInfo, Ledger}
 
@@ -21,12 +21,21 @@ object AddCoverageExpressions extends Pass {
 
   override def name = "Coverage!"
 
+  override def invalidates(a: Transform): Boolean = a match {
+    case InferTypes | ResolveKinds | ResolveFlows => true
+    case _                                        => false
+  }
+
   /**
     * Run the coverage extension on every module
     * @param c the circuit on with we want to add the coverage extensions
     * @return the newly modified version of the circuit including coverage validators
     */
   override def run(c: Circuit): Circuit = {
+    //Check that the circuit only contains one module
+    if(c.modules.length > 1)
+      throw new IllegalArgumentException("Coverage doesn't support multi-module circuits yet!")
+
     val ledger = new Ledger()
     val newModule =  c.modules.map(coverM(ledger))
 

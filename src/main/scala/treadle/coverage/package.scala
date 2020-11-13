@@ -4,7 +4,9 @@ package treadle
 
 import firrtl.Namespace
 import firrtl.ir._
+import treadle.coverage.Coverage.{getCoverage, getLineCoverage}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 package object coverage {
@@ -20,6 +22,74 @@ package object coverage {
       case CoverageInfo(cov) => CoverageInfo(covPorts ++ cov)
       case _ => MultiInfo(Seq(this, that))
     }
+  }
+
+  /**
+    * Represents the data used for generating the coverage report
+    * @param coverage the % of the paths that have been covered
+    * @param pathsCovered the coverage expression lines that have been covered
+    */
+  case class CoverageReport(coverage: Int, pathsCovered: List[Int], source: List[String]) extends Serializable {
+     def serialize: String = {
+       /*
+        * Constructs a new version of the given source that contains line coverage information
+        * in the form of "+ line" if covered and "- line" otherwise
+        * (WARNING CONTAINS STRING PARSING)
+        *
+        * @param firrtlSourceList the DUT's source code split by line
+        * @param coveredValidators the line indexes that where covered
+        * @param acc the accumulator for the new source
+        * @param index the accumulator for the current line index
+        * @param validIndex the accumulator for the current validator index
+        * @return a new version of the source containing coverage information
+        */
+       @tailrec
+       def constructNewSource(
+                               firrtlSourceList: List[String],
+                               coveredValidators: List[Int],
+                               acc: List[String],
+                               index: Int,
+                               validIndex: Int
+                             ): String = {
+
+         if(firrtlSourceList.isEmpty) {
+           acc.foldLeft("")(_ + "\n" + _)
+         } else {
+           //Check if the source line contains a validator
+           if(s"$coverageName.*\\b <=.*\\b".r.findFirstMatchIn(firrtlSourceList.head).isEmpty) {
+             constructNewSource(
+               firrtlSourceList.tail,
+               coveredValidators,
+               acc :+ s"+ ${firrtlSourceList.head}",
+               index + 1,
+               validIndex
+             )
+           }
+           //If not check if the line's validator is covered
+           else if(coveredValidators.contains(index)) {
+             constructNewSource(
+               firrtlSourceList.tail,
+               coveredValidators,
+               acc :+ s"+ ${firrtlSourceList.head}",
+               index + 1,
+               validIndex + 1
+             )
+           } else {
+             constructNewSource(
+               firrtlSourceList.tail,
+               coveredValidators,
+               acc :+ s"- ${firrtlSourceList.head}",
+               index + 1,
+               validIndex + 1
+             )
+           }
+         }
+       }
+
+       //Compute and print out the final coverage percentage
+       s"COVERAGE: $coverage% of multiplexer paths tested\n" ++
+         s"COVERAGE REPORT:\n ${constructNewSource(source, pathsCovered, Nil, 0, 0)}"
+     }
   }
 
   /**
