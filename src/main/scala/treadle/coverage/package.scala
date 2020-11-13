@@ -4,7 +4,6 @@ package treadle
 
 import firrtl.Namespace
 import firrtl.ir._
-import treadle.coverage.Coverage.{getCoverage, getLineCoverage}
 
 import scala.annotation.tailrec
 import scala.collection.mutable

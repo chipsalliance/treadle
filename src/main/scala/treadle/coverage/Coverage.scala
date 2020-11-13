@@ -20,8 +20,6 @@ import firrtl.ir.Circuit
 import firrtl.ir.MultiInfo
 import treadle.TreadleTester
 
-import scala.annotation.tailrec
-
 object Coverage {
 
   /**

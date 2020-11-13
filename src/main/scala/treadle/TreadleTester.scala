@@ -458,7 +458,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   /**
     * Prints out the coverage report
     */
-  def reportCoverage(): CoverageReport =
+  def reportCoverage: CoverageReport =
     if(annotationSeq.contains(EnableCoverageAnnotation))
       Coverage.reportCoverage(engine.ast, this)
     else throw new IllegalStateException("Coverage isn't enabled!")
