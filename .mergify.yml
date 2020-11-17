@@ -53,7 +53,7 @@ pull_request_rules:
 
   - name: automatic squash-and-merge of 1.3.x backport PRs
     conditions:
-      - status-success=Travis CI - Pull Request
+      - status-success=ci
       - "#changes-requested-reviews-by=0"
       - base=1.3.x
       - label="Backport"
