@@ -1,9 +1,4 @@
 pull_request_rules:
-  - name: remove outdated reviews
-    conditions:
-      - base=master
-    actions:
-      dismiss_reviews:
   - name: automatic squash-and-merge on CI success and review
     conditions:
       - status-success=Travis CI - Pull Request
