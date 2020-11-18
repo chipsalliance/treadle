@@ -27,12 +27,12 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.4.0")
+val defaultVersions = Map("firrtl" -> "1.4.1")
 
 lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
-  version := "1.3.0",
+  version := "1.3.1",
   scalaVersion := "2.12.10",
   crossScalaVersions := Seq("2.12.10", "2.11.12"),
   // enables using control-c in sbt CLI
