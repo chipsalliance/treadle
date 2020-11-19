@@ -27,12 +27,12 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.5-SNAPSHOT")
 
 lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
-  version := "1.3-SNAPSHOT",
+  version := "1.4-SNAPSHOT",
   scalaVersion := "2.12.10",
   crossScalaVersions := Seq("2.12.10", "2.11.12"),
   // enables using control-c in sbt CLI
@@ -57,7 +57,7 @@ lazy val baseSettings = Seq(
     "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1",
     "org.scala-lang.modules" % "scala-jline" % "2.12.1",
-    "org.json4s" %% "json4s-native" % "3.6.8"
+    "org.json4s" %% "json4s-native" % "3.6.10"
   ),
   scalacOptions in Compile ++= Seq(
     "-deprecation",
