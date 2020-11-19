@@ -3,9 +3,9 @@
 package treadle.chronometry
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.TreadleTester
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.TreadleTestHarness
 
 // scalastyle:off magic.number
 class GatedClockSpec extends AnyFreeSpec with Matchers {
@@ -42,19 +42,18 @@ class GatedClockSpec extends AnyFreeSpec with Matchers {
 
   "GatedClockSpec should pass a basic test" in {
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("io_enable", 0)
+      for (_ <- 0 until 10) {
+        tester.expect("io_count", 0)
+        tester.step()
+      }
 
-    tester.poke("io_enable", 0)
-    for (_ <- 0 until 10) {
-      println(s"counter = ${tester.peek("io_count")}")
-      tester.step()
-      tester.expect("io_count", 0)
-    }
-
-    tester.poke("io_enable", 1)
-    for (_ <- 0 until 10) {
-      println(s"counter = ${tester.peek("io_count")}")
-      tester.step()
+      tester.poke("io_enable", 1)
+      for (i <- 0 until 10) {
+        tester.expect("io_count", i)
+        tester.step()
+      }
     }
   }
 }

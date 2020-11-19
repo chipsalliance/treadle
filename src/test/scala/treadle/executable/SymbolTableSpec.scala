@@ -7,12 +7,13 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import firrtl.graph.CyclicException
 import firrtl.stage.FirrtlSourceAnnotation
 import firrtl.transforms.DontCheckCombLoopsAnnotation
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle._
 
 //scalastyle:off magic.number
-class SymbolTableSpec extends AnyFreeSpec with Matchers {
+class SymbolTableSpec extends AnyFreeSpec with Matchers with LazyLogging {
   """SymbolTable creates a table with dependency information""" in {
     val simpleFirrtl: String =
       s"""
@@ -39,26 +40,26 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
          |    io_out2 <= b4
     """.stripMargin
 
-    val simulator = TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleFirrtl))) { simulator =>
+      val symbolTable = simulator.engine.symbolTable
 
-    val symbolTable = simulator.engine.symbolTable
+      val keyToDependent = symbolTable.childrenOf
 
-    val keyToDependent = symbolTable.childrenOf
+      // b3, b3/in, and io_out2 depend on clock
+      keyToDependent.reachableFrom(symbolTable("clock")).size should be(3)
 
-    // b3, b3/in, and io_out2 depend on clock
-    keyToDependent.reachableFrom(symbolTable("clock")).size should be(3)
+      symbolTable.registerNames.toList.sorted.foreach { key =>
+        val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
 
-    symbolTable.registerNames.toList.sorted.foreach { key =>
-      val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
+        logger.debug(s"$key => ${dependents.map(_.name).mkString(",")}")
+      }
 
-      println(s"$key => ${dependents.map(_.name).mkString(",")}")
-    }
+      logger.debug("All dependencies")
+      symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
+        val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
 
-    println("All dependencies")
-    symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
-      val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
-
-      println(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+        logger.debug(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+      }
     }
   }
 
@@ -78,28 +79,29 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
          |    io_out1 <= a3
          """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl)))
-    val simulator = tester.engine
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleFirrtl))) { tester =>
+      val simulator = tester.engine
 
-    val symbolTable = simulator.symbolTable
+      val symbolTable = simulator.symbolTable
 
-    val childrenOf = symbolTable.childrenOf
+      val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be(0)
+      childrenOf.reachableFrom(symbolTable("clock")).size should be(0)
 
-    childrenOf.reachableFrom(symbolTable("io_in1")) should contain(symbolTable("io_out1"))
+      childrenOf.reachableFrom(symbolTable("io_in1")) should contain(symbolTable("io_out1"))
 
-    println("All dependencies")
-    symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
-      val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
+      logger.debug("All dependencies")
+      symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
+        val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
 
-      println(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+        logger.debug(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+      }
+
+      tester.poke("io_in1", 7)
+      tester.expect("io_out1", 7)
+      tester.poke("io_in1", 42)
+      tester.expect("io_out1", 42)
     }
-
-    tester.poke("io_in1", 7)
-    tester.expect("io_out1", 7)
-    tester.poke("io_in1", 42)
-    tester.expect("io_out1", 42)
   }
 
   """registers break dependency chain""" in {
@@ -122,31 +124,32 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
          |    io_out1 <= a4
          """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl)))
-    val simulator = tester.engine
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleFirrtl))) { tester =>
+      val simulator = tester.engine
 
-    val symbolTable = simulator.symbolTable
+      val symbolTable = simulator.symbolTable
 
-    val childrenOf = symbolTable.childrenOf
+      val childrenOf = symbolTable.childrenOf
 
-    // a3, a3/in and io_out1 depend on clock
-    childrenOf.reachableFrom(symbolTable("clock")).size should be(3)
+      // a3, a3/in and io_out1 depend on clock
+      childrenOf.reachableFrom(symbolTable("clock")).size should be(3)
 
-    childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
+      childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
 
-    println("All dependencies")
-    symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
-      val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
+      logger.debug("All dependencies")
+      symbolTable.symbols.toList.sortBy(_.name).foreach { keySymbol =>
+        val dependents = symbolTable.childrenOf.reachableFrom(keySymbol)
 
-      println(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+        logger.debug(s"${keySymbol.name} => ${dependents.map(_.name).mkString(",")}")
+      }
+
+      tester.poke("io_in1", 7)
+      tester.step()
+      tester.expect("io_out1", 7)
+      tester.poke("io_in1", 42)
+      tester.step()
+      tester.expect("io_out1", 42)
     }
-
-    tester.poke("io_in1", 7)
-    tester.step()
-    tester.expect("io_out1", 7)
-    tester.poke("io_in1", 42)
-    tester.step()
-    tester.expect("io_out1", 42)
   }
 
   """This is a mixed chain""" in {
@@ -175,43 +178,43 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
          |    io_out1 <= a4
          """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl)))
-    val simulator = tester.engine
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleFirrtl))) { tester =>
+      val simulator = tester.engine
 
-    val symbolTable = simulator.symbolTable
+      val symbolTable = simulator.symbolTable
 
-    val childrenOf = symbolTable.childrenOf
+      val childrenOf = symbolTable.childrenOf
 
-    childrenOf.reachableFrom(symbolTable("clock")).size should be(3)
+      childrenOf.reachableFrom(symbolTable("clock")).size should be(3)
 
-    childrenOf.reachableFrom(symbolTable("io_in1")) should contain(symbolTable("io_out1"))
-    childrenOf.reachableFrom(symbolTable("io_in2")) should not contain symbolTable("io_out1")
-    childrenOf.reachableFrom(symbolTable("io_in2")) should contain(symbolTable("b3/in"))
-    childrenOf.reachableFrom(symbolTable("b3")) should contain(symbolTable("io_out1"))
+      childrenOf.reachableFrom(symbolTable("io_in1")) should contain(symbolTable("io_out1"))
+      childrenOf.reachableFrom(symbolTable("io_in2")) should not contain symbolTable("io_out1")
+      childrenOf.reachableFrom(symbolTable("io_in2")) should contain(symbolTable("b3/in"))
+      childrenOf.reachableFrom(symbolTable("b3")) should contain(symbolTable("io_out1"))
 
-    val inputChildren = symbolTable
-      .getChildren(symbolTable.inputPortsNames.map(symbolTable(_)).toSeq)
-      .toList
-      .sortBy(_.cardinalNumber)
+      val inputChildren = symbolTable
+        .getChildren(symbolTable.inputPortsNames.map(symbolTable(_)).toSeq)
+        .toList
+        .sortBy(_.cardinalNumber)
 
-    println("Input dependencies")
-    println(inputChildren.map(s => s"${s.name}:${s.cardinalNumber}").mkString(","))
+      logger.debug("Input dependencies")
+      logger.debug(inputChildren.map(s => s"${s.name}:${s.cardinalNumber}").mkString(","))
 
-    tester.poke("io_in1", 0)
-    tester.poke("io_in2", 0)
-    tester.step()
-    tester.poke("io_in1", 7)
-    tester.poke("io_in2", 4)
-    tester.expect("io_out1", 7)
-    tester.step()
-    tester.expect("io_out1", 11)
-    tester.poke("io_in1", 42)
-    tester.expect("io_out1", 46)
-    tester.poke("io_in2", 33)
-    tester.expect("io_out1", 46)
-    tester.step()
-    tester.expect("io_out1", 75)
-    tester.report()
+      tester.poke("io_in1", 0)
+      tester.poke("io_in2", 0)
+      tester.step()
+      tester.poke("io_in1", 7)
+      tester.poke("io_in2", 4)
+      tester.expect("io_out1", 7)
+      tester.step()
+      tester.expect("io_out1", 11)
+      tester.poke("io_in1", 42)
+      tester.expect("io_out1", 46)
+      tester.poke("io_in2", 33)
+      tester.expect("io_out1", 46)
+      tester.step()
+      tester.expect("io_out1", 75)
+    }
   }
 
   """Should report combinational loop""" in {
@@ -252,13 +255,16 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers {
     val outputBuffer = new ByteArrayOutputStream()
     Console.withOut(new PrintStream(outputBuffer)) {
       try {
-        TreadleTester(Seq(FirrtlSourceAnnotation(simpleFirrtl), DontCheckCombLoopsAnnotation))
+        TreadleTestHarness(
+          Seq(FirrtlSourceAnnotation(simpleFirrtl), DontCheckCombLoopsAnnotation),
+          Array("-ll", "error") // this skips log warn for DontCheckCombLoops
+        ) { _ => }
       } catch {
         case c: CyclicException =>
           c.node.asInstanceOf[Symbol].name should be("sub.out1")
       }
     }
     outputBuffer.toString.contains(s"io_out1 <= pad(${Console.RED}sub.out1${Console.RED_B})")
-    println(outputBuffer.toString)
+    logger.debug(outputBuffer.toString)
   }
 }

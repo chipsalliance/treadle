@@ -34,12 +34,13 @@ class HasCustomFinish extends ScalaBlackBox {
   }
 
   override def finish(): Unit = {
-    println(s"HasCustomFinish was saw ${myFactoryOpt.get.clockUpCount} clock cycles")
+    myFactoryOpt.get.finishWasRun = true
   }
 }
 
 class HasCustomFinishFactory extends ScalaBlackBoxFactory {
   var clockUpCount: Int = 0
+  var finishWasRun: Boolean = false
 
   override def createInstance(instanceName: String, blackBoxName: String): Option[ScalaBlackBox] = {
     val newBlackBox = new HasCustomFinish
@@ -75,16 +76,18 @@ class BlackBoxFinishSpec extends AnyFreeSpec with Matchers {
         RandomSeedAnnotation(1L)
       )
 
-      val tester = TreadleTester(FirrtlSourceAnnotation(adderInput) +: options)
+      customFinishFactory.clockUpCount should be(0)
+      customFinishFactory.finishWasRun should be(false)
 
-      for (i <- 0 until 10) {
-        tester.expect("out", BigInt(42))
-        tester.step()
+      TreadleTestHarness(FirrtlSourceAnnotation(adderInput) +: options) { tester =>
+        for (i <- 0 until 10) {
+          tester.expect("out", BigInt(42))
+          tester.step()
+        }
       }
-
-      tester.finish
-
+      //Note: TreadleTestHarness calls finish which makes this work
       customFinishFactory.clockUpCount should be >= 10
+      customFinishFactory.finishWasRun should be(true)
     }
   }
 }

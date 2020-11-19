@@ -3,12 +3,13 @@
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.StopException
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 // scalastyle:off magic.number
-class ClockSpec extends AnyFreeSpec with Matchers {
+class ClockSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "ClockSpec should pass a basic test" in {
     val input =
       """
@@ -44,13 +45,12 @@ class ClockSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-    intercept[StopException] {
-      tester.step(100)
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      intercept[StopException] {
+        tester.step(100)
+      }
+      tester.engine.lastStopResult should be(Some(0))
     }
-    tester.engine.lastStopResult should be(Some(0))
-    tester.report()
   }
 
   "clocks must behave properly behind validif" in {
@@ -93,29 +93,27 @@ class ClockSpec extends AnyFreeSpec with Matchers {
         |    out1 <= m.read.data
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), ValidIfIsRandomAnnotation))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), ValidIfIsRandomAnnotation)) { tester =>
+      // load memory
+      tester.poke("write_en", 1)
+      for (i <- 0 until 8) {
+        tester.poke("addr", i)
+        tester.poke("in1", i * 10 + i)
+        tester.step()
+      }
 
-    // load memory
-    tester.poke("write_en", 1)
-    for (i <- 0 until 8) {
-      tester.poke("addr", i)
-      tester.poke("in1", i * 10 + i)
-      tester.step()
+      logger.debug {
+        (0 until 8).map { i => s"memory($i) = ${tester.peekMemory("m", i)}" }.mkString("\n")
+      }
+      // read phase
+      tester.poke("write_en", 0)
+      for (i <- 0 until 8) {
+        tester.poke("addr", i)
+        tester.expect("out1", i * 10 + i)
+
+        logger.debug(s"mem($i) ${tester.peekMemory("m", i)}")
+        tester.step()
+      }
     }
-
-    for (i <- 0 until 8) {
-      println(s"memory($i) = ${tester.peekMemory("m", i)}")
-    }
-    // read phase
-    tester.poke("write_en", 0)
-    for (i <- 0 until 8) {
-      tester.poke("addr", i)
-      tester.expect("out1", i * 10 + i)
-
-      println(s"mem($i) ${tester.peekMemory("m", i)}")
-      tester.step()
-    }
-
-    tester.report()
   }
 }
