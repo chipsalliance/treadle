@@ -9,6 +9,7 @@ import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserial
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
+import treadle.stage.phases.HandleFormalStatements
 
 sealed trait TreadleOption extends Unserializable { this: Annotation => }
 
@@ -424,6 +425,7 @@ class TreadleLibrary extends RegisteredLibrary {
     PrefixPrintfWithWallTime,
     TreadleFirrtlString,
     TreadleFirrtlFile,
+    new HandleFormalStatements,
     EnableCoverageAnnotation
   ).flatMap(_.options)
 }
