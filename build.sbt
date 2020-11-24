@@ -32,7 +32,7 @@ val defaultVersions = Map("firrtl" -> "1.5-SNAPSHOT")
 lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
-  version := "1.4-SNAPSHOT",
+  version := "1.5-SNAPSHOT",
   scalaVersion := "2.12.10",
   crossScalaVersions := Seq("2.12.10", "2.11.12"),
   // enables using control-c in sbt CLI
