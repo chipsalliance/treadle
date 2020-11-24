@@ -411,13 +411,8 @@ class TreadleLibrary extends RegisteredLibrary {
     TreadleRocketBlackBoxes,
     PrefixPrintfWithWallTime,
     TreadleFirrtlString,
-<<<<<<< HEAD
-    TreadleFirrtlFile
-=======
     TreadleFirrtlFile,
-    new HandleFormalStatements,
-    EnableCoverageAnnotation
->>>>>>> 0368d83... Handle formal statements (#261)
+    new HandleFormalStatements
   ).flatMap(_.options)
 }
 
