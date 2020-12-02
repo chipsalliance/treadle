@@ -25,10 +25,12 @@ class PrepareAst extends Phase {
     Dependency[firrtl.transforms.ConstantPropagation],
     Dependency[firrtl.transforms.CombineCats],
     Dependency(passes.CommonSubexpressionElimination),
-    Dependency[firrtl.transforms.DeadCodeElimination]
+    Dependency[firrtl.transforms.DeadCodeElimination],
+    Dependency[HandleFormalStatements]
   )
 
   private def compiler = new firrtl.stage.transforms.Compiler(targets, currentState = Nil)
+
   private val transforms = compiler.flattenedTransformOrder
 
   override def transform(annotationSeq: AnnotationSeq): AnnotationSeq = {

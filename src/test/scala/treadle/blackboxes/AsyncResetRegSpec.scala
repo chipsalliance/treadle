@@ -4,10 +4,10 @@ package treadle.blackboxes
 
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import treadle.asyncreset.AsyncResetBlackBoxFactory
-import treadle.{BlackBoxFactoriesAnnotation, ShowFirrtlAtLoadAnnotation, TreadleTester, WriteVcdAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.asyncreset.AsyncResetBlackBoxFactory
+import treadle.{BlackBoxFactoriesAnnotation, TreadleTestHarness, WriteVcdAnnotation}
 
 // scalastyle:off magic.number
 class AsyncResetRegSpec extends AnyFreeSpec with Matchers {
@@ -94,27 +94,26 @@ class AsyncResetRegSpec extends AnyFreeSpec with Matchers {
       """.stripMargin
 
     val options = Seq(
-      ShowFirrtlAtLoadAnnotation,
       BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      // poke a value and it should not appear as reg output until after step
+      tester.poke("io_in", 7)
+      tester.expect("io_out", 0)
 
-    // poke a value and it should not appear as reg output until after step
-    tester.poke("io_in", 7)
-    tester.expect("io_out", 0)
+      tester.step()
 
-    tester.step()
+      tester.expect("io_out", 7)
 
-    tester.expect("io_out", 7)
+      // reset should make immediate change to register
+      tester.poke("reset", 1)
+      tester.expect("io_out", 3)
 
-    // reset should make immediate change to register
-    tester.poke("reset", 1)
-    tester.expect("io_out", 3)
+      tester.step()
 
-    tester.step()
-
-    tester.expect("io_out", 3)
+      tester.expect("io_out", 3)
+    }
   }
 
   "single bit example of an async reset reg should behave like a normal reg using clock" in {
@@ -161,41 +160,41 @@ class AsyncResetRegSpec extends AnyFreeSpec with Matchers {
       BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      // test that setting the input is only seen after step
+      tester.poke("io_in", 1)
+      tester.poke("io_en", 1)
+      tester.expect("io_out", 0)
 
-    // test that setting the input is only seen after step
-    tester.poke("io_in", 1)
-    tester.poke("io_en", 1)
-    tester.expect("io_out", 0)
+      tester.step()
 
-    tester.step()
+      tester.expect("io_out", 1)
 
-    tester.expect("io_out", 1)
+      // test that enable defeats register update on step
+      tester.poke("io_in", 0)
+      tester.poke("io_en", 0)
+      tester.expect("io_out", 1)
 
-    // test that enable defeats register update on step
-    tester.poke("io_in", 0)
-    tester.poke("io_en", 0)
-    tester.expect("io_out", 1)
+      tester.step()
 
-    tester.step()
+      tester.expect("io_out", 1)
 
-    tester.expect("io_out", 1)
+      // setting enable lets register update on step again
+      tester.poke("io_en", 1)
+      tester.expect("io_out", 1)
 
-    // setting enable lets register update on step again
-    tester.poke("io_en", 1)
-    tester.expect("io_out", 1)
+      tester.step()
 
-    tester.step()
+      tester.expect("io_out", 0)
 
-    tester.expect("io_out", 0)
+      // setting reset immediately updates register
+      tester.poke("reset", 1)
+      tester.expect("io_out", 1)
 
-    // setting reset immediately updates register
-    tester.poke("reset", 1)
-    tester.expect("io_out", 1)
+      tester.step()
 
-    tester.step()
-
-    tester.expect("io_out", 1)
+      tester.expect("io_out", 1)
+    }
   }
 
   "mutually connected async registers should work" in {
@@ -249,29 +248,29 @@ class AsyncResetRegSpec extends AnyFreeSpec with Matchers {
       BlackBoxFactoriesAnnotation(Seq(new AsyncResetBlackBoxFactory))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 0)
+      tester.step()
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 0)
 
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 0)
-    tester.step()
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 0)
+      tester.poke("reset", 1)
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 1)
 
-    tester.poke("reset", 1)
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 1)
+      tester.step()
+      tester.poke("reset", 0)
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 1)
 
-    tester.step()
-    tester.poke("reset", 0)
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 1)
+      tester.step()
+      tester.expect("io_out_0", 1)
+      tester.expect("io_out_1", 0)
 
-    tester.step()
-    tester.expect("io_out_0", 1)
-    tester.expect("io_out_1", 0)
-
-    tester.step()
-    tester.expect("io_out_0", 0)
-    tester.expect("io_out_1", 1)
+      tester.step()
+      tester.expect("io_out_0", 0)
+      tester.expect("io_out_1", 1)
+    }
   }
 }

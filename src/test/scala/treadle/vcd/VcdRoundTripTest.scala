@@ -3,11 +3,12 @@
 package treadle.vcd
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.{TreadleTester, WriteVcdAnnotation}
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.{TreadleTestHarness, WriteVcdAnnotation}
 
-class VcdRoundTripTest extends AnyFreeSpec with Matchers {
+class VcdRoundTripTest extends AnyFreeSpec with Matchers with LazyLogging {
   "create a vcd through treadle and then read it back in" in {
     val input =
       """
@@ -91,35 +92,35 @@ class VcdRoundTripTest extends AnyFreeSpec with Matchers {
         |
         |""".stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
+      for {
+        a <- (3 until 10)
+        b <- (7 until 22)
+      } {
+        tester.poke("topA", a)
+        tester.poke("topB", b)
+        tester.step()
 
-    for {
-      a <- (3 until 10)
-      b <- (7 until 22)
-    } {
-      tester.poke("topA", a)
-      tester.poke("topB", b)
-      tester.step()
+        logger.debug(s"f(a = $a,  b = $b) => ${tester.peek("topC")}")
+      }
 
-      // println(s"f(a = $a,  b = $b) => ${tester.peek("topC")}")
-    }
+      tester.engine.writeVCD() // This flushes vcd file
 
-    tester.report()
+      val readVcd = VCD.read("test_run_dir/TopModule/TopModule.vcd")
+      val madeVcd = tester.engine.vcdOption.get
 
-    val readVcd = VCD.read("test_run_dir/TopModule/TopModule.vcd")
-    val madeVcd = tester.engine.vcdOption.get
+      val madeKeys = madeVcd.wires.keys.toSeq.sorted
+      val readKeys = readVcd.wires.keys.toSeq.sorted
 
-    val madeKeys = madeVcd.wires.keys.toSeq.sorted
-    val readKeys = readVcd.wires.keys.toSeq.sorted
+      madeKeys.zip(readKeys).foreach {
+        case (k1, k2) =>
+          k1 should be(k2)
+      }
 
-    madeKeys.zip(readKeys).foreach {
-      case (k1, k2) =>
-        k1 should be(k2)
-    }
-
-    madeKeys.foreach { key =>
-      readVcd.wires(key).fullName should be(madeVcd.wires(key).fullName)
-      println(f"${readVcd.wires(key).fullName}%60s  ===  ${madeVcd.wires(key).fullName}")
+      madeKeys.foreach { key =>
+        readVcd.wires(key).fullName should be(madeVcd.wires(key).fullName)
+        logger.debug(f"${readVcd.wires(key).fullName}%60s  ===  ${madeVcd.wires(key).fullName}")
+      }
     }
   }
 }

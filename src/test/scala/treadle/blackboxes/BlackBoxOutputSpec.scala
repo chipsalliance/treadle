@@ -113,14 +113,15 @@ class BlackBoxOutputSpec extends AnyFreeSpec with Matchers {
         RandomSeedAnnotation(1L)
       )
 
-      val tester = TreadleTester(FirrtlSourceAnnotation(adderInput) +: options)
+      TreadleTestHarness(FirrtlSourceAnnotation(adderInput) +: options) { tester =>
 
-      for (i <- 0 until 10) {
-        tester.poke("in", i)
-        tester.expect("out1", i + 1)
-        tester.expect("out2", i + 2)
-        tester.expect("out3", i + 3)
-        tester.step()
+        for (i <- 0 until 10) {
+          tester.poke("in", i)
+          tester.expect("out1", i + 1)
+          tester.expect("out2", i + 2)
+          tester.expect("out3", i + 3)
+          tester.step()
+        }
       }
     }
   }
@@ -154,15 +155,16 @@ class BlackBoxOutputSpec extends AnyFreeSpec with Matchers {
         RandomSeedAnnotation(1L)
       )
 
-      val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+      TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
-      tester.poke("clear", 1)
-      tester.step()
-      tester.poke("clear", 0)
-
-      for (i <- 0 until 10) {
-        tester.expect("counter", i)
+        tester.poke("clear", 1)
         tester.step()
+        tester.poke("clear", 0)
+
+        for (i <- 0 until 10) {
+          tester.expect("counter", i)
+          tester.step()
+        }
       }
     }
   }

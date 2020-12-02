@@ -2,6 +2,8 @@
 
 package treadle
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -18,10 +20,12 @@ class FailSpec extends AnyFlatSpec with Matchers {
         |    output c : Fixed
         |    c <= mul(a, b)""".stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-    tester.fail(3)
-    tester.report()
-    tester.reportString should include("Failed: Code 3")
+    // run capture with Console.out because replay tester dumps some error messages while running
+    Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.fail(3)
+        tester.reportString should include("Failed: Code 3")
+      }
+    }
   }
 }
