@@ -32,7 +32,7 @@ pull_request_rules:
     conditions:
       - merged
       - base=master
-      - milestone=1.2.X
+      - milestone=1.2.x
     actions:
       backport:
         branches:
