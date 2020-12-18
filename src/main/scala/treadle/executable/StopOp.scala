@@ -29,7 +29,7 @@ case class StopOp(
       }
     }
 
-    () => Unit
+    () => ()
   }
 }
 

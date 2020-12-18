@@ -190,7 +190,7 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     override def run: FuncUnit = {
       underlyingAssigner.run()
       blackBox.inputChanged(portName, apply(symbol))
-      () => Unit
+      () => ()
     }
   }
 

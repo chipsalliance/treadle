@@ -8,7 +8,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.11")
+object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.12", "2.13.4")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -49,11 +49,6 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
     MavenRepository("https://oss.sonatype.org/content/repositories/releases")
   )
 
-  private def scalacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq()
-    case _           => Seq("-Xsource:2.11")
-  }
-
   private def javacCrossOptions = majorVersion match {
     case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
     case _           => Seq("-source", "1.8", "-target", "1.8")
@@ -62,15 +57,9 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
   override def scalacOptions = super.scalacOptions() ++ Agg(
     "-deprecation",
     "-feature"
-  ) ++ scalacCrossOptions
+  )
 
   override def javacOptions = super.javacOptions() ++ javacCrossOptions
-
-  private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
-
-  override def compileIvyDeps = Agg(macroParadise)
-
-  override def scalacPluginIvyDeps = Agg(macroParadise)
 
   def pomSettings = PomSettings(
     description = artifactName(),

@@ -1,17 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // If we're building with Scala > 2.11, enable the compile option
-    //  switch to support our anonymous Bundle definitions:
-    //  https://github.com/scala/bug/issues/10047
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 => Seq()
-      case _ => Seq("-Xsource:2.11")
-    }
-  }
-}
-
 def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
     // Scala 2.12 requires Java 8. We continue to generate
@@ -33,8 +21,8 @@ lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
   version := "1.5-SNAPSHOT",
-  scalaVersion := "2.12.10",
-  crossScalaVersions := Seq("2.12.10", "2.11.12"),
+  scalaVersion := "2.13.4",
+  crossScalaVersions := Seq("2.13.4", "2.12.10", "2.11.12"),
   // enables using control-c in sbt CLI
   cancelable in Global := true,
   resolvers ++= Seq(
@@ -64,8 +52,7 @@ lazy val baseSettings = Seq(
     "-unchecked",
     "-language:reflectiveCalls",
     "-language:existentials",
-    "-language:implicitConversions",
-    "-Ywarn-unused-import" // required by `RemoveUnused` rule
+    "-language:implicitConversions"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
 )
@@ -122,7 +109,7 @@ lazy val docSettings = Seq(
     "-sourcepath",
     baseDirectory.value.getAbsolutePath,
     "-unchecked"
-  ) ++ scalacOptionsVersion(scalaVersion.value)
+  )
 )
 
 lazy val treadle = (project in file("."))
