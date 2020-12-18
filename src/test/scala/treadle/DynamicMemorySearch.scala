@@ -71,7 +71,7 @@ class DynamicMemorySearch extends AnyFreeSpec with Matchers with LazyLogging {
         tester.poke("io_en", 0)
       }
 
-      def checkSearch(searchValue: BigInt): Unit = {
+      def checkSearch(searchValue: Int): Unit = {
         val expectedIndex = list.indexOf(searchValue) match {
           case -1 => list.length
           case x  => x

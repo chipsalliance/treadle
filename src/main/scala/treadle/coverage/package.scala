@@ -103,7 +103,7 @@ package object coverage {
     /**
       * Retrieves a sequence containing all of the coverage ports
       */
-    def ports: Seq[Port] = coveragePorts
+    def ports: Seq[Port] = coveragePorts.toSeq
 
     /**
       * Creates and recors a new coverage validation port

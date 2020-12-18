@@ -190,7 +190,7 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     override def run: FuncUnit = {
       underlyingAssigner.run()
       blackBox.inputChanged(portName, apply(symbol))
-      () => Unit
+      () => ()
     }
   }
 
@@ -473,15 +473,15 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     }.toMap
 
     def toIntJArray(array: Array[Int]) =
-      JArray(array.toList.map { a ⇒
+      JArray(array.toList.map { a =>
         val v: JValue = a; v
       })
     def toLongJArray(array: Array[Long]) =
-      JArray(array.toList.map { a ⇒
+      JArray(array.toList.map { a =>
         val v: JValue = a; v
       })
     def toBigJArray(array: Array[Big]) =
-      JArray(array.toList.map { a ⇒
+      JArray(array.toList.map { a =>
         val v: JValue = a; v
       })
 
