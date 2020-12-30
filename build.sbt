@@ -105,10 +105,6 @@ pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
     <distribution>repo</distribution>
   </license>
 </licenses>
-<scm>
-  <url>https://github.com/freechipsproject/treadle.git</url>
-  <connection>scm:git:github.com/freechipsproject/treadle.git</connection>
-</scm>
 <developers>
   <developer>
     <id>chick</id>
