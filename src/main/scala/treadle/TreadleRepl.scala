@@ -1361,7 +1361,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
             case Some("markdown") =>
               console.println("| command | description |")
               console.println("| ------- | ----------- |")
-              Commands.commands.foreach { command =>
+              val helpText = Commands.commands.map { command =>
                 val (column1, column2) = command.usage
                 val escapeColumn1 = column1
                   .replaceAll(raw"\|", "&#124;")
@@ -1373,16 +1373,19 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                   .replaceAll("<", raw"\<")
                   .replaceAll(">", raw"\<")
 
-                console.println(s"| $escapeColumn1 | $escapeColumn2 |")
-              }
+                s"| $escapeColumn1 | $escapeColumn2 |"
+              }.sorted.mkString("\n")
+              console.println(helpText)
             case _ =>
               val maxColumn1Width = Commands.commands.map(_.usage._1.length).max + 2
-              Commands.commands.foreach { command =>
+              val helpText = Commands.commands.map { command =>
                 val (column1, column2) = command.usage
                 terminal.getWidth
 
-                console.println(s"$column1${" " * (maxColumn1Width - column1.length)} $column2")
-              }
+                s"$column1${" " * (maxColumn1Width - column1.length)} $column2"
+              }.sorted.mkString("\n")
+
+          console.println(helpText)
           }
         }
       },
