@@ -480,8 +480,8 @@ object SymbolTable extends LazyLogging {
               addDependency(verifySymbol, expressionToReferences(predicateExpression))
 
               lastVerifyInModule.get(module) match {
-                case Some(lastPrintfSymbol) =>
-                  addDependency(verifySymbol, Set(lastPrintfSymbol))
+                case Some(lastVerifySymbol) =>
+                  addDependency(verifySymbol, Set(lastVerifySymbol))
                 case _ =>
               }
               lastVerifyInModule(module) = verifySymbol

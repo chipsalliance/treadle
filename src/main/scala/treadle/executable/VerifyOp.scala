@@ -27,15 +27,14 @@ case class VerifyOp(
   var coverCount: Long = 0
 
   def run: FuncUnit = {
-    val conditionValue = predicate.apply() > 0
-    val enableValue = enable.apply() > 0
-
     if (clockTransition.isPosEdge) {
       clockCount += 1
+      val conditionValue = predicate.apply() > 0
+      val enableValue = enable.apply() > 0
+
       if (conditionValue && enableValue) {
         coverCount += 1
       }
-
     }
 
     () => ()
