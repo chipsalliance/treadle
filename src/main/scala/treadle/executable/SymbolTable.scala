@@ -51,7 +51,7 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
   val stopToStopInfo:     mutable.HashMap[Stop, StopInfo] = new mutable.HashMap[Stop, StopInfo]
   val printToPrintInfo:   mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
   val verifyToVerifyInfo: mutable.HashMap[Verification, VerifyInfo] = new mutable.HashMap[Verification, VerifyInfo]
-  val verifyOps:          mutable.ListBuffer[VerifyOp] = new mutable.ListBuffer[VerifyOp].empty
+  val verifyOps:          mutable.ListBuffer[VerifyOp] = new mutable.ListBuffer[VerifyOp]
 
   def isRegister(name:      String): Boolean = registerNames.contains(name)
   def isTopLevelInput(name: String): Boolean = inputPortsNames.contains(name)
