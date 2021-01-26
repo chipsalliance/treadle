@@ -234,7 +234,13 @@ class ExpressionCompiler(
       def handleIntResult(e1: IntExpressionResult, e2: IntExpressionResult): ExpressionResult = {
         opCode match {
           case Add => AddInts(e1.apply _, e2.apply _)
-          case Sub => SubInts(e1.apply _, e2.apply _)
+          case Sub =>
+            tpe match {
+              case _: UIntType =>
+                AsUIntInts(SubInts(e1.apply _, e2.apply _).apply _, getWidth(tpe))
+              case _ =>
+                SubInts(e1.apply _, e2.apply _)
+            }
           case Mul => MulInts(e1.apply _, e2.apply _)
           case Div => DivInts(e1.apply _, e2.apply _)
           case Rem => RemInts(e1.apply _, e2.apply _)
@@ -264,7 +270,13 @@ class ExpressionCompiler(
       def handleLongResult(e1: LongExpressionResult, e2: LongExpressionResult): ExpressionResult = {
         opCode match {
           case Add => AddLongs(e1.apply _, e2.apply _)
-          case Sub => SubLongs(e1.apply _, e2.apply _)
+          case Sub =>
+            tpe match {
+              case _: UIntType =>
+                AsUIntLongs(SubLongs(e1.apply _, e2.apply _).apply _, getWidth(tpe))
+              case _ =>
+                SubLongs(e1.apply _, e2.apply _)
+            }
           case Mul => MulLongs(e1.apply _, e2.apply _)
           case Div => DivLongs(e1.apply _, e2.apply _)
           case Rem => RemLongs(e1.apply _, e2.apply _)
@@ -294,7 +306,13 @@ class ExpressionCompiler(
       def handleBigResult(e1: BigExpressionResult, e2: BigExpressionResult): ExpressionResult = {
         opCode match {
           case Add => AddBigs(e1.apply _, e2.apply _)
-          case Sub => SubBigs(e1.apply _, e2.apply _)
+          case Sub =>
+            tpe match {
+              case _: UIntType =>
+                AsUIntBigs(SubBigs(e1.apply _, e2.apply _).apply _, getWidth(tpe))
+              case _ =>
+                SubBigs(e1.apply _, e2.apply _)
+            }
           case Mul => MulBigs(e1.apply _, e2.apply _)
           case Div => DivBigs(e1.apply _, e2.apply _)
           case Rem => RemBigs(e1.apply _, e2.apply _)
