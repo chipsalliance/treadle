@@ -70,8 +70,6 @@ class HandleFormalStatements
         case Verification(Formal.Assert, info, clk, cond, en, msg) =>
           makeBlock(info, clk, makeTrigger(cond, en), msg, 0x41)
 
-        case Verification(Formal.Cover, _, _, _, _, _) =>
-          EmptyStmt
         case t => t.mapStmt(assertAssumption)
       }
     }
