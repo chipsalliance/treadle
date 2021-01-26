@@ -56,7 +56,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   val resetName: String = annotationSeq.collectFirst { case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
   private val clockInfo = annotationSeq.collectFirst { case ClockInfoAnnotation(cia) => cia }.getOrElse(Seq.empty)
   private val writeVcd = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
-  private val writeCoverageReport = annotationSeq.exists { case WriteCoverageCSVAnnotation => true; case _ => false }
+  private val writeCoverageReport = annotationSeq.contains(WriteCoverageCSVAnnotation)
   val vcdShowUnderscored: Boolean = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
   private val callResetAtStartUp = annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }
   val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
