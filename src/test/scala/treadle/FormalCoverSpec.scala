@@ -32,6 +32,7 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
     }
   }
 
+  val ReportAnno = Seq(WriteCoverageCSVAnnotation)
 
   "cover statements should produce a report" in {
     // report will go in coverageFileName so delete it if it already exists
@@ -40,7 +41,8 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
       new File(coverageFileName).delete()
     }
 
-    TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
+    val annos = Seq(FirrtlSourceAnnotation(firrtlSource)) ++ ReportAnno
+    TreadleTestHarness(annos) { tester =>
       tester.step(10)
     }
     new File(coverageFileName).exists() should be(true)
@@ -66,7 +68,8 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
       new File(coverageFileName).delete()
     }
 
-    TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
+    val annos = Seq(FirrtlSourceAnnotation(firrtlSource)) ++ ReportAnno
+    TreadleTestHarness(annos) { tester =>
       tester.step(10)
     }
     new File(coverageFileName).exists() should be(true)

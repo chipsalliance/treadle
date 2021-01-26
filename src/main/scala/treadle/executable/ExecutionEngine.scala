@@ -493,13 +493,13 @@ class ExecutionEngine(
   Currently this telling black boxes to finish up things if they need to
   and have the coverage counts recorded if they exist.
    */
-  def finish(): Unit = {
+  def finish(writeCoverageReport: Boolean = false): Unit = {
     symbols.foreach { symbol =>
       symbolTable.getBlackboxImplementation(symbol).foreach { blackBox =>
         blackBox.finish()
       }
     }
-    if (symbolTable.verifyOps.nonEmpty) {
+    if (writeCoverageReport && symbolTable.verifyOps.nonEmpty) {
       val text = symbolTable.verifyOps.map { verifyOp =>
         s"${verifyOp.info.toString.trim},${verifyOp.message.escape},${verifyOp.clockCount},${verifyOp.coverCount}"
       }.sorted.mkString("\n")
