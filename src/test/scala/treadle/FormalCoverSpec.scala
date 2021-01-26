@@ -47,6 +47,8 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
 
     val lines = FileUtils.getLines(coverageFileName)
     val expectedLines = Seq(
+      ""","cov0",10,2""",
+      ""","cov1",10,8""",
       """@[VerificationSpec.scala 42:19],"register 0 cover",10,5""",
       """@[VerificationSpec.scala 52:19],"register 1 cover",5,3""",
       """@[VerificationSpec.scala 62:19],"register 2 cover",3,2""",
