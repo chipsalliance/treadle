@@ -183,10 +183,12 @@ object SymbolTable extends LazyLogging {
       s"/print${printSymbolsFound - 1}"
     }
 
-    var verificationSymbolsFound: Int = 0
-    def makeVerifyName(): String = {
-      verificationSymbolsFound += 1
-      s"/verify${verificationSymbolsFound - 1}"
+    // cover symbols are scoped thus we have a counter for every prefix
+    val coverSymbolsFound = mutable.HashMap[String, Int]()
+    def makeCoverName(prefix: String): String = {
+      val id = coverSymbolsFound.getOrElse(prefix, 0)
+      coverSymbolsFound.put(prefix, id + 1)
+      s"cover${id}"
     }
 
     val nameToSymbol = new mutable.HashMap[String, Symbol]()
@@ -468,7 +470,7 @@ object SymbolTable extends LazyLogging {
           /* do something good here */
           getClockSymbol(clockExpression) match {
             case Some(_) =>
-              val verifySymbolName = makeVerifyName()
+              val verifySymbolName = expand(makeCoverName(modulePrefix))
               val verifySymbol =
                 Symbol(verifySymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(verifySymbol)
