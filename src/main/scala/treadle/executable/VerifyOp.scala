@@ -20,7 +20,8 @@ case class VerifyOp(
   message:         StringLit,
   clockTransition: ClockTransitionGetter,
   predicate:       IntExpressionResult,
-  enable:          IntExpressionResult)
+  enable:          IntExpressionResult,
+  op: Formal.Value)
     extends Assigner {
 
   var clockCount: Long = 0

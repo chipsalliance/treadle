@@ -14,6 +14,25 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
   private val stream = getClass.getResourceAsStream("/HasCoverStatements.fir")
   private val firrtlSource = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
 
+  "cover statements should be counted" in {
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
+      val c0 = tester.getCoverage().toMap
+      assert(c0.size == 6, "There are 6 cover statements in HasCoverStatements.fir")
+      assert(c0.keys.count(_.startsWith("c.")) == 2, "There are two cover statements in the submodule.")
+      c0.values.foreach(v => assert(v == 0, "All count should be zero since we have not taken a step yet"))
+
+      tester.step(10)
+
+      val c1 = tester.getCoverage().toMap
+      assert(c1("cover0") == 5)
+      assert(c1("cover1") == 3)
+      assert(c1("cover2") == 2)
+      assert(c1("cover3") == 1)
+      assert(c1("c.cover0") + c1("c.cover1") == 10)
+    }
+  }
+
+
   "cover statements should produce a report" in {
     // report will go in coverageFileName so delete it if it already exists
     val coverageFileName = "test_run_dir/HasCoverStatements/HasCoverStatements.coverage.txt"

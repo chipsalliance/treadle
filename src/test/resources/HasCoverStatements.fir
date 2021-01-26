@@ -31,3 +31,12 @@ circuit HasCoverStatements :
     node _out_T_4 = asUInt(_out_T_3) @[VerificationSpec.scala 34:5]
     node _out_T_5 = bits(_out_T_4, 0, 0) @[VerificationSpec.scala 34:5]
     out <= _out_T_5 @[VerificationSpec.scala 27:7]
+    inst c of child
+    c.clock <= clock
+    c.in <= out_reg_3
+
+  module child:
+    input clock : Clock
+    input in : UInt<1>
+    cover(clock, not(in), UInt(1), "cov0")
+    cover(clock, not(not(in)), UInt(1), "cov1")

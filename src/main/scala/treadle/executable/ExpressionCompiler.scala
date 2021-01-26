@@ -954,7 +954,8 @@ class ExpressionCompiler(
                   message,
                   clockTransitionGetter,
                   intPredicateExpression,
-                  intEnableExpression
+                  intEnableExpression,
+                  Formal.Cover
                 )
                 symbolTable.verifyOps += verifyOp
                 addAssigner(verifyOp)

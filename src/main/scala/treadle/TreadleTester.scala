@@ -381,6 +381,12 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     expectationsMet += 1
   }
 
+  /** Returns the number of times every cover statement has been true on a clock edge. */
+  def getCoverage(): List[(String, Long)] = {
+    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl.ir.Formal.Cover)
+    cov.map(c => c.symbol.name -> c.coverCount).toList
+  }
+
   def waveformValues(
     symbolNames: Array[String] = Array[String](),
     startCycle:  Int = 0,
