@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Build script for mill 0.6.0
-import mill._
-import mill.scalalib._
-import mill.scalalib.publish._
-import coursier.maven.MavenRepository
-import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
-import mill.contrib.buildinfo.BuildInfo
 
 object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.11")
 
@@ -76,7 +70,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
     description = artifactName(),
     organization = "edu.berkeley.cs",
     url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`BSD-3-Clause`),
+    licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("freechipsproject", "treadle"),
     developers = Seq(
       Developer("jackbackrack", "Jonathan Bachrach", "https://eecs.berkeley.edu/~jrb/")
