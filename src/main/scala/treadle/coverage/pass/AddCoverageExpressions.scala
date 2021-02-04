@@ -84,13 +84,15 @@ object AddCoverageExpressions extends Pass {
     * Traverse statements, find muxes and insert coverage expressions there
     */
   private def coverS(ledger: Ledger, namespace: Namespace)(s: Statement): Statement = {
-    val block = mutable.ArrayBuffer[Statement]()
     s match {
       case s: HasInfo =>
+        val block = mutable.ArrayBuffer[Statement]()
         val newStmt = s.mapExpr(coverE(ledger, namespace, block))
         block.length match {
           case 0 => newStmt
-          case _ => Block(block :+ newStmt)
+          case _ =>
+            block += newStmt
+            Block(block.toSeq)
         }
       case s => s.mapStmt(coverS(ledger, namespace))
     }

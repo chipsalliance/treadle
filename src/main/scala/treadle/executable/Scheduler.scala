@@ -128,21 +128,24 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     *  updates signals that depend on inputs
     */
   def executeCombinationalAssigns(): Unit = {
-    executeAssigners(combinationalAssigns)
+    executeAssigners(combinationalAssigns.toSeq)
   }
 
   /**
     *  updates signals that depend on inputs
     */
   def executeOrphanedAssigns(): Unit = {
-    executeAssigners(orphanedAssigns)
+    executeAssigners(orphanedAssigns.toSeq)
   }
 
   /**
     * de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
-    val deduplicatedAssigns = (combinationalAssigns -- orphanedAssigns).distinct
+    val buf = mutable.ArrayBuffer[Assigner]()
+    buf ++= combinationalAssigns
+    buf --= orphanedAssigns
+    val deduplicatedAssigns = buf.distinct
     combinationalAssigns = deduplicatedAssigns.sortBy { assigner: Assigner =>
       assigner.symbol.cardinalNumber
     } ++ endOfCycleAssigns

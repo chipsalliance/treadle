@@ -8,7 +8,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.11")
+object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.12", "2.13.4")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -35,7 +35,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
 
   def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
 
-  def publishVersion = "1.4-SNAPSHOT"
+  def publishVersion = "1.5-SNAPSHOT"
 
   // 2.12.11 -> Array("2", "12", "10") -> "12" -> 12
   protected def majorVersion = crossVersion.split('.')(1).toInt
@@ -49,11 +49,6 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
     MavenRepository("https://oss.sonatype.org/content/repositories/releases")
   )
 
-  private def scalacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq()
-    case _           => Seq("-Xsource:2.11")
-  }
-
   private def javacCrossOptions = majorVersion match {
     case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
     case _           => Seq("-source", "1.8", "-target", "1.8")
@@ -62,21 +57,15 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
   override def scalacOptions = super.scalacOptions() ++ Agg(
     "-deprecation",
     "-feature"
-  ) ++ scalacCrossOptions
+  )
 
   override def javacOptions = super.javacOptions() ++ javacCrossOptions
-
-  private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
-
-  override def compileIvyDeps = Agg(macroParadise)
-
-  override def scalacPluginIvyDeps = Agg(macroParadise)
 
   def pomSettings = PomSettings(
     description = artifactName(),
     organization = "edu.berkeley.cs",
     url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`BSD-3-Clause`),
+    licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("freechipsproject", "treadle"),
     developers = Seq(
       Developer("jackbackrack", "Jonathan Bachrach", "https://eecs.berkeley.edu/~jrb/")

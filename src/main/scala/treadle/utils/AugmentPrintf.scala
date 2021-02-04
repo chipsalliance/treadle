@@ -41,7 +41,8 @@ class AugmentPrintf extends Transform with DependencyAPIMigration {
         case s: Stop =>
           val newStmts = mutable.ArrayBuffer[Statement]()
           val newStop = s.mapExpr(insert(newStmts, namespace, s.info, s.clk))
-          Block(newStmts :+ newStop)
+          newStmts += newStop
+          Block(newStmts.toSeq)
         case p: Print =>
           val newStmts = mutable.ArrayBuffer[Statement]()
           val newName = namespace.newTemp
@@ -51,7 +52,8 @@ class AugmentPrintf extends Transform with DependencyAPIMigration {
 
           val newPrint: Print =
             p.mapExpr(insert(newStmts, namespace, p.info, p.clk)).asInstanceOf[Print].copy(en = wref)
-          Block(newStmts :+ newPrint)
+          newStmts += newPrint
+          Block(newStmts.toSeq)
         case other => other
       }
 

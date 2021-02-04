@@ -19,7 +19,7 @@ class NameBasedRandomNumberGenerator {
     rand.setSeed(name.hashCode + deviationSeed)
     rand.setSeed(rand.nextLong())
     rand.setSeed(rand.nextLong())
-    rand.nextLong
+    rand.nextLong()
     BigInt(bitWidth, rand)
   }
 }
