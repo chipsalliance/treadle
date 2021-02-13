@@ -40,7 +40,7 @@ lazy val baseSettings = Seq(
   // when compiling tests under 2.11.12
   // An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
-    "junit" % "junit" % "4.13" % "test",
+    "junit" % "junit" % "4.13.2" % "test",
     "org.scalatest" %% "scalatest" % "3.2.2" % "test",
     "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1",
