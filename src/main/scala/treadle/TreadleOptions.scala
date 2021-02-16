@@ -9,6 +9,7 @@ import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserial
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
+import treadle.stage.phases.HandleFormalStatements
 
 sealed trait TreadleOption extends Unserializable { this: Annotation => }
 
@@ -34,6 +35,19 @@ case object VcdShowUnderScoredAnnotation extends NoTargetAnnotation with Treadle
       longOption = "tr-vcd-show-underscored-vars",
       toAnnotationSeq = _ => Seq(VcdShowUnderScoredAnnotation),
       helpText = "vcd output by default does not show var that start with underscore, this overrides that"
+    )
+  )
+}
+
+/**
+  * Tells treadle to write coverage report in CSV format after simulation
+  */
+case object WriteCoverageCSVAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-write-coverage-csv",
+      toAnnotationSeq = _ => Seq(WriteCoverageCSVAnnotation),
+      helpText = "writes coverage report in CSV format after simulation, filename will be based on top-name"
     )
   )
 }
@@ -184,6 +198,19 @@ case object MemoryToVCD extends HasShellOptions {
       longOption = "tr-mem-to-vcd",
       toAnnotationSeq = (specifier: String) => Seq(MemoryToVCD(specifier)),
       helpText = s"""log specified memory/indices to vcd, format "all" or "memoryName:1,2,5-10" """
+    )
+  )
+}
+
+/**
+  * Controls whether coverage information will be gathered or not during the execution of a test.
+  */
+case object EnableCoverageAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[String](
+      longOption = "tr-enable-coverage",
+      toAnnotationSeq = _ => Seq(EnableCoverageAnnotation),
+      helpText = s"""Enables automatic line coverage on tests"""
     )
   )
 }
@@ -410,7 +437,9 @@ class TreadleLibrary extends RegisteredLibrary {
     TreadleRocketBlackBoxes,
     PrefixPrintfWithWallTime,
     TreadleFirrtlString,
-    TreadleFirrtlFile
+    TreadleFirrtlFile,
+    new HandleFormalStatements,
+    EnableCoverageAnnotation
   ).flatMap(_.options)
 }
 

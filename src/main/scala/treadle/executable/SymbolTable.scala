@@ -48,8 +48,10 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
 
   val moduleMemoryToMemorySymbol: mutable.HashMap[String, mutable.HashSet[Symbol]] = new mutable.HashMap
 
-  val stopToStopInfo:   mutable.HashMap[Stop, StopInfo] = new mutable.HashMap[Stop, StopInfo]
-  val printToPrintInfo: mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
+  val stopToStopInfo:     mutable.HashMap[Stop, StopInfo] = new mutable.HashMap[Stop, StopInfo]
+  val printToPrintInfo:   mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
+  val verifyToVerifyInfo: mutable.HashMap[Verification, VerifyInfo] = new mutable.HashMap[Verification, VerifyInfo]
+  val verifyOps:          mutable.ListBuffer[VerifyOp] = new mutable.ListBuffer[VerifyOp]
 
   def isRegister(name:      String): Boolean = registerNames.contains(name)
   def isTopLevelInput(name: String): Boolean = inputPortsNames.contains(name)
@@ -89,8 +91,7 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
     }
   }
 
-  /**
-    * Find all the sources of symbol that are not non-clock inputs.
+  /** Find all the sources of symbol that are not non-clock inputs.
     * Sinks are used here because we are working with the parents of graph
     * This was needed because clocks of memory or other submodules may have
     * a non-trivial connection to parent clocks
@@ -182,6 +183,14 @@ object SymbolTable extends LazyLogging {
       s"/print${printSymbolsFound - 1}"
     }
 
+    // cover symbols are scoped thus we have a counter for every prefix
+    val coverSymbolsFound = mutable.HashMap[String, Int]()
+    def makeCoverName(prefix: String): String = {
+      val id = coverSymbolsFound.getOrElse(prefix, 0)
+      coverSymbolsFound.put(prefix, id + 1)
+      s"cover${id}"
+    }
+
     val nameToSymbol = new mutable.HashMap[String, Symbol]()
     def addSymbol(symbol: Symbol): Unit = {
       if (nameToSymbol.contains(symbol.name)) {
@@ -204,18 +213,17 @@ object SymbolTable extends LazyLogging {
     val instanceNameToModuleName = new mutable.HashMap[String, String]()
     instanceNameToModuleName("") = circuit.main
 
-    val lastStopStymbol = new mutable.HashMap[Module, Symbol]
+    val lastStopSymbol = new mutable.HashMap[Module, Symbol]
 
     val printToPrintInfo = new mutable.HashMap[Print, PrintInfo]
     var printfCardinal: Int = 0
-    val lastPrintfInMOdule = new mutable.HashMap[Module, Symbol]
+    val lastPrintfInModule = new mutable.HashMap[Module, Symbol]
 
-    val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]] {
-      override def default(key: String): mutable.HashSet[Symbol] = {
-        this(key) = new mutable.HashSet[Symbol]()
-        this(key)
-      }
-    }
+    val verifyToVerifyInfo = new mutable.HashMap[Verification, VerifyInfo]
+    var verifyCardinal: Int = 0
+    val lastVerifyInModule = new mutable.HashMap[Module, Symbol]
+
+    val moduleMemoryToMemorySymbol = new mutable.HashMap[String, mutable.HashSet[Symbol]]()
 
     val blackBoxImplementations = new mutable.HashMap[Symbol, ScalaBlackBox]()
 
@@ -321,11 +329,10 @@ object SymbolTable extends LazyLogging {
                 case Some(implementation) =>
                   def getSymbol(name: String): Symbol = nameToSymbol(expand(instanceName + "." + name))
 
-                  implementation.getDependencies.foreach {
-                    case (dependent, driving) =>
-                      val dependentSymbol = getSymbol(dependent)
-                      val drivers = driving.map(getSymbol).toSet
-                      addDependency(dependentSymbol, drivers)
+                  implementation.getDependencies.foreach { case (dependent, driving) =>
+                    val dependentSymbol = getSymbol(dependent)
+                    val drivers = driving.map(getSymbol)
+                    addDependency(dependentSymbol, drivers)
                   }
                   for (port <- extModule.ports) {
                     if (port.direction == Output) {
@@ -404,7 +411,8 @@ object SymbolTable extends LazyLogging {
           }
           val moduleMemory = module.name + "." + defMemory.name
 
-          moduleMemoryToMemorySymbol(moduleMemory) += memorySymbols.head
+          val values = moduleMemoryToMemorySymbol.getOrElseUpdate(moduleMemory, new mutable.HashSet)
+          values += memorySymbols.head
 
         case stop @ Stop(info, _, clockExpression, enableExpression) =>
           getClockSymbol(clockExpression) match {
@@ -416,11 +424,11 @@ object SymbolTable extends LazyLogging {
 
               addDependency(stopSymbol, expressionToReferences(clockExpression))
               addDependency(stopSymbol, expressionToReferences(enableExpression))
-              lastStopStymbol.get(module) match {
+              lastStopSymbol.get(module) match {
                 case Some(lastSymbol) => addDependency(stopSymbol, Set(lastSymbol))
                 case _                =>
               }
-              lastStopStymbol(module) = stopSymbol
+              lastStopSymbol(module) = stopSymbol
 
               if (!nameToSymbol.contains(StopOp.stopHappenedName)) {
                 addSymbol(
@@ -447,16 +455,43 @@ object SymbolTable extends LazyLogging {
               args.foreach { arg =>
                 addDependency(printSymbol, expressionToReferences(arg))
               }
-              lastPrintfInMOdule.get(module) match {
+              lastPrintfInModule.get(module) match {
                 case Some(lastPrintfSymbol) =>
                   addDependency(printSymbol, Set(lastPrintfSymbol))
                 case _ =>
               }
-              lastPrintfInMOdule(module) = printSymbol
+              lastPrintfInModule(module) = printSymbol
 
             case _ =>
               throw TreadleException(s"Can't find clock for $print")
           }
+
+        case verify @ Verification(Formal.Cover, info, clockExpression, predicateExpression, enableExpression, _) =>
+          /* do something good here */
+          getClockSymbol(clockExpression) match {
+            case Some(_) =>
+              val verifySymbolName = expand(makeCoverName(modulePrefix))
+              val verifySymbol =
+                Symbol(verifySymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
+              addSymbol(verifySymbol)
+
+              verifyCardinal += 1
+              verifyToVerifyInfo(verify) = VerifyInfo(verifySymbol, verifyCardinal)
+              addDependency(verifySymbol, expressionToReferences(clockExpression))
+              addDependency(verifySymbol, expressionToReferences(enableExpression))
+              addDependency(verifySymbol, expressionToReferences(predicateExpression))
+
+              lastVerifyInModule.get(module) match {
+                case Some(lastVerifySymbol) =>
+                  addDependency(verifySymbol, Set(lastVerifySymbol))
+                case _ =>
+              }
+              lastVerifyInModule(module) = verifySymbol
+
+            case _ =>
+              throw TreadleException(s"Can't find clock for $verify")
+          }
+
         case EmptyStmt =>
         case invalid: IsInvalid =>
           logger.debug(f"IsInvalid found for ${invalid.expr}%20s")
@@ -464,7 +499,7 @@ object SymbolTable extends LazyLogging {
         case conditionally: Conditionally =>
           throw TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
-          println(s"TODO: Unhandled statement $s")
+          println(s"SymbolTable:TODO: Unhandled statement $s")
       }
     }
 
@@ -586,13 +621,12 @@ object SymbolTable extends LazyLogging {
         try {
           val path = symbolTable.childrenOf.path(node, badNode) ++ symbolTable.childrenOf.path(badNode, node).tail
           println(s"Problem path found starting at ${node.name}")
-          path.reverse.zip(path.reverse.tail).foreach {
-            case (symbol, nextSymbol) =>
-              show(symbol, nextSymbol.name)
+          path.reverse.zip(path.reverse.tail).foreach { case (symbol, nextSymbol) =>
+            show(symbol, nextSymbol.name)
           }
           true
         } catch {
-          case t: Throwable =>
+          case _: Throwable =>
             false
         }
       }
@@ -614,6 +648,7 @@ object SymbolTable extends LazyLogging {
     symbolTable.registerToClock ++= registerToClock
     symbolTable.stopToStopInfo ++= stopToStopInfo
     symbolTable.printToPrintInfo ++= printToPrintInfo
+    symbolTable.verifyToVerifyInfo ++= verifyToVerifyInfo
 
     symbolTable.parentsOf = sensitivityGraphBuilder.getParentsOfDiGraph
     symbolTable.childrenOf = sensitivityGraphBuilder.getChildrenOfDiGraph
@@ -638,16 +673,15 @@ object SymbolTable extends LazyLogging {
       }
     logger.trace(s"Build SymbolTable pass 2 -- linearize complete")
 
-    sorted.zipWithIndex.foreach {
-      case (symbol, index) =>
-        val adjustedIndex = if (symbol.name.startsWith("/stopped")) {
-          Int.MaxValue
-        } else if (symbol.name.startsWith("/stop")) {
-          Int.MaxValue - 1
-        } else {
-          index
-        }
-        symbol.cardinalNumber = adjustedIndex
+    sorted.zipWithIndex.foreach { case (symbol, index) =>
+      val adjustedIndex = if (symbol.name.startsWith("/stopped")) {
+        Int.MaxValue
+      } else if (symbol.name.startsWith("/stop")) {
+        Int.MaxValue - 1
+      } else {
+        index
+      }
+      symbol.cardinalNumber = adjustedIndex
     }
 
     logger.trace(s"Build SymbolTable pass 3 -- sort complete")

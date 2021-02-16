@@ -3,7 +3,7 @@
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LazyLogging, LogLevel, Logger}
+import logger.{LazyLogging, LogLevel, LogLevelAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import treadle.utils.NameBasedRandomNumberGenerator
@@ -23,8 +23,6 @@ class RandomizeCircuitTest extends AnyFreeSpec with Matchers with LazyLogging {
       val registerName = s"reg$i"
       nameBasedRandomNumberGenerator.nextBigInt(registerName, deviationSeed = 0L, 16).toLong
     }
-
-    Logger.setLevel(this.getClass, LogLevel.None)
 
     a.zip(b).foreach {
       case (r1, r2) =>
@@ -108,44 +106,44 @@ class RandomizeCircuitTest extends AnyFreeSpec with Matchers with LazyLogging {
          |
          |""".stripMargin
 
-    val tester = TreadleTester(
+    TreadleTestHarness(
       Seq(
         FirrtlSourceAnnotation(input),
-        RandomizeAtStartupAnnotation
+        RandomizeAtStartupAnnotation,
+        LogLevelAnnotation(LogLevel.None)
       )
-    )
-    Logger.setLevel(this.getClass, LogLevel.None)
+    ) { tester =>
+      val regNames = Seq(1, 2, 3, 4, 11, 12).map { n =>
+        f"reg$n"
+      }
+      val saveRegs = regNames.map { name =>
+        name -> tester.peek(name)
+      }.toMap
 
-    val regNames = Seq(1, 2, 3, 4, 11, 12).map { n =>
-      f"reg$n"
+      logger.info(regNames.map { s =>
+        f"$s%10s"
+      }.mkString(""))
+      logger.info(regNames.map { s =>
+        f"${tester.peek(s)}%10d"
+      }.mkString(""))
+
+      tester.poke("io_in_a", 7)
+      tester.step(10)
+
+      logger.info(regNames.map { s =>
+        f"${tester.peek(s)}%10d"
+      }.mkString(""))
+      tester.peek("reg1") must be(BigInt(7))
+      saveRegs.exists { case (name, savedValue) => savedValue != tester.peek(name) } must be(true)
+
+      tester.randomize()
+
+      logger.info(regNames.map { s =>
+        f"${tester.peek(s)}%10d"
+      }.mkString(""))
+      regNames.forall { name =>
+        saveRegs(name) == tester.peek(name)
+      } must be(true)
     }
-    val saveRegs = regNames.map { name =>
-      name -> tester.peek(name)
-    }.toMap
-
-    logger.info(regNames.map { s =>
-      f"$s%10s"
-    }.mkString(""))
-    logger.info(regNames.map { s =>
-      f"${tester.peek(s)}%10d"
-    }.mkString(""))
-
-    tester.poke("io_in_a", 7)
-    tester.step(10)
-
-    logger.info(regNames.map { s =>
-      f"${tester.peek(s)}%10d"
-    }.mkString(""))
-    tester.peek("reg1") must be(BigInt(7))
-    saveRegs.exists { case (name, savedValue) => savedValue != tester.peek(name) } must be(true)
-
-    tester.randomize()
-
-    logger.info(regNames.map { s =>
-      f"${tester.peek(s)}%10d"
-    }.mkString(""))
-    regNames.forall { name =>
-      saveRegs(name) == tester.peek(name)
-    } must be(true)
   }
 }

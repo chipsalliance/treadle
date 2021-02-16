@@ -5,8 +5,9 @@ package treadle.stage.phases
 import firrtl.options.{Dependency, Phase}
 import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
 import firrtl.transforms.BlackBoxSourceHelper
-import firrtl.{passes, AnnotationSeq, CircuitState}
+import firrtl.{AnnotationSeq, CircuitState, passes}
 import treadle.TreadleCircuitStateAnnotation
+import treadle.coverage.pass.AddCoverageExpressions
 import treadle.utils.{AugmentPrintf, FixupOps}
 
 /**
@@ -14,6 +15,7 @@ import treadle.utils.{AugmentPrintf, FixupOps}
   */
 class PrepareAst extends Phase {
   private val targets = Seq(
+    Dependency(AddCoverageExpressions),
     Dependency[BlackBoxSourceHelper],
     Dependency[FixupOps],
     Dependency[AugmentPrintf]
@@ -25,10 +27,12 @@ class PrepareAst extends Phase {
     Dependency[firrtl.transforms.ConstantPropagation],
     Dependency[firrtl.transforms.CombineCats],
     Dependency(passes.CommonSubexpressionElimination),
-    Dependency[firrtl.transforms.DeadCodeElimination]
+    Dependency[firrtl.transforms.DeadCodeElimination],
+    Dependency[HandleFormalStatements]
   )
 
   private def compiler = new firrtl.stage.transforms.Compiler(targets, currentState = Nil)
+
   private val transforms = compiler.flattenedTransformOrder
 
   override def transform(annotationSeq: AnnotationSeq): AnnotationSeq = {

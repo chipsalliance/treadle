@@ -2,13 +2,14 @@
 
 package treadle.executable
 
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 
 import firrtl.annotations.ReferenceTarget
 import firrtl.annotations.TargetToken.Instance
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
+import firrtl.stage.OutputFileAnnotation
 import firrtl.{AnnotationSeq, MemKind, PortKind, RegKind}
 import logger.LazyLogging
 import treadle._
@@ -33,6 +34,11 @@ class ExecutionEngine(
 
   var vcdOption:   Option[VCD] = None
   var vcdFileName: String = ""
+
+  // use the generated file root to create files in working dir with desired suffixes
+  private val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(ast.main)
+  private val stageOptions = view[StageOptions](annotationSeq)
+  val generatedFileRoot: String = stageOptions.getBuildFileName(topName)
 
   val expressionViewRenderer = new ExpressionViewRenderer(
     dataStore,
@@ -79,8 +85,7 @@ class ExecutionEngine(
     scheduler.setVerboseAssign(verbose)
   }
 
-  /**
-    * turns on evaluator debugging.  Can make output quite
+  /** turns on evaluator debugging.  Can make output quite
     * verbose.
     *
     * @param isVerbose  The desired verbose setting
@@ -256,8 +261,7 @@ class ExecutionEngine(
     }
   }
 
-  /**
-    * Update the dataStore with the supplied information.
+  /** Update the dataStore with the supplied information.
     * IMPORTANT: This should never be used internally.
     *
     * @param name  name of value to set
@@ -328,8 +332,7 @@ class ExecutionEngine(
     value
   }
 
-  /**
-    * Update the dataStore with the supplied information.
+  /** Update the dataStore with the supplied information.
     * IMPORTANT: This should never be used internally.
     *
     * @param symbol symbol to set
@@ -458,8 +461,7 @@ class ExecutionEngine(
 
   private val stopHappenedSymbolOpt = symbolTable.get(StopOp.stopHappenedName)
 
-  /**
-    * returns that value specified by a StopOp when
+  /** returns that value specified by a StopOp when
     * its condition is satisfied.  Only defined when
     * circuit is currently stopped.
     * @return
@@ -478,8 +480,7 @@ class ExecutionEngine(
     }
   }
 
-  /**
-    * Is the circuit currently stopped.  StopOp throws a
+  /** Is the circuit currently stopped.  StopOp throws a
     * Stop
     * @return
     */
@@ -487,11 +488,24 @@ class ExecutionEngine(
     lastStopResult.isDefined
   }
 
-  def finish(): Unit = {
+  /*
+  This is where things should go that need to be done at the end of the run.
+  Currently this telling black boxes to finish up things if they need to
+  and have the coverage counts recorded if they exist.
+   */
+  def finish(writeCoverageReport: Boolean = false): Unit = {
     symbols.foreach { symbol =>
       symbolTable.getBlackboxImplementation(symbol).foreach { blackBox =>
         blackBox.finish()
       }
+    }
+    if (writeCoverageReport && symbolTable.verifyOps.nonEmpty) {
+      val text = symbolTable.verifyOps.map { verifyOp =>
+        s"${verifyOp.info.toString.trim},${verifyOp.message.escape},${verifyOp.clockCount},${verifyOp.coverCount}"
+      }.sorted.mkString("\n")
+      val writer = new PrintWriter(new File(generatedFileRoot + ".coverage.txt"))
+      writer.write(text)
+      writer.close()
     }
   }
 
@@ -549,13 +563,12 @@ class ExecutionEngine(
   }
 }
 
-object ExecutionEngine {
+object ExecutionEngine extends LazyLogging {
 
   val VCDHookName = "log-vcd"
 
   //scalastyle:off method.length
-  /**
-    * Factory to create an execution engine
+  /** Factory to create an execution engine
     * @param annotationSeq  annotations control all
     * @param wallTime       external synthetic simple time
     * @return
@@ -653,7 +666,7 @@ object ExecutionEngine {
 
     val t1 = System.nanoTime()
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
-    println(
+    logger.info(
       s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
         s"${scheduler.combinationalAssigns.size} statements"
     )

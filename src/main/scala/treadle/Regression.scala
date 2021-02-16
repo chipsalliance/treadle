@@ -24,7 +24,7 @@ object Regression {
   }
 
   //scalastyle:off method.length
-  def manyValuesTest(width: Int) {
+  def manyValuesTest(width: Int): Unit = {
     val gcdFirrtl: String =
       s"""
          |circuit GCD :

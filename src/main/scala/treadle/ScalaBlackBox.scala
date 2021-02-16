@@ -6,7 +6,7 @@ import firrtl.ir.{Param, Type}
 import treadle.blackboxes.PlusArg
 import treadle.executable.Transition
 
-import scala.collection._
+import scala.collection.mutable
 
 /**
   * This is the template for writing Scala functions that implement the behaviour of a

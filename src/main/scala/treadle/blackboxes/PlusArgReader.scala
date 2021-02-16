@@ -75,7 +75,7 @@ class PlusArgReader(val instanceName: String) extends ScalaBlackBox {
     Seq.empty
   }
 
-  override def getDependencies: Seq[(String, collection.Set[String])] = {
+  override def getDependencies: Seq[(String, Set[String])] = {
     Seq.empty
   }
 }

@@ -29,8 +29,10 @@ object GetFirrtlAst extends Phase {
     def handleFirrtlSource(): Option[AnnotationSeq] = {
       annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtlText) => firrtlText } match {
         case Some(text) =>
+
           val circuit = Parser.parse(text)
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
+
         case _ =>
           None
       }
@@ -43,8 +45,10 @@ object GetFirrtlAst extends Phase {
           val file = io.Source.fromFile(fileName)
           val text = file.mkString
           file.close()
+
           val circuit = Parser.parse(text)
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
+
         case _ =>
           None
       }
