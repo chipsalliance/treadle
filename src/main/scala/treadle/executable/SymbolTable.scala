@@ -171,26 +171,6 @@ object SymbolTable extends LazyLogging {
 
     type SymbolSet = Set[Symbol]
 
-    var stopSymbolsFound: Int = 0
-    def makeStopName(): String = {
-      stopSymbolsFound += 1
-      s"/stop${stopSymbolsFound - 1}"
-    }
-
-    var printSymbolsFound: Int = 0
-    def makePrintName(): String = {
-      printSymbolsFound += 1
-      s"/print${printSymbolsFound - 1}"
-    }
-
-    // cover symbols are scoped thus we have a counter for every prefix
-    val coverSymbolsFound = mutable.HashMap[String, Int]()
-    def makeCoverName(prefix: String): String = {
-      val id = coverSymbolsFound.getOrElse(prefix, 0)
-      coverSymbolsFound.put(prefix, id + 1)
-      s"cover${id}"
-    }
-
     val nameToSymbol = new mutable.HashMap[String, Symbol]()
     def addSymbol(symbol: Symbol): Unit = {
       if (nameToSymbol.contains(symbol.name)) {
@@ -417,7 +397,8 @@ object SymbolTable extends LazyLogging {
         case stop @ Stop(info, _, clockExpression, enableExpression) =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
-              val stopSymbolName = makeStopName()
+              assert(stop.name.nonEmpty, "Stop statements require a non-empty name!")
+              val stopSymbolName = expand(stop.name)
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(stopSymbol)
               stopToStopInfo(stop) = StopInfo(stopSymbol)
@@ -443,7 +424,8 @@ object SymbolTable extends LazyLogging {
         case print @ Print(info, _, args, clockExpression, enableExpression) =>
           getClockSymbol(clockExpression) match {
             case Some(_) =>
-              val printSymbolName = makePrintName()
+              assert(print.name.nonEmpty, "Print statements require a non-empty name!")
+              val printSymbolName = expand(print.name)
               val printSymbol =
                 Symbol(printSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(printSymbol)
@@ -470,7 +452,8 @@ object SymbolTable extends LazyLogging {
           /* do something good here */
           getClockSymbol(clockExpression) match {
             case Some(_) =>
-              val verifySymbolName = expand(makeCoverName(modulePrefix))
+              assert(verify.name.nonEmpty, "Verification statements require a non-empty name!")
+              val verifySymbolName = expand(verify.name)
               val verifySymbol =
                 Symbol(verifySymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(verifySymbol)

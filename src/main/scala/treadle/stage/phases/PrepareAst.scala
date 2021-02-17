@@ -15,6 +15,7 @@ import treadle.utils.{AugmentPrintf, FixupOps}
   */
 class PrepareAst extends Phase {
   private val targets = Seq(
+    Dependency(firrtl.transforms.EnsureNamedStatements),
     Dependency(AddCoverageExpressions),
     Dependency[BlackBoxSourceHelper],
     Dependency[FixupOps],
