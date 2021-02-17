@@ -38,5 +38,5 @@ circuit HasCoverStatements :
   module child:
     input clock : Clock
     input in : UInt<1>
-    cover(clock, not(in), UInt(1), "cov0")
-    cover(clock, not(not(in)), UInt(1), "cov1")
+    cover(clock, not(in), UInt(1), "cov0") : cov0
+    cover(clock, not(not(in)), UInt(1), "cov1") : cov1_this_is_custom

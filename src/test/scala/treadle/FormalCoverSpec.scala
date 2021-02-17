@@ -24,11 +24,11 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
       tester.step(10)
 
       val c1 = tester.getCoverage().toMap
-      assert(c1("cover0") == 5)
-      assert(c1("cover1") == 3)
-      assert(c1("cover2") == 2)
-      assert(c1("cover3") == 1)
-      assert(c1("c.cover0") + c1("c.cover1") == 10)
+      assert(c1("cover_0") == 5)
+      assert(c1("cover_1") == 3)
+      assert(c1("cover_2") == 2)
+      assert(c1("cover_3") == 1)
+      assert(c1("c.cov0") + c1("c.cov1_this_is_custom") == 10)
     }
   }
 
