@@ -40,6 +40,19 @@ case object VcdShowUnderScoredAnnotation extends NoTargetAnnotation with Treadle
 }
 
 /**
+  * Tells treadle to write coverage report in CSV format after simulation
+  */
+case object WriteCoverageCSVAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-write-coverage-csv",
+      toAnnotationSeq = _ => Seq(WriteCoverageCSVAnnotation),
+      helpText = "writes coverage report in CSV format after simulation, filename will be based on top-name"
+    )
+  )
+}
+
+/**
   *  Tells treadle to execute verbosely
   */
 case object VerboseAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {

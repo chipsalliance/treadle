@@ -56,6 +56,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   val resetName: String = annotationSeq.collectFirst { case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
   private val clockInfo = annotationSeq.collectFirst { case ClockInfoAnnotation(cia) => cia }.getOrElse(Seq.empty)
   private val writeVcd = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
+  private val writeCoverageReport = annotationSeq.contains(WriteCoverageCSVAnnotation)
   val vcdShowUnderscored: Boolean = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
   private val callResetAtStartUp = annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }
   val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
@@ -381,6 +382,12 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     expectationsMet += 1
   }
 
+  /** Returns the number of times every cover statement has been true on a clock edge. */
+  def getCoverage(): List[(String, Long)] = {
+    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl.ir.Formal.Cover)
+    cov.map(c => c.symbol.name -> c.coverCount).toList
+  }
+
   def waveformValues(
     symbolNames: Array[String] = Array[String](),
     startCycle:  Int = 0,
@@ -465,7 +472,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
 
   def finish: Boolean = {
-    engine.finish()
+    engine.finish(writeCoverageReport)
     engine.writeVCD()
     isOK
   }
