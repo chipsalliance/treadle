@@ -19,6 +19,11 @@ jobs:
         uses: olafurpg/setup-scala@v10
       - name: Cache
         uses: coursier/cache-action@v5
+      - name: Setup Mill
+        uses: jodersky/setup-mill@v0.2.3
+      - name: Mill sanity check
+        id: mill
+        run: mill __.compile
       - name: Documentation
         id: doc
         run: sbt doc
