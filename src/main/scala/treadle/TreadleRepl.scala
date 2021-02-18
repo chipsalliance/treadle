@@ -46,13 +46,6 @@ abstract class Command(val name: String) {
 class TreadleRepl(initialAnnotations: AnnotationSeq) {
   var annotationSeq: AnnotationSeq = initialAnnotations
   var stageOptions:  StageOptions = view[StageOptions](annotationSeq)
-  var replConfig:    ReplConfig = ReplConfig.fromAnnotations(annotationSeq)
-
-  def mutateAnnotations(newAnnotations: AnnotationSeq): Unit = {
-    annotationSeq = newAnnotations
-    stageOptions = view[StageOptions](annotationSeq)
-    replConfig = ReplConfig.fromAnnotations(annotationSeq)
-  }
 
   val terminal: Terminal = TerminalFactory.create()
   val console: ConsoleReader = annotationSeq.collectFirst { case OverrideOutputStream(s) => s } match {
@@ -101,7 +94,8 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   var currentVcdScript:  Option[VCD] = None
   var replVcdController: Option[ReplVcdController] = None
 
-  var outputFormat: String = replConfig.outputFormat
+  var outputFormat: String = annotationSeq.collectFirst { case TreadleReplDisplayFormat(format) => format }
+    .getOrElse("d")
 
   def formatOutput(value: BigInt): String = {
     outputFormat match {
@@ -1452,22 +1446,22 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   def run(): Unit = {
     console.setPrompt("treadle>> ")
 
-    mutateAnnotations(annotationSeq)
-
     try {
       loadSource()
 
-      if (!annotationSeq.exists(_.isInstanceOf[TreadleTesterAnnotation])) {
-        if (replConfig.firrtlSourceName.nonEmpty) {
-          loadFile(replConfig.firrtlSourceName)
+      annotationSeq.collectFirst { case TreadleScriptFile(name) => name }.foreach { scriptName =>
+        loadScript(scriptName)
+      }
+      if (annotationSeq.contains(TreadleReplUseVcd)) {
+        annotationSeq.collectFirst { case TreadleVcdScriptFileOverride(vcdName) => vcdName } match {
+          case Some(vcdName) =>
+            loadVcdScript(vcdName)
+          case _ =>
+            currentTreadleTesterOpt.foreach { tester =>
+              val vcdName = tester.engine.ast.main + ".vcd"
+              loadVcdScript(vcdName)
+            }
         }
-      }
-      if (replConfig.scriptName.nonEmpty) {
-        loadScript(replConfig.scriptName)
-      }
-      if (replConfig.useVcdScript) {
-        val fileName = replConfig.getVcdInputFileName
-        loadVcdScript(fileName)
       }
     } catch {
       case t: TreadleException =>
@@ -1478,7 +1472,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     }
     buildCompletions()
 
-    if (replConfig.runScriptAtStart) {
+    if (annotationSeq.contains(TreadleReplRunScriptAtStartup)) {
       currentScript match {
         case Some(script) =>
           script.reset()
@@ -1547,11 +1541,6 @@ object TreadleRepl {
   def apply(annotationSeq: AnnotationSeq): TreadleRepl = {
     val newAnnos = (new TreadleTesterPhase).transform(annotationSeq)
     new TreadleRepl(newAnnos)
-  }
-
-  def execute(optionsManager: TreadleOptionsManager with HasReplConfig): Unit = {
-    val repl = TreadleRepl(optionsManager.toAnnotationSeq)
-    repl.run()
   }
 
   def main(args: Array[String]): Unit = {

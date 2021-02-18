@@ -237,7 +237,6 @@ class VCDSpec extends AnyFlatSpec with Matchers {
     TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
       engine.poke("reset", 0)
       engine.step(50)
-
     }
     val vcd = VCD.read("test_run_dir/vcd_register_delay/pwminCount.vcd")
 

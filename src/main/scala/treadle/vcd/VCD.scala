@@ -10,10 +10,18 @@ import logger.LazyLogging
 import collection._
 import java.util.{Date, TimeZone}
 
+import firrtl.FileUtils
+import firrtl.options.StageMain
+
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
-object VCD extends LazyLogging {
+/**
+  * This effective stage main exercises vcd reading and optionally writing
+  * and depending up filtering options can pull out only those change values that
+  * are specific to a particular module
+  */
+object VCD extends StageMain(new VcdStage) with LazyLogging {
   val Version = "0.2"
 
   val DateDeclaration:           String = "$date"
@@ -71,7 +79,7 @@ object VCD extends LazyLogging {
   }
 
   class WordIterator(fileName: String) extends Iterator[String] {
-    val lines: Iterator[String] = io.Source.fromFile(fileName).getLines()
+    val lines: Iterator[String] = FileUtils.getLines(fileName).toIterator
     var currentLineNumber = 0
     var currentLine: Iterator[String] = Iterator.empty
     var _hasNext = false
@@ -204,7 +212,7 @@ object VCD extends LazyLogging {
       }
     }
 
-    def scopePathString(scopeOption: Option[Scope], path: String = ""): String = {
+    def scopePathString(scopeOption: Option[Scope]): String = {
       scopeOption match {
         case Some(scope) => scopePathString(scope.parent) + scope.name + "."
         case None        => ""
@@ -425,41 +433,6 @@ object VCD extends LazyLogging {
     }
     vcd
   }
-
-  /**
-    * This exercises vcd reading and optionally writing
-    * and depending up filtering options can pull out only those change values that
-    * are specific to a particular module
-    * @param args command lines strings use --help to see what they are
-    */
-  def main(args: Array[String]): Unit = {
-    val manager = new VCDOptionsManager
-
-    if (manager.parse(args)) {
-      val config = manager.vcdConfig
-
-      val vcd = read(
-        vcdFile = config.vcdSourceName,
-        startScope = config.startScope,
-        renameStartScope = config.renameStartScope,
-        varPrefix = config.varPrefix,
-        newVarPrefix = config.newVarPrefix
-      )
-
-      println(s"${vcd.info}")
-
-      if (config.dumpHumanReadable) {
-        vcd.dumpHumanReadable()
-      }
-
-      if (config.vcdTargetName.nonEmpty) {
-        vcd.write(config.vcdTargetName)
-      }
-    } else {
-      manager.parser.showUsageAsError()
-    }
-
-  }
 }
 
 /**
@@ -480,14 +453,14 @@ case class VCD(
   comment:                String,
   timeScale:              String,
   scope:                  String,
-  ignoreUnderscoredNames: Boolean)
-    extends LazyLogging {
+  ignoreUnderscoredNames: Boolean
+) extends LazyLogging {
   var currentIdNumber = 0
   var timeStamp = 0L
   val lastValues = new mutable.HashMap[String, Change]
   val valuesAtTime = new mutable.HashMap[Long, mutable.HashSet[Change]]
   val initialValues = new mutable.HashSet[Change]
-  var scopeRoot = Scope(scope)
+  var scopeRoot: Scope = Scope(scope)
   val wires = new mutable.HashMap[String, Wire]
   var aliasedWires: mutable.HashMap[String, mutable.HashSet[Wire]] = new mutable.HashMap
   val wiresToIgnore = new mutable.HashSet[String]
