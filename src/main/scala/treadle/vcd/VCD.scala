@@ -78,7 +78,7 @@ object VCD extends LazyLogging {
     def hasNext: Boolean = _hasNext
     var nextWord = ""
 
-    def next: String = {
+    def next(): String = {
       val lastWord = nextWord
       loadNextWord()
       lastWord
@@ -143,21 +143,11 @@ object VCD extends LazyLogging {
     )
 
     val wireIdToWire = new mutable.HashMap[String, Wire]
-    val aliasedWires = new mutable.HashMap[String, mutable.HashSet[Wire]] {
-      override def default(key: String): mutable.HashSet[Wire] = {
-        this(key) = new mutable.HashSet[Wire]
-        this(key)
-      }
-    }
+    val aliasedWires = new mutable.HashMap[String, mutable.HashSet[Wire]]
     val skippedWires = new mutable.HashMap[String, Wire]
 
     var currentTime = -1L
-    val valuesAtTime = new mutable.HashMap[Long, mutable.HashSet[Change]] {
-      override def default(key: Long): mutable.HashSet[Change] = {
-        this(key) = new mutable.HashSet[Change]
-        this(key)
-      }
-    }
+    val valuesAtTime = new mutable.HashMap[Long, mutable.HashSet[Change]]
 
     val initialValues = new mutable.HashSet[Change]
 
@@ -179,7 +169,7 @@ object VCD extends LazyLogging {
     @scala.annotation.tailrec
     def processScope(): Unit = {
       if (words.hasNext) {
-        words.next match {
+        words.next() match {
           case EndSection() =>
             scopeBuffer.toString() match {
               case ScopedModule(kind, moduleName) =>
@@ -200,7 +190,7 @@ object VCD extends LazyLogging {
 
     def processUpScope(): Unit = {
       if (words.hasNext) {
-        words.next match {
+        words.next() match {
           case EndSection() =>
             currentScope = currentScope match {
               case Some(scope) => scope.parent
@@ -261,7 +251,7 @@ object VCD extends LazyLogging {
                   currentScope.foreach(_.wires += wire)
                 } else {
                   logger.debug(s"AddVar aliased wire $wire at line ${words.currentLineNumber}")
-                  aliasedWires(idString) += wire
+                  aliasedWires.getOrElseUpdate(idString, new mutable.HashSet) += wire
                   currentScope.foreach(_.wires += wire)
                 }
               } else {
@@ -281,7 +271,7 @@ object VCD extends LazyLogging {
     @scala.annotation.tailrec
     def processVar(): Unit = {
       if (words.hasNext) {
-        words.next match {
+        words.next() match {
           case EndSection() =>
             addVar(currentVar.toString())
             currentVar.clear()
@@ -296,7 +286,7 @@ object VCD extends LazyLogging {
     def processHeader(builder: StringBuilder): Unit = {
       if (words.hasNext) {
         if (
-          words.next match {
+          words.next() match {
             case EndSection() =>
               false
             case text =>
@@ -311,7 +301,7 @@ object VCD extends LazyLogging {
 
     def processDump(): Unit = {
       while (words.hasNext) {
-        val nextWord = words.next
+        val nextWord = words.next()
         // logger.debug(s"Process dump $nextWord at line ${words.currentLineNumber}")
         nextWord match {
           case ValueChangeScalar(value, varCode) =>
@@ -322,7 +312,8 @@ object VCD extends LazyLogging {
               if (currentTime < BigInt(0)) {
                 initialValues += Change(wireIdToWire(varCode), BigInt(value))
               } else {
-                valuesAtTime(currentTime) += Change(wireIdToWire(varCode), BigInt(value))
+                val values = valuesAtTime.getOrElseUpdate(currentTime, new mutable.HashSet)
+                values += Change(wireIdToWire(varCode), BigInt(value))
               }
             } else {
               logger.warn(
@@ -331,14 +322,15 @@ object VCD extends LazyLogging {
             }
           case ValueChangeVector(radixString, value) =>
             if (words.hasNext) {
-              val varCode = words.next
+              val varCode = words.next()
               if (wireIdToWire.contains(varCode)) {
                 supportedVectorRadix.get(radixString) match {
                   case Some(radix) =>
                     if (currentTime < BigInt(0)) {
                       initialValues += Change(wireIdToWire(varCode), BigInt(value, radix))
                     } else {
-                      valuesAtTime(currentTime) += Change(wireIdToWire(varCode), BigInt(value, radix))
+                      val values = valuesAtTime.getOrElseUpdate(currentTime, new mutable.HashSet)
+                      values += Change(wireIdToWire(varCode), BigInt(value, radix))
                     }
                   case None =>
                     logger.warn(
@@ -350,14 +342,15 @@ object VCD extends LazyLogging {
             }
           case ValueChangeVectorX(radixString) =>
             if (words.hasNext) {
-              val varCode = words.next
+              val varCode = words.next()
               if (wireIdToWire.contains(varCode)) {
                 supportedVectorRadix.get(radixString) match {
                   case Some(_) =>
                     if (currentTime < BigInt(0)) {
                       initialValues += Change(wireIdToWire(varCode), BigInt(-1))
                     } else {
-                      valuesAtTime(currentTime) += Change(wireIdToWire(varCode), BigInt(-1))
+                      val values = valuesAtTime.getOrElseUpdate(currentTime, new mutable.HashSet)
+                      values += Change(wireIdToWire(varCode), BigInt(-1))
                     }
                   case None =>
                     logger.warn(
@@ -380,7 +373,7 @@ object VCD extends LazyLogging {
     @scala.annotation.tailrec
     def processSections(): Unit = {
       if (words.hasNext) {
-        val nextWord = words.next
+        val nextWord = words.next()
         nextWord match {
           case SectionHeader(sectionHeader) =>
             logger.debug(s"processing section header $sectionHeader at line ${words.currentLineNumber}")
@@ -439,7 +432,7 @@ object VCD extends LazyLogging {
     * are specific to a particular module
     * @param args command lines strings use --help to see what they are
     */
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val manager = new VCDOptionsManager
 
     if (manager.parse(args)) {
@@ -496,13 +489,7 @@ case class VCD(
   val initialValues = new mutable.HashSet[Change]
   var scopeRoot = Scope(scope)
   val wires = new mutable.HashMap[String, Wire]
-  var aliasedWires: mutable.HashMap[String, mutable.HashSet[Wire]] =
-    new mutable.HashMap[String, mutable.HashSet[Wire]] {
-      override def default(key: String): mutable.HashSet[Wire] = {
-        this(key) = new mutable.HashSet[Wire]
-        this(key)
-      }
-    }
+  var aliasedWires: mutable.HashMap[String, mutable.HashSet[Wire]] = new mutable.HashMap
   val wiresToIgnore = new mutable.HashSet[String]
   def events: Array[Long] = valuesAtTime.keys.toArray.sorted
 
@@ -652,7 +639,7 @@ case class VCD(
     }
   }
 
-  def incrementTime(increment: Long = 1L) {
+  def incrementTime(increment: Long = 1L): Unit = {
     timeStamp += increment
   }
 
@@ -661,7 +648,7 @@ case class VCD(
   }
 
   def wiresFor(change: Change): Set[Wire] = {
-    aliasedWires(change.wire.id) + change.wire
+    aliasedWires.getOrElse(change.wire.id, new mutable.HashSet) + change.wire
   }
 
   def incrementId(): Unit = currentIdNumber += 1

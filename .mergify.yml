@@ -32,7 +32,7 @@ pull_request_rules:
     conditions:
       - merged
       - base=master
-      - milestone=1.2.X
+      - milestone=1.2.x
     actions:
       backport:
         branches:
@@ -46,7 +46,7 @@ pull_request_rules:
 
   - name: label Mergify backport PR
     conditions:
-      - body~=This is an automated backport of pull request \#\d+ done by Mergify
+      - title~=\(bp \#\d+\)
     actions:
       label:
         add: [ Backport ]
