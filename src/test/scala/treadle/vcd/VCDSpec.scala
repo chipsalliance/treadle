@@ -1,22 +1,8 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.vcd
 
-import java.io.File
+import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import firrtl.options.Viewer.view
 import firrtl.options.{StageOptions, TargetDirAnnotation}
@@ -116,7 +102,6 @@ class VCDSpec extends AnyFlatSpec with Matchers {
     for (i <- -8 to 7) {
       val change = Change(wire, i)
       val string = s"$i => ${change.serialize}"
-      println(string)
       s ++= string + "\n"
     }
     s.toString().contains("-8 => b1000") should be(true)
@@ -170,24 +155,23 @@ class VCDSpec extends AnyFlatSpec with Matchers {
       OutputFileAnnotation("vcd_reader_1")
     )
 
-    val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
+      engine.poke("a", -1)
+      engine.peek("a") should be(BigInt(-1))
+      engine.poke("b", -7)
+      engine.peek("b") should be(BigInt(-7))
 
-    engine.poke("a", -1)
-    engine.peek("a") should be(BigInt(-1))
-    engine.poke("b", -7)
-    engine.peek("b") should be(BigInt(-7))
+      engine.step()
+      engine.peek("c") should be(BigInt(-8))
 
-    engine.step()
-    engine.peek("c") should be(BigInt(-8))
+      engine.poke("a", 255)
+      engine.peek("a") should be(BigInt(-1))
+      engine.poke("b", 249)
+      engine.peek("b") should be(BigInt(-7))
 
-    engine.poke("a", 255)
-    engine.peek("a") should be(BigInt(-1))
-    engine.poke("b", 249)
-    engine.peek("b") should be(BigInt(-7))
-
-    engine.step()
-    engine.peek("c") should be(BigInt(-8))
-    engine.report()
+      engine.step()
+      engine.peek("c") should be(BigInt(-8))
+    }
 
   }
 
@@ -203,26 +187,16 @@ class VCDSpec extends AnyFlatSpec with Matchers {
       OutputFileAnnotation("vcd_reader_2")
     )
 
-    val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
+      engine.step()
+      engine.poke("io_a", 3)
+      engine.poke("io_b", 5)
+      engine.peek("io_a") should be(BigInt(3))
+      engine.peek("io_b") should be(BigInt(5))
 
-    engine.step()
-    engine.poke("io_a", 3)
-    engine.poke("io_b", 5)
-    engine.peek("io_a") should be(BigInt(3))
-    engine.peek("io_b") should be(BigInt(5))
-
-    engine.step()
-    engine.peek("io_c") should be(BigInt(8))
-
-//    engine.poke("io_a", -1)
-//    engine.poke("io_b", -7)
-//    engine.peek("io_a") should be (BigInt(-1))
-//    engine.peek("io_b") should be (BigInt(-7))
-//
-//    engine.step()
-//    engine.peek("io_c") should be (BigInt(-8))
-
-    engine.report()
+      engine.step()
+      engine.peek("io_c") should be(BigInt(8))
+    }
   }
 
   behavior.of("vcd can record temp vars or not")
@@ -250,19 +224,20 @@ class VCDSpec extends AnyFlatSpec with Matchers {
 
     val options = Seq(
       Some(WriteVcdAnnotation),
-      if (hasTempWires) { Some(VcdShowUnderScoredAnnotation) } else { None },
+      if (hasTempWires) {
+        Some(VcdShowUnderScoredAnnotation)
+      }
+      else {
+        None
+      },
       Some(TargetDirAnnotation("test_run_dir/vcd_register_delay/")),
       Some(OutputFileAnnotation("pwminCount"))
     ).flatten
 
-    val engine = TreadleTester(FirrtlSourceAnnotation(input) +: options)
-    engine.poke("reset", 0)
-
-    engine.step(50)
-
-    engine.report()
-    engine.finish
-
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { engine =>
+      engine.poke("reset", 0)
+      engine.step(50)
+    }
     val vcd = VCD.read("test_run_dir/vcd_register_delay/pwminCount.vcd")
 
     /* create an ordered indexed list of all the changes to testReg */
@@ -322,28 +297,28 @@ class VCDSpec extends AnyFlatSpec with Matchers {
     val stageOptions = view[StageOptions](options)
     val firrtlFileName = stageOptions.getBuildFileName("VcdAdder", Some(".vcd"))
 
-    val resourceFileName = resourceName
     BackendCompilationUtilities.copyResourceToFile(resourceName, new File(firrtlFileName))
 
-    val tester = TreadleTester(options)
+    TreadleTestHarness(options) { tester =>
+      tester.poke("io_a", 3)
+      tester.poke("io_b", 5)
 
-    tester.poke("io_a", 3)
-    tester.poke("io_b", 5)
+      tester.step()
 
-    tester.step()
-
-    tester.expect("io_c", 8)
-
-    tester.report()
-    tester.finish
+      tester.expect("io_c", 8)
+    }
 
     val replayOptions = options.filter {
       case WriteVcdAnnotation => false
-      case _                  => true
+      case _ => true
     }
 
     val replayTester = new VcdReplayTester(replayOptions)
-    replayTester.run()
+
+    // run capture with Console.out because replay tester dumps some reports while running
+    Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
+      replayTester.run()
+    }
 
     replayTester.testSuccesses should be(7)
     replayTester.testFailures should be(0)

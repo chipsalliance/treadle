@@ -1,29 +1,16 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
-import treadle.executable.StopException
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 // scalastyle:off magic.number
-class VecSpec extends AnyFreeSpec with Matchers {
+class VecSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "simple register chain should work" in {
     val input =
       """
@@ -54,40 +41,41 @@ class VecSpec extends AnyFreeSpec with Matchers {
       OutputFileAnnotation("vec_spec_1")
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
-    def show(): Unit = {
-      println("Rendering register assignments")
-      for (name <- Seq.tabulate(1) { i =>
-             s"shifter_$i"
-           }) {
-        println(s"${tester.engine.renderComputation(name)}")
+      def show(): Unit = {
+        logger.debug("Rendering register assignments")
+        for (
+          name <- Seq.tabulate(1) { i =>
+            s"shifter_$i"
+          }
+        ) {
+          logger.debug(s"${tester.engine.renderComputation(name)}")
+        }
       }
+
+      def testRegisterValues(value0: BigInt, value1: BigInt, value2: BigInt, value3: BigInt) {
+        tester.expect("shifter_0", value0)
+        tester.expect("shifter_1", value1)
+        tester.expect("shifter_2", value2)
+        tester.expect("shifter_3", value3)
+      }
+
+      tester.step()
+      testRegisterValues(0, 0, 0, 0)
+      tester.step()
+      show()
+      testRegisterValues(0, 0, 0, 1)
+      tester.step()
+      testRegisterValues(0, 0, 1, 2)
+      tester.step()
+      testRegisterValues(0, 1, 2, 3)
+      tester.step()
+      testRegisterValues(1, 2, 3, 4)
+      tester.step()
+      testRegisterValues(2, 3, 4, 5)
+      show()
     }
-
-    def testRegisterValues(value0: BigInt, value1: BigInt, value2: BigInt, value3: BigInt) {
-      tester.expect("shifter_0", value0)
-      tester.expect("shifter_1", value1)
-      tester.expect("shifter_2", value2)
-      tester.expect("shifter_3", value3)
-    }
-
-    tester.step()
-    testRegisterValues(0, 0, 0, 0)
-    tester.step()
-    show()
-    testRegisterValues(0, 0, 0, 1)
-    tester.step()
-    testRegisterValues(0, 0, 1, 2)
-    tester.step()
-    testRegisterValues(0, 1, 2, 3)
-    tester.step()
-    testRegisterValues(1, 2, 3, 4)
-    tester.step()
-    testRegisterValues(2, 3, 4, 5)
-    show()
-
-    tester.report()
   }
 
   "VecSpec should pass a basic test" in {
@@ -100,8 +88,8 @@ class VecSpec extends AnyFreeSpec with Matchers {
         |    output io : {}
         |
         |    reg value : UInt<3>, clock with : (reset => (reset, UInt<3>("h00"))) @[Counter.scala 26:33]
+        |    node _T_6 = eq(value, UInt<3>("h07")) @[Counter.scala 34:24]
         |    when UInt<1>("h01") : @[Counter.scala 63:17]
-        |      node _T_6 = eq(value, UInt<3>("h07")) @[Counter.scala 34:24]
         |      node _T_8 = add(value, UInt<1>("h01")) @[Counter.scala 35:22]
         |      node _T_9 = tail(_T_8, 1) @[Counter.scala 35:22]
         |      value <= _T_9 @[Counter.scala 35:13]

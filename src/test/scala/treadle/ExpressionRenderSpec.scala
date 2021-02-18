@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
@@ -47,16 +33,20 @@ class ExpressionRenderSpec extends AnyFreeSpec with Matchers {
         |    out <= node0
       """.stripMargin
 
-    val t = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-    t.poke("in0", 10)
-    t.poke("in1", 11)
-    t.poke("in2", 12)
-    t.poke("in3", 13)
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { t =>
+      t.poke("in0", 10)
+      t.poke("in1", 11)
+      t.poke("in2", 12)
+      t.poke("in3", 13)
 
-    t.poke("sel1", 1)
+      t.poke("sel1", 1)
 
-    println(s"out = ${t.peek("out")}")
-    println(t.engine.renderComputation("out"))
+      t.peek("out") should be(11)
+      t.engine.renderComputation("out") should be(
+        """    node1 <= 11 : Mux(sel1 <= 1, in1 <= 11, node2 <= 15)
+          |out <= 11 : Mux(sel0 <= 0, in0 <= 10, node1 <= 11)""".stripMargin
+      )
+    }
   }
 
   "ExpressionRenderSpec show register values from previous time" in {
@@ -87,22 +77,23 @@ class ExpressionRenderSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val t = TreadleTester(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(10)))
-    t.poke("in0", 1)
-    t.step()
-    t.poke("in0", 2)
-    t.step()
-    t.poke("in0", 3)
-    t.step()
-    t.poke("in0", 4)
-    t.step()
-    t.poke("in0", 5)
-    t.step()
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { t =>
+      t.poke("in0", 1)
+      t.step()
+      t.poke("in0", 2)
+      t.step()
+      t.poke("in0", 3)
+      t.step()
+      t.poke("in0", 4)
+      t.step()
+      t.poke("in0", 5)
+      t.step()
 
-    println(t.engine.renderComputation("out0"))
-    println(t.engine.renderComputation("r1"))
-    println(t.engine.renderComputation("r2"))
-    println(t.engine.renderComputation("r3"))
+      t.engine.renderComputation("out0") should be("out0 <= 5 : in0 <= 5")
+      t.engine.renderComputation("r1").trim should be("r1 <= 5 :")
+      t.engine.renderComputation("r2").trim should be("r2 <= 4 :")
+      t.engine.renderComputation("r3").trim should be("r3 <= 3 :")
+    }
   }
 
 }

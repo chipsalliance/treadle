@@ -1,29 +1,19 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.executable
 
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 
+import firrtl.annotations.ReferenceTarget
+import firrtl.annotations.TargetToken.Instance
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
+import firrtl.stage.OutputFileAnnotation
 import firrtl.{AnnotationSeq, MemKind, PortKind, RegKind}
 import logger.LazyLogging
 import treadle._
+import treadle.blackboxes.PlusArg
 import treadle.chronometry.{Timer, UTC}
 import treadle.utils.{NameBasedRandomNumberGenerator, Render}
 import treadle.vcd.VCD
@@ -38,12 +28,17 @@ class ExecutionEngine(
   val dataStore:       DataStore,
   val scheduler:       Scheduler,
   val expressionViews: Map[Symbol, ExpressionView],
-  val wallTime:        UTC
-) extends LazyLogging {
+  val wallTime:        UTC)
+    extends LazyLogging {
   val cycleTimeIncrement = 500
 
   var vcdOption:   Option[VCD] = None
   var vcdFileName: String = ""
+
+  // use the generated file root to create files in working dir with desired suffixes
+  private val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(ast.main)
+  private val stageOptions = view[StageOptions](annotationSeq)
+  val generatedFileRoot: String = stageOptions.getBuildFileName(topName)
 
   val expressionViewRenderer = new ExpressionViewRenderer(
     dataStore,
@@ -90,8 +85,7 @@ class ExecutionEngine(
     scheduler.setVerboseAssign(verbose)
   }
 
-  /**
-    * turns on evaluator debugging. Can make output quite
+  /** turns on evaluator debugging.  Can make output quite
     * verbose.
     *
     * @param isVerbose  The desired verbose setting
@@ -234,7 +228,8 @@ class ExecutionEngine(
 
       if (lastStopResult.isDefined) {
         writeVCD()
-        val stopKind = if (lastStopResult.get > 0) { "Failure Stop" } else { "Stopped" }
+        val stopKind = if (lastStopResult.get > 0) { "Failure Stop" }
+        else { "Stopped" }
         throw StopException(s"$stopKind: result ${lastStopResult.get}")
       }
     } catch {
@@ -266,8 +261,7 @@ class ExecutionEngine(
     }
   }
 
-  /**
-    * Update the dataStore with the supplied information.
+  /** Update the dataStore with the supplied information.
     * IMPORTANT: This should never be used internally.
     *
     * @param name  name of value to set
@@ -302,8 +296,10 @@ class ExecutionEngine(
     }
 
     if (!force) {
-      assert(symbol.dataKind == PortKind,
-             s"Error: setValue($name) not on input, use setValue($name, force=true) to override")
+      assert(
+        symbol.dataKind == PortKind,
+        s"Error: setValue($name) not on input, use setValue($name, force=true) to override"
+      )
       return Big0
     }
 
@@ -336,8 +332,7 @@ class ExecutionEngine(
     value
   }
 
-  /**
-    * Update the dataStore with the supplied information.
+  /** Update the dataStore with the supplied information.
     * IMPORTANT: This should never be used internally.
     *
     * @param symbol symbol to set
@@ -402,6 +397,42 @@ class ExecutionEngine(
   def validNames: Iterable[String] = symbolTable.keys
   def symbols:    Iterable[Symbol] = symbolTable.symbols
 
+  /** returns all the symbols identified by the provided referenceTarget
+    *
+    * @param referenceTarget identifies a symbol or symbols
+    * @return
+    */
+  def referenceTargetToSymbols(referenceTarget: ReferenceTarget): Seq[Symbol] = {
+    if (referenceTarget.path.nonEmpty) {
+      // a specific path into the circuit
+      val pathName = referenceTarget.path.map { case (Instance(name), _) => name }.mkString(".")
+      val symbols = symbolTable.instanceNameToModuleName.flatMap {
+        case (instanceName, _) if instanceName.endsWith(pathName) =>
+          val symbolName = s"$instanceName.${referenceTarget.ref}"
+          symbolTable.get(symbolName)
+        case _ => None
+      }.toSeq
+      symbols
+    } else if (referenceTarget.module == ast.main) {
+      // top level reference
+      symbolTable.get(referenceTarget.ref) match {
+        case Some(symbol) => Seq(symbol)
+        case _            => Seq.empty
+      }
+    } else if (referenceTarget.module != ast.main) {
+      // module level reference
+      val targetModule = s"${referenceTarget.module}"
+      symbolTable.instanceNameToModuleName.flatMap {
+        case (instance, moduleName) if moduleName == targetModule =>
+          val name = s"$instance.${referenceTarget.ref}"
+          symbolTable.get(name)
+        case _ => None
+      }.toSeq
+    } else {
+      Seq.empty
+    }
+  }
+
   def evaluateCircuit(): Unit = {
     if (inputsChanged) {
       inputsChanged = false
@@ -430,8 +461,7 @@ class ExecutionEngine(
 
   private val stopHappenedSymbolOpt = symbolTable.get(StopOp.stopHappenedName)
 
-  /**
-    * returns that value specified by a StopOp when
+  /** returns that value specified by a StopOp when
     * its condition is satisfied.  Only defined when
     * circuit is currently stopped.
     * @return
@@ -450,13 +480,33 @@ class ExecutionEngine(
     }
   }
 
-  /**
-    * Is the circuit currently stopped.  StopOp throws a
+  /** Is the circuit currently stopped.  StopOp throws a
     * Stop
     * @return
     */
   def stopped: Boolean = {
     lastStopResult.isDefined
+  }
+
+  /*
+  This is where things should go that need to be done at the end of the run.
+  Currently this telling black boxes to finish up things if they need to
+  and have the coverage counts recorded if they exist.
+   */
+  def finish(writeCoverageReport: Boolean = false): Unit = {
+    symbols.foreach { symbol =>
+      symbolTable.getBlackboxImplementation(symbol).foreach { blackBox =>
+        blackBox.finish()
+      }
+    }
+    if (writeCoverageReport && symbolTable.verifyOps.nonEmpty) {
+      val text = symbolTable.verifyOps.map { verifyOp =>
+        s"${verifyOp.info.toString.trim},${verifyOp.message.escape},${verifyOp.clockCount},${verifyOp.coverCount}"
+      }.sorted.mkString("\n")
+      val writer = new PrintWriter(new File(generatedFileRoot + ".coverage.txt"))
+      writer.write(text)
+      writer.close()
+    }
   }
 
   def fieldsHeader: String = {
@@ -513,13 +563,12 @@ class ExecutionEngine(
   }
 }
 
-object ExecutionEngine {
+object ExecutionEngine extends LazyLogging {
 
   val VCDHookName = "log-vcd"
 
   //scalastyle:off method.length
-  /**
-    * Factory to create an execution engine
+  /** Factory to create an execution engine
     * @param annotationSeq  annotations control all
     * @param wallTime       external synthetic simple time
     * @return
@@ -542,17 +591,24 @@ object ExecutionEngine {
       writer.close()
     }
 
-    val blackBoxFactories = annotationSeq.collectFirst { case BlackBoxFactoriesAnnotation(bbf) => bbf }.getOrElse(
-      Seq.empty
-    )
-    val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation             => true; case _ => false }
+    val blackBoxFactories = annotationSeq.flatMap {
+      case BlackBoxFactoriesAnnotation(bbf) => bbf
+      case _                                => Seq.empty
+    }
+    val allowCycles = annotationSeq.exists { case AllowCyclesAnnotation => true; case _ => false }
     val prefixPrintfWithTime = annotationSeq.exists { case PrefixPrintfWithWallTime => true; case _ => false }
 
     val rollbackBuffers = annotationSeq.collectFirst { case RollBackBuffersAnnotation(rbb) => rbb }.getOrElse(
       TreadleDefaults.RollbackBuffers
     )
+    val plusArgs = annotationSeq.collectFirst { case PlusArgsAnnotation(seq) => seq }
+      .getOrElse(Seq.empty)
+      .map { s =>
+        PlusArg(s)
+      }
+
     val validIfIsRandom = annotationSeq.exists { case ValidIfIsRandomAnnotation => true; case _ => false }
-    val verbose = annotationSeq.exists { case VerboseAnnotation                 => true; case _ => false }
+    val verbose = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
 
     val symbolTable: SymbolTable = timer("Build Symbol Table") {
       SymbolTable(circuit, blackBoxFactories, allowCycles)
@@ -576,19 +632,22 @@ object ExecutionEngine {
       scheduler,
       validIfIsRandom,
       prefixPrintfWithTime,
-      blackBoxFactories
+      blackBoxFactories,
+      plusArgs
     )
 
     timer("Build Compiled Expressions") {
       compiler.compile(circuit, blackBoxFactories)
     }
 
-    val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(symbolTable,
-                                                                                                dataStore,
-                                                                                                scheduler,
-                                                                                                validIfIsRandom,
-                                                                                                circuit,
-                                                                                                blackBoxFactories)
+    val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(
+      symbolTable,
+      dataStore,
+      scheduler,
+      validIfIsRandom,
+      circuit,
+      blackBoxFactories
+    )
 
     scheduler.organizeAssigners()
 
@@ -607,7 +666,7 @@ object ExecutionEngine {
 
     val t1 = System.nanoTime()
     val total_seconds = (t1 - t0).toDouble / Timer.TenTo9th
-    println(
+    logger.info(
       s"file loaded in $total_seconds seconds, ${symbolTable.size} symbols, " +
         s"${scheduler.combinationalAssigns.size} statements"
     )

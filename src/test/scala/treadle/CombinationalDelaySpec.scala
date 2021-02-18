@@ -1,26 +1,11 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
-import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.ClockInfo
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.ClockInfo
 
 //scalastyle:off magic.number
 class CombinationalDelaySpec extends AnyFreeSpec with Matchers {
@@ -49,37 +34,35 @@ class CombinationalDelaySpec extends AnyFreeSpec with Matchers {
       ClockInfoAnnotation(Seq(ClockInfo("clock", period = 1000L, initialOffset = 500L)))
     )
 
-    val t = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { t =>
 
-    t.poke("in_0", 20)
-    t.poke("in_1", 11)
-    t.expect("add_out", 31)
-    t.expect("sub_out", 9)
-    t.expect("eq_out", 0)
+      t.poke("in_0", 20)
+      t.poke("in_1", 11)
+      t.expect("add_out", 31)
+      t.expect("sub_out", 9)
+      t.expect("eq_out", 0)
 
-    assert(t.wallTime.currentTime == 10)
+      assert(t.wallTime.currentTime == 10)
 
-    t.poke("in_0", 5)
-    t.poke("in_1", 25)
-    t.expect("add_out", 30)
-    t.expect("sub_out", -20)
-    t.expect("eq_out", 0)
+      t.poke("in_0", 5)
+      t.poke("in_1", 25)
+      t.expect("add_out", 30)
+      t.expect("sub_out", -20)
+      t.expect("eq_out", 0)
 
-    assert(t.wallTime.currentTime == 20)
+      assert(t.wallTime.currentTime == 20)
 
-    t.poke("in_0", 5)
-    t.poke("in_1", 5)
-    t.expect("add_out", 10)
-    t.expect("sub_out", 0)
-    t.expect("eq_out", 1)
+      t.poke("in_0", 5)
+      t.poke("in_1", 5)
+      t.expect("add_out", 10)
+      t.expect("sub_out", 0)
+      t.expect("eq_out", 1)
 
-    assert(t.wallTime.currentTime == 30)
+      assert(t.wallTime.currentTime == 30)
 
-    t.step()
+      t.step()
 
-    assert(t.wallTime.currentTime == 1000)
-
-    t.report()
-
+      assert(t.wallTime.currentTime == 1000)
+    }
   }
 }

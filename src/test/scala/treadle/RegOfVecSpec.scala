@@ -1,25 +1,13 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.StopException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 // scalastyle:off magic.number
 class RegOfVecSpec extends AnyFreeSpec with Matchers {
@@ -33,8 +21,8 @@ class RegOfVecSpec extends AnyFreeSpec with Matchers {
         |    output io : {}
         |
         |    reg value : UInt<2>, clock with : (reset => (reset, UInt<2>("h00"))) @[Counter.scala 26:33]
+        |    node _T_6 = eq(value, UInt<2>("h02")) @[Counter.scala 34:24]
         |    when UInt<1>("h01") : @[Counter.scala 63:17]
-        |      node _T_6 = eq(value, UInt<2>("h02")) @[Counter.scala 34:24]
         |      node _T_8 = add(value, UInt<1>("h01")) @[Counter.scala 35:22]
         |      node _T_9 = tail(_T_8, 1) @[Counter.scala 35:22]
         |      value <= _T_9 @[Counter.scala 35:13]
@@ -106,16 +94,16 @@ class RegOfVecSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("reset", 1)
+      tester.step(3)
+      tester.poke("reset", 0)
 
-    tester.poke("reset", 1)
-    tester.step(3)
-    tester.poke("reset", 0)
-
-    intercept[StopException] {
-      tester.step(10)
+      intercept[StopException] {
+        tester.step(10)
+      }
+      tester.engine.lastStopResult should be(Some(0))
     }
-    tester.engine.lastStopResult should be(Some(0))
   }
 
   "RegisterResetTest" in {
@@ -146,22 +134,25 @@ class RegOfVecSpec extends AnyFreeSpec with Matchers {
         |    stop(clock, and(and(and(UInt<1>("h1"), done), _T_18), UInt<1>("h1")), 0) @[Reg.scala 61:9]
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        var trips = 0
 
-    def show(): Unit = {
-      tester.step()
-      for (name <- Seq("_T_16", "_T_18")) {
-        println(s"${tester.engine.renderComputation(name)}")
+        def show(): Unit = {
+          trips += 1
+          tester.step()
+        }
+
+        intercept[StopException] {
+          show()
+          show()
+          show()
+          show()
+        }
+        // The first stop to fire, based on the conditions and the order within the module
+        tester.engine.lastStopResult should be(Some(1))
+        trips should be(1)
       }
     }
-
-    intercept[StopException] {
-      show()
-      show()
-      show()
-      show()
-    }
-    // The first stop to fire, based on the conditions and the order within the module
-    tester.engine.lastStopResult should be(Some(1))
   }
 }

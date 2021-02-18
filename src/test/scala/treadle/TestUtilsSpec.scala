@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
@@ -46,18 +32,25 @@ class TestUtilsSpec extends AnyFlatSpec with Matchers {
 
   it should "return a allow negative to negative range" in {
     var count = 0
+    var s = new StringBuilder
     for (i <- IntWidthTestValuesGenerator(-18, -12)) {
-      print(s"$i")
+      s.append(s"$i")
       if (count > 18) assert(false, s"count $count is bigger than 18")
       count += 1
     }
-    println()
+    s.toString should include("-18-17-16-15-13-12")
   }
 
   it should "work with following specific examples" in {
-    println(IntWidthTestValuesGenerator(-33, 6).toList.mkString(","))
-    println(IntWidthTestValuesGenerator(1, 10).toList.mkString(","))
-    println(IntWidthTestValuesGenerator(1, 5).toList.mkString(","))
+    IntWidthTestValuesGenerator(-33, 6).toList.mkString(",") should include(
+      "-33,-32,-31,-17,-16,-15,-9,-8,-7,-5,-4,-3,-2,-1,0,1,2,3,4,5,6"
+    )
+    IntWidthTestValuesGenerator(1, 10).toList.mkString(",") should include(
+      "1,2,3,4,5,7,8,9,10"
+    )
+    IntWidthTestValuesGenerator(1, 5).toList.mkString(",") should include(
+      "1,2,3,4,5"
+    )
   }
 
   it should "never repeat a value" in {

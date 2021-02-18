@@ -1,25 +1,11 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.fixedpoint
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
 
 class FixedPointSpec extends AnyFlatSpec with Matchers {
   behavior.of("dumb fixed point multiply test")
@@ -35,13 +21,13 @@ class FixedPointSpec extends AnyFlatSpec with Matchers {
 
     val options = Seq()
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
+      tester.poke("a", BigInt("10", 2))
+      tester.poke("b", BigInt("100", 2))
+      tester.step()
 
-    tester.poke("a", BigInt("10", 2))
-    tester.poke("b", BigInt("100", 2))
-    tester.step()
-
-    tester.expect("c", BigInt("1000", 2))
+      tester.expect("c", BigInt("1000", 2))
+    }
   }
 
   behavior.of("allow zero length binary point")
@@ -62,10 +48,10 @@ class FixedPointSpec extends AnyFlatSpec with Matchers {
         |    io_out <= io_in
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-    tester.poke("io_in", BigInt("11", 2))
-    println(s"got ${tester.peek("io_out")}")
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("io_in", BigInt("11", 2))
+      tester.expect("io_out", 3)
+    }
   }
 
   behavior.of("set binary point")
@@ -84,9 +70,9 @@ class FixedPointSpec extends AnyFlatSpec with Matchers {
         |    io.out <= T_2
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-
-    tester.poke("io_in", BigInt("1011", 2))
-    println(s"got ${tester.peek("io_out")}")
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("io_in", BigInt("1011", 2))
+      tester.expect("io_out", 2)
+    }
   }
 }

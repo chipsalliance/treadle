@@ -1,37 +1,32 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.primops
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.{BitTwiddlingUtils, _}
-import treadle.executable._
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable._
+import treadle.{BitTwiddlingUtils, _}
 
 // scalastyle:off magic.number
-class CatBitsHeadTail extends AnyFreeSpec with Matchers {
-  def f0():      Int = 0
-  def f1():      Int = 1
-  def f2():      Int = 2
-  def f3():      Int = 3
+class CatBitsHeadTail extends AnyFreeSpec with Matchers with LazyLogging {
+  def f0(): Int = 0
+
+  def f1(): Int = 1
+
+  def f2(): Int = 2
+
+  def f3(): Int = 3
+
   def fMinus1(): Int = -1
+
   def fMinus2(): Int = -2
+
   def fMinus3(): Int = -3
+
   def fMinus4(): Int = -4
+
   def fMinus6(): Int = -6
 
   def val1(): Int = Integer.parseInt("abcd", 16)
@@ -52,7 +47,7 @@ class CatBitsHeadTail extends AnyFreeSpec with Matchers {
           BitTwiddlingUtils.cat(num1, width1, num2, width2)
         )
 
-        // println(s"i $i got $got expected $expected")
+        logger.debug(s"got $got expected $expected")
         got should be(expected)
       }
 
@@ -114,31 +109,31 @@ class CatBitsHeadTail extends AnyFreeSpec with Matchers {
             |    big_output   <= cat(big_input_1, big_input_2)
           """.stripMargin
 
-        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          tester.poke("int_input_1", 1)
+          tester.poke("int_input_2", -1)
 
-        tester.poke("int_input_1", 1)
-        tester.poke("int_input_2", -1)
+          val int_output = tester.peek("int_output")
+          logger.debug(s"peek int_output   0x${int_output.toString(16)}  $int_output")
 
-        val int_output = tester.peek("int_output")
-        println(s"peek int_output   0x${int_output.toString(16)}  $int_output")
+          tester.expect("int_output", BigInt("1F", 16))
 
-        tester.expect("int_output", BigInt("1F", 16))
+          tester.poke("long_input_1", 3)
+          tester.poke("long_input_2", -1)
 
-        tester.poke("long_input_1", 3)
-        tester.poke("long_input_2", -1)
+          val long_output = tester.peek("long_output")
+          logger.debug(s"peek long_output   0x${long_output.toString(16)}  $long_output")
 
-        val long_output = tester.peek("long_output")
-        println(s"peek long_output   0x${long_output.toString(16)}  $long_output")
+          tester.expect("long_output", BigInt("3fffff", 16))
 
-        tester.expect("long_output", BigInt("3fffff", 16))
+          tester.poke("big_input_1", 7)
+          tester.poke("big_input_2", -1)
 
-        tester.poke("big_input_1", 7)
-        tester.poke("big_input_2", -1)
+          val big_output = tester.peek("big_output")
+          logger.debug(s"peek big_output   0x${big_output.toString(16)}  $big_output")
 
-        val big_output = tester.peek("big_output")
-        println(s"peek big_output   0x${big_output.toString(16)}  $big_output")
-
-        tester.expect("big_output", BigInt("7fffffffffffffffff", 16))
+          tester.expect("big_output", BigInt("7fffffffffffffffff", 16))
+        }
       }
 
       "sign extension should not happen" in {
@@ -158,9 +153,9 @@ class CatBitsHeadTail extends AnyFreeSpec with Matchers {
             |
           """.stripMargin
 
-        val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-        println(s"peek out 0x${tester.peek("out").toString(16)}")
-        tester.report()
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          tester.peek("out").toString(16) should be("ffdff06f00000073")
+        }
       }
 
     }
@@ -178,7 +173,7 @@ class CatBitsHeadTail extends AnyFreeSpec with Matchers {
           BitTwiddlingUtils.bits(i, hi, lo, bitWidth)
         )
 
-        // println(s"i $i got $got expected $expected")
+        logger.debug(s"i $i got $got expected $expected")
         got should be(expected)
       }
 
@@ -220,7 +215,7 @@ class CatBitsHeadTail extends AnyFreeSpec with Matchers {
           BitTwiddlingUtils.head(i, takeBits, bitWidth)
         )
 
-        // println(s"i $i got $got expected $expected")
+        logger.debug(s"i $i got $got expected $expected")
         got should be(expected)
       }
 
@@ -260,7 +255,7 @@ class CatBitsHeadTail extends AnyFreeSpec with Matchers {
           BitTwiddlingUtils.tail(i, 1, bitWidth)
         )
 
-        // println(s"i $i got $got expected $expected")
+        logger.debug(s"i $i got $got expected $expected")
         got should be(expected)
       }
 

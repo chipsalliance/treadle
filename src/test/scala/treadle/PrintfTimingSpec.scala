@@ -1,26 +1,14 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
+
+import java.io.{ByteArrayOutputStream, PrintStream}
 
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-private class PrintfTimingSpec extends AnyFreeSpec with Matchers {
+class PrintfTimingSpec extends AnyFreeSpec with Matchers {
   "printf has strict timing requirements" - {
     "it must fire before registers are updated" in {
       val input =
@@ -39,14 +27,29 @@ private class PrintfTimingSpec extends AnyFreeSpec with Matchers {
           |    printf(clock, UInt<1>(1), "reg0=%x wire0=%x\n", reg0, wire0)
           |""".stripMargin
 
-      val treadleTester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))
-      treadleTester.step(10)
-      treadleTester.finish
+      val output = new ByteArrayOutputStream()
+      Console.withOut(new PrintStream(output)) {
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          tester.step(10)
+        }
+      }
+      output.toString should include(
+        """reg0=00 wire0=001
+          |reg0=01 wire0=002
+          |reg0=02 wire0=003
+          |reg0=03 wire0=004
+          |reg0=04 wire0=005
+          |reg0=05 wire0=006
+          |reg0=06 wire0=007
+          |reg0=07 wire0=008
+          |reg0=08 wire0=009
+          |reg0=09 wire0=00a
+          |""".stripMargin
+      )
     }
     "printf every other time based on reg" in {
       val input =
         """
-          |;buildInfoPackage: chisel3, version: 3.2-SNAPSHOT, scalaVersion: 2.12.6, sbtVersion: 1.2.7
           |circuit Printf2 :
           |  module Printf2 :
           |    input clock : Clock
@@ -55,14 +58,25 @@ private class PrintfTimingSpec extends AnyFreeSpec with Matchers {
           |    reg reg0 : UInt<8>, clock
           |    reg0 <= add(reg0, UInt(1))
           |
-          |    node enable = eq(mod(reg0, UInt(4)), UInt(0))
+          |    node enable = eq(bits(reg0, 1, 1), UInt(1))
           |
           |    printf(clock, enable, "reg0=%x\n", reg0)
+          |
           |""".stripMargin
 
-      val treadleTester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))
-      treadleTester.step(10)
-      treadleTester.finish
+      val output = new ByteArrayOutputStream()
+      Console.withOut(new PrintStream(output)) {
+        TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+          tester.step(10)
+        }
+      }
+      output.toString should include(
+        """reg0=02
+          |reg0=03
+          |reg0=06
+          |reg0=07
+          |""".stripMargin
+      )
     }
   }
 }

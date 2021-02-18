@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
@@ -92,23 +78,21 @@ class CarryOrChain6 extends AnyFreeSpec with Matchers {
       bin.toList.map("01".indexOf(_)).map(BigInt(_)).reverse.toArray
     }
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
 
-    val lst = List((v("000001"), v("111111")))
-    for ((a, co) <- lst) {
-      assert(N == a.length)
-      assert(N == co.length)
-      for ((y, idx) <- a.zipWithIndex) {
-        tester.poke(s"io_a_$idx", y)
+      val lst = List((v("000001"), v("111111")))
+      for ((a, co) <- lst) {
+        assert(N == a.length)
+        assert(N == co.length)
+        for ((y, idx) <- a.zipWithIndex) {
+          tester.poke(s"io_a_$idx", y)
+        }
+        tester.step()
+        for ((y, idx) <- co.zipWithIndex) {
+          tester.expect(s"io_co_$idx", y)
+        }
+        tester.step()
       }
-      tester.step()
-      for ((y, idx) <- co.zipWithIndex) {
-        tester.expect(s"io_co_$idx", y)
-      }
-      tester.step()
     }
-
-    tester.report()
-
   }
 }

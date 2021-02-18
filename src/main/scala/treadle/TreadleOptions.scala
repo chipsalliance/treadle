@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
@@ -21,10 +7,11 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.ir.Circuit
 import firrtl.options.{HasShellOptions, RegisteredLibrary, ShellOption, Unserializable}
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
+import treadle.blackboxes.BuiltInBlackBoxFactory
 import treadle.executable.{ClockInfo, DataStorePlugin, ExecutionEngine, TreadleException}
+import treadle.stage.phases.HandleFormalStatements
 
-sealed trait TreadleOption extends Unserializable { this: Annotation =>
-}
+sealed trait TreadleOption extends Unserializable { this: Annotation => }
 
 /**
   * Tells treadle to write a vcd file during simulation
@@ -48,6 +35,19 @@ case object VcdShowUnderScoredAnnotation extends NoTargetAnnotation with Treadle
       longOption = "tr-vcd-show-underscored-vars",
       toAnnotationSeq = _ => Seq(VcdShowUnderScoredAnnotation),
       helpText = "vcd output by default does not show var that start with underscore, this overrides that"
+    )
+  )
+}
+
+/**
+  * Tells treadle to write coverage report in CSV format after simulation
+  */
+case object WriteCoverageCSVAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-write-coverage-csv",
+      toAnnotationSeq = _ => Seq(WriteCoverageCSVAnnotation),
+      helpText = "writes coverage report in CSV format after simulation, filename will be based on top-name"
     )
   )
 }
@@ -127,7 +127,7 @@ case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation wit
     new ShellOption[Unit](
       longOption = "tr-dont-run-lower-compiler-on-load",
       toAnnotationSeq = _ => Seq(),
-      helpText = "do not run its own lowering pass on firrtl input (not recommended)"
+      helpText = "Deprecated: This option has no effect and will be removed in treadle 1.4"
     )
   )
 }
@@ -163,6 +163,21 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
 }
 
 /**
+  *  Sets verilog plus args that will be passed to black boxes
+  */
+case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation with TreadleOption
+
+case object PlusArgsAnnotation extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Seq[String]](
+      longOption = "tr-plus-args",
+      toAnnotationSeq = (args: Seq[String]) => Seq(PlusArgsAnnotation(args)),
+      helpText = s"a comma separated list of plusArgs"
+    )
+  )
+}
+
+/**
   *  Controls whether changes to memory locations are written to vcd output
   *  @param specifier controls which memories and which locations of those memories are logged to vcd output
   *                   When not present not memories are logged
@@ -174,7 +189,6 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
   *                   "mem1:o0-o377"    log values at locations 0-255 but show addresses in octal for memory mem1
   *
   * This annotation may occur more than once in order to specify multiple memories
-  *
   */
 case class MemoryToVCD(specifier: String) extends NoTargetAnnotation with TreadleOption
 
@@ -184,6 +198,19 @@ case object MemoryToVCD extends HasShellOptions {
       longOption = "tr-mem-to-vcd",
       toAnnotationSeq = (specifier: String) => Seq(MemoryToVCD(specifier)),
       helpText = s"""log specified memory/indices to vcd, format "all" or "memoryName:1,2,5-10" """
+    )
+  )
+}
+
+/**
+  * Controls whether coverage information will be gathered or not during the execution of a test.
+  */
+case object EnableCoverageAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[String](
+      longOption = "tr-enable-coverage",
+      toAnnotationSeq = _ => Seq(EnableCoverageAnnotation),
+      helpText = s"""Enables automatic line coverage on tests"""
     )
   )
 }
@@ -307,15 +334,27 @@ case class TreadleCircuitStateAnnotation(state: CircuitState) extends NoTargetAn
 @deprecated("Remove references, this has no effect", since = "1.3.x")
 case class TreadleFirrtlFormHint(form: Any) extends NoTargetAnnotation
 
-@deprecated("Remove refernences, this has no effect", since = "1.3.x")
+@deprecated("Remove references, this has no effect", since = "1.3.x")
 object TreadleFirrtlFormHint extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
     new ShellOption[String](
       longOption = "tr-firrtl-input-form",
       toAnnotationSeq = (firrtl: String) => {
-        Seq(TreadleFirrtlFormHint(0))
+        Seq()
       },
-      helpText = "deprecated. Do not use"
+      helpText = "Deprecated: This option has no effect and will be removed in treadle 1.4"
+    )
+  )
+}
+
+/** Adds the treadle blackboxes for rocket black box factory
+  */
+object TreadleRocketBlackBoxes extends HasShellOptions {
+  val options: Seq[ShellOption[_]] = Seq(
+    new ShellOption[Unit](
+      longOption = "tr-add-rocket-black-boxes",
+      toAnnotationSeq = _ => Seq(BlackBoxFactoriesAnnotation(Seq(new BuiltInBlackBoxFactory))),
+      helpText = "add in the black boxes needed to simulate rocket"
     )
   )
 }
@@ -368,8 +407,8 @@ case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFacto
   */
 case class DataStorePlugInAnnotation(
   name:      String,
-  getPlugin: ExecutionEngine => DataStorePlugin
-) extends NoTargetAnnotation
+  getPlugin: ExecutionEngine => DataStorePlugin)
+    extends NoTargetAnnotation
     with TreadleOption
 
 /** Constructs this as a registered library that will be auto-detected by
@@ -395,9 +434,12 @@ class TreadleLibrary extends RegisteredLibrary {
     ResetNameAnnotation,
     RandomizeAtStartupAnnotation,
     CallResetAtStartupAnnotation,
+    TreadleRocketBlackBoxes,
     PrefixPrintfWithWallTime,
     TreadleFirrtlString,
-    TreadleFirrtlFile
+    TreadleFirrtlFile,
+    new HandleFormalStatements,
+    EnableCoverageAnnotation
   ).flatMap(_.options)
 }
 

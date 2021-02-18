@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
@@ -252,9 +238,11 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         None
       }
     }
-    def getTwoArgs(failureMessage: String,
-                   arg1Option:     Option[String] = None,
-                   arg2Option:     Option[String] = None): (Option[String], Option[String]) = {
+    def getTwoArgs(
+      failureMessage: String,
+      arg1Option:     Option[String] = None,
+      arg2Option:     Option[String] = None
+    ): (Option[String], Option[String]) = {
       if (args.length == 3) {
         (Some(args(1)), Some(args(2)))
       } else if (args.length == 2) {
@@ -267,10 +255,12 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       }
     }
     //scalastyle:off magic.number
-    def getThreeArgs(failureMessage: String,
-                     arg1Option:     Option[String] = None,
-                     arg2Option:     Option[String] = None,
-                     arg3Option:     Option[String] = None): (Option[String], Option[String], Option[String]) = {
+    def getThreeArgs(
+      failureMessage: String,
+      arg1Option:     Option[String] = None,
+      arg2Option:     Option[String] = None,
+      arg3Option:     Option[String] = None
+    ): (Option[String], Option[String], Option[String]) = {
       if (args.length == 4) {
         (Some(args(1)), Some(args(2)), Some(args(3)))
       } else if (args.length == 3) {
@@ -371,12 +361,15 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
         def run(args: Array[String]): Unit = {
           currentScript match {
             case Some(script) =>
-              getTwoArgs("run [lines|skip [n]|set n|all|reset|list [n]], default is 1 => run 1 line",
-                         arg1Option = Some("1"),
-                         arg2Option = None) match {
+              getTwoArgs(
+                "run [lines|skip [n]|set n|all|reset|list [n]], default is 1 => run 1 line",
+                arg1Option = Some("1"),
+                arg2Option = None
+              ) match {
                 case (Some("all"), _) =>
                   console.println("run all")
-                  if (script.atEnd) { script.reset() } else { script.runRemaining() }
+                  if (script.atEnd) { script.reset() }
+                  else { script.runRemaining() }
                 case (Some("reset"), _) =>
                   script.reset()
                   handleList(script, Some("2"))
@@ -543,26 +536,25 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                 case symbolPattern =>
                   try {
                     val portRegex = symbolPattern.r
-                    peekableThings.foreach {
-                      signalName =>
-                        portRegex.findFirstIn(signalName) match {
-                          case Some(_) =>
-                            try {
-                              val value = engine.getValue(signalName)
-                              val symbol = engine.symbolTable(signalName)
-                              if (isAdding) {
-                                plugin.symbolsToWatch += symbol
-                                console.println(s"add watch for ${symbol.render} ${formatOutput(value)}")
-                              } else {
-                                plugin.symbolsToWatch -= symbol
-                                console.println(s"removing watch for ${symbol.render} ${formatOutput(value)}")
-                              }
-                            } catch {
-                              case _: Exception => false
+                    peekableThings.foreach { signalName =>
+                      portRegex.findFirstIn(signalName) match {
+                        case Some(_) =>
+                          try {
+                            val value = engine.getValue(signalName)
+                            val symbol = engine.symbolTable(signalName)
+                            if (isAdding) {
+                              plugin.symbolsToWatch += symbol
+                              console.println(s"add watch for ${symbol.render} ${formatOutput(value)}")
+                            } else {
+                              plugin.symbolsToWatch -= symbol
+                              console.println(s"removing watch for ${symbol.render} ${formatOutput(value)}")
                             }
-                          case _ =>
-                            false
-                        }
+                          } catch {
+                            case _: Exception => false
+                          }
+                        case _ =>
+                          false
+                      }
                     }
                   } catch {
                     case e: Exception =>
@@ -903,8 +895,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       },
       new Command("waitfor") {
         def usage: (String, String) =
-          ("waitfor symbol value [maxNumberOfSteps]",
-           "wait for particular value (default 1) of symbol, up to maxNumberOfSteps (default 100)")
+          (
+            "waitfor symbol value [maxNumberOfSteps]",
+            "wait for particular value (default 1) of symbol, up to maxNumberOfSteps (default 100)"
+          )
 
         override def completer: Option[ArgumentCompleter] = {
           if (currentTreadleTesterOpt.isEmpty) {
@@ -955,8 +949,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
       },
       new Command("depend") {
         def usage: (String, String) =
-          ("depend [childrenOf|parentsOf] signal [depth] | depend compare symbol1 symbol2",
-           "show dependency relationship to symbol or between two symbols")
+          (
+            "depend [childrenOf|parentsOf] signal [depth] | depend compare symbol1 symbol2",
+            "show dependency relationship to symbol or between two symbols"
+          )
 
         override def completer: Option[ArgumentCompleter] = {
           if (currentTreadleTesterOpt.isEmpty) {
@@ -975,7 +971,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           }
         }
 
-        def showRelated(direction: String, digraph: DiGraph[Symbol], symbolName: String, maxDepth: Int) {
+        def showRelated(direction: String, digraph: DiGraph[Symbol], symbolName: String, maxDepth: Int): Unit = {
           val table = engine.symbolTable
           val symbol = engine.symbolTable(symbolName)
           val symbolsAtDepth = Array.fill(maxDepth + 1) {
@@ -1018,7 +1014,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               console.println(s"""You must specify a symbol with command "depend childrenOf" """)
             case Some("compare") :: Some(symbolName1) :: Some(symbolName2) :: _ =>
               val (symbol1, symbol2) = (table(symbolName1), table(symbolName2))
-              def showPath(direction: String, digraph: DiGraph[Symbol]) {
+              def showPath(direction: String, digraph: DiGraph[Symbol]): Unit = {
                 try {
                   val path = digraph.path(symbol1, symbol2)
                   console.println(s"$symbol1 is a $direction of $symbol2 via")
@@ -1290,8 +1286,10 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
             val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
             symbolNames.zipWithIndex.foreach {
               case (symbolName, counter) =>
-                assert(engine.symbolTable.contains(symbolName),
-                       s""""$symbolName" : argument is not an element of this circuit""")
+                assert(
+                  engine.symbolTable.contains(symbolName),
+                  s""""$symbolName" : argument is not an element of this circuit"""
+                )
                 symbols.update(counter, engine.symbolTable(symbolName))
             }
 
@@ -1357,7 +1355,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
             case Some("markdown") =>
               console.println("| command | description |")
               console.println("| ------- | ----------- |")
-              Commands.commands.foreach { command =>
+              val helpText = Commands.commands.map { command =>
                 val (column1, column2) = command.usage
                 val escapeColumn1 = column1
                   .replaceAll(raw"\|", "&#124;")
@@ -1369,16 +1367,19 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                   .replaceAll("<", raw"\<")
                   .replaceAll(">", raw"\<")
 
-                console.println(s"| $escapeColumn1 | $escapeColumn2 |")
-              }
+                s"| $escapeColumn1 | $escapeColumn2 |"
+              }.sorted.mkString("\n")
+              console.println(helpText)
             case _ =>
               val maxColumn1Width = Commands.commands.map(_.usage._1.length).max + 2
-              Commands.commands.foreach { command =>
+              val helpText = Commands.commands.map { command =>
                 val (column1, column2) = command.usage
                 terminal.getWidth
 
-                console.println(s"$column1${" " * (maxColumn1Width - column1.length)} $column2")
-              }
+                s"$column1${" " * (maxColumn1Width - column1.length)} $column2"
+              }.sorted.mkString("\n")
+
+          console.println(helpText)
           }
         }
       },

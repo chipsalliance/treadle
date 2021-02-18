@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.blackboxes
 
@@ -127,14 +113,15 @@ class BlackBoxOutputSpec extends AnyFreeSpec with Matchers {
         RandomSeedAnnotation(1L)
       )
 
-      val tester = TreadleTester(FirrtlSourceAnnotation(adderInput) +: options)
+      TreadleTestHarness(FirrtlSourceAnnotation(adderInput) +: options) { tester =>
 
-      for (i <- 0 until 10) {
-        tester.poke("in", i)
-        tester.expect("out1", i + 1)
-        tester.expect("out2", i + 2)
-        tester.expect("out3", i + 3)
-        tester.step()
+        for (i <- 0 until 10) {
+          tester.poke("in", i)
+          tester.expect("out1", i + 1)
+          tester.expect("out2", i + 2)
+          tester.expect("out3", i + 3)
+          tester.step()
+        }
       }
     }
   }
@@ -168,15 +155,16 @@ class BlackBoxOutputSpec extends AnyFreeSpec with Matchers {
         RandomSeedAnnotation(1L)
       )
 
-      val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+      TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
-      tester.poke("clear", 1)
-      tester.step()
-      tester.poke("clear", 0)
-
-      for (i <- 0 until 10) {
-        tester.expect("counter", i)
+        tester.poke("clear", 1)
         tester.step()
+        tester.poke("clear", 0)
+
+        for (i <- 0 until 10) {
+          tester.expect("counter", i)
+          tester.step()
+        }
       }
     }
   }

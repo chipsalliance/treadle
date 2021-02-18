@@ -1,26 +1,13 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.executable
 
-import treadle._
+import firrtl.annotations._
+import firrtl.ir._
 import firrtl.{FileUtils, MemKind, RegKind, WireKind}
-import firrtl.ir.{ClockType, DefMemory, Info, IntWidth, ReadUnderWrite, Type}
-import RenderHelper.ExpressionHelper
-import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryLoadFileType, ModuleName}
+import logger.LazyLogging
+import treadle._
+import treadle.executable.RenderHelper.ExpressionHelper
 
 import scala.collection.mutable
 
@@ -44,7 +31,6 @@ import scala.collection.mutable
   *  - Actually adding the pipeline registers.
   *
   *  NOTE: See IMPORTANT NOTE above.
-  *
   */
 object Memory {
   //scalastyle:off method.length
@@ -91,10 +77,12 @@ object Memory {
       Seq(registerIn, register)
     }
 
-    def buildPipelineDependencies(rootSymbol:      Symbol,
-                                  pipelineSymbols: Seq[Symbol],
-                                  tailSymbol:      Option[Symbol] = None,
-                                  clockSymbol:     Option[Symbol] = None): Unit = {
+    def buildPipelineDependencies(
+      rootSymbol:      Symbol,
+      pipelineSymbols: Seq[Symbol],
+      tailSymbol:      Option[Symbol] = None,
+      clockSymbol:     Option[Symbol] = None
+    ): Unit = {
 
       val chain = Seq(rootSymbol) ++ pipelineSymbols ++ (if (tailSymbol.isDefined) Seq(tailSymbol.get) else Seq.empty)
 
@@ -294,7 +282,7 @@ object Memory {
     def buildReadPipelineAssigners(
       portName:     String,
       pipelineName: String,
-      symbol:         Symbol
+      symbol:       Symbol
     ): Symbol = {
 
       val effectiveReadLatency = memory.readLatency + (if (memory.readUnderWrite == ReadUnderWrite.New) 1 else 0)
@@ -341,10 +329,12 @@ object Memory {
      * @param pipelineName  string representing the name of the root port
      * @return
      */
-    def buildWritePipelineAssigners(clockSymbol:  Symbol,
-                                    rootSymbol:   Symbol,
-                                    writerString: String,
-                                    pipelineName: String): Symbol = {
+    def buildWritePipelineAssigners(
+      clockSymbol:  Symbol,
+      rootSymbol:   Symbol,
+      writerString: String,
+      pipelineName: String
+    ): Symbol = {
 
       val pipelineSymbols = buildPipeLine(writerString, pipelineName, memory.writeLatency)
       val chain = Seq(rootSymbol) ++ pipelineSymbols
@@ -467,7 +457,6 @@ object Memory {
       }
     }
 
-
     /*
      * Makes a chain of pipeline registers.
      * These must be ordered reg0/in, reg0, reg1/in ... regN/in, regN
@@ -481,12 +470,14 @@ object Memory {
      * @param pipelineName  string representing the name of the root port
      * @param latency       pipeline latency
      */
-    def buildPipelineAssigners(clock:        Symbol,
-                               rootSymbol:   Symbol,
-                               portString:   String,
-                               pipelineName: String,
-                               latency:      Int,
-                               info:         Info): Symbol = {
+    def buildPipelineAssigners(
+      clock:        Symbol,
+      rootSymbol:   Symbol,
+      portString:   String,
+      pipelineName: String,
+      latency:      Int,
+      info:         Info
+    ): Symbol = {
 
       val drivingClock = symbolTable.findHighestClock(clock)
 
@@ -542,9 +533,11 @@ object Memory {
       val valid = symbolTable(s"$name.valid")
 
       // compute a valid so we only have to carry a single boolean up the write queue
-      compiler.makeAssigner(valid,
-                            AndInts(dataStore.GetInt(enable.index).apply _, dataStore.GetInt(mask.index).apply _, 1),
-                            info = memory.info)
+      compiler.makeAssigner(
+        valid,
+        AndInts(dataStore.GetInt(enable.index).apply _, dataStore.GetInt(mask.index).apply _, 1),
+        info = memory.info
+      )
 
       val endOfValidPipeline = buildPipelineAssigners(clock, valid, name, "valid", memory.writeLatency, memory.info)
       val endOfAddrPipeline = buildPipelineAssigners(clock, addr, name, "addr", memory.writeLatency, memory.info)
@@ -612,11 +605,42 @@ object Memory {
   }
 }
 
-class MemoryInitializer(engine: ExecutionEngine) {
+class MemoryInitializer(engine: ExecutionEngine) extends LazyLogging {
   case class MemoryMetadata(symbol: Symbol, fileName: String, radix: Int)
 
   val memoryLoadAnnotations: Seq[LoadMemoryAnnotation] = engine.annotationSeq.collect {
     case mla: LoadMemoryAnnotation => mla
+  }
+
+  handleInitializers()
+
+  def handleInitializers(): Unit = {
+    def loadMemory(referenceTarget: ReferenceTarget, values: Seq[BigInt]): Unit = {
+      engine.referenceTargetToSymbols(referenceTarget).foreach { memorySymbol =>
+        def getNextValue(index: Int): BigInt = {
+          if (values.isEmpty) {
+            BigInt(memorySymbol.bitWidth, util.Random)
+          } else if (index >= values.length) {
+            values.last
+          } else {
+            values(index)
+          }
+        }
+
+        for (slot <- 0 until memorySymbol.slots) {
+          engine.dataStore.update(memorySymbol, slot, getNextValue(slot))
+        }
+      }
+    }
+    engine.annotationSeq.foreach {
+      case MemoryRandomInitAnnotation(referenceTarget) =>
+        loadMemory(referenceTarget, Seq.empty)
+      case MemoryScalarInitAnnotation(referenceTarget, value) =>
+        loadMemory(referenceTarget, Seq(value))
+      case MemoryArrayInitAnnotation(referenceTarget, values) =>
+        loadMemory(referenceTarget, values)
+      case _ =>
+    }
   }
 
   /*

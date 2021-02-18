@@ -1,27 +1,13 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.primops
 
 import firrtl.ir
 import firrtl.ir.Type
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle._
 
 class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
   var returnValue: BigInt = 0
@@ -36,7 +22,7 @@ class BlackBoxTypeParam_1(val name: String) extends ScalaBlackBox {
       case valueParam: firrtl.ir.RawStringParam =>
         returnValue = BigInt("deadbeef", 16)
       case _ =>
-        println(s"huh?")
+        throw new Exception("huh? should not get here")
     }
   }
 
@@ -75,9 +61,10 @@ class EqOpsTester extends AnyFreeSpec with Matchers {
       BlackBoxFactoriesAnnotation(Seq(factory))
     )
 
-    val tester = TreadleTester(FirrtlSourceAnnotation(input) +: options)
+    TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
 
-    tester.peek("out") should be(1)
+      tester.peek("out") should be(1)
+    }
   }
 
   "results of equals on large numbers should have widths all work" in {
@@ -96,9 +83,8 @@ class EqOpsTester extends AnyFreeSpec with Matchers {
         |
           """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
-    tester.peek("out") should be(BigInt(0))
-    println(s"peek out ${tester.peek("out") != BigInt(0)}")
-    tester.report()
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.peek("out") should be(BigInt(0))
+    }
   }
 }

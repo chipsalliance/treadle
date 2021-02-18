@@ -1,19 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package treadle
 
 import firrtl.stage.FirrtlSourceAnnotation
@@ -46,40 +31,37 @@ class NativeAsyncResetSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(firrtlSource)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
+      tester.poke("in", 7)
+      tester.expect("out_reg", 0)
+      tester.expect("out_async_reg", 0)
 
-    tester.poke("in", 7)
-    tester.expect("out_reg", 0)
-    tester.expect("out_async_reg", 0)
+      tester.step()
 
-    tester.step()
+      tester.expect("out_reg", 7)
+      tester.expect("out_async_reg", 7)
 
-    tester.expect("out_reg", 7)
-    tester.expect("out_async_reg", 7)
+      tester.poke("in", 23)
+      tester.poke("reset", 1)
 
-    tester.poke("in", 23)
-    tester.poke("reset", 1)
+      tester.expect("reg", 7)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("reg", 7)
-    tester.expect("out_async_reg", 17)
+      tester.step()
 
-    tester.step()
+      tester.expect("reg", 17)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("reg", 17)
-    tester.expect("out_async_reg", 17)
+      tester.poke("reset", 0)
 
-    tester.poke("reset", 0)
+      tester.expect("out_reg", 17)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("out_reg", 17)
-    tester.expect("out_async_reg", 17)
+      tester.step()
 
-    tester.step()
-
-    tester.expect("out_reg", 23)
-    tester.expect("out_async_reg", 23)
-
-    tester.report()
-    tester.finish
+      tester.expect("out_reg", 23)
+      tester.expect("out_async_reg", 23)
+    }
   }
   "async reset should work when declared as IO" in {
     val firrtlSource =
@@ -105,41 +87,38 @@ class NativeAsyncResetSpec extends AnyFreeSpec with Matchers {
         |
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(firrtlSource)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
+      tester.poke("in", 7)
+      tester.expect("out_reg", 0)
+      tester.expect("out_async_reg", 0)
 
-    tester.poke("in", 7)
-    tester.expect("out_reg", 0)
-    tester.expect("out_async_reg", 0)
+      tester.step()
 
-    tester.step()
+      tester.expect("out_reg", 7)
+      tester.expect("out_async_reg", 7)
 
-    tester.expect("out_reg", 7)
-    tester.expect("out_async_reg", 7)
+      tester.poke("in", 23)
+      tester.poke("reset", 1)
+      tester.poke("a_reset", 1)
 
-    tester.poke("in", 23)
-    tester.poke("reset", 1)
-    tester.poke("a_reset", 1)
+      tester.expect("reg", 7)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("reg", 7)
-    tester.expect("out_async_reg", 17)
+      tester.step()
 
-    tester.step()
+      tester.expect("reg", 17)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("reg", 17)
-    tester.expect("out_async_reg", 17)
+      tester.poke("reset", 0)
+      tester.poke("a_reset", 0)
 
-    tester.poke("reset", 0)
-    tester.poke("a_reset", 0)
+      tester.expect("out_reg", 17)
+      tester.expect("out_async_reg", 17)
 
-    tester.expect("out_reg", 17)
-    tester.expect("out_async_reg", 17)
+      tester.step()
 
-    tester.step()
-
-    tester.expect("out_reg", 23)
-    tester.expect("out_async_reg", 23)
-
-    tester.report()
-    tester.finish
+      tester.expect("out_reg", 23)
+      tester.expect("out_async_reg", 23)
+    }
   }
 }

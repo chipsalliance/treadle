@@ -1,25 +1,11 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.chronometry
 
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.TreadleTester
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.TreadleTestHarness
 
 // scalastyle:off magic.number
 class GatedClockSpec extends AnyFreeSpec with Matchers {
@@ -56,19 +42,18 @@ class GatedClockSpec extends AnyFreeSpec with Matchers {
 
   "GatedClockSpec should pass a basic test" in {
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("io_enable", 0)
+      for (_ <- 0 until 10) {
+        tester.expect("io_count", 0)
+        tester.step()
+      }
 
-    tester.poke("io_enable", 0)
-    for (_ <- 0 until 10) {
-      println(s"counter = ${tester.peek("io_count")}")
-      tester.step()
-      tester.expect("io_count", 0)
-    }
-
-    tester.poke("io_enable", 1)
-    for (_ <- 0 until 10) {
-      println(s"counter = ${tester.peek("io_count")}")
-      tester.step()
+      tester.poke("io_enable", 1)
+      for (i <- 0 until 10) {
+        tester.expect("io_count", i)
+        tester.step()
+      }
     }
   }
 }

@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle
 
@@ -21,15 +7,16 @@ import java.io.{File, PrintWriter}
 import firrtl.FileUtils
 import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
 import firrtl.stage.FirrtlSourceAnnotation
-import treadle.executable.StopException
+import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import treadle.executable.StopException
 
 /**
   * Created by chick on 4/30/16.
   */
 //scalastyle:off magic.number
-class MemoryUsageSpec extends AnyFreeSpec with Matchers {
+class MemoryUsageSpec extends AnyFreeSpec with Matchers with LazyLogging {
 
   "chirrtl mems should parse and run ok" in {
     val chirrtlMemInput =
@@ -88,13 +75,12 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
         |    waddr <= bits(GEN_18, 3, 0)
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(chirrtlMemInput)))
-
-    tester.poke("reset", 1)
-    tester.step()
-    tester.poke("reset", 0)
-    tester.step()
-    tester.report()
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(chirrtlMemInput))) { tester =>
+      tester.poke("reset", 1)
+      tester.step()
+      tester.poke("reset", 0)
+      tester.step()
+    }
   }
 
   "memory primitives should run this circuit" in {
@@ -132,21 +118,21 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
         |    c <= a
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation))
-    tester.poke("a", 1)
-    tester.poke("b", 0)
-    tester.poke("select", 0)
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation)) { tester =>
+      tester.poke("a", 1)
+      tester.poke("b", 0)
+      tester.poke("select", 0)
 
-    tester.step()
-
-    def testC(): Unit = {
-      val m = tester.peek("c")
-      println(s"got $m")
       tester.step()
-    }
-    testC()
 
-    tester.report()
+      def testC(): Unit = {
+        val m = tester.peek("c")
+        logger.debug(s"got $m")
+        tester.step()
+      }
+
+      testC()
+    }
   }
 
   "read-write memory should work with this simple example" in {
@@ -180,24 +166,23 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
          |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("do_write", 1)
+      for (i <- 0 until depth) {
+        tester.poke("index", i)
+        tester.poke("write_data", i + 3)
+        tester.step()
+      }
+      tester.poke("do_write", 0)
+      tester.step(2)
 
-    tester.poke("do_write", 1)
-    for (i <- 0 until depth) {
-      tester.poke("index", i)
-      tester.poke("write_data", i + 3)
-      tester.step()
+      for (i <- 0 until depth) {
+        tester.poke("index", i)
+        tester.step()
+        tester.expect("read_data", i + 3)
+      }
+
     }
-    tester.poke("do_write", 0)
-    tester.step(2)
-
-    for (i <- 0 until depth) {
-      tester.poke("index", i)
-      tester.step()
-      tester.expect("read_data", i + 3)
-    }
-
-    tester.report()
   }
 
   "this is a a more complex circuit" in {
@@ -254,24 +239,23 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
         |    ram.RW_0.wmask <= UInt<1>("h1")
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("outer_write_en", 1)
+      for (i <- 0 until 10) {
+        tester.poke("outer_addr", i)
+        tester.poke("outer_din", i * 3)
+        tester.step()
+      }
+      tester.poke("outer_write_en", 0)
+      tester.step(2)
 
-    tester.poke("outer_write_en", 1)
-    for (i <- 0 until 10) {
-      tester.poke("outer_addr", i)
-      tester.poke("outer_din", i * 3)
-      tester.step()
+      for (i <- 0 until 10) {
+        tester.poke("outer_addr", i)
+        tester.step()
+        tester.expect("outer_dout", i * 3)
+      }
+
     }
-    tester.poke("outer_write_en", 0)
-    tester.step(2)
-
-    for (i <- 0 until 10) {
-      tester.poke("outer_addr", i)
-      tester.step()
-      tester.expect("outer_dout", i * 3)
-    }
-
-    tester.report()
   }
 
   "basic memory latency read 0 write 1" in {
@@ -304,26 +288,25 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
         |    out1 <= m.read.data
       """.stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.poke("in1", 11)
+      tester.poke("addr", 3)
+      tester.poke("write_en", 1)
 
-    tester.poke("in1", 11)
-    tester.poke("addr", 3)
-    tester.poke("write_en", 1)
+      tester.step()
 
-    tester.step()
+      tester.expectMemory("m", 3, 11)
 
-    tester.expectMemory("m", 3, 11)
+      tester.poke("addr", 2)
+      tester.poke("write_en", 0)
+      tester.step()
+      tester.expect("m.read.data", 0)
 
-    tester.poke("addr", 2)
-    tester.poke("write_en", 0)
-    tester.step()
-    tester.expect("m.read.data", 0)
+      tester.poke("write_en", 0)
+      tester.poke("addr", 3)
+      tester.expect("m.read.data", 11)
 
-    tester.poke("write_en", 0)
-    tester.poke("addr", 3)
-    tester.expect("m.read.data", 11)
-
-    tester.report()
+    }
   }
 
   "basic memory with varying latencies" in {
@@ -331,7 +314,7 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
       readLatency <- 0 to 2
       writeLatency <- 1 to 4
     } {
-      println(s"ReadLatency $readLatency WriteLatency $writeLatency")
+      logger.debug(s"ReadLatency $readLatency WriteLatency $writeLatency")
       val input =
         s"""circuit Test :
            |  module Test :
@@ -361,26 +344,25 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
            |    out1 <= m.read.data
         """.stripMargin
 
-      val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)))
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.poke("in1", 11)
+        tester.poke("addr", 3)
+        tester.poke("write_en", 1)
 
-      tester.poke("in1", 11)
-      tester.poke("addr", 3)
-      tester.poke("write_en", 1)
+        tester.step(writeLatency)
 
-      tester.step(writeLatency)
+        tester.expectMemory("m", 3, 11)
 
-      tester.expectMemory("m", 3, 11)
+        tester.poke("addr", 2)
+        tester.poke("write_en", 0)
+        tester.step()
 
-      tester.poke("addr", 2)
-      tester.poke("write_en", 0)
-      tester.step()
+        tester.poke("write_en", 0)
+        tester.poke("addr", 3)
+        tester.step(readLatency)
+        tester.expect("m.read.data", 11)
 
-      tester.poke("write_en", 0)
-      tester.poke("addr", 3)
-      tester.step(readLatency)
-      tester.expect("m.read.data", 11)
-
-      tester.report()
+      }
     }
   }
 
@@ -440,15 +422,12 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
     }
     writer2.close()
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input)) ++ memoryAnnotations)
-
-    for (i <- 0 until 8) {
-      tester.expectMemory("memory", i, i)
-      tester.expectMemory("low.memory", i, 7 - i)
-
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input)) ++ memoryAnnotations) { tester =>
+      for (i <- 0 until 8) {
+        tester.expectMemory("memory", i, i)
+        tester.expectMemory("low.memory", i, 7 - i)
+      }
     }
-    tester.report()
-    tester.finish
   }
 
   private val simpleMem =
@@ -485,41 +464,39 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
        |
        |""".stripMargin
 
-  def simpleMemTester: TreadleTester = TreadleTester(Seq(FirrtlSourceAnnotation(simpleMem)))
-
   "write port: en and masks should be respected" in {
-    val tester = simpleMemTester
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleMem))) { tester =>
+      // (en == 0) should prevent a write
+      tester.pokeMemory("m", 3, 123)
+      tester.poke("io_w_data", 0)
+      tester.poke("io_w_addr", 3)
+      tester.poke("io_w_en", 0)
+      tester.poke("io_w_mask", 1)
+      tester.step()
+      tester.peekMemory("m", 3) should be(123)
 
-    // (en == 0) should prevent a write
-    tester.pokeMemory("m", 3, 123)
-    tester.poke("io_w_data", 0)
-    tester.poke("io_w_addr", 3)
-    tester.poke("io_w_en", 0)
-    tester.poke("io_w_mask", 1)
-    tester.step()
-    tester.peekMemory("m", 3) should be(123)
-
-    // (mask == 0) should prevent a write
-    tester.poke("io_w_en", 1)
-    tester.poke("io_w_mask", 0)
-    tester.step()
-    tester.peekMemory("m", 3) should be(123)
+      // (mask == 0) should prevent a write
+      tester.poke("io_w_en", 1)
+      tester.poke("io_w_mask", 0)
+      tester.step()
+      tester.peekMemory("m", 3) should be(123)
+    }
   }
 
   "read port: enable should be pipelined correctly" in {
-    val tester = simpleMemTester
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(simpleMem))) { tester =>
+      tester.poke("io_r_en", 0)
+      tester.step()
+      tester.peek("m.r.en") should be(0)
 
-    tester.poke("io_r_en", 0)
-    tester.step()
-    tester.peek("m.r.en") should be(0)
+      tester.poke("io_r_en", 1)
+      tester.step()
+      tester.peek("m.r.en") should be(1)
 
-    tester.poke("io_r_en", 1)
-    tester.step()
-    tester.peek("m.r.en") should be(1)
-
-    tester.poke("io_r_en", 0)
-    tester.step()
-    tester.peek("m.r.en") should be(0)
+      tester.poke("io_r_en", 0)
+      tester.step()
+      tester.peek("m.r.en") should be(0)
+    }
   }
 
   "SyncReadMem write collision behaviors should work" in {
@@ -533,8 +510,8 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
         |    output io : {}
         |
         |    reg cnt : UInt<3>, clock with : (reset => (reset, UInt<3>("h00"))) @[Counter.scala 29:33]
+        |    node _T = eq(cnt, UInt<3>("h04")) @[Counter.scala 37:24]
         |    when UInt<1>("h01") : @[Counter.scala 71:17]
-        |      node _T = eq(cnt, UInt<3>("h04")) @[Counter.scala 37:24]
         |      node _T_1 = add(cnt, UInt<1>("h01")) @[Counter.scala 38:22]
         |      node _T_2 = tail(_T_1, 1) @[Counter.scala 38:22]
         |      cnt <= _T_2 @[Counter.scala 38:13]
@@ -585,10 +562,11 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers {
         |
         |""".stripMargin
 
-    val tester = TreadleTester(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation, ShowFirrtlAtLoadAnnotation))
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
 
-    intercept[StopException] {
-      tester.step(100)
+      intercept[StopException] {
+        tester.step(100)
+      }
     }
   }
 }

@@ -1,35 +1,22 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.asyncreset
 
 import firrtl.ir.{Param, Type}
+import logger.LazyLogging
 import treadle._
 import treadle.executable._
 
 /**
   * Implements a single bit register with asynchronous reset
   */
-class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
+class AsyncResetReg(val instanceName: String) extends ScalaBlackBox with LazyLogging {
   override def name: String = "AsyncResetReg"
 
-  var nextValue:    BigInt = Big0
+  var nextValue: BigInt = Big0
   var currentValue: BigInt = Big0
-  var resetValue:   BigInt = Big0
-  var enable:       Boolean = false
+  var resetValue: BigInt = Big0
+  var enable: Boolean = false
 
   def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     currentValue
@@ -46,7 +33,7 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox {
         }
       case _ =>
     }
-    println(s"next $nextValue cur $currentValue, en $enable")
+    logger.debug(s"next $nextValue cur $currentValue, en $enable")
   }
 
   override def clockChange(transition: Transition, clockName: String): Unit = {

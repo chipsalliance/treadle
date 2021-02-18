@@ -1,18 +1,4 @@
-/*
-Copyright 2020 The Regents of the University of California (Regents)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- */
+// SPDX-License-Identifier: Apache-2.0
 
 package treadle.executable
 
@@ -20,6 +6,7 @@ import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir._
 import treadle._
+import treadle.blackboxes.PlusArg
 import treadle.utils.FindModule
 
 import scala.collection.mutable
@@ -30,8 +17,9 @@ class ExpressionCompiler(
   scheduler:            Scheduler,
   validIfIsRandom:      Boolean,
   prefixPrintfWithTime: Boolean,
-  blackBoxFactories:    Seq[ScalaBlackBoxFactory]
-) extends logger.LazyLogging {
+  blackBoxFactories:    Seq[ScalaBlackBoxFactory],
+  plusArgs:             Seq[PlusArg])
+    extends logger.LazyLogging {
 
   case class ExternalInputParams(instance: ScalaBlackBox, portName: String)
 
@@ -178,23 +166,27 @@ class ExpressionCompiler(
       case (IntSize, result: IntExpressionResult) =>
         dataStore.AssignIntIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (LongSize, result: IntExpressionResult) =>
-        dataStore.AssignLongIndirect(portSymbol,
-                                     memorySymbol,
-                                     getIndex,
-                                     getEnable,
-                                     ToLong(result.apply _).apply _,
-                                     info)
+        dataStore.AssignLongIndirect(
+          portSymbol,
+          memorySymbol,
+          getIndex,
+          getEnable,
+          ToLong(result.apply _).apply _,
+          info
+        )
       case (LongSize, result: LongExpressionResult) =>
         dataStore.AssignLongIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (BigSize, result: IntExpressionResult) =>
         dataStore.AssignBigIndirect(portSymbol, memorySymbol, getIndex, getEnable, ToBig(result.apply _).apply _, info)
       case (BigSize, result: LongExpressionResult) =>
-        dataStore.AssignBigIndirect(portSymbol,
-                                    memorySymbol,
-                                    getIndex,
-                                    getEnable,
-                                    LongToBig(result.apply _).apply _,
-                                    info)
+        dataStore.AssignBigIndirect(
+          portSymbol,
+          memorySymbol,
+          getIndex,
+          getEnable,
+          LongToBig(result.apply _).apply _,
+          info
+        )
       case (BigSize, result: BigExpressionResult) =>
         dataStore.AssignBigIndirect(portSymbol, memorySymbol, getIndex, getEnable, result.apply _, info)
       case (size, result) =>
@@ -242,7 +234,13 @@ class ExpressionCompiler(
       def handleIntResult(e1: IntExpressionResult, e2: IntExpressionResult): ExpressionResult = {
         opCode match {
           case Add => AddInts(e1.apply _, e2.apply _)
-          case Sub => SubInts(e1.apply _, e2.apply _)
+          case Sub =>
+            tpe match {
+              case _: UIntType =>
+                AsUIntInts(SubInts(e1.apply _, e2.apply _).apply _, getWidth(tpe))
+              case _ =>
+                SubInts(e1.apply _, e2.apply _)
+            }
           case Mul => MulInts(e1.apply _, e2.apply _)
           case Div => DivInts(e1.apply _, e2.apply _)
           case Rem => RemInts(e1.apply _, e2.apply _)
@@ -272,7 +270,13 @@ class ExpressionCompiler(
       def handleLongResult(e1: LongExpressionResult, e2: LongExpressionResult): ExpressionResult = {
         opCode match {
           case Add => AddLongs(e1.apply _, e2.apply _)
-          case Sub => SubLongs(e1.apply _, e2.apply _)
+          case Sub =>
+            tpe match {
+              case _: UIntType =>
+                AsUIntLongs(SubLongs(e1.apply _, e2.apply _).apply _, getWidth(tpe))
+              case _ =>
+                SubLongs(e1.apply _, e2.apply _)
+            }
           case Mul => MulLongs(e1.apply _, e2.apply _)
           case Div => DivLongs(e1.apply _, e2.apply _)
           case Rem => RemLongs(e1.apply _, e2.apply _)
@@ -302,7 +306,13 @@ class ExpressionCompiler(
       def handleBigResult(e1: BigExpressionResult, e2: BigExpressionResult): ExpressionResult = {
         opCode match {
           case Add => AddBigs(e1.apply _, e2.apply _)
-          case Sub => SubBigs(e1.apply _, e2.apply _)
+          case Sub =>
+            tpe match {
+              case _: UIntType =>
+                AsUIntBigs(SubBigs(e1.apply _, e2.apply _).apply _, getWidth(tpe))
+              case _ =>
+                SubBigs(e1.apply _, e2.apply _)
+            }
           case Mul => MulBigs(e1.apply _, e2.apply _)
           case Div => DivBigs(e1.apply _, e2.apply _)
           case Rem => RemBigs(e1.apply _, e2.apply _)
@@ -714,6 +724,16 @@ class ExpressionCompiler(
       result
     }
 
+    def toIntExpression(expression: Expression, errorMessage: String): IntExpressionResult = {
+      processExpression(expression) match {
+        case i: IntExpressionResult  => i
+        case l: LongExpressionResult => LongToInt(l.apply _)
+        case b: BigExpressionResult  => ToInt(b.apply _)
+        case _ =>
+          throw TreadleException(errorMessage)
+      }
+    }
+
     statement match {
       case block: Block =>
         var statementNumber = 0
@@ -766,6 +786,8 @@ class ExpressionCompiler(
                 val instanceSymbol = symbolTable(expand(instanceName))
 
                 implementation.setParams(extModule.params)
+
+                implementation.setPlusArgs(plusArgs)
 
                 for (port <- extModule.ports) {
                   if (port.direction == Output) {
@@ -871,13 +893,7 @@ class ExpressionCompiler(
       case stop @ Stop(info, returnValue, clockExpression, enableExpression) =>
         symbolTable.stopToStopInfo.get(stop) match {
           case Some(stopInfo) =>
-            val intExpression = processExpression(enableExpression) match {
-              case i: IntExpressionResult  => i
-              case l: LongExpressionResult => LongToInt(l.apply _)
-              case b: BigExpressionResult  => ToInt(b.apply _)
-              case _ =>
-                throw TreadleException(s"Error: stop $stop has unknown condition type")
-            }
+            val intExpression = toIntExpression(enableExpression, s"Error: stop $stop has unknown condition type")
 
             getDrivingClock(clockExpression) match {
               case Some(clockSymbol) =>
@@ -905,13 +921,7 @@ class ExpressionCompiler(
       case printf @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
         symbolTable.printToPrintInfo.get(printf) match {
           case Some(printInfo) =>
-            val intExpression = processExpression(enableExpression) match {
-              case i: IntExpressionResult  => i
-              case l: LongExpressionResult => LongToInt(l.apply _)
-              case b: BigExpressionResult  => ToInt(b.apply _)
-              case _ =>
-                throw TreadleException(s"Error: printf $printf has unknown condition type")
-            }
+            val intExpression = toIntExpression(enableExpression, s"Error: printf $printf has unknown condition type")
 
             getDrivingClock(clockExpression) match {
               case Some(clockSymbol) =>
@@ -942,15 +952,47 @@ class ExpressionCompiler(
             throw TreadleException(s"Could not find symbol for Print $printf")
         }
 
+      case verify @ Verification(Formal.Cover, info, clockExpression, predicateExpression, enableExpression, message) =>
+        symbolTable.verifyToVerifyInfo.get(verify) match {
+          case Some(verifyInfo) =>
+            val intEnableExpression =
+              toIntExpression(enableExpression, s"Error: verify $verify has unknown enable type")
+
+            val intPredicateExpression =
+              toIntExpression(predicateExpression, s"Error: verify $verify has unknown predicate type")
+
+            getDrivingClock(clockExpression) match {
+              case Some(clockSymbol) =>
+                val prevClockSymbol = symbolTable(SymbolTable.makePreviousValue(clockSymbol))
+
+                val clockTransitionGetter = ClockTransitionGetter(clockSymbol, prevClockSymbol, dataStore)
+                val verifyOp = VerifyOp(
+                  verifyInfo.verifySymbol,
+                  info,
+                  message,
+                  clockTransitionGetter,
+                  intPredicateExpression,
+                  intEnableExpression,
+                  Formal.Cover
+                )
+                symbolTable.verifyOps += verifyOp
+                addAssigner(verifyOp)
+              case _ =>
+                throw TreadleException(s"Error: no clock found for Print $verify")
+            }
+
+          case _ =>
+            throw TreadleException(s"Could not find symbol for Print $verify")
+        }
+
       case EmptyStmt =>
       case conditionally: Conditionally =>
         // logger.debug(s"got a conditionally $conditionally")
         throw TreadleException(s"conditionally unsupported in engine $conditionally")
       case _ =>
-        println(s"TODO: Unhandled statement $statement")
+        println(s"ExpressionCompiler:TODO: Unhandled statement $statement")
     }
   }
-  // scalastyle:on
 
   def processTopLevelClocks(module: Module): Unit = {
     module.ports.foreach { port =>
