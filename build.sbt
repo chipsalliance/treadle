@@ -88,42 +88,6 @@ libraryDependencies ++= Seq(
   "org.json4s" %% "json4s-native" % "3.6.8"
 )
 
-<<<<<<< HEAD
-//javaOptions in run ++= Seq(
-    //"-Xms2G", "-Xmx4G", "-XX:MaxPermSize=1024M", "-XX:+UseConcMarkSweepGC")
-//)
-
-publishMavenStyle := true
-
-publishArtifact in Test := false
-pomIncludeRepository := { x => false }
-
-pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
-<licenses>
-  <license>
-    <name>BSD-style</name>
-    <url>http://www.opensource.org/licenses/bsd-license.php</url>
-    <distribution>repo</distribution>
-  </license>
-</licenses>
-<scm>
-  <url>https://github.com/freechipsproject/treadle.git</url>
-  <connection>scm:git:github.com/freechipsproject/treadle.git</connection>
-</scm>
-<developers>
-  <developer>
-    <id>chick</id>
-    <name>Charles Markley</name>
-    <url>https://aspire.eecs.berkeley.edu/author/chick/</url>
-  </developer>
-</developers>)
-
-publishTo := {
-  val v = version.value
-  val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT")) {
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-=======
 lazy val publishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -151,7 +115,6 @@ lazy val publishSettings = Seq(
     } else {
       Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
     }
->>>>>>> 007c9c0... Remove explicit pom scm from build.sbt (#281)
   }
   else {
     Some("releases" at nexus + "service/local/staging/deploy/maven2")
