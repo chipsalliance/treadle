@@ -32,15 +32,11 @@ lazy val baseSettings = Seq(
   ),
   // Ignore dependencies on Berkeley artifacts.
   // scala-steward:off
-  libraryDependencies ++= (Seq("firrtl").map { dep: String =>
+  libraryDependencies ++= Seq("firrtl").map { dep: String =>
     "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
-  }),
+  },
   // scala-steward:on
-  // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
-  // when compiling tests under 2.11.12
-  // An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
-    "junit" % "junit" % "4.13" % "test",
     "org.scalatest" %% "scalatest" % "3.2.4" % "test",
     "org.scala-lang.modules" % "scala-jline" % "2.12.1",
   ),
@@ -65,7 +61,7 @@ lazy val publishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
-  pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
+  pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
   <licenses>
     <license>
       <name>apache_v2</name>
@@ -79,7 +75,7 @@ lazy val publishSettings = Seq(
       <name>Charles Markley</name>
       <url>https://aspire.eecs.berkeley.edu/author/chick/</url>
     </developer>
-  </developers>),
+  </developers>,
   publishTo := {
     val v = version.value
     val nexus = "https://oss.sonatype.org/"
