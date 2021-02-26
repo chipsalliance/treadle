@@ -22,7 +22,7 @@ lazy val baseSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "1.5-SNAPSHOT",
   scalaVersion := "2.13.4",
-  crossScalaVersions := Seq("2.13.4", "2.12.10", "2.11.12"),
+  crossScalaVersions := Seq("2.13.4", "2.12.13", "2.11.12"),
   // enables using control-c in sbt CLI
   cancelable in Global := true,
   resolvers ++= Seq(

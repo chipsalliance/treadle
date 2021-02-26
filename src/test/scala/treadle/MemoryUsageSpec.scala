@@ -502,7 +502,7 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers with LazyLogging {
   "SyncReadMem write collision behaviors should work" in {
     val input =
       """
-        |;buildInfoPackage: chisel3, version: 3.3-SNAPSHOT, scalaVersion: 2.12.10, sbtVersion: 1.3.8
+        |;buildInfoPackage: chisel3, version: 3.3-SNAPSHOT, scalaVersion: 2.12.13, sbtVersion: 1.3.8
         |circuit SyncReadMemWriteCollisionTester :
         |  module SyncReadMemWriteCollisionTester :
         |    input clock : Clock

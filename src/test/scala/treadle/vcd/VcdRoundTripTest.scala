@@ -12,7 +12,7 @@ class VcdRoundTripTest extends AnyFreeSpec with Matchers with LazyLogging {
   "create a vcd through treadle and then read it back in" in {
     val input =
       """
-        |;buildInfoPackage: chisel3, version: 3.3-SNAPSHOT, scalaVersion: 2.12.10, sbtVersion: 1.3.2
+        |;buildInfoPackage: chisel3, version: 3.3-SNAPSHOT, scalaVersion: 2.12.13, sbtVersion: 1.3.2
         |circuit TopModule :
         |  module ModuleA :
         |    input clock : Clock
