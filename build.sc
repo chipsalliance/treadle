@@ -93,7 +93,7 @@ class treadleCrossModule(crossVersionValue: String) extends CommonModule with Pu
     }
 
     def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.2.4",
+      ivy"org.scalatest::scalatest:3.2.6",
     ) ++ ivyCrossDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
