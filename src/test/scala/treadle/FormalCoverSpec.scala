@@ -32,6 +32,25 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
     }
   }
 
+  "distinct counters should be created for each instance" in {
+    val stream = getClass.getResourceAsStream("/CoverageTestModule.fir")
+    val src = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(src))) { tester =>
+      val c0 = tester.getCoverage().toMap
+      assert(c0.size == 3, "There should be 3 cover statements, one in the main module and one in each child module.")
+      assert(c0.keys.count(_.startsWith("c0.")) == 1, "There is one cover statement in each submodule.")
+      assert(c0.keys.count(_.startsWith("c1.")) == 1, "There is one cover statement in each submodule.")
+      c0.values.foreach(v => assert(v == 0, "All count should be zero since we have not taken a step yet"))
+
+      tester.step(10)
+
+      val c1 = tester.getCoverage().toMap
+      assert(c1("cover_0") == 10)
+      assert(c1("c0.cover_0") == 0)
+      assert(c1("c1.cover_0") == 10)
+    }
+  }
+
   val ReportAnno = Seq(WriteCoverageCSVAnnotation)
 
   "cover statements should produce a report" in {

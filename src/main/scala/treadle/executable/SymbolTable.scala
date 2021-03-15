@@ -48,10 +48,10 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
 
   val moduleMemoryToMemorySymbol: mutable.HashMap[String, mutable.HashSet[Symbol]] = new mutable.HashMap
 
-  val stopToStopInfo:     mutable.HashMap[Stop, StopInfo] = new mutable.HashMap[Stop, StopInfo]
-  val printToPrintInfo:   mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
-  val verifyToVerifyInfo: mutable.HashMap[Verification, VerifyInfo] = new mutable.HashMap[Verification, VerifyInfo]
-  val verifyOps:          mutable.ListBuffer[VerifyOp] = new mutable.ListBuffer[VerifyOp]
+  val stopToStopInfo:   mutable.HashMap[Stop, StopInfo] = new mutable.HashMap[Stop, StopInfo]
+  val printToPrintInfo: mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
+  val verifyInfo:       mutable.HashMap[String, VerifyInfo] = new mutable.HashMap[String, VerifyInfo]
+  val verifyOps:        mutable.ListBuffer[VerifyOp] = new mutable.ListBuffer[VerifyOp]
 
   def isRegister(name:      String): Boolean = registerNames.contains(name)
   def isTopLevelInput(name: String): Boolean = inputPortsNames.contains(name)
@@ -199,7 +199,7 @@ object SymbolTable extends LazyLogging {
     var printfCardinal: Int = 0
     val lastPrintfInModule = new mutable.HashMap[Module, Symbol]
 
-    val verifyToVerifyInfo = new mutable.HashMap[Verification, VerifyInfo]
+    val verifyInfo = new mutable.HashMap[String, VerifyInfo]
     var verifyCardinal: Int = 0
     val lastVerifyInModule = new mutable.HashMap[Module, Symbol]
 
@@ -459,7 +459,7 @@ object SymbolTable extends LazyLogging {
               addSymbol(verifySymbol)
 
               verifyCardinal += 1
-              verifyToVerifyInfo(verify) = VerifyInfo(verifySymbol, verifyCardinal)
+              verifyInfo(verifySymbolName) = VerifyInfo(verifySymbol, verifyCardinal)
               addDependency(verifySymbol, expressionToReferences(clockExpression))
               addDependency(verifySymbol, expressionToReferences(enableExpression))
               addDependency(verifySymbol, expressionToReferences(predicateExpression))
@@ -631,7 +631,7 @@ object SymbolTable extends LazyLogging {
     symbolTable.registerToClock ++= registerToClock
     symbolTable.stopToStopInfo ++= stopToStopInfo
     symbolTable.printToPrintInfo ++= printToPrintInfo
-    symbolTable.verifyToVerifyInfo ++= verifyToVerifyInfo
+    symbolTable.verifyInfo ++= verifyInfo
 
     symbolTable.parentsOf = sensitivityGraphBuilder.getParentsOfDiGraph
     symbolTable.childrenOf = sensitivityGraphBuilder.getChildrenOfDiGraph
