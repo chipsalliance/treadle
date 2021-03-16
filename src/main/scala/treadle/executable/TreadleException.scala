@@ -2,8 +2,7 @@
 
 package treadle.executable
 
-/**
-  * Created by chick on 4/21/16.
+/** Created by chick on 4/21/16.
   */
 case class TreadleException(message: String) extends Exception(message)
 

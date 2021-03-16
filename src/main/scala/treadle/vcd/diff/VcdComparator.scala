@@ -25,28 +25,28 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
   val doUnmatchedWires:     Boolean = annotationSeq.exists { case UnmatchedWires => true; case _ => false }
   val dontDiffValues:       Boolean = annotationSeq.exists { case DontDiffValues => true; case _ => false }
 
-  private val (removePrefix1, addPrefix1) = annotationSeq.collectFirst {
-    case wp: WirePrefix1 => (wp.removePrefix, wp.addPrefix)
+  private val (removePrefix1, addPrefix1) = annotationSeq.collectFirst { case wp: WirePrefix1 =>
+    (wp.removePrefix, wp.addPrefix)
   }.getOrElse(("", ""))
 
-  private val (removePrefix2, addPrefix2) = annotationSeq.collectFirst {
-    case wp: WirePrefix2 => (wp.removePrefix, wp.addPrefix)
+  private val (removePrefix2, addPrefix2) = annotationSeq.collectFirst { case wp: WirePrefix2 =>
+    (wp.removePrefix, wp.addPrefix)
   }.getOrElse(("", ""))
 
-  private val maxDiffLines = annotationSeq.collectFirst {
-    case MaxDiffLines(lines) => lines
+  private val maxDiffLines = annotationSeq.collectFirst { case MaxDiffLines(lines) =>
+    lines
   }.getOrElse(100)
 
-  private val displayRadix = annotationSeq.collectFirst {
-    case DisplayRadix(lines) => lines
+  private val displayRadix = annotationSeq.collectFirst { case DisplayRadix(lines) =>
+    lines
   }.getOrElse(10)
 
-  private val startTime = annotationSeq.collectFirst {
-    case V1StartTime(time) => time
+  private val startTime = annotationSeq.collectFirst { case V1StartTime(time) =>
+    time
   }.getOrElse(0L)
 
-  private val timeOffset = annotationSeq.collectFirst {
-    case TimeOffset(offset) => offset
+  private val timeOffset = annotationSeq.collectFirst { case TimeOffset(offset) =>
+    offset
   }.getOrElse(0L)
 
   def isTempWire(name: String): Boolean = {
@@ -55,13 +55,12 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
   }
 
   def getWireList(vcd: VCD, removePrefix: String, addPrefix: String): Map[String, String] = {
-    vcd.wires.map {
-      case (id, wire) =>
-        var name = wire.fullName
-        if (removePrefix.nonEmpty && name.startsWith(removePrefix)) { name = name.drop(removePrefix1.length) }
-        if (addPrefix.nonEmpty) { name = addPrefix + name }
-        name = name.replaceAll("""\.""", "_")
-        (name, id)
+    vcd.wires.map { case (id, wire) =>
+      var name = wire.fullName
+      if (removePrefix.nonEmpty && name.startsWith(removePrefix)) { name = name.drop(removePrefix1.length) }
+      if (addPrefix.nonEmpty) { name = addPrefix + name }
+      name = name.replaceAll("""\.""", "_")
+      (name, id)
     }.toMap
   }
 
@@ -105,14 +104,12 @@ class VcdComparator(annotationSeq: AnnotationSeq) {
     val (vcd1CodeToVcd2Code, vcd2CodeToVcd1Code) = buildVcd1CodeToVcd2Code()
 
     def showMatchedCodes(): Unit = {
-      vcd1CodeToVcd2Code.toSeq.map {
-        case (tag1, tag2) =>
-          val name1 = vcd1.wires(tag1).fullName
-          val name2 = vcd2.wires(tag2).fullName
-          (tag1, tag2, name1, name2)
-      }.sortWith { case ((_, _, a, _), (_, _, b, _)) => a < b }.foreach {
-        case (tag1, tag2, name1, name2) =>
-          println(f"$tag1%5s $tag2%5s --- $name1 $name2")
+      vcd1CodeToVcd2Code.toSeq.map { case (tag1, tag2) =>
+        val name1 = vcd1.wires(tag1).fullName
+        val name2 = vcd2.wires(tag2).fullName
+        (tag1, tag2, name1, name2)
+      }.sortWith { case ((_, _, a, _), (_, _, b, _)) => a < b }.foreach { case (tag1, tag2, name1, name2) =>
+        println(f"$tag1%5s $tag2%5s --- $name1 $name2")
       }
     }
 

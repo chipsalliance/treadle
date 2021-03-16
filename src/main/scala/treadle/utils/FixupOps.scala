@@ -8,8 +8,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.stage.Forms
 
-/**
-  *  Workaround for https://github.com/freechipsproject/firrtl/issues/498 from @jackkoenig
+/**  Workaround for https://github.com/freechipsproject/firrtl/issues/498 from @jackkoenig
   */
 class FixupOps extends Transform with DependencyAPIMigration {
   override def prerequisites = Forms.LowForm

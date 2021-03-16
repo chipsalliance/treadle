@@ -41,7 +41,6 @@ class ClockCrossingSpec extends AnyFreeSpec with Matchers {
     )
 
     TreadleTestHarness(FirrtlSourceAnnotation(chirrtlString) +: options) { tester =>
-
       tester.reset(8)
 
       tester.poke("io_divIn", 0x42)

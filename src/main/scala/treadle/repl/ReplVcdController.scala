@@ -62,8 +62,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
   }
 
   //scalastyle:off method.length
-  /**
-    * Applies changes to circuit based on current vcd time step to current inputs.
+  /** Applies changes to circuit based on current vcd time step to current inputs.
     *
     * @note At time step zero all possible changes are applied.
     * @return
@@ -233,8 +232,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
     }
   }
 
-  /**
-    * command parser for vcd family of repl commands
+  /** command parser for vcd family of repl commands
     *
     * @param args arguments from user
     */

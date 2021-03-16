@@ -54,7 +54,6 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
 
     Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
       TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), CallResetAtStartupAnnotation)) { tester =>
-
         tester.poke("reset", 0)
         tester.poke("io_wrData", (0 << 24) + (255 << 16))
         tester.expect("reset", 0)

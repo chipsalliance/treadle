@@ -5,8 +5,7 @@ package treadle.executable
 import firrtl.ir.Info
 import treadle.ScalaBlackBox
 
-/**
-  * Implements an assigner that can be scheduled to publish clock transitions
+/** Implements an assigner that can be scheduled to publish clock transitions
   * to specific black box implementations
   * @param symbol symbol name of instance
   * @param blackBox the instance

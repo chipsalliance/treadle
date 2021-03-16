@@ -91,7 +91,6 @@ class RegisterCycleTest extends AnyFreeSpec with Matchers with LazyLogging {
         TreadleTestHarness(
           Seq(FirrtlSourceAnnotation(input), SymbolsToWatchAnnotation(Seq("io_Out", "mySubModule_1.io_Out")))
         ) { tester =>
-
           tester.poke("io_In", 1)
           tester.step(3)
           tester.expect("io_Out", 1)

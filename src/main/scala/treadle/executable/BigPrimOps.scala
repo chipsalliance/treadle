@@ -143,8 +143,7 @@ case class XorBigs(f1: FuncBig, f2: FuncBig, resultWidth: Int) extends BigExpres
   def apply(): Big = (f1() ^ f2()) & mask
 }
 
-/**
-  * are all bits set
+/** are all bits set
   * @param f1 value to be `and` reduced
   * @param width result bit size
   */
@@ -156,8 +155,7 @@ case class AndrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
   }
 }
 
-/**
-  * are any bits set
+/** are any bits set
   * @param f1 value to be `or` reduced
   * @param width result bit size
   */
@@ -171,8 +169,7 @@ case class OrrBigs(f1: FuncBig, width: Int) extends IntExpressionResult {
   }
 }
 
-/**
-  * are all bits set
+/** are all bits set
   * @param f1 value to be `xor` reduced
   * @param width result bit size
   */

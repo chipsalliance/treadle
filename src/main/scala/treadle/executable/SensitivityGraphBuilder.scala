@@ -5,8 +5,7 @@ package treadle.executable
 import firrtl.graph.{DiGraph, MutableDiGraph}
 import firrtl.ir.ClockType
 
-/**
-  * builds driving and driven by relationships between symbols
+/** builds driving and driven by relationships between symbols
   */
 class SensitivityGraphBuilder {
   val childrenOf: MutableDiGraph[Symbol] = new MutableDiGraph[Symbol]
@@ -25,8 +24,7 @@ class SensitivityGraphBuilder {
   def getChildrenOfDiGraph: DiGraph[Symbol] = DiGraph(childrenOf)
   def getParentsOfDiGraph:  DiGraph[Symbol] = DiGraph(parentsOf)
 
-  /**
-    * Find all sources that are not inputs or registers.  These should be initialized
+  /** Find all sources that are not inputs or registers.  These should be initialized
     * once at beginning of simulation
     * @param symbolTable used for testing properties of symbols
     * @return

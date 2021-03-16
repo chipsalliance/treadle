@@ -13,8 +13,7 @@ import treadle.stage.phases.HandleFormalStatements
 
 sealed trait TreadleOption extends Unserializable { this: Annotation => }
 
-/**
-  * Tells treadle to write a vcd file during simulation
+/** Tells treadle to write a vcd file during simulation
   */
 case object WriteVcdAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -26,8 +25,7 @@ case object WriteVcdAnnotation extends NoTargetAnnotation with TreadleOption wit
   )
 }
 
-/**
-  * Tells treadle to include _T_* and _GEN_* wires in VCD output
+/** Tells treadle to include _T_* and _GEN_* wires in VCD output
   */
 case object VcdShowUnderScoredAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -39,8 +37,7 @@ case object VcdShowUnderScoredAnnotation extends NoTargetAnnotation with Treadle
   )
 }
 
-/**
-  * Tells treadle to write coverage report in CSV format after simulation
+/** Tells treadle to write coverage report in CSV format after simulation
   */
 case object WriteCoverageCSVAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -52,8 +49,7 @@ case object WriteCoverageCSVAnnotation extends NoTargetAnnotation with TreadleOp
   )
 }
 
-/**
-  *  Tells treadle to execute verbosely
+/**  Tells treadle to execute verbosely
   */
 case object VerboseAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -65,8 +61,7 @@ case object VerboseAnnotation extends NoTargetAnnotation with TreadleOption with
   )
 }
 
-/**
-  *  Tells treadle to allow cycles
+/**  Tells treadle to allow cycles
   */
 case object AllowCyclesAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -78,8 +73,7 @@ case object AllowCyclesAnnotation extends NoTargetAnnotation with TreadleOption 
   )
 }
 
-/**
-  *  Sets the seed for treadle's private random number generator
+/**  Sets the seed for treadle's private random number generator
   */
 case class RandomSeedAnnotation(seed: Long = 0L) extends NoTargetAnnotation with TreadleOption
 
@@ -93,8 +87,7 @@ object RandomSeedAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Tells treadle to show the low firrtl it is starting out with
+/**  Tells treadle to show the low firrtl it is starting out with
   */
 case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -106,8 +99,7 @@ case object ShowFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOp
   )
 }
 
-/**
-  *  Tells treadle to show the low firrtl it is starting out with
+/**  Tells treadle to show the low firrtl it is starting out with
   */
 case object SaveFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -119,8 +111,7 @@ case object SaveFirrtlAtLoadAnnotation extends NoTargetAnnotation with TreadleOp
   )
 }
 
-/**
-  *  Tells treadle to not run its own lowering pass on firrtl input (not recommended)
+/**  Tells treadle to not run its own lowering pass on firrtl input (not recommended)
   */
 case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -132,8 +123,7 @@ case object DontRunLoweringCompilerLoadAnnotation extends NoTargetAnnotation wit
   )
 }
 
-/**
-  *  Tells treadle to present random value when validIf's condition is off
+/**  Tells treadle to present random value when validIf's condition is off
   */
 case object ValidIfIsRandomAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -145,8 +135,7 @@ case object ValidIfIsRandomAnnotation extends NoTargetAnnotation with TreadleOpt
   )
 }
 
-/**
-  *  Sets the number of rollback buffers in simulator, useful to see why wires have their values
+/**  Sets the number of rollback buffers in simulator, useful to see why wires have their values
   */
 case class RollBackBuffersAnnotation(rollbackBufferDepth: Int = TreadleDefaults.RollbackBuffers)
     extends NoTargetAnnotation
@@ -162,8 +151,7 @@ case object RollBackBuffersAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Sets verilog plus args that will be passed to black boxes
+/**  Sets verilog plus args that will be passed to black boxes
   */
 case class PlusArgsAnnotation(plusArgs: Seq[String]) extends NoTargetAnnotation with TreadleOption
 
@@ -177,8 +165,7 @@ case object PlusArgsAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Controls whether changes to memory locations are written to vcd output
+/**  Controls whether changes to memory locations are written to vcd output
   *  @param specifier controls which memories and which locations of those memories are logged to vcd output
   *                   When not present not memories are logged
   *                   "all"             log all values at all locations of all memories
@@ -202,8 +189,7 @@ case object MemoryToVCD extends HasShellOptions {
   )
 }
 
-/**
-  * Controls whether coverage information will be gathered or not during the execution of a test.
+/** Controls whether coverage information will be gathered or not during the execution of a test.
   */
 case object EnableCoverageAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -215,8 +201,7 @@ case object EnableCoverageAnnotation extends NoTargetAnnotation with TreadleOpti
   )
 }
 
-/**
-  *  Sets one or more clocks including their frequencies and phase
+/**  Sets one or more clocks including their frequencies and phase
   */
 case class ClockInfoAnnotation(clockInfoSeq: Seq[ClockInfo] = Seq(ClockInfo()))
     extends NoTargetAnnotation
@@ -245,8 +230,7 @@ case object ClockInfoAnnotation extends HasShellOptions {
   }
 }
 
-/**
-  *  Sets a list of symbols that will be rendered during execution
+/**  Sets a list of symbols that will be rendered during execution
   */
 case class SymbolsToWatchAnnotation(symbolNames: Seq[String] = Seq.empty) extends NoTargetAnnotation with TreadleOption
 
@@ -260,8 +244,7 @@ case object SymbolsToWatchAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  used with treadle's default reset operations
+/**  used with treadle's default reset operations
   */
 case class ResetNameAnnotation(symbolNames: String = "") extends NoTargetAnnotation with TreadleOption
 
@@ -275,8 +258,7 @@ case object ResetNameAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Tells treadle to Randomize circuit at startup
+/**  Tells treadle to Randomize circuit at startup
   */
 case object RandomizeAtStartupAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -288,8 +270,7 @@ case object RandomizeAtStartupAnnotation extends NoTargetAnnotation with Treadle
   )
 }
 
-/**
-  *  Tell treadle to call it's own internal reset at startup. This is typically handled by the
+/**  Tell treadle to call it's own internal reset at startup. This is typically handled by the
   *  unit test framework and not needed for users
   */
 case object CallResetAtStartupAnnotation extends NoTargetAnnotation with TreadleOption with HasShellOptions {
@@ -302,8 +283,7 @@ case object CallResetAtStartupAnnotation extends NoTargetAnnotation with Treadle
   )
 }
 
-/**
-  *  Tells treadle to prefix printf strings with a wall time
+/**  Tells treadle to prefix printf strings with a wall time
   */
 case object PrefixPrintfWithWallTime extends NoTargetAnnotation with TreadleOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -315,14 +295,12 @@ case object PrefixPrintfWithWallTime extends NoTargetAnnotation with TreadleOpti
   )
 }
 
-/**
-  * The circuit used to build a [[TreadleTester]]
+/** The circuit used to build a [[TreadleTester]]
   * @param circuit a firrtl ast
   */
 case class TreadleCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with TreadleOption
 
-/**
-  * used to pass parsed firrtl to the TreadleTester
+/** used to pass parsed firrtl to the TreadleTester
   * @param state the state to be passed along
   */
 case class TreadleCircuitStateAnnotation(state: CircuitState) extends NoTargetAnnotation
@@ -359,15 +337,13 @@ object TreadleRocketBlackBoxes extends HasShellOptions {
   )
 }
 
-/**
-  * Used to pass a tester on to a test harness
+/** Used to pass a tester on to a test harness
   *
   * @param tester The [[TreadleTester]] to be passed on
   */
 case class TreadleTesterAnnotation(tester: TreadleTester) extends NoTargetAnnotation with TreadleOption
 
-/**
-  * Factory for FirrtlSourceAnnotation, this is an alias for FirrtlCli
+/** Factory for FirrtlSourceAnnotation, this is an alias for FirrtlCli
   */
 object TreadleFirrtlString extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -379,8 +355,7 @@ object TreadleFirrtlString extends HasShellOptions {
   )
 }
 
-/**
-  * Factory for FirrtlFileAnnotation annotation, this is an alias for Firrtl Cli
+/** Factory for FirrtlFileAnnotation annotation, this is an alias for Firrtl Cli
   */
 object TreadleFirrtlFile extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -397,8 +372,7 @@ case class BlackBoxFactoriesAnnotation(blackBoxFactories: Seq[ScalaBlackBoxFacto
     extends NoTargetAnnotation
     with TreadleOption
 
-/**
-  * Using this annotation allows external users of a TreadleTester to supply their own custom
+/** Using this annotation allows external users of a TreadleTester to supply their own custom
   * [[treadle.executable.DataStorePlugin]]s. See that code for examples of use.
   *
   * @note this annotation cannot be generated from the command line

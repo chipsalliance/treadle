@@ -42,7 +42,6 @@ class VecSpec extends AnyFreeSpec with Matchers with LazyLogging {
     )
 
     TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
-
       def show(): Unit = {
         logger.debug("Rendering register assignments")
         for (

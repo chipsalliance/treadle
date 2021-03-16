@@ -19,11 +19,9 @@ package treadle.vcd
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
-sealed trait VcdOption extends Unserializable { this: Annotation =>
-}
+sealed trait VcdOption extends Unserializable { this: Annotation => }
 
-/**
-  *  Gives the name of a VCD source file
+/**  Gives the name of a VCD source file
   */
 case class VcdSourceNameAnnotation(name: String) extends NoTargetAnnotation with VcdOption
 
@@ -37,8 +35,7 @@ case object VcdSourceNameAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Gives the name of a VCD target file, when using the VCD#main to read and
+/**  Gives the name of a VCD target file, when using the VCD#main to read and
   *  write files.
   */
 case class VcdTargetNameAnnotation(name: String) extends NoTargetAnnotation with VcdOption
@@ -53,8 +50,7 @@ case object VcdTargetNameAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Gives the name of the scope to start at when parsing a VCD input file
+/**  Gives the name of the scope to start at when parsing a VCD input file
   *  Default is top level scope
   */
 case class VcdStartScopeAnnotation(name: String) extends NoTargetAnnotation with VcdOption
@@ -69,8 +65,7 @@ case object VcdStartScopeAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Changes the name of the start scope during VCD parsing, can be used
+/**  Changes the name of the start scope during VCD parsing, can be used
   *  to change the name of the top
   */
 case class VcdRenameStartScopeAnnotation(name: String) extends NoTargetAnnotation with VcdOption
@@ -85,8 +80,7 @@ case object VcdRenameStartScopeAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Identifies a variable prefix to match for renaming or scoping reasons
+/**  Identifies a variable prefix to match for renaming or scoping reasons
   */
 case class VcdVarPrefixScopeAnnotation(name: String) extends NoTargetAnnotation with VcdOption
 
@@ -100,8 +94,7 @@ case object VcdVarPrefixScopeAnnotation extends HasShellOptions {
   )
 }
 
-/**
-  *  Turns on pretty printing of VCD
+/**  Turns on pretty printing of VCD
   */
 case object VcdDumpHumanReadableAnnotation extends NoTargetAnnotation with VcdOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(

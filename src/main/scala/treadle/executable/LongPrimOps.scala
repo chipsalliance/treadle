@@ -147,8 +147,7 @@ case class XorLongs(f1: FuncLong, f2: FuncLong, resultWidth: Int) extends LongEx
   def apply(): Long = (f1() ^ f2()) & mask
 }
 
-/**
-  * are all bits set
+/** are all bits set
   * @param f1 value to be `and` reduced
   * @param width result bit size
   */
@@ -160,8 +159,7 @@ case class AndrLongs(f1: FuncLong, width: Int) extends IntExpressionResult {
   }
 }
 
-/**
-  * are any bits set
+/** are any bits set
   * @param f1 value to be `or` reduced
   * @param width result bit size
   */
@@ -175,8 +173,7 @@ case class OrrLongs(f1: FuncLong, width: Int) extends IntExpressionResult {
   }
 }
 
-/**
-  * are all bits set
+/** are all bits set
   * @param f1 value to be `xor` reduced
   * @param width result bit size
   */

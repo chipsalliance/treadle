@@ -52,7 +52,6 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
         )
       )
     ) { tester =>
-
       Logger.setLevel(classOf[MemoryInitializationTest], LogLevel.None)
       for (i <- 0 until 16) {
         tester.poke("address", i)
@@ -198,7 +197,6 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
         )
       )
     ) { tester =>
-
       Logger.setLevel(classOf[MemoryInitializationTest], LogLevel.None)
 
       logger.debug {

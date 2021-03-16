@@ -14,8 +14,7 @@ import treadle.executable.TreadleException
 import treadle.utils.VcdRunner
 import treadle.vcd.VCD
 
-/**
-  * This tester runs a VCD file against a circuit expressed in a firrtl file.  The VCD file should
+/** This tester runs a VCD file against a circuit expressed in a firrtl file.  The VCD file should
   * have been produced by running a test harness against the circuit.  This test can be used to
   * generate circuit behavior while running symbolic or concolic testing.
   * It can also be used to determine if later changes to a circuit have changed since some original
@@ -120,8 +119,7 @@ case class VcdReplaySkipEvents(count: Int) extends NoTargetAnnotation with VcdRe
 
 case class VcdReplayEventsToRun(count: Int) extends NoTargetAnnotation with VcdReplayTesterOptions
 
-/**
-  * makes a more convenient way of specifying firrtl source
+/** makes a more convenient way of specifying firrtl source
   */
 case object VcdReplayFirrtlSource extends NoTargetAnnotation with VcdReplayTesterOptions with HasShellOptions {
   val options = Seq(

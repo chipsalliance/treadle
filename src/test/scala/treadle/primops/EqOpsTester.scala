@@ -62,7 +62,6 @@ class EqOpsTester extends AnyFreeSpec with Matchers {
     )
 
     TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
-
       tester.peek("out") should be(1)
     }
   }

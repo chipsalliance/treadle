@@ -24,18 +24,16 @@ case class WaveformValues(
     val dataStrings = Array.fill[String](numSymbols)("")
     val prevValues = new Array[BigInt](numSymbols)
 
-    symbolValues.zipWithIndex.foreach {
-      case (arr, i) =>
-        arr.zipWithIndex.foreach {
-          case (value: BigInt, symbolIndex) =>
-            if (value == prevValues(symbolIndex)) {
-              waveStrings.update(symbolIndex, waveStrings(symbolIndex) + ".")
-            } else {
-              waveStrings.update(symbolIndex, waveStrings(symbolIndex) + "2")
-              dataStrings.update(symbolIndex, dataStrings(symbolIndex) + value + " ")
-            }
-            prevValues.update(symbolIndex, value)
+    symbolValues.zipWithIndex.foreach { case (arr, i) =>
+      arr.zipWithIndex.foreach { case (value: BigInt, symbolIndex) =>
+        if (value == prevValues(symbolIndex)) {
+          waveStrings.update(symbolIndex, waveStrings(symbolIndex) + ".")
+        } else {
+          waveStrings.update(symbolIndex, waveStrings(symbolIndex) + "2")
+          dataStrings.update(symbolIndex, dataStrings(symbolIndex) + value + " ")
         }
+        prevValues.update(symbolIndex, value)
+      }
     }
 
     // Generate JSON
@@ -46,9 +44,8 @@ case class WaveformValues(
       }.toList,
       waveStrings.toList,
       dataStrings.toList
-    ).zipped.map {
-      case (symbolName, waveString, dataString) =>
-        ("name" -> symbolName) ~ ("wave" -> waveString) ~ ("data" -> dataString)
+    ).zipped.map { case (symbolName, waveString, dataString) =>
+      ("name" -> symbolName) ~ ("wave" -> waveString) ~ ("data" -> dataString)
     }
     val jsonAllWaves = jsonClk ++ jsonWaves
 

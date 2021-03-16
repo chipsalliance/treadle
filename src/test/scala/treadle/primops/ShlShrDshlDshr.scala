@@ -8,7 +8,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable._
 import treadle.utils.Render
-import treadle.{BitTwiddlingUtils, TreadleTestHarness, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils, TreadleTestHarness}
 
 // scalastyle:off magic.number
 class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
@@ -93,9 +93,11 @@ class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
         val dynamicShifter = DshlInts(() => a, () => b).apply _
         val staticExpected = BitTwiddlingUtils.shl(a, b).toInt
 
-        logger.debug(f"inputs $a%5d (${Render.binary(a, 4)})" +
-          f" << $b%5d " +
-          f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" << $b%5d " +
+            f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})"
+        )
 
         staticShifter() should be(staticExpected)
         dynamicShifter() should be(staticExpected)
@@ -117,9 +119,11 @@ class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
         val dynamicShifter = DshrInts(() => a, () => b).apply _
         val staticExpected = BitTwiddlingUtils.shr(a, b).toInt
 
-        logger.debug(f"inputs $a%5d (${Render.binary(a, 4)})" +
-          f" >> $b%5d " +
-          f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" >> $b%5d " +
+            f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})"
+        )
 
         staticShifter() should be(staticExpected)
         dynamicShifter() should be(staticExpected)
@@ -139,9 +143,11 @@ class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
         val dynamicShifter = DshrInts(() => a, () => b).apply _
         val staticExpected = BitTwiddlingUtils.shr(a, b).toInt
 
-        logger.debug(f"inputs $a%5d (${Render.binary(a, 4)})" +
-          f" >> $b%5d " +
-          f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" >> $b%5d " +
+            f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})"
+        )
 
         staticShifter() should be(staticExpected)
         dynamicShifter() should be(staticExpected)

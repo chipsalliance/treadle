@@ -16,12 +16,8 @@ import firrtl.{CircuitState, DependencyAPIMigration, Namespace, Transform}
   * by default it will also do this for assumne statements
   * but assume statement can be dropped by using "tr-ignore-format-assumes" or [IgnoreFormalAssumesAnnotation]
   * cover statement are currently skipped
-  *
   */
-class HandleFormalStatements
-  extends Transform
-    with RegisteredTransform
-    with DependencyAPIMigration {
+class HandleFormalStatements extends Transform with RegisteredTransform with DependencyAPIMigration {
 
   override def prerequisites: Seq[TransformDependency] = Seq(Dependency[ExpandWhensAndCheck])
 
@@ -47,7 +43,14 @@ class HandleFormalStatements
         DoPrim(And, Seq(notOfCondition, en), Nil, cond.tpe)
       }
 
-      def makeBlock(info: Info, name: String, clk: Expression, trigger: Expression, msg: StringLit, stopValue: Int): Statement = {
+      def makeBlock(
+        info:      Info,
+        name:      String,
+        clk:       Expression,
+        trigger:   Expression,
+        msg:       StringLit,
+        stopValue: Int
+      ): Statement = {
         // We intentionally name the stop statement the same as the assert/assume statement being replaced so that
         // it can be more easily correlated.
         val stop = Stop(info, ret = stopValue, clk, trigger, name = name)

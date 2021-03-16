@@ -24,9 +24,8 @@ class RandomizeCircuitTest extends AnyFreeSpec with Matchers with LazyLogging {
       nameBasedRandomNumberGenerator.nextBigInt(registerName, deviationSeed = 0L, 16).toLong
     }
 
-    a.zip(b).foreach {
-      case (r1, r2) =>
-        logger.debug(f"$r1%10d   $r2%10d")
+    a.zip(b).foreach { case (r1, r2) =>
+      logger.debug(f"$r1%10d   $r2%10d")
     }
 
     val avg1 = a.sum / samples.toDouble

@@ -153,7 +153,6 @@ class SimpleVendingMachineSpec extends AnyFreeSpec with Matchers {
       """.stripMargin
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
-
       intercept[StopException] {
         tester.step(80)
       }

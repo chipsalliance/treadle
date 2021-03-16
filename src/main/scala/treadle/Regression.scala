@@ -99,15 +99,13 @@ object Regression {
 
 }
 
-/**
-  * This regression demonstrates that a bad initial setting has been fixed
+/** This regression demonstrates that a bad initial setting has been fixed
   * the default rollback buffer of 10 meant that large memories caused considerable slowing
   * as buffers were copied.
   */
 object MemoryUsageRegression {
 
-  /**
-    * Run a test by writing testSize numbers into a memory of memorySize, then
+  /** Run a test by writing testSize numbers into a memory of memorySize, then
     * reads the numbers back out again. With a fixed testSize the run times should
     * be the same despite the size of the memory
     * @param memorySize number of elements in memory

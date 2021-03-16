@@ -38,7 +38,6 @@ class SnapshotSpec extends AnyFreeSpec with Matchers with LazyLogging {
       """.stripMargin
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(4))) { t =>
-
       t.poke("in0", 1)
       t.step()
       t.poke("in0", 2)

@@ -47,7 +47,7 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
       Console.withOut(new PrintStream(output)) {
         TreadleTestHarness(Seq(FirrtlSourceAnnotation(input()), ShowFirrtlAtLoadAnnotation)) { _ => }
       }
-      output.toString should not include ("cover")
+      (output.toString should not).include("cover")
     }
 
     "by default assume statements are converted to printf+stop during conversion to low firrtl" in {
@@ -55,11 +55,11 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
       Console.withOut(new PrintStream(output)) {
         TreadleTestHarness(Seq(FirrtlSourceAnnotation(input(doAssume = true)), ShowFirrtlAtLoadAnnotation)) { _ => }
       }
-      output.toString should not include ("assume(")
-      output.toString should include (
-      """printf(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), "input was not less that 0x7f")""")
-      output.toString should include (
-      """stop(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), 66)""")
+      (output.toString should not).include("assume(")
+      output.toString should include(
+        """printf(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), "input was not less that 0x7f")"""
+      )
+      output.toString should include("""stop(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), 66)""")
     }
 
     "but IgnoreFormalAssumesAnnotation will drop assume statements" in {
@@ -69,16 +69,15 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
           Seq(FirrtlSourceAnnotation(input(doAssume = true)), ShowFirrtlAtLoadAnnotation, IgnoreFormalAssumesAnnotation)
         ) { _ => }
       }
-      output.toString should not include ("assume")
-      output.toString should not include (
-        """printf(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), "input was not less that 0x7f")""")
-      output.toString should not include (
-        """stop(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), 66)""")
+      (output.toString should not).include("assume")
+      (output.toString should not).include(
+        """printf(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), "input was not less that 0x7f")"""
+      )
+      (output.toString should not).include("""stop(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), 66)""")
     }
 
     def runStopTest(firrtlString: String): Unit = {
       TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlString), ShowFirrtlAtLoadAnnotation)) { tester =>
-
         tester.poke("io_in", 77)
         tester.step()
         tester.expect("io_out", 77)
