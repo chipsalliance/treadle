@@ -953,7 +953,8 @@ class ExpressionCompiler(
         }
 
       case verify @ Verification(Formal.Cover, info, clockExpression, predicateExpression, enableExpression, message) =>
-        symbolTable.verifyToVerifyInfo.get(verify) match {
+        val name = expand(verify.name)
+        symbolTable.verifyInfo.get(name) match {
           case Some(verifyInfo) =>
             val intEnableExpression =
               toIntExpression(enableExpression, s"Error: verify $verify has unknown enable type")

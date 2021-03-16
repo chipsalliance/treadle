@@ -311,7 +311,8 @@ class ExpressionViewBuilder(
               enableExpression,
               message
             ) =>
-          expressionViews(symbolTable.verifyToVerifyInfo(verify).verifySymbol) = processExpression(predicateExpression)
+          val expandedName = expand(verify.name)
+          expressionViews(symbolTable.verifyInfo(expandedName).verifySymbol) = processExpression(predicateExpression)
 
         case EmptyStmt =>
         case conditionally: Conditionally =>
