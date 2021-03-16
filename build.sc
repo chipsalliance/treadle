@@ -8,7 +8,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.12", "2.13.4")
+object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.13", "2.13.5")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -93,7 +93,7 @@ class treadleCrossModule(crossVersionValue: String) extends CommonModule with Pu
     }
 
     def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.2.4",
+      ivy"org.scalatest::scalatest:3.2.6",
     ) ++ ivyCrossDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
