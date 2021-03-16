@@ -34,8 +34,7 @@ import scala.collection.mutable
   */
 object Memory {
   //scalastyle:off method.length
-  /**
-    * Builds all the symbols and dependencies for the specified memory.
+  /** Builds all the symbols and dependencies for the specified memory.
     * Pipelines are constructed as registers with a regular name and
     * a /in name.  Data travels up-index through a pipeline for both
     * read and write pipelines.
@@ -229,8 +228,7 @@ object Memory {
     Seq(memorySymbol) ++ readerSymbols ++ writerSymbols ++ readerWriterSymbols
   }
 
-  /**
-    * Construct views for all the memory elements
+  /** Construct views for all the memory elements
     * @param defMemory    current memory
     * @param expandedName full path name
     * @param scheduler    handle to execution components
@@ -409,8 +407,7 @@ object Memory {
     }
   }
 
-  /**
-    * Construct the machinery to move data into and out of the memory stack
+  /** Construct the machinery to move data into and out of the memory stack
     * @param defMemory    current memory
     * @param expandedName full path name
     * @param scheduler    handle to execution components

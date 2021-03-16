@@ -39,8 +39,7 @@ abstract class Command(val name: String) {
   }
 }
 
-/**
-  * Considered by many to be the world's best Treadle Repl
+/** Considered by many to be the world's best Treadle Repl
   * @param initialAnnotations initial settings.
   */
 class TreadleRepl(initialAnnotations: AnnotationSeq) {
@@ -151,8 +150,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     loadSource()
   }
 
-  /**
-    * First try and read script file in the target dir, if that fails try opening it in place
+  /** First try and read script file in the target dir, if that fails try opening it in place
     * @param fileName name of script file
     */
   def loadScript(fileName: String): Unit = {
@@ -214,8 +212,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 
   var cycleCount: Long = 0L
 
-  /**
-    * Cycles the circuit n steps (with a default of one)
+  /** Cycles the circuit n steps (with a default of one)
     * At each step registers and memories are advanced and all other elements recomputed
     *
     * @param n cycles to perform
@@ -343,17 +340,16 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               (0, script.length)
           }
           console.println(
-            script.lines.zipWithIndex.flatMap {
-              case (line, index) =>
-                if (index >= min && index < max) {
-                  if (index == script.currentLine + 1) {
-                    Some(Console.GREEN + f"$index%3d $line" + Console.RESET)
-                  } else {
-                    Some(f"$index%3d $line")
-                  }
+            script.lines.zipWithIndex.flatMap { case (line, index) =>
+              if (index >= min && index < max) {
+                if (index == script.currentLine + 1) {
+                  Some(Console.GREEN + f"$index%3d $line" + Console.RESET)
                 } else {
-                  None
+                  Some(f"$index%3d $line")
                 }
+              } else {
+                None
+              }
             }.mkString("\n")
           )
         }
@@ -1055,14 +1051,14 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           }
 
           def getSource: String = {
-            annotationSeq.collectFirst {
-              case FirrtlSourceAnnotation(firrtl) => firrtl
+            annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtl) =>
+              firrtl
             }.getOrElse {
-              annotationSeq.collectFirst {
-                case FirrtlCircuitAnnotation(circuit) => circuit.serialize
+              annotationSeq.collectFirst { case FirrtlCircuitAnnotation(circuit) =>
+                circuit.serialize
               }.getOrElse {
-                annotationSeq.collectFirst {
-                  case TreadleCircuitStateAnnotation(state) => state.circuit.serialize
+                annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(state) =>
+                  state.circuit.serialize
                 }.getOrElse {
                   "Can't find initial firrtl. Working low firrtl is\n" + engine.ast.serialize
                 }
@@ -1284,13 +1280,12 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
             val symbolNames = args.tail.tail
             val numSymbols = symbolNames.length
             val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
-            symbolNames.zipWithIndex.foreach {
-              case (symbolName, counter) =>
-                assert(
-                  engine.symbolTable.contains(symbolName),
-                  s""""$symbolName" : argument is not an element of this circuit"""
-                )
-                symbols.update(counter, engine.symbolTable(symbolName))
+            symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
+              assert(
+                engine.symbolTable.contains(symbolName),
+                s""""$symbolName" : argument is not an element of this circuit"""
+              )
+              symbols.update(counter, engine.symbolTable(symbolName))
             }
 
             val waveformValues: WaveformValues =
@@ -1379,7 +1374,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                 s"$column1${" " * (maxColumn1Width - column1.length)} $column2"
               }.sorted.mkString("\n")
 
-          console.println(helpText)
+              console.println(helpText)
           }
         }
       },
@@ -1406,8 +1401,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     }
   }
 
-  /**
-    * gets the next line from either the current executing script or from the console.
+  /** gets the next line from either the current executing script or from the console.
     * Strips comments from the line, may result in empty string, command parser is ok with that
     *
     * @return

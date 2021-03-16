@@ -21,7 +21,7 @@ case class VerifyOp(
   clockTransition: ClockTransitionGetter,
   predicate:       IntExpressionResult,
   enable:          IntExpressionResult,
-  op: Formal.Value)
+  op:              Formal.Value)
     extends Assigner {
 
   var clockCount: Long = 0

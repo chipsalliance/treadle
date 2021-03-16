@@ -16,8 +16,7 @@ import firrtl.options.StageMain
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
-/**
-  * This effective stage main exercises vcd reading and optionally writing
+/** This effective stage main exercises vcd reading and optionally writing
   * and depending up filtering options can pull out only those change values that
   * are specific to a particular module
   */
@@ -116,8 +115,7 @@ object VCD extends StageMain(new VcdStage) with LazyLogging {
   }
 
   //scalastyle:off cyclomatic.complexity method.length
-  /**
-    * Read and parse the specified vcd file, producing a VCD data structure
+  /** Read and parse the specified vcd file, producing a VCD data structure
     *
     * @param vcdFile name of file to parse
     * @param varPrefix only retain vars that contain prefix, remove prefix while recording
@@ -435,8 +433,7 @@ object VCD extends StageMain(new VcdStage) with LazyLogging {
   }
 }
 
-/**
-  * Accumulates changes to wires in a running circuit.  If a wire is changed that it doesn't know about it
+/** Accumulates changes to wires in a running circuit.  If a wire is changed that it doesn't know about it
   * will add it to the list.  Only actual changed values will be seen in final output.  This version only supports
   * a single top level scope because right now that is what the firrtl-engine supports.  It probably is not too
   * too hard to add, all wires are initialized to 'x' in this version.
@@ -453,8 +450,8 @@ case class VCD(
   comment:                String,
   timeScale:              String,
   scope:                  String,
-  ignoreUnderscoredNames: Boolean
-) extends LazyLogging {
+  ignoreUnderscoredNames: Boolean)
+    extends LazyLogging {
   var currentIdNumber = 0
   var timeStamp = 0L
   val lastValues = new mutable.HashMap[String, Change]
@@ -476,13 +473,12 @@ case class VCD(
       "events" -> valuesAtTime.size.toString
     )
     val maxLabel: Int = infoLines.filter(_._2.trim.nonEmpty).map(_._1.length).max
-    infoLines.flatMap {
-      case (label, value) =>
-        if (value.trim.nonEmpty) {
-          Some(label + ":" + (" " * (4 + maxLabel - label.length)) + value)
-        } else {
-          None
-        }
+    infoLines.flatMap { case (label, value) =>
+      if (value.trim.nonEmpty) {
+        Some(label + ":" + (" " * (4 + maxLabel - label.length)) + value)
+      } else {
+        None
+      }
     }.mkString("\n")
   }
 
@@ -548,8 +544,7 @@ case class VCD(
     }
   }
 
-  /**
-    * reports whether value is a change from the last recorded value for wireName
+  /** reports whether value is a change from the last recorded value for wireName
     * @param wireName name of wire
     * @param value    value of wire
     * @return
@@ -691,8 +686,7 @@ case class Wire(name: String, id: String, width: Int, path: Array[String] = Arra
   }
 }
 
-/**
-  * A Record of a change to a wire.
+/** A Record of a change to a wire.
   *
   * @note hashCode and equals are overridden so that sets of Change can only hold one value for a specific wire
   *

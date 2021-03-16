@@ -11,8 +11,7 @@ import treadle.executable._
 
 //scalastyle:off magic.number
 
-/**
-  * Illustrate a black box that has multiple outputs
+/** Illustrate a black box that has multiple outputs
   * This one creates 3 outputs each with a different increment of the input
   */
 class HasCustomFinish extends ScalaBlackBox {

@@ -4,7 +4,20 @@ package treadle.coverage.pass
 
 import firrtl.{CircuitState, Namespace, Transform}
 import firrtl.PrimOps.Not
-import firrtl.ir.{Block, Circuit, Connect, DefModule, DoPrim, Expression, ExtModule, HasInfo, Module, Mux, NoInfo, Statement}
+import firrtl.ir.{
+  Block,
+  Circuit,
+  Connect,
+  DefModule,
+  DoPrim,
+  Expression,
+  ExtModule,
+  HasInfo,
+  Module,
+  Mux,
+  NoInfo,
+  Statement
+}
 import firrtl.options.Dependency
 import firrtl.passes.{InferTypes, Pass, ResolveFlows, ResolveKinds}
 import firrtl.stage.TransformManager.TransformDependency
@@ -14,8 +27,7 @@ import treadle.coverage.{CoverageInfo, Ledger}
 
 import scala.collection.mutable
 
-/**
-  * Adds additional coverage statements to the Low FIRRTL source at every mux location.
+/** Adds additional coverage statements to the Low FIRRTL source at every mux location.
   * These statements can then be used to gather statement coverage information from inside of the Treadle tester
   */
 object AddCoverageExpressions extends Pass {
@@ -31,39 +43,36 @@ object AddCoverageExpressions extends Pass {
 
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(Dependency[BlackBoxSourceHelper])
 
-  /**
-    * Only run this pass if there is an EnableCoverageAnnotation present
+  /** Only run this pass if there is an EnableCoverageAnnotation present
     *
     * @param state
     * @return
     */
   override def execute(state: CircuitState): CircuitState = {
-    if(state.annotations.contains(EnableCoverageAnnotation)) {
+    if (state.annotations.contains(EnableCoverageAnnotation)) {
       state.copy(circuit = run(state.circuit))
     } else {
       state
     }
   }
 
-  /**
-    * Run the coverage extension on every module
+  /** Run the coverage extension on every module
     * @param c the circuit on with we want to add the coverage extensions
     * @return the newly modified version of the circuit including coverage validators
     */
   override def run(c: Circuit): Circuit = {
     //Check that the circuit only contains one module
-    if(c.modules.length > 1)
+    if (c.modules.length > 1)
       throw new IllegalArgumentException("Coverage doesn't support multi-module circuits yet!")
 
     val ledger = new Ledger()
-    val newModule =  c.modules.map(coverM(ledger))
+    val newModule = c.modules.map(coverM(ledger))
 
     //Return a new circuit containing the modified module and info about the added ports
     c.copy(info = c.info ++ CoverageInfo(ledger.ports.map(_.name)), modules = newModule)
   }
 
-  /**
-    * Run coverage on every statement and then add additional coverage statements
+  /** Run coverage on every statement and then add additional coverage statements
     */
   private def coverM(ledger: Ledger)(module: DefModule): DefModule = {
     //Set the module name in the ledger
@@ -80,8 +89,7 @@ object AddCoverageExpressions extends Pass {
     }
   }
 
-  /**
-    * Traverse statements, find muxes and insert coverage expressions there
+  /** Traverse statements, find muxes and insert coverage expressions there
     */
   private def coverS(ledger: Ledger, namespace: Namespace)(s: Statement): Statement = {
     s match {
@@ -98,7 +106,12 @@ object AddCoverageExpressions extends Pass {
     }
   }
 
-  private def coverE(ledger: Ledger, namespace: Namespace, block: mutable.ArrayBuffer[Statement])(e: Expression): Expression =
+  private def coverE(
+    ledger:    Ledger,
+    namespace: Namespace,
+    block:     mutable.ArrayBuffer[Statement]
+  )(e:         Expression
+  ): Expression =
     e.mapExpr(coverE(ledger, namespace, block)) match {
       //Look for muxes, if we find one, add the two coverage statements
       case Mux(cond, _, _, tpe) =>

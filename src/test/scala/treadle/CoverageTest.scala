@@ -22,7 +22,7 @@ import org.scalatest.matchers.should.Matchers
 
 class CoverageTest extends AnyFlatSpec with Matchers {
 
-  behavior of "Coverage"
+  behavior.of("Coverage")
 
   //scalastyle:off
   def basicTest(): Unit = {

@@ -168,8 +168,7 @@ case class XorInts(f1: FuncInt, f2: FuncInt, resultWidth: Int) extends IntExpres
   def apply(): Int = (f1() ^ f2()) & mask
 }
 
-/**
-  * are all bits set
+/** are all bits set
   * @param f1 value to be `and` reduced
   * @param width result bit size
   */
@@ -182,8 +181,7 @@ case class AndrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
   }
 }
 
-/**
-  * are any bits set
+/** are any bits set
   * @param f1 value to be `or` reduced
   * @param width result bit size
   */
@@ -197,8 +195,7 @@ case class OrrInts(f1: FuncInt, width: Int) extends IntExpressionResult {
   }
 }
 
-/**
-  * are all bits set
+/** are all bits set
   * @param f1 value to be `xor` reduced
   * @param width result bit size
   */

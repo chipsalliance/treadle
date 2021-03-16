@@ -29,7 +29,6 @@ class RiscVMiniSimpleSpec extends AnyFreeSpec with Matchers with LazyLogging {
           )
         )
       ) { tester =>
-
         intercept[StopException] {
           tester.step(400)
         }

@@ -78,11 +78,10 @@ class Script(val fileName: String, val lines: Array[String]) {
   }
 
   override def toString: String = {
-    lines.zipWithIndex.map {
-      case (line, index) =>
-        f"$index%3d" +
-          (if (index == currentLine) "* " else "  ") +
-          line
+    lines.zipWithIndex.map { case (line, index) =>
+      f"$index%3d" +
+        (if (index == currentLine) "* " else "  ") +
+        line
     }.mkString("\n")
   }
 }

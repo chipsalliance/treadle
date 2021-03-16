@@ -5,7 +5,7 @@ package treadle.primops
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable._
-import treadle.{BigIntTestValuesGenerator, BitTwiddlingUtils, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BigIntTestValuesGenerator, BitTwiddlingUtils}
 
 //noinspection RedundantDefaultArgument
 // scalastyle:off magic.number

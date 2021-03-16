@@ -6,8 +6,7 @@ import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import firrtl.{AnnotationSeq, Parser}
 
-/**
-  * There are multiple ways to get a FirrtlCircuit into treadle.
+/** There are multiple ways to get a FirrtlCircuit into treadle.
   * There is a priority to these methods
   * 1. Specify a Firrtl AST with the FirrtlCircuitAnnotation
   * 2. Specify Firrtl text with a FirrtlSourceAnnotation
@@ -29,7 +28,6 @@ object GetFirrtlAst extends Phase {
     def handleFirrtlSource(): Option[AnnotationSeq] = {
       annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtlText) => firrtlText } match {
         case Some(text) =>
-
           val circuit = Parser.parse(text)
           Some(FirrtlCircuitAnnotation(circuit) +: annotationSeq)
 

@@ -11,8 +11,7 @@ object DspReal {
 
 abstract class DspRealTwoArgumentToDouble extends ScalaBlackBox {
 
-  /**
-    * sub-classes must implement this two argument function
+  /** sub-classes must implement this two argument function
     *
     * @param double1 first operand
     * @param double2 second operand
@@ -39,8 +38,7 @@ abstract class DspRealTwoArgumentToDouble extends ScalaBlackBox {
 
 abstract class DspRealOneArgumentToDouble extends ScalaBlackBox {
 
-  /**
-    * sub-classes must implement this two argument function
+  /** sub-classes must implement this two argument function
     *
     * @param double1 first operand
     * @return        double operation result
@@ -65,8 +63,7 @@ abstract class DspRealOneArgumentToDouble extends ScalaBlackBox {
 
 abstract class DspRealTwoArgumentToBoolean extends ScalaBlackBox {
 
-  /**
-    * sub-classes must implement this two argument function
+  /** sub-classes must implement this two argument function
     *
     * @param double1 first operand
     * @param double2 second operand

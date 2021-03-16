@@ -11,8 +11,7 @@ import treadle._
 import treadle.executable._
 
 // scalastyle:off magic.number
-/**
-  * Demonstrates how a black box can maintain and change internal state
+/** Demonstrates how a black box can maintain and change internal state
   * based on clock transitions
   */
 class BlackBoxWithState extends AnyFreeSpec with Matchers with LazyLogging {
@@ -61,16 +60,15 @@ class BlackBoxWithState extends AnyFreeSpec with Matchers with LazyLogging {
   }
 }
 
-/**
-  * This is an implementation of a black box whose verilog is contained inline in AccumBlackBox, an instance of this
+/** This is an implementation of a black box whose verilog is contained inline in AccumBlackBox, an instance of this
   * class will be placed into a black box factory so that it can be passed properly to the firrtl engine
   *
   * @param name black box name
   */
 class AccumulatorBlackBox(val name: String) extends ScalaBlackBox with LazyLogging {
 
-  var ns: BigInt = 0
-  var ps: BigInt = 0
+  var ns:        BigInt = 0
+  var ps:        BigInt = 0
   var isInReset: Boolean = false
 
   override def inputChanged(name: String, value: BigInt): Unit = {}
@@ -101,8 +99,7 @@ class AccumulatorBlackBox(val name: String) extends ScalaBlackBox with LazyLoggi
   }
 }
 
-/**
-  * The factor that will provide firrtl access to the implementations
+/** The factor that will provide firrtl access to the implementations
   */
 class AccumBlackBoxFactory extends ScalaBlackBoxFactory {
 

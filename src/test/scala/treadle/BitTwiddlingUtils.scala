@@ -5,8 +5,7 @@ package treadle
 import treadle.executable.Big
 import treadle.utils.BitMasks
 
-/**
-  * This object has an alternate way of computing the various primitive operations.
+/** This object has an alternate way of computing the various primitive operations.
   * This creates a double check that the primitive operations are correct.
   * These are based on the original engine and were overall designed to be correct
   * rather than fast.

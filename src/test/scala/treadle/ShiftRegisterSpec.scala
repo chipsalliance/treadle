@@ -40,7 +40,6 @@ class ShiftRegisterSpec extends AnyFreeSpec with Matchers {
 
     Console.withOut(new PrintStream(new ByteArrayOutputStream())) {
       TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), RollBackBuffersAnnotation(4))) { tester =>
-
         intercept[StopException] {
           tester.step(8)
         }

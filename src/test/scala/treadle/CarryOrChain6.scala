@@ -79,7 +79,6 @@ class CarryOrChain6 extends AnyFreeSpec with Matchers {
     }
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
-
       val lst = List((v("000001"), v("111111")))
       for ((a, co) <- lst) {
         assert(N == a.length)

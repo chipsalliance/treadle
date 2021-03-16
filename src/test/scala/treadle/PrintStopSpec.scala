@@ -388,13 +388,12 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
     val linesCorrect = printfLines
       .drop(2)
       .zipWithIndex
-      .map {
-        case (line, lineNumber) =>
-          if (lineNumber % 2 == 0) {
-            line.contains("r0=   1 r1=   0")
-          } else {
-            line.contains("r0=   0 r1=   1")
-          }
+      .map { case (line, lineNumber) =>
+        if (lineNumber % 2 == 0) {
+          line.contains("r0=   1 r1=   0")
+        } else {
+          line.contains("r0=   0 r1=   1")
+        }
       }
 
     linesCorrect.forall(b => b) should be(true)

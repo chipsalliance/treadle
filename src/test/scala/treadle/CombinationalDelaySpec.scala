@@ -35,7 +35,6 @@ class CombinationalDelaySpec extends AnyFreeSpec with Matchers {
     )
 
     TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { t =>
-
       t.poke("in_0", 20)
       t.poke("in_1", 11)
       t.expect("add_out", 31)

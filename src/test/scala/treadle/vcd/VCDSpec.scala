@@ -226,8 +226,7 @@ class VCDSpec extends AnyFlatSpec with Matchers {
       Some(WriteVcdAnnotation),
       if (hasTempWires) {
         Some(VcdShowUnderScoredAnnotation)
-      }
-      else {
+      } else {
         None
       },
       Some(TargetDirAnnotation("test_run_dir/vcd_register_delay/")),
@@ -241,11 +240,10 @@ class VCDSpec extends AnyFlatSpec with Matchers {
     val vcd = VCD.read("test_run_dir/vcd_register_delay/pwminCount.vcd")
 
     /* create an ordered indexed list of all the changes to testReg */
-    val eventsOfInterest = vcd.valuesAtTime.filter {
-      case (_, changeSet) =>
-        changeSet.exists { change =>
-          change.wire.name == "testReg"
-        }
+    val eventsOfInterest = vcd.valuesAtTime.filter { case (_, changeSet) =>
+      changeSet.exists { change =>
+        change.wire.name == "testReg"
+      }
     }.toSeq.sortBy(_._1).map(_._2).toArray
 
     // at every step the io_testReg should be one cycle behind
@@ -310,7 +308,7 @@ class VCDSpec extends AnyFlatSpec with Matchers {
 
     val replayOptions = options.filter {
       case WriteVcdAnnotation => false
-      case _ => true
+      case _                  => true
     }
 
     val replayTester = new VcdReplayTester(replayOptions)

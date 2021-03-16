@@ -30,6 +30,8 @@ jobs:
       - name: Test
         id: test
         run: sbt +test
+      - name: Check Formatting
+        run: sbt scalafmtCheckAll
       # Publishing steps
       # These steps are here to avoid duplicated work and logic
       - name: Setup GPG (for Publish)

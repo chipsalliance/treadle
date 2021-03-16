@@ -7,8 +7,7 @@ import treadle.executable.TreadleException
 
 object FindModule {
 
-  /**
-    * finds the specified module name in the circuit
+  /** finds the specified module name in the circuit
     *
     * @param moduleName name to find
     * @param circuit circuit being analyzed

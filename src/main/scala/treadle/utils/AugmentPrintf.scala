@@ -9,8 +9,7 @@ import firrtl.{CircuitState, DependencyAPIMigration, Emitter, Transform}
 
 import scala.collection.mutable
 
-/**
-  * Printf statements that print registers will show wrong values
+/** Printf statements that print registers will show wrong values
   * unless this pass adds a delay for each register
   */
 class AugmentPrintf extends Transform with DependencyAPIMigration {

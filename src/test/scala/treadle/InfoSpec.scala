@@ -36,7 +36,7 @@ class InfoSpec extends AnyFreeSpec with Matchers {
           tester.expect("out1", 24)
         } catch {
           case t: TreadleException => println(t.getMessage)
-          case t: Throwable => throw t
+          case t: Throwable        => throw t
         }
         tester.expect("out2", 21)
       }

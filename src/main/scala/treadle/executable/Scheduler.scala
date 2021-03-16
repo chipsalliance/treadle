@@ -7,8 +7,7 @@ import logger.LazyLogging
 
 import scala.collection.mutable
 
-/**
-  * The scheduler holds the ordered assignment statements of the entire circuit.
+/** The scheduler holds the ordered assignment statements of the entire circuit.
   * Clocks have magic shadow symbols "clockName/prev". These shadows are
   * used to make the circuit evaluation idempotent, i.e. evaluating the
   * circuit at the moment of an positive clock transition can be done
@@ -110,8 +109,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     getAllAssigners.foreach { setMode }
   }
 
-  /**
-    * Execute the seq of assigners
+  /** Execute the seq of assigners
     * @param assigners list of assigners
     */
   private def executeAssigners(assigners: Seq[Assigner]): Unit = {
@@ -124,22 +122,19 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     }
   }
 
-  /**
-    *  updates signals that depend on inputs
+  /**  updates signals that depend on inputs
     */
   def executeCombinationalAssigns(): Unit = {
     executeAssigners(combinationalAssigns.toSeq)
   }
 
-  /**
-    *  updates signals that depend on inputs
+  /**  updates signals that depend on inputs
     */
   def executeOrphanedAssigns(): Unit = {
     executeAssigners(orphanedAssigns.toSeq)
   }
 
-  /**
-    * de-duplicates and sorts assignments that depend on top level inputs.
+  /** de-duplicates and sorts assignments that depend on top level inputs.
     */
   def sortInputSensitiveAssigns(): Unit = {
     val buf = mutable.ArrayBuffer[Assigner]()
@@ -156,8 +151,7 @@ class Scheduler(val symbolTable: SymbolTable) extends LazyLogging {
     orphanedAssigns ++= assigners
   }
 
-  /**
-    * Render the assigners managed by this scheduler
+  /** Render the assigners managed by this scheduler
     * @return
     */
   def render(engine: ExecutionEngine): String = {

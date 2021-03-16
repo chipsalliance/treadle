@@ -5,13 +5,12 @@ package treadle.stage.phases
 import firrtl.options.{Dependency, Phase}
 import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
 import firrtl.transforms.BlackBoxSourceHelper
-import firrtl.{AnnotationSeq, CircuitState, passes}
+import firrtl.{passes, AnnotationSeq, CircuitState}
 import treadle.TreadleCircuitStateAnnotation
 import treadle.coverage.pass.AddCoverageExpressions
 import treadle.utils.{AugmentPrintf, FixupOps}
 
-/**
-  * Call a bunch of transforms so TreadleTester can operate
+/** Call a bunch of transforms so TreadleTester can operate
   */
 class PrepareAst extends Phase {
   private val targets = Seq(
@@ -41,8 +40,8 @@ class PrepareAst extends Phase {
     annotationSeq.flatMap {
       case FirrtlCircuitAnnotation(circuit) =>
         val state = CircuitState(circuit, annotationSeq)
-        val newState = transforms.foldLeft(state) {
-          case (prevState, transform) => transform.runTransform(prevState)
+        val newState = transforms.foldLeft(state) { case (prevState, transform) =>
+          transform.runTransform(prevState)
         }
         Some(TreadleCircuitStateAnnotation(newState))
       case other =>

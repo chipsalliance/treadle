@@ -12,8 +12,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable.StopException
 
-/**
-  * Created by chick on 4/30/16.
+/** Created by chick on 4/30/16.
   */
 //scalastyle:off magic.number
 class MemoryUsageSpec extends AnyFreeSpec with Matchers with LazyLogging {
@@ -563,7 +562,6 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers with LazyLogging {
         |""".stripMargin
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
-
       intercept[StopException] {
         tester.step(100)
       }

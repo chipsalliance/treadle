@@ -7,8 +7,7 @@ import treadle.TreadleTester
 import treadle.executable.ExecutionEngine
 import treadle.vcd.{VCD, Wire}
 
-/**
-  * Executes a vcd file as a script against a [[TreadleTester]] instance.
+/** Executes a vcd file as a script against a [[TreadleTester]] instance.
   * @param tester  the circuit to be updated
   * @param vcd     the vcd values to use
   */
@@ -33,8 +32,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
   var nextEvent:     Int = 0
   def previousEvent: Int = nextEvent - 1
 
-  /**
-    * Are there more events to run
+  /** Are there more events to run
     * @return
     */
   def hasNextEvent: Boolean = {
@@ -53,8 +51,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     }
   }
 
-  /**
-    * Does the symbol name exist in the engine
+  /** Does the symbol name exist in the engine
     * @param symbolName symbol of interest
     * @return
     */
@@ -71,8 +68,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     }
   }
 
-  /**
-    * Zero all test results
+  /** Zero all test results
     */
   def clearTestResults(): Unit = {
     valuesTested = 0
@@ -80,8 +76,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     testFailures = 0
   }
 
-  /**
-    * One line string showing results of last (or cumulative) tests
+  /** One line string showing results of last (or cumulative) tests
     * @return
     */
   def getTestResults: String = {
@@ -94,8 +89,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     )
   }
 
-  /**
-    * Test that a wire is set to the correct value, print if error or verbose
+  /** Test that a wire is set to the correct value, print if error or verbose
     * @param wire      wire to check
     * @param newValue  value it should be
     */
@@ -120,8 +114,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     }
   }
 
-  /**
-    * Set all initial values
+  /** Set all initial values
     */
   def setInitialValues(): Unit = {
     vcd.initialValues.foreach { change =>
@@ -131,8 +124,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     }
   }
 
-  /**
-    * poke the top level inputs, if the input is a clock
+  /** poke the top level inputs, if the input is a clock
     * call the associated assigner so that dependent registers get flipped
     *
     * @param eventNumber current time from VCS file.
@@ -158,8 +150,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     tester.engine.evaluateCircuit()
   }
 
-  /**
-    * poke every changed wire with it's new value
+  /** poke every changed wire with it's new value
     * @param eventNumber current time from VCS file.
     */
   def setAllWires(eventNumber: Int): Unit = {
@@ -177,8 +168,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     tester.engine.inputsChanged = false
   }
 
-  /**
-    * Test wires at specified time index, args control just outputs or all non-input wires
+  /** Test wires at specified time index, args control just outputs or all non-input wires
     * @param eventNumber    time index to test
     * @param justOutputs  can verify outputs or all wires that are not top-level inputs
     * @param clearResult  repl want this to clear all the time, but can override to accumulate stats
@@ -213,8 +203,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     }
   }
 
-  /**
-    * Used to determine whether the next event has a clock up transition
+  /** Used to determine whether the next event has a clock up transition
     * @return
     */
   def nextEventHasClockUp: Boolean = {
@@ -225,8 +214,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     }
   }
 
-  /**
-    * Show information about the event at the specified time index
+  /** Show information about the event at the specified time index
     * @param eventNumber  the event number
     * @return
     */
@@ -253,8 +241,7 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     f"$eventNumber%4d, time: ${events(eventNumber)}%5d, inputs $inputsChanged%6d total $totalChanges%6d$clockInfo"
   }
 
-  /**
-    * Process the next event and increment the event counter
+  /** Process the next event and increment the event counter
     */
   def executeNextEvent(): Unit = {
     if (nextEvent >= events.length) {
@@ -271,16 +258,14 @@ class VcdRunner(val tester: TreadleTester, val vcd: VCD) {
     nextEvent += 1
   }
 
-  /**
-    * just like it says
+  /** just like it says
     * @param eventNumber event number
     */
   def setNextEvent(eventNumber: Int): Unit = {
     nextEvent = eventNumber
   }
 
-  /**
-    * Short cut to set next event number and run
+  /** Short cut to set next event number and run
     * @param eventNumber event number
     */
   def executeEvent(eventNumber: Int): Unit = {

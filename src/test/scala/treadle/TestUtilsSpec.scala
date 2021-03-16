@@ -13,9 +13,8 @@ class TestUtilsSpec extends AnyFlatSpec with Matchers {
     val l = for (i <- IntWidthTestValuesGenerator(8, 256)) yield i
     val expected = List(8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
 //    println(l.mkString(","))
-    l.zip(expected.iterator).foreach {
-      case (l1, e1) =>
-        l1 should be(e1)
+    l.zip(expected.iterator).foreach { case (l1, e1) =>
+      l1 should be(e1)
     }
   }
   it should "return a allow negative  to positive range" in {
@@ -24,9 +23,8 @@ class TestUtilsSpec extends AnyFlatSpec with Matchers {
     val expected = List(-256, -255, -129, -128, -127, -65, -64, -63, -33, -32, -31, -17, -16, -15, -9, -8, -7, -5, -4,
       -3, -2, -1, 0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
 //    println(l.mkString(","))
-    l.zip(expected.iterator).foreach {
-      case (l1, e1) =>
-        l1 should be(e1)
+    l.zip(expected.iterator).foreach { case (l1, e1) =>
+      l1 should be(e1)
     }
   }
 
@@ -82,9 +80,8 @@ class TestUtilsSpec extends AnyFlatSpec with Matchers {
     val l = for (i <- BigIntTestValuesGenerator(8, 256)) yield i
     val expected = List(8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
 //    println(l.mkString(","))
-    l.zip(expected.iterator).foreach {
-      case (l1, e1) =>
-        l1 should be(e1)
+    l.zip(expected.iterator).foreach { case (l1, e1) =>
+      l1 should be(e1)
     }
   }
   it should "return a allow negative  to positive range" in {
@@ -99,9 +96,8 @@ class TestUtilsSpec extends AnyFlatSpec with Matchers {
     val expected = List(-256, -255, -129, -128, -127, -65, -64, -63, -33, -32, -31, -17, -16, -15, -9, -8, -7, -5, -4,
       -3, -2, -1, 0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256)
 //    println(l.mkString(","))
-    l.zip(expected.iterator).foreach {
-      case (l1, e1) =>
-        l1 should be(e1)
+    l.zip(expected.iterator).foreach { case (l1, e1) =>
+      l1 should be(e1)
     }
 
   }

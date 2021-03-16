@@ -13,13 +13,11 @@ case class OverrideOutputStream(outputStream: OutputStream) extends NoTargetAnno
 
 case class DefaultFileNameWithOutSuffix(fileName: String)
 
-/**
-  * @param scriptName The name of a script file to load at runtime
+/** @param scriptName The name of a script file to load at runtime
   */
 case class TreadleScriptFile(scriptName: String) extends NoTargetAnnotation with ReplOption
 
-/**
-  * Tells treadle load the specified script file, basically a text file of treadle repl commands
+/** Tells treadle load the specified script file, basically a text file of treadle repl commands
   */
 case object TreadleScriptFile extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -32,8 +30,7 @@ case object TreadleScriptFile extends HasShellOptions {
   )
 }
 
-/**
-  * Tells treadle to write a vcd file during simulation
+/** Tells treadle to write a vcd file during simulation
   */
 case object TreadleReplUseVcd extends NoTargetAnnotation with ReplOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -46,13 +43,11 @@ case object TreadleReplUseVcd extends NoTargetAnnotation with ReplOption with Ha
   )
 }
 
-/**
-  * @param scriptName The name of a script file to load at runtime
+/** @param scriptName The name of a script file to load at runtime
   */
 case class TreadleVcdScriptFileOverride(scriptName: String) extends NoTargetAnnotation with ReplOption
 
-/**
-  * Tells treadle to write a vcd file during simulation
+/** Tells treadle to write a vcd file during simulation
   */
 case object TreadleVcdScriptFileOverride extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -65,13 +60,11 @@ case object TreadleVcdScriptFileOverride extends HasShellOptions {
   )
 }
 
-/**
-  * @param format output format, d, x, or b
+/** @param format output format, d, x, or b
   */
 case class TreadleReplDisplayFormat(format: String) extends NoTargetAnnotation with ReplOption
 
-/**
-  * Tells treadle to write a vcd file during simulation
+/** Tells treadle to write a vcd file during simulation
   */
 case object TreadleReplDisplayFormat extends HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
@@ -84,8 +77,7 @@ case object TreadleReplDisplayFormat extends HasShellOptions {
   )
 }
 
-/**
-  * Tells treadle to write a vcd file during simulation
+/** Tells treadle to write a vcd file during simulation
   */
 case object TreadleReplRunScriptAtStartup extends NoTargetAnnotation with ReplOption with HasShellOptions {
   val options: Seq[ShellOption[_]] = Seq(
