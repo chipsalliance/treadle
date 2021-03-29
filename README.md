@@ -52,7 +52,7 @@ The easiest way to invoke the interpreter is through a test based harness. The I
 ClassicTester, it's api consists of poke, peek and expect statements. Here is an example of a GCD Circuit
 
 ```scala
-import chisel._
+import chisel3._
 import treadle.TreadleTester
 import org.scalatest.{Matchers, FlatSpec}
 
