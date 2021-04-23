@@ -480,7 +480,7 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |    input reset : UInt<1>
         |    output io : {flip in : UInt<10>, out : UInt<10>}
         |
-        |    node T1 = io.in
+        |    node T1 = neq(io.in, UInt<1>(0))
         |    node T2 = eq(T1, UInt<1>(1))
         |    node T3 = eq(T2, UInt<1>(1))
         |    node T4 = eq(T3, UInt<1>(1))
@@ -508,6 +508,7 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
 
+    println(output.toString)
     for {
       i <- 0 until 2
       j <- 0 until 4
