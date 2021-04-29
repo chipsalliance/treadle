@@ -138,7 +138,11 @@ case class DshlInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
 }
 
 case class DshrInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
-  def apply(): Int = f1() >> f2()
+  def apply(): Int = {
+    val v1 = f1()
+    val v2 = f2()
+    if (v2 > 31) 0 else v1 >> v2
+  }
 }
 
 case class NegInts(f1: FuncInt) extends IntExpressionResult {
