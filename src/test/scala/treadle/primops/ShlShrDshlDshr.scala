@@ -8,18 +8,13 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable._
 import treadle.utils.Render
-<<<<<<< HEAD
-import treadle.{BitTwiddlingUtils, TreadleTestHarness, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
-=======
 import treadle.{
   extremaOfSIntOfWidth,
   extremaOfUIntOfWidth,
   BitTwiddlingUtils,
   IntWidthTestValuesGenerator,
-  TestUtils,
   TreadleTestHarness
 }
->>>>>>> 8dc6b63... Fixes DSHR shift problem (#322)
 
 // scalastyle:off magic.number
 class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
