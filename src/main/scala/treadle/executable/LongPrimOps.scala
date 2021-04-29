@@ -116,7 +116,7 @@ case class DshrLongs(f1: FuncLong, f2: FuncLong) extends LongExpressionResult {
   def apply(): Long = {
     val a: Long = f1()
     val b: Long = f2()
-    a >> b.toInt
+    if(b > 63) 0 else a >> b.toInt
   }
 }
 
