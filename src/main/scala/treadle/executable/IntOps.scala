@@ -141,7 +141,7 @@ case class DshrInts(f1: FuncInt, f2: FuncInt) extends IntExpressionResult {
   def apply(): Int = {
     val v1 = f1()
     val v2 = f2()
-    if(v2 > 31) 0 else v1 >> v2
+    if (v2 > 31) 0 else v1 >> v2
   }
 }
 

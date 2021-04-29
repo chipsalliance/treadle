@@ -8,7 +8,14 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable._
 import treadle.utils.Render
-import treadle.{BitTwiddlingUtils, IntWidthTestValuesGenerator, TestUtils, TreadleTestHarness, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{
+  extremaOfSIntOfWidth,
+  extremaOfUIntOfWidth,
+  BitTwiddlingUtils,
+  IntWidthTestValuesGenerator,
+  TestUtils,
+  TreadleTestHarness
+}
 
 // scalastyle:off magic.number
 class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
