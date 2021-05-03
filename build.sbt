@@ -1,19 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-def javacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // Scala 2.12 requires Java 8. We continue to generate
-    //  Java 7 compatible code for Scala 2.11
-    //  for compatibility with old clients.
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 =>
-        Seq("-source", "1.7", "-target", "1.7")
-      case _ =>
-        Seq("-source", "1.8", "-target", "1.8")
-    }
-  }
-}
-
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.5-SNAPSHOT")
 
@@ -21,8 +7,8 @@ lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
   version := "1.5-SNAPSHOT",
-  scalaVersion := "2.13.4",
-  crossScalaVersions := Seq("2.13.5", "2.12.13", "2.11.12"),
+  scalaVersion := "2.12.13",
+  crossScalaVersions := Seq("2.13.5", "2.12.13"),
   // enables using control-c in sbt CLI
   cancelable in Global := true,
   resolvers ++= Seq(
@@ -47,7 +33,8 @@ lazy val baseSettings = Seq(
     "-language:existentials",
     "-language:implicitConversions"
   ),
-  javacOptions ++= javacOptionsVersion(scalaVersion.value)
+  // Always target Java8 for maximum compatibility
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 )
 
 lazy val assemblySettings = Seq(

@@ -8,7 +8,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object treadle extends mill.Cross[treadleCrossModule]("2.11.12", "2.12.13", "2.13.5")
+object treadle extends mill.Cross[treadleCrossModule]("2.12.13", "2.13.5")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -37,7 +37,6 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
 
   def publishVersion = "1.5-SNAPSHOT"
 
-  // 2.12.11 -> Array("2", "12", "10") -> "12" -> 12
   protected def majorVersion = crossVersion.split('.')(1).toInt
 
   def crossVersion: String
@@ -75,7 +74,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
 
 class treadleCrossModule(crossVersionValue: String) extends CommonModule with PublishModule with BuildInfo { m =>
   // different scala version shares same sources
-  // mill use foo/2.11.12 foo/2.12.11 as millSourcePath by default
+  // mill use foo/2.12.13 by default
   override def millSourcePath = super.millSourcePath / os.up / os.up
 
   def crossVersion = crossVersionValue
