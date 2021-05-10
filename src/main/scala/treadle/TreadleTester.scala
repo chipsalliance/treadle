@@ -365,7 +365,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     if (value != expectedValue) {
       val renderer = new ExpressionViewRenderer(engine.dataStore, engine.symbolTable, engine.expressionViews)
       val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
-      fail(TreadleException(s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+      fail(TreadleException(s"Error:expect($name($index), $expectedValue) got $value $message\n$calculation"))
     }
     expectationsMet += 1
   }
