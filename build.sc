@@ -96,10 +96,6 @@ class treadleCrossModule(crossVersionValue: String) extends CommonModule with Pu
     ) ++ ivyCrossDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
-
-    def testOnly(args: String*) = T.command {
-      super.runMain("org.scalatest.run", args: _*)
-    }
   }
 
   override def buildInfoPackageName = Some("treadle")
