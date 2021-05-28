@@ -28,7 +28,6 @@ import treadle.stage.TreadleTesterPhase
   *
   * @param annotationSeq   firrtl circuit and parameters for tester are to be found here
   */
-//class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
 class TreadleTester(annotationSeq: AnnotationSeq) {
 
   var expectationsMet = 0
