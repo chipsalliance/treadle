@@ -2,6 +2,7 @@
 
 package treadle.executable
 
+import firrtl.annotations.ReferenceTarget
 import firrtl.ir.{Info, IntWidth, NoInfo}
 import firrtl.{Kind, WireKind}
 import treadle._
@@ -80,6 +81,11 @@ case class Symbol(
     }
     f"$name%-40.40s $dataSize%3.3s $dataType%4.4s $bitWidth%6d " +
       f"$slots%6d $index%6d$dataSizeCode $cardinalNumber%6d $info"
+  }
+
+  def matches(referenceTarget: ReferenceTarget): Boolean = {
+    val refString = referenceTarget.ref
+    true
   }
 }
 
