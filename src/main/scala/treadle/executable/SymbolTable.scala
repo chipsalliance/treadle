@@ -3,6 +3,7 @@
 package treadle.executable
 
 import firrtl._
+import firrtl.annotations.ReferenceTarget
 import firrtl.graph.DiGraph
 import firrtl.ir._
 import logger.LazyLogging
