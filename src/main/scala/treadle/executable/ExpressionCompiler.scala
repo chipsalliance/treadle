@@ -4,6 +4,7 @@ package treadle.executable
 
 import firrtl.PrimOps._
 import firrtl._
+import firrtl.annotations.ReferenceTarget
 import firrtl.ir._
 import treadle._
 import treadle.blackboxes.PlusArg
@@ -18,7 +19,8 @@ class ExpressionCompiler(
   validIfIsRandom:      Boolean,
   prefixPrintfWithTime: Boolean,
   blackBoxFactories:    Seq[ScalaBlackBoxFactory],
-  plusArgs:             Seq[PlusArg])
+  plusArgs:             Seq[PlusArg],
+  presetTargets:        Seq[ReferenceTarget])
     extends logger.LazyLogging {
 
   case class ExternalInputParams(instance: ScalaBlackBox, portName: String)
@@ -30,6 +32,19 @@ class ExpressionCompiler(
       case GroundType(IntWidth(width)) => width.toInt
       case _                           => throw TreadleException(s"Unresolved width found in firrtl.ir.Type $tpe")
     }
+  }
+
+  // Preset registers have references to the async reset
+  private val presetTargetList = presetTargets.map { presetTarget =>
+    val pathSteps = mutable.ArrayBuffer[String]()
+    var element = presetTarget.path
+    while (element.nonEmpty) {
+      val step = element.head._1.value
+      pathSteps += step
+      element = element.tail
+    }
+    pathSteps += presetTarget.ref
+    pathSteps.mkString(".")
   }
 
   def getWidth(expression: Expression): Int = {
@@ -206,6 +221,7 @@ class ExpressionCompiler(
   //scalastyle:off method.length
   def processStatements(modulePrefix: String, circuit: Circuit, statement: firrtl.ir.Statement): Unit = {
     def expand(name: String): String = if (modulePrefix.isEmpty) name else modulePrefix + "." + name
+    def moduleName: String = modulePrefix.split(".").lastOption.getOrElse("")
 
     @scala.annotation.tailrec
     def getDrivingClock(clockExpression: Expression): Option[Symbol] = {
@@ -872,6 +888,23 @@ class ExpressionCompiler(
               val asyncResetMux = processMux(asyncResetCondition, processExpression(initExpression), posEdgeMux)
 
               makeAssigner(registerOut, asyncResetMux, info = info)
+
+              resetExpression match {
+                case Reference(resetName, _, _, _) =>
+                  val fullResetName = expand(resetName)
+                  if (presetTargetList.contains(fullResetName)) {
+                    val initValue = processExpression(initExpression) match {
+                      case GetIntConstant(value)  => BigInt(value)
+                      case GetLongConstant(value) => BigInt(value)
+                      case GetBigConstant(value)  => value
+                      case badValue =>
+                        throw TreadleException(s"Error:RegisterPresetValue should be literal got: $badValue")
+                    }
+                    dataStore.update(registerOut, initValue)
+                    dataStore.update(registerIn, initValue)
+                  }
+                case _ =>
+              }
             } else {
               //TODO: (Chick) We could use
               // makeAssigner(registerOut, posEdgeMux, info = info)
@@ -1024,7 +1057,7 @@ class ExpressionCompiler(
   }
 
   // scalastyle:off cyclomatic.complexity
-  def compile(circuit: Circuit, blackBoxFactories: Seq[ScalaBlackBoxFactory]): Unit = {
+  def compile(circuit: Circuit): Unit = {
     val module = FindModule(circuit.main, circuit) match {
       case regularModule:  firrtl.ir.Module => regularModule
       case externalModule: firrtl.ir.ExtModule =>
