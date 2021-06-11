@@ -76,7 +76,8 @@ class MultiTopLevelClockSpec extends AnyFreeSpec with Matchers with LazyLogging 
           logger.debug(
             s"$wallTime ${wallTime - lastWallTime} $i ${i / 2}" +
               s" state = ${tester.peek("out1")}, ${tester.peek("out2")}" +
-              s" -- ${tester.peek("clock1")}, ${tester.peek("clock2")}")
+              s" -- ${tester.peek("clock1")}, ${tester.peek("clock2")}"
+          )
           tester.expect("out1", expected1)
           tester.expect("out2", expected2)
           tester.step()
