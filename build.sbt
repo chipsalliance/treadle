@@ -97,3 +97,9 @@ lazy val treadle = (project in file("."))
   .settings(assemblySettings)
   .settings(publishSettings)
   .settings(docSettings)
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    buildInfoPackage := name.value,
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  )
