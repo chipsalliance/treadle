@@ -7,8 +7,9 @@ lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
   version := "1.5-SNAPSHOT",
-  scalaVersion := "2.12.13",
+  scalaVersion := "2.12.14",
   crossScalaVersions := Seq("2.13.6", "2.12.13"),
+
   // enables using control-c in sbt CLI
   cancelable in Global := true,
   resolvers ++= Seq(
