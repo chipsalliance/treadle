@@ -316,7 +316,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     if (lineValidators.isEmpty) initLineValidators()
 
     //Keep track of coverage
-    lineValidators = lineValidators.zip(Coverage.getValidators(engine.ast, this)).map(v => v._1.toInt | v._2.toInt)
+    lineValidators = lineValidators.zip(Coverage.getValidators(engine.ast, this)).map(v => v._1 | v._2)
   }
 
   def cycleCount: Long = clockStepper.cycleCount
@@ -410,7 +410,11 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   def isRegister(symbolName: String): Boolean = engine.symbolTable.isRegister(symbolName)
 
   def getStopResult: Option[Int] = {
-    engine.lastStopResult
+    engine.lastStopException match {
+      case Some(stopException: StopException) =>
+        Some(stopException.stopValue)
+      case _ => None
+    }
   }
 
   def reportString: String = {
@@ -423,11 +427,9 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
         see this report which should include the Failed in that case
      */
     def status: String = {
-      engine.lastStopResult match {
-        case Some(0) =>
-          s"Stopped: Stop result 0:"
-        case Some(stopResult) =>
-          s"Failed: Stop result $stopResult:"
+      engine.lastStopException match {
+        case Some(stopException: StopException) =>
+          stopException.getMessage
         case _ =>
           if (isOK) {
             s"Success:"

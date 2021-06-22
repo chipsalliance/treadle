@@ -101,10 +101,6 @@ class ExecutionEngine(
 
   val timer = new Timer
 
-  if (annotationSeq.contains { RandomizeAtStartupAnnotation }) {
-    randomize()
-  }
-
   if (verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
       Render.headerBar(s"Executing static assignments", offset = 8)
@@ -225,11 +221,9 @@ class ExecutionEngine(
       // save data state under roll back buffers if they are being used
       dataStore.saveData(wallTime.currentTime)
 
-      if (lastStopResult.isDefined) {
+      if (lastStopException.isDefined) {
         writeVCD()
-        val stopKind = if (lastStopResult.get > 0) { "Failure Stop" }
-        else { "Stopped" }
-        throw StopException(s"$stopKind: result ${lastStopResult.get}")
+        throw lastStopException.get
       }
     } catch {
       case throwable: Throwable =>
@@ -460,31 +454,24 @@ class ExecutionEngine(
 
   private val stopHappenedSymbolOpt = symbolTable.get(StopOp.stopHappenedName)
 
-  /** returns that value specified by a StopOp when
-    * its condition is satisfied.  Only defined when
-    * circuit is currently stopped.
-    * @return
+  /** When a stop is triggered during execution the StopException generated is not thrown
+    * and instead is placed here so it can be accessed at the end of execution
     */
-  def lastStopResult: Option[Int] = {
-    stopHappenedSymbolOpt match {
-      case Some(hasStoppedSymbol) =>
-        val stopValue = dataStore(hasStoppedSymbol).toInt
-        if (stopValue > 0) {
-          Some(stopValue - 1)
-        } else {
-          None
-        }
-      case _ =>
-        None
-    }
-  }
+  var lastStopException: Option[StopException] = None
 
   /** Is the circuit currently stopped.  StopOp throws a
     * Stop
     * @return
     */
   def stopped: Boolean = {
-    lastStopResult.isDefined
+    lastStopException.isDefined
+  }
+
+  def lastStopResult: Option[Int] = {
+    lastStopException match {
+      case Some(stopException: StopException) => Some(stopException.stopValue)
+      case _ => None
+    }
   }
 
   /*
@@ -559,6 +546,10 @@ class ExecutionEngine(
     if (vcdOption.isDefined) assigner.setLeanMode(false)
     assigner.setVerbose(verbose)
     assigner
+  }
+
+  if (annotationSeq.contains { RandomizeAtStartupAnnotation }) {
+    randomize()
   }
 }
 

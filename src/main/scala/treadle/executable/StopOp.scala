@@ -11,7 +11,9 @@ case class StopOp(
   condition:       IntExpressionResult,
   hasStopped:      Symbol,
   dataStore:       DataStore,
-  clockTransition: ClockTransitionGetter)
+  clockTransition: ClockTransitionGetter,
+  stopName:        String,
+  schedulerOpt:    Option[Scheduler])
     extends Assigner {
 
   def run: FuncUnit = {
@@ -26,6 +28,12 @@ case class StopOp(
           println(s"stop ${symbol.name} has fired")
         }
         dataStore(hasStopped) = returnValue + 1
+        val stopException = StopException(returnValue, stopName, info)
+        schedulerOpt.foreach { scheduler =>
+          scheduler.executionEngineOpt.foreach { engine =>
+            engine.lastStopException = Some(stopException)
+          }
+        }
       }
     }
 

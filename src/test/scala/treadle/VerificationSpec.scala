@@ -11,7 +11,7 @@ import treadle.executable.StopException
 import treadle.stage.phases.IgnoreFormalAssumesAnnotation
 
 class VerificationSpec extends AnyFreeSpec with Matchers {
-  def input(doAssume: Boolean = false) = {
+  def input(doAssume: Boolean = false): String = {
     val inject = if (doAssume) {
       "assume"
     } else {
@@ -108,7 +108,8 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
         val result = intercept[StopException] {
           runStopTest(input())
         }
-        result.message should include("Failure Stop: result 65")
+        result.stopValue should be(65)
+        result.message should include("Failure Stop:assert_0:(65)")
       }
       output.toString should include("input was not less that 0x7f")
     }
@@ -119,7 +120,8 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
         val result = intercept[StopException] {
           runStopTest(input(doAssume = true))
         }
-        result.message should include("Failure Stop: result 66")
+        result.stopValue should be(66)
+        result.message should include("Failure Stop:assume_0:(66)")
       }
       output.toString should include("input was not less that 0x7f")
     }

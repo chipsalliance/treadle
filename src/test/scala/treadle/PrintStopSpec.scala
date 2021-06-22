@@ -508,7 +508,6 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
 
     val printfLines = output.toString.split("\n").filter(_.startsWith("+++"))
 
-    println(output.toString)
     for {
       i <- 0 until 2
       j <- 0 until 4

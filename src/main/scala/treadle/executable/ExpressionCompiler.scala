@@ -923,7 +923,10 @@ class ExpressionCompiler(
         Memory.buildMemoryInternals(defMemory, expandedName, scheduler, compiler = this)
 
       case _: IsInvalid =>
+
       case stop @ Stop(info, returnValue, clockExpression, enableExpression) =>
+        val stopSymbolName = expand(stop.name)
+
         symbolTable.stopToStopInfo.get(stop) match {
           case Some(stopInfo) =>
             val intExpression = toIntExpression(enableExpression, s"Error: stop $stop has unknown condition type")
@@ -940,7 +943,9 @@ class ExpressionCompiler(
                   condition = intExpression,
                   hasStopped = symbolTable(StopOp.stopHappenedName),
                   dataStore = dataStore,
-                  clockTransitionGetter
+                  clockTransitionGetter,
+                  stopSymbolName,
+                  Some(scheduler)
                 )
                 addAssigner(stopOp)
               case _ =>

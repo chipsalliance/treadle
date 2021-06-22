@@ -2,8 +2,9 @@
 
 package treadle
 
-import java.io.{ByteArrayOutputStream, PrintStream}
+import firrtl.ir.NoInfo
 
+import java.io.{ByteArrayOutputStream, PrintStream}
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -58,11 +59,15 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         tester.poke("io_wrData", (0 << 24) + (255 << 16))
         tester.expect("reset", 0)
 
-        intercept[StopException] {
+        val stopException = intercept[StopException] {
           tester.step()
         }
 
-        tester.reportString should include("Failed: Stop result 47")
+        stopException.stopValue should be(47)
+        stopException.stopInfo.toString should include("@[RunTimeAssertSpec.scala 20:22]")
+        tester.reportString should include(
+          "test myRisc Failure Stop:mockRegFileOut_1.stop_0:(47) at  @[RunTimeAssertSpec.scala 20:22]"
+        )
       }
     }
   }
@@ -91,7 +96,7 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         tester.step(100)
         tester.finish
       }
-      caught.getMessage should include("Stopped: result 0")
+      caught.getMessage should include("Stopped:stop_0:(0)")
 
       tester.getStopResult should be(Some(0))
     }
@@ -121,7 +126,11 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         tester.step(100)
         tester.finish
       }
-      caught.getMessage should include("Failure Stop: result 44")
+      caught.stopValue should be(44)
+      caught.stopInfo should be(NoInfo)
+      caught.stopName should include("stop_0")
+
+      caught.getMessage should include("Failure Stop:stop_0:(44)")
 
       tester.getStopResult should be(Some(44))
     }
