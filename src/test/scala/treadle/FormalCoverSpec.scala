@@ -51,6 +51,28 @@ class FormalCoverSpec extends AnyFreeSpec with Matchers {
     }
   }
 
+  "it should be possible to reset the coverage counters" in {
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlSource))) { tester =>
+      val c0 = tester.getCoverage().toMap
+
+      tester.step(10)
+
+      val c1 = tester.getCoverage().toMap
+      assert(c1("cover_0") == 5)
+      assert(c1("cover_1") == 3)
+      assert(c1("cover_2") == 2)
+      assert(c1("cover_3") == 1)
+      assert(c1("c.cov0") + c1("c.cov1_this_is_custom") == 10)
+
+      tester.resetCoverage()
+      assert(tester.getCoverage().map(_._2).forall(_ == 0), "Coverage counts should be zero after reset")
+
+      tester.step(2)
+      val c2 = tester.getCoverage().toMap
+      assert(c2("c.cov0") + c2("c.cov1_this_is_custom") == 2)
+    }
+  }
+
   val ReportAnno = Seq(WriteCoverageCSVAnnotation)
 
   "cover statements should produce a report" in {

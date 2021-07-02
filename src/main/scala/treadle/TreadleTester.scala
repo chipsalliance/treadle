@@ -376,6 +376,14 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     cov.map(c => c.symbol.name -> c.coverCount).toList
   }
 
+  /** resets all coverage counters to zero */
+  def resetCoverage(): Unit = {
+    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl.ir.Formal.Cover)
+    cov.foreach { c =>
+      c.coverCount = 0
+    }
+  }
+
   def waveformValues(
     symbolNames: Array[String] = Array[String](),
     startCycle:  Int = 0,
