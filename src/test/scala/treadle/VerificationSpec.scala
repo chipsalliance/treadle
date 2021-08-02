@@ -57,9 +57,9 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
       }
       (output.toString should not).include("assume(")
       output.toString should include(
-        """printf(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), "input was not less that 0x7f")"""
+        """printf(_GEN_7, and(not(_GEN_8), _GEN_5), "input was not less that 0x7f")"""
       )
-      output.toString should include("""stop(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), 66)""")
+      output.toString should include("""stop(_GEN_7, and(not(_GEN_8), _GEN_5), 66) : assume_0""")
     }
 
     "but IgnoreFormalAssumesAnnotation will drop assume statements" in {
@@ -73,7 +73,7 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
       (output.toString should not).include(
         """printf(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), "input was not less that 0x7f")"""
       )
-      (output.toString should not).include("""stop(clock, and(not(lt(io_in, UInt<8>("h7f"))), UInt<1>("h1")), 66)""")
+      (output.toString should not).include("""stop(_GEN_12, and(not(_GEN_13), _GEN_10), 66)""")
     }
 
     def runStopTest(firrtlString: String): Unit = {

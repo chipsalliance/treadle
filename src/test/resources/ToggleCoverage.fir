@@ -17,5 +17,7 @@ circuit test :
       reset => (UInt<1>("h0"), cond_prev)
     cond_prev <= mux(metaReset, UInt<1>("h0"), cond_s)
     node cond_toggle = xor(cond_s, cond_prev)
-    cover(clock, cond_toggle, not(or(reset, prev_reset)), "") : cond_toggleNoReset
+    node cover_enable = not(or(reset, prev_reset))
+    printf(clock, UInt<1>("h1"), "CoverConditions: cond_toggle %d cover_enable %d\n", cond_toggle, cover_enable)
+    cover(clock, cond_toggle, cover_enable, "") : cond_toggleNoReset
     assert_failed <= UInt<1>("h0")
