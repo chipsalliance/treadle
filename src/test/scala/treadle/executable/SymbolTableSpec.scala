@@ -46,7 +46,12 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers with LazyLogging {
       val keyToDependent = symbolTable.childrenOf
 
       // b3, b3/in, and io_out2 depend on clock
-      keyToDependent.reachableFrom(symbolTable("clock")).size should be(3)
+
+      val reachableFromClock = keyToDependent.reachableFrom(symbolTable("clock"))
+      reachableFromClock should contain (symbolTable("b3"))
+      reachableFromClock should contain (symbolTable("b3/in"))
+      reachableFromClock should contain (symbolTable("io_out2"))
+
 
       symbolTable.registerNames.toList.sorted.foreach { key =>
         val dependents = symbolTable.childrenOf.reachableFrom(symbolTable(key))
@@ -132,7 +137,10 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers with LazyLogging {
       val childrenOf = symbolTable.childrenOf
 
       // a3, a3/in and io_out1 depend on clock
-      childrenOf.reachableFrom(symbolTable("clock")).size should be(3)
+      val reachableFromClock = childrenOf.reachableFrom(symbolTable("clock"))
+      reachableFromClock should contain (symbolTable("a3"))
+      reachableFromClock should contain (symbolTable("a3/in"))
+      reachableFromClock should contain (symbolTable("io_out1"))
 
       childrenOf.reachableFrom(symbolTable("io_in1")) should not contain symbolTable("io_out1")
 
@@ -184,8 +192,6 @@ class SymbolTableSpec extends AnyFreeSpec with Matchers with LazyLogging {
       val symbolTable = simulator.symbolTable
 
       val childrenOf = symbolTable.childrenOf
-
-      childrenOf.reachableFrom(symbolTable("clock")).size should be(3)
 
       childrenOf.reachableFrom(symbolTable("io_in1")) should contain(symbolTable("io_out1"))
       childrenOf.reachableFrom(symbolTable("io_in2")) should not contain symbolTable("io_out1")
