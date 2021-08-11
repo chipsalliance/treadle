@@ -3,12 +3,13 @@
 package treadle.stage.phases
 
 import firrtl.options.{Dependency, Phase}
+import firrtl.passes.memlib.VerilogMemDelays
 import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
 import firrtl.transforms.BlackBoxSourceHelper
-import firrtl.{passes, AnnotationSeq, CircuitState}
+import firrtl.{AnnotationSeq, CircuitState}
 import treadle.TreadleCircuitStateAnnotation
 import treadle.coverage.pass.AddCoverageExpressions
-import treadle.utils.{AugmentPrintf, FixupOps}
+import treadle.utils.AugmentPrintf
 
 /** Call a bunch of transforms so TreadleTester can operate
   */
@@ -17,19 +18,10 @@ class PrepareAst extends Phase {
     Dependency(firrtl.transforms.EnsureNamedStatements),
     Dependency(AddCoverageExpressions),
     Dependency[BlackBoxSourceHelper],
-    Dependency[FixupOps],
-    Dependency[AugmentPrintf]
-  ) ++ Forms.LowForm ++ Seq(
-    Dependency(passes.RemoveValidIf),
-    Dependency(passes.memlib.VerilogMemDelays),
-    Dependency(passes.SplitExpressions),
-    Dependency[firrtl.transforms.LegalizeAndReductionsTransform],
-    Dependency[firrtl.transforms.ConstantPropagation],
-    Dependency[firrtl.transforms.CombineCats],
-    Dependency(passes.CommonSubexpressionElimination),
-    Dependency[firrtl.transforms.DeadCodeElimination],
+    Dependency[AugmentPrintf],
     Dependency[HandleFormalStatements]
-  )
+  ) ++ Forms.LowFormOptimized ++
+    Seq(Dependency(VerilogMemDelays))
 
   private def compiler = new firrtl.stage.transforms.Compiler(targets, currentState = Nil)
 
