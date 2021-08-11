@@ -15,13 +15,15 @@ import firrtl.ir._
   * @param enable            only increments coverCount if this is true
   */
 case class VerifyOp(
-  symbol:          Symbol,
-  info:            Info,
-  message:         StringLit,
-  clockTransition: ClockTransitionGetter,
-  predicate:       IntExpressionResult,
-  enable:          IntExpressionResult,
-  op:              Formal.Value)
+                     symbol: Symbol,
+                     info: Info,
+                     message: StringLit,
+                     clockTransition: ClockTransitionGetter,
+                     predicate: IntExpressionResult,
+                     enable: IntExpressionResult,
+                     op: Formal.Value,
+                     dataStore: DataStore
+                   )
     extends Assigner {
 
   var clockCount: Long = 0
@@ -35,6 +37,7 @@ case class VerifyOp(
 
       if (conditionValue && enableValue) {
         coverCount += 1
+        dataStore.runPlugins(symbol, previousValue = 0)
       }
     }
 

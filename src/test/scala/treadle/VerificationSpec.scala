@@ -2,8 +2,9 @@
 
 package treadle
 
-import java.io.{ByteArrayOutputStream, PrintStream}
+import firrtl.options.TargetDirAnnotation
 
+import java.io.{ByteArrayOutputStream, PrintStream}
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -125,5 +126,37 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
       }
       output.toString should include("input was not less that 0x7f")
     }
+
+    "asserts from verification should go high when triggered and be visible" in {
+      val targetDir = s"test_run_dir/verify_should_log_to_vcd"
+
+      val firrtlString =
+        """circuit test:
+          |  module child:
+          |    input clock : Clock
+          |    input reset : AsyncReset
+          |    output count : UInt<32>
+          |    reg count_reg : UInt<32>, clock with : (reset => (reset, UInt(0)))
+          |    count_reg <= add(count_reg, UInt(1))
+          |    count <= count_reg
+          |
+          |  module test:
+          |    input clock : Clock
+          |    input reset : AsyncReset
+          |
+          |    inst c of child
+          |    c.clock <= clock
+          |    c.reset <= reset
+          |
+          |    assert(clock, lt(c.count, UInt(5)), UInt(1), "") : leq_assert
+          |
+          |""".stripMargin
+
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(firrtlString), TargetDirAnnotation(targetDir), WriteVcdAnnotation, ShowFirrtlAtLoadAnnotation)) { tester =>
+        tester.step(10)
+        tester.finish
+      }
+    }
+
   }
 }

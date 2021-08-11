@@ -1012,7 +1012,8 @@ class ExpressionCompiler(
                   clockTransitionGetter,
                   intPredicateExpression,
                   intEnableExpression,
-                  Formal.Cover
+                  Formal.Cover,
+                  dataStore
                 )
                 symbolTable.verifyOps += verifyOp
                 addAssigner(verifyOp)
