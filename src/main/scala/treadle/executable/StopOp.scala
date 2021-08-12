@@ -28,6 +28,9 @@ case class StopOp(
           println(s"stop ${symbol.name} has fired")
         }
         dataStore(hasStopped) = returnValue + 1
+        dataStore(symbol) = 1
+        dataStore.runPlugins(symbol, previousValue = 0)
+
         val stopException = StopException(returnValue, stopName, info)
         schedulerOpt.foreach { scheduler =>
           scheduler.executionEngineOpt.foreach { engine =>

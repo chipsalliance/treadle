@@ -2,13 +2,15 @@
 
 package treadle
 
-import java.io.{ByteArrayOutputStream, PrintStream}
-
+import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlSourceAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable.StopException
 import treadle.stage.phases.IgnoreFormalAssumesAnnotation
+import treadle.vcd.{Change, VCD}
+
+import java.io.{ByteArrayOutputStream, PrintStream}
 
 class VerificationSpec extends AnyFreeSpec with Matchers {
   def input(doAssume: Boolean = false): String = {
@@ -124,6 +126,104 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
         result.message should include("Failure Stop:assume_0:(66)")
       }
       output.toString should include("input was not less that 0x7f")
+    }
+
+    "assumes from verification should go high when triggered and be visible" in {
+      val targetDir = s"test_run_dir/verify_assumes_should_log_to_vcd"
+
+      val firrtlString =
+        """circuit test:
+          |  module child:
+          |    input clock : Clock
+          |    input reset : AsyncReset
+          |    output count : UInt<32>
+          |    reg count_reg : UInt<32>, clock with : (reset => (reset, UInt(0)))
+          |    count_reg <= add(count_reg, UInt(1))
+          |    count <= count_reg
+          |
+          |  module test:
+          |    input clock : Clock
+          |    input reset : AsyncReset
+          |
+          |    inst c of child
+          |    c.clock <= clock
+          |    c.reset <= reset
+          |
+          |    assert(clock, lt(c.count, UInt(5)), UInt(1), "") : leq_assert
+          |
+          |""".stripMargin
+
+      intercept[StopException] {
+        TreadleTestHarness(
+          Seq(FirrtlSourceAnnotation(firrtlString), TargetDirAnnotation(targetDir), WriteVcdAnnotation)
+        ) { tester =>
+          tester.step(10)
+          tester.finish
+        }
+      }
+
+      val vcd = VCD.read(s"$targetDir/test.vcd")
+      val times = vcd.valuesAtTime.keys.toList.sorted
+
+      val leqAssertChanges = times.flatMap { time =>
+        vcd.valuesAtTime(time).flatMap { change: Change =>
+          if (change.wire.name == "leq_assert") {
+            Some((time, change.value))
+          } else {
+            None
+          }
+        }
+      }
+
+      leqAssertChanges.last._2 should be(1)
+    }
+
+    "covers from verification should go high when triggered and be visible" in {
+      val targetDir = s"test_run_dir/verify_covers_should_log_to_vcd"
+
+      val firrtlString =
+        """circuit test:
+          |  module child:
+          |    input clock : Clock
+          |    input reset : AsyncReset
+          |    output count : UInt<32>
+          |    reg count_reg : UInt<32>, clock with : (reset => (reset, UInt(0)))
+          |    count_reg <= add(count_reg, UInt(1))
+          |    count <= count_reg
+          |
+          |  module test:
+          |    input clock : Clock
+          |    input reset : AsyncReset
+          |
+          |    inst c of child
+          |    c.clock <= clock
+          |    c.reset <= reset
+          |
+          |    cover(clock, lt(c.count, UInt(5)), UInt(1), "") : leq_cover
+          |
+          |""".stripMargin
+
+      TreadleTestHarness(
+        Seq(FirrtlSourceAnnotation(firrtlString), TargetDirAnnotation(targetDir), WriteVcdAnnotation)
+      ) { tester =>
+        tester.step(10)
+        tester.finish
+      }
+
+      val vcd = VCD.read(s"$targetDir/test.vcd")
+      val times = vcd.valuesAtTime.keys.toList.sorted
+
+      val leqCoverChanges = times.flatMap { time =>
+        vcd.valuesAtTime(time).flatMap { change: Change =>
+          if (change.wire.name == "leq_cover") {
+            Some((time, change.value))
+          } else {
+            None
+          }
+        }
+      }
+
+      leqCoverChanges should be(List((1, 1), (11, 2), (21, 3), (31, 4), (41, 5)))
     }
   }
 }

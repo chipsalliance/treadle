@@ -21,7 +21,8 @@ case class VerifyOp(
   clockTransition: ClockTransitionGetter,
   predicate:       IntExpressionResult,
   enable:          IntExpressionResult,
-  op:              Formal.Value)
+  op:              Formal.Value,
+  dataStore:       DataStore)
     extends Assigner {
 
   var clockCount: Long = 0
@@ -35,6 +36,9 @@ case class VerifyOp(
 
       if (conditionValue && enableValue) {
         coverCount += 1
+        val oldValue = dataStore(symbol)
+        dataStore(symbol) = oldValue + 1
+        dataStore.runPlugins(symbol, previousValue = oldValue)
       }
     }
 
