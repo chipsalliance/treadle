@@ -456,7 +456,7 @@ object SymbolTable extends LazyLogging {
               assert(verify.name.nonEmpty, "Verification statements require a non-empty name!")
               val verifySymbolName = expand(verify.name)
               val verifySymbol =
-                Symbol(verifySymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
+                Symbol(verifySymbolName, IntSize, UnsignedInt, WireKind, bitWidth = 31, 1, UIntType(IntWidth(1)), info)
               addSymbol(verifySymbol)
 
               verifyCardinal += 1
