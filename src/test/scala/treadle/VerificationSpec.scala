@@ -128,7 +128,7 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
       output.toString should include("input was not less that 0x7f")
     }
 
-    "asserts from verification should go high when triggered and be visible" in {
+    "assumes from verification should go high when triggered and be visible" in {
       val targetDir = s"test_run_dir/verify_assumes_should_log_to_vcd"
 
       val firrtlString =
@@ -174,9 +174,6 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
           }
         }
       }
-      //TODO: Remove these printlns
-      println(s"times " + times.mkString(", "))
-      println(s"leqAssert " + leqAssertChanges.mkString(", "))
 
       leqAssertChanges.last._2 should be(1)
     }
@@ -202,7 +199,7 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
           |    c.clock <= clock
           |    c.reset <= reset
           |
-          |    cover(clock, lt(c.count, UInt(5)), UInt(1), "") : leq_assert
+          |    cover(clock, lt(c.count, UInt(5)), UInt(1), "") : leq_cover
           |
           |""".stripMargin
 
@@ -218,17 +215,13 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
 
       val leqCoverChanges = times.flatMap { time =>
         vcd.valuesAtTime(time).flatMap { change: Change =>
-          if (change.wire.name == "leq_assert") {
+          if (change.wire.name == "leq_cover") {
             Some((time, change.value))
           } else {
             None
           }
         }
       }
-
-      //TODO: Remove these printlns
-      println(s"times " + times.mkString(", "))
-      println(s"leqAssert " + leqCoverChanges.mkString(", "))
 
       leqCoverChanges should be(List((1, 1), (11, 2), (21, 3), (31, 4), (41, 5)))
     }
