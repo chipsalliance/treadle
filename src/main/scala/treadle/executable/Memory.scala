@@ -636,6 +636,13 @@ class MemoryInitializer(engine: ExecutionEngine) extends LazyLogging {
         loadMemory(referenceTarget, Seq(value))
       case MemoryArrayInitAnnotation(referenceTarget, values) =>
         loadMemory(referenceTarget, values)
+      case MemoryFileInlineAnnotation(referenceTarget, filename, hexOrBinary) =>
+        val base = hexOrBinary match {
+          case MemoryLoadFileType.Hex    => 16
+          case MemoryLoadFileType.Binary => 2
+        }
+        val values = MemoryFileParser.parse(filename, base)
+        loadMemory(referenceTarget, values)
       case _ =>
     }
   }
@@ -677,5 +684,22 @@ class MemoryInitializer(engine: ExecutionEngine) extends LazyLogging {
     memoryMetadata.foreach { metadata =>
       doInitialize(metadata.symbol, metadata.fileName, metadata.radix)
     }
+  }
+}
+
+private object MemoryFileParser {
+  def parse(filename: String, base: Int): Seq[BigInt] = {
+    require(base == 16 || base == 2)
+    val fullName = os.pwd / os.RelPath(filename)
+    os.read.lines(fullName).flatMap(l => parseLine(l.trim, base))
+  }
+  private def parseLine(line: String, base: Int): Seq[BigInt] = {
+    if (line.startsWith("//")) return Seq()
+    // deal with comments
+    val noComment = line.split("//").head
+    // tokenize at any whitespace
+    val tokens = noComment.split("\\s+").filterNot(_.isEmpty)
+    // turn into numbers
+    tokens.map(BigInt(_, base))
   }
 }
