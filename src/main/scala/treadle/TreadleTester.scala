@@ -4,8 +4,8 @@ package treadle
 
 import java.io.PrintWriter
 import java.util.Calendar
-
 import firrtl.AnnotationSeq
+import firrtl.ir.ClockType
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
 import firrtl.stage.OutputFileAnnotation
@@ -74,8 +74,23 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   val startTime: Long = System.nanoTime()
 
+  private def findTopLevelClocks() = {
+    engine.symbolTable.symbols.collect {
+      case symbol if symbol.firrtlType == ClockType && !(symbol.name.contains(".") || symbol.name.endsWith("/prev")) =>
+        symbol
+    }.toList
+  }
+
   val clockInfoList: Seq[ClockInfo] = if (clockInfo.isEmpty) {
-    if (engine.symbolTable.contains("clock")) {
+    val topClocks = findTopLevelClocks()
+
+    if (topClocks.length > 2) {
+      println(s"Warning: multiple top level clocks found without any ClockInfo information, is this intentional?")
+    }
+
+    if (topClocks.length == 1) {
+      Seq(ClockInfo(topClocks.head.name))
+    } else if (engine.symbolTable.contains("clock")) {
       Seq(ClockInfo())
     } else if (engine.symbolTable.contains("clk")) {
       Seq(ClockInfo("clk"))
