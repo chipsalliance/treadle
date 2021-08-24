@@ -53,6 +53,27 @@ class ClockSpec extends AnyFreeSpec with Matchers with LazyLogging {
     }
   }
 
+  "clocks can have names other than clock" in {
+    val input =
+      """
+        |circuit OddClockName :
+        |  module OddClockName :
+        |    input tardigrade : Clock
+        |    input reset : UInt<1>
+        |    output out2 : UInt<8>
+        |
+        |    reg reg2 : UInt<8>, tardigrade with : (reset => (reset, UInt<8>("h0")))
+        |    reg2 <= add(reg2, UInt<8>("h01"))
+        |    out2 <= reg2
+        |
+      """.stripMargin
+
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+      tester.step(100)
+      tester.expect("out2", 100)
+    }
+  }
+
   "clocks must behave properly behind validif" in {
     val input =
       """
