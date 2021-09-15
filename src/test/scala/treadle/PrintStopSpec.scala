@@ -481,7 +481,7 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |    input reset : UInt<1>
         |    output io : {flip in : UInt<10>, out : UInt<10>}
         |
-        |    node T1 = io.in
+        |    node T1 = eq(io.in, UInt<1>(1))
         |    node T2 = eq(T1, UInt<1>(1))
         |    node T3 = eq(T2, UInt<1>(1))
         |    node T4 = eq(T3, UInt<1>(1))
