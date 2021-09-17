@@ -425,13 +425,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   def isRegister(symbolName: String): Boolean = engine.symbolTable.isRegister(symbolName)
 
-  def getStopResult: Option[Int] = {
-    engine.lastStopException match {
-      case Some(stopException: StopException) =>
-        Some(stopException.stopValue)
-      case _ => None
-    }
-  }
+  def getStopResult: Option[Int] = engine.lastStopResult
 
   def reportString: String = {
     val endTime = System.nanoTime()
@@ -443,15 +437,15 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
         see this report which should include the Failed in that case
      */
     def status: String = {
-      engine.lastStopException match {
-        case Some(stopException: StopException) =>
-          stopException.getMessage
-        case _ =>
+      engine.getStops match {
+        case Seq() =>
           if (isOK) {
             s"Success:"
           } else {
             s"Failed: Code ${failCode.get}"
           }
+        case more =>
+          "Failure Stop: " + more.map(_.getMessage).mkString(" ")
       }
     }
     s"test ${engine.ast.main} " +

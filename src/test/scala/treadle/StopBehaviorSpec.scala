@@ -63,10 +63,11 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
           tester.step()
         }
 
-        stopException.stopValue should be(47)
-        stopException.stopInfo.toString should include("@[RunTimeAssertSpec.scala 20:22]")
+        stopException.stops.length should be(1)
+        stopException.stops.head.ret should be(47)
+        stopException.stops.head.info.toString should include("@[RunTimeAssertSpec.scala 20:22]")
         tester.reportString should include(
-          "test myRisc Failure Stop:mockRegFileOut_1.stop_0:(47) at  @[RunTimeAssertSpec.scala 20:22]"
+          "test myRisc Failure Stop: mockRegFileOut_1.stop_0:(47) at  @[RunTimeAssertSpec.scala 20:22]"
         )
       }
     }
@@ -126,13 +127,75 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         tester.step(100)
         tester.finish
       }
-      caught.stopValue should be(44)
-      caught.stopInfo should be(NoInfo)
-      caught.stopName should include("stop_0")
+      caught.stops.length should be(1)
+      caught.stops.head.ret should be(44)
+      caught.stops.head.info should be(NoInfo)
+      caught.stops.head.name should include("stop_0")
 
       caught.getMessage should include("Failure Stop:stop_0:(44)")
 
       tester.getStopResult should be(Some(44))
+    }
+  }
+
+  "multiple stops should all be reported" in {
+    val input =
+      """circuit MultiStopTest:
+        |  module MultiStopTest:
+        |    input clock: Clock
+        |    input reset: UInt<1>
+        |    input stop0En: UInt<1>
+        |    input stop1En: UInt<1>
+        |    input stop2En: UInt<1>
+        |    input stop3En: UInt<1>
+        |
+        |    when not(reset):
+        |      stop(clock, stop0En, 0) : stop0
+        |      stop(clock, stop1En, 1) : stop1
+        |      assert(clock, UInt(0), stop2En, "") : stop2
+        |      assume(clock, UInt(0), stop3En, "") : stop3
+        |""".stripMargin
+
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
+      // disable all assertions
+      tester.poke("stop0En", 0)
+      tester.poke("stop1En", 0)
+      tester.poke("stop2En", 0)
+      tester.poke("stop3En", 0)
+      tester.step()
+
+      // let all four fail
+      tester.poke("stop0En", 1)
+      tester.poke("stop1En", 1)
+      tester.poke("stop2En", 1)
+      tester.poke("stop3En", 1)
+
+      val caught0 = intercept[StopException] {
+        tester.step()
+      }
+
+      assert(caught0.stops.length == 4)
+      assert(caught0.stops.map(_.name) == List("stop0", "stop1", "stop2", "stop3"))
+      assert(caught0.stops.map(_.ret) == List(0, 1, 65, 66))
+      assert(tester.getStopResult.contains(0))
+
+      // we should be able to continue
+      tester.poke("stop0En", 0)
+      tester.poke("stop1En", 0)
+      tester.poke("stop2En", 0)
+      tester.poke("stop3En", 0)
+      tester.step()
+
+      // report one
+      tester.poke("stop0En", 1)
+      val caught1 = intercept[StopException] {
+        tester.step()
+      }
+      assert(caught1.stops.length == 1)
+      assert(!caught1.getMessage.contains("Failure"))
+      assert(tester.getStopResult.contains(0))
+
+      tester.finish
     }
   }
 }
