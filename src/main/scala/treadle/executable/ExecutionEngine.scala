@@ -474,6 +474,11 @@ class ExecutionEngine(
     }
   }
 
+  def findTopLevelClocks(): Seq[Symbol] = {
+    val inputs = symbolTable.symbols.filter(s => symbolTable.isTopLevelInput(s.name))
+    inputs.filter(_.firrtlType == firrtl.ir.ClockType).toList
+  }
+
   /*
   This is where things should go that need to be done at the end of the run.
   Currently this telling black boxes to finish up things if they need to
