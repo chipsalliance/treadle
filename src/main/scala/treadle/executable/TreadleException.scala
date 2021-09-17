@@ -8,20 +8,25 @@ import firrtl.ir._
   */
 case class TreadleException(message: String) extends Exception(message)
 
-case class StopException(
-  stopValue: Int,
-  stopName:  String,
-  stopInfo:  Info)
-    extends Exception {
+case class StopException(stops: Seq[StopData]) extends Exception {
+  require(stops.nonEmpty)
+  private def isFailure:    Boolean = stops.exists(_.ret > 0)
+  private def stopMessages: Seq[String] = stops.map(_.getMessage)
   override def getMessage: String = {
-    val state = if (stopValue == 0) { s"Stopped" }
-    else { "Failure Stop" }
-    val where = stopInfo match {
-      case NoInfo => ""
-      case info   => s" at $info"
-    }
-    s"$state:$stopName:($stopValue)$where"
+    val state = if (isFailure) { "Failure Stop" }
+    else { "Stopped" }
+    state + ":" + stopMessages.mkString(" ")
   }
 
   def message: String = getMessage
+}
+
+case class StopData(ret: Int, name: String, info: Info) {
+  def getMessage: String = {
+    val where = info match {
+      case NoInfo => ""
+      case info   => s" at $info"
+    }
+    s"$name:($ret)$where"
+  }
 }

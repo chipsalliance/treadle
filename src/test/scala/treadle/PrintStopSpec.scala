@@ -94,6 +94,9 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
           tester.step(2)
         }
         tester.engine.stopped should be(true)
+        tester.engine.getStops.length should be(4)
+        tester.engine.getStops.map(_.ret) should be(Seq(0, 1, 2, 3))
+        // the last stop is the one furthest down the file
         tester.engine.lastStopResult.get should be(0)
       }
 

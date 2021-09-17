@@ -221,9 +221,11 @@ class ExecutionEngine(
       // save data state under roll back buffers if they are being used
       dataStore.saveData(wallTime.currentTime)
 
-      if (lastStopException.isDefined) {
-        writeVCD()
-        throw lastStopException.get
+      pLastStopException match {
+        case Some(exception) =>
+          pLastStopException = None
+          throw exception
+        case None =>
       }
     } catch {
       case throwable: Throwable =>
@@ -457,21 +459,29 @@ class ExecutionEngine(
   /** When a stop is triggered during execution the StopException generated is not thrown
     * and instead is placed here so it can be accessed at the end of execution
     */
-  var lastStopException: Option[StopException] = None
+  def lastStopException: Option[StopException] = pLastStopException
 
-  /** Is the circuit currently stopped.  StopOp throws a
-    * Stop
-    * @return
-    */
-  def stopped: Boolean = {
-    lastStopException.isDefined
-  }
+  // private to prevent the outside from modifying the value
+  private var pLastStopException: Option[StopException] = None
 
-  def lastStopResult: Option[Int] = {
-    lastStopException match {
-      case Some(stopException: StopException) => Some(stopException.stopValue)
-      case _ => None
+  /** Returns if a stop or assert has been triggered during the current execution */
+  def stopped: Boolean = allStops.nonEmpty
+
+  def lastStopResult: Option[Int] = allStops.headOption.map(_.ret)
+
+  /** keeps track of all the stops or asserts that were triggered during the current execution */
+  private var allStops: List[StopData] = List()
+
+  def getStops: Seq[StopData] = allStops
+
+  /** called from [[StopOp]] to register when a stop condition was active on a rising clock edge */
+  def registerStop(data: StopData): Unit = {
+    val except = lastStopException match {
+      case Some(e) => e.copy(stops = e.stops :+ data)
+      case None    => StopException(List(data))
     }
+    allStops = allStops :+ data
+    pLastStopException = Some(except)
   }
 
   def findTopLevelClocks(): Seq[Symbol] = {
