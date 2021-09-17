@@ -74,15 +74,8 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   val startTime: Long = System.nanoTime()
 
-  private def findTopLevelClocks() = {
-    engine.symbolTable.symbols.collect {
-      case symbol if symbol.firrtlType == ClockType && !(symbol.name.contains(".") || symbol.name.endsWith("/prev")) =>
-        symbol
-    }.toList
-  }
-
   val clockInfoList: Seq[ClockInfo] = if (clockInfo.isEmpty) {
-    val topClocks = findTopLevelClocks()
+    val topClocks = engine.findTopLevelClocks()
 
     if (topClocks.length > 2) {
       println(s"Warning: multiple top level clocks found without any ClockInfo information, is this intentional?")
