@@ -24,7 +24,7 @@ lazy val baseSettings = Seq(
   },
   // scala-steward:on
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.10" % "test",
     "org.scala-lang.modules" % "scala-jline" % "2.12.1",
   ),
   scalacOptions in Compile ++= Seq(
