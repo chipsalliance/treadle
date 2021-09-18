@@ -53,8 +53,7 @@ case class SimpleSingleClockStepper(
 
   var combinationalBumps: Long = 0L
 
-  /**
-    * This function is (and should only) be used by the VcdReplayTester
+  /** This function is (and should only) be used by the VcdReplayTester
     * @param clockSymbol clock to bump
     * @param value        new clock value should be zero or one, all non-zero values are treated as one
     */
@@ -73,15 +72,13 @@ case class SimpleSingleClockStepper(
     wallTime.incrementTime(value)
   }
 
-  /**
-    * Execute specified number of clock cycles (steps)
+  /** Execute specified number of clock cycles (steps)
     * @param steps number of clock cycles to advance
     */
   //scalastyle:off method.length
   override def run(steps: Int): Unit = {
 
-    /**
-      * This handles the possibility that a reset clearing was scheduled to occur during the time
+    /** This handles the possibility that a reset clearing was scheduled to occur during the time
       * interval
       */
     def handlePossibleReset(increment: Long): Long = {
@@ -103,8 +100,7 @@ case class SimpleSingleClockStepper(
       }
     }
 
-    /**
-      * Raise the clock and propagate changes
+    /** Raise the clock and propagate changes
       */
     def raiseClock(): Unit = {
       engine.setIntValue(clockSymbol, 1)
@@ -116,8 +112,7 @@ case class SimpleSingleClockStepper(
       combinationalBumps = 0L
     }
 
-    /**
-      * lower the clock
+    /** lower the clock
       */
     def lowerClock(): Unit = {
       engine.setIntValue(clockSymbol, 0)
@@ -166,8 +161,7 @@ case class SimpleSingleClockStepper(
 }
 
 //TODO (Chick) Add support for combinational delays here.
-/**
-  * Manage multiple top-level clocks
+/** Manage multiple top-level clocks
   * step is interpreted here to mean advance to the next clock cycle considering all the clocks
   *      multiple clocks may fire at that time
   * @param engine         engine for this stepper
@@ -200,8 +194,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
     }
   }
 
-  /**
-    * This function is (and should only) be used by the VcdReplayTester
+  /** This function is (and should only) be used by the VcdReplayTester
     * @param clockSymbol clock to bump
     * @param value        new clock value should be zero or one, all non-zero values are treated as one
     */
@@ -218,8 +211,7 @@ class MultiClockStepper(engine: ExecutionEngine, clockInfoList: Seq[ClockInfo], 
     }
   }
 
-  /**
-    * One step is defined here as the running until the next up clock transition
+  /** One step is defined here as the running until the next up clock transition
     * @param steps the number of up clocks to find and execute
     */
   override def run(steps: Int): Unit = {

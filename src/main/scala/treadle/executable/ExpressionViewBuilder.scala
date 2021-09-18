@@ -303,12 +303,23 @@ class ExpressionViewBuilder(
         case print @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
           expressionViews(symbolTable.printToPrintInfo(print).printSymbol) = processExpression(enableExpression)
 
+        case verify @ Verification(
+              Formal.Cover,
+              info,
+              clockExpression,
+              predicateExpression,
+              enableExpression,
+              message
+            ) =>
+          val expandedName = expand(verify.name)
+          expressionViews(symbolTable.verifyInfo(expandedName).verifySymbol) = processExpression(predicateExpression)
+
         case EmptyStmt =>
         case conditionally: Conditionally =>
           // logger.debug(s"got a conditionally $conditionally")
           throw TreadleException(s"conditionally unsupported in engine $conditionally")
         case _ =>
-          println(s"TODO: Unhandled statement $statement")
+          println(s"ExpressionViewBuilder:TODO: Unhandled statement $statement")
       }
     }
     // scalastyle:on

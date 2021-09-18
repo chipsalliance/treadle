@@ -9,8 +9,7 @@ import firrtl.{CircuitState, DependencyAPIMigration, Emitter, Transform}
 
 import scala.collection.mutable
 
-/**
-  * Printf statements that print registers will show wrong values
+/** Printf statements that print registers will show wrong values
   * unless this pass adds a delay for each register
   */
 class AugmentPrintf extends Transform with DependencyAPIMigration {
@@ -53,6 +52,22 @@ class AugmentPrintf extends Transform with DependencyAPIMigration {
           val newPrint: Print =
             p.mapExpr(insert(newStmts, namespace, p.info, p.clk)).asInstanceOf[Print].copy(en = wref)
           newStmts += newPrint
+          Block(newStmts.toSeq)
+        case v: Verification =>
+          val newStmts = mutable.ArrayBuffer[Statement]()
+          val enableNewName = namespace.newTemp
+          val enableWRef = WRef(enableNewName, v.en.tpe, NodeKind, SourceFlow)
+          newStmts += DefRegister(v.info, enableNewName, v.en.tpe, v.clk, UIntLiteral(0), UIntLiteral(0))
+          newStmts += Connect(v.info, enableWRef, v.en)
+
+          val predNewName = namespace.newTemp
+          val predWRef = WRef(predNewName, v.pred.tpe, NodeKind, SourceFlow)
+          newStmts += DefRegister(v.info, predNewName, v.pred.tpe, v.clk, UIntLiteral(0), UIntLiteral(0))
+          newStmts += Connect(v.info, predWRef, v.pred)
+
+          val newVerification: Verification =
+            v.mapExpr(insert(newStmts, namespace, v.info, v.clk)).asInstanceOf[Verification].copy(en = enableWRef)
+          newStmts += newVerification
           Block(newStmts.toSeq)
         case other => other
       }

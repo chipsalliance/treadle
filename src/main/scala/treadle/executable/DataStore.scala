@@ -10,8 +10,7 @@ import treadle.ScalaBlackBox
 
 import scala.collection.mutable
 
-/**
-  * Creates a data store for the three underlying data types.
+/** Creates a data store for the three underlying data types.
   * The numberOfBuffers is used to control the ability to rollback execution.
   * The meaning of the values of each slot must be maintained outside of this class.
   * This class only supports (2 ** 31) - 1 of any ints, longs or bigs.
@@ -431,17 +430,15 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     val clockValues = new Array[BigInt](n)
     val symbolValues = Array.ofDim[BigInt](symbols.length, n)
 
-    buffers.zipWithIndex.foreach {
-      case (buffer, i) =>
-        clockValues(i) = buffer.time
-        symbols.zipWithIndex.foreach {
-          case (symbol, j) =>
-            symbol.dataSize match {
-              case IntSize  => symbolValues(j)(i) = buffer.intData(symbol.index)
-              case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
-              case BigSize  => symbolValues(j)(i) = buffer.bigData(symbol.index)
-            }
+    buffers.zipWithIndex.foreach { case (buffer, i) =>
+      clockValues(i) = buffer.time
+      symbols.zipWithIndex.foreach { case (symbol, j) =>
+        symbol.dataSize match {
+          case IntSize  => symbolValues(j)(i) = buffer.intData(symbol.index)
+          case LongSize => symbolValues(j)(i) = buffer.longData(symbol.index)
+          case BigSize  => symbolValues(j)(i) = buffer.bigData(symbol.index)
         }
+      }
     }
     WaveformValues(clockValues, symbols, symbolValues)
   }

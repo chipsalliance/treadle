@@ -8,8 +8,7 @@ import scala.collection.concurrent.TrieMap
 
 object BitUtils {
   //================= Int Section ======================
-  /**
-    * creates a mask for all bits
+  /** creates a mask for all bits
     *
     * @param bitWidth size of signal
     * @return
@@ -18,8 +17,7 @@ object BitUtils {
     (1 << bitWidth) - 1
   }
 
-  /**
-    * creates a mask for only the unsigned bits
+  /** creates a mask for only the unsigned bits
     *
     * @param bitWidth size of signal
     * @return
@@ -28,8 +26,7 @@ object BitUtils {
     (1 << bitWidth) - 1
   }
 
-  /**
-    * creates a mask for just the sign bit
+  /** creates a mask for just the sign bit
     *
     * @param bitWidth size of signal
     * @return
@@ -38,8 +35,7 @@ object BitUtils {
     1 << (bitWidth - 1)
   }
 
-  /**
-    * creates the next power of two, a mask with just one bit at bitWidth + 1
+  /** creates the next power of two, a mask with just one bit at bitWidth + 1
     *
     * @param bitWidth size of signal
     * @return
@@ -55,8 +51,7 @@ object BitUtils {
   }
 
   //================= Long Section ======================
-  /**
-    * creates a mask for all bits
+  /** creates a mask for all bits
     *
     * @param bitWidth size of signal
     * @return
@@ -65,8 +60,7 @@ object BitUtils {
     (1L << bitWidth) - 1L
   }
 
-  /**
-    * creates a mask for only the unsigned bits
+  /** creates a mask for only the unsigned bits
     *
     * @param bitWidth size of signal
     * @return
@@ -75,8 +69,7 @@ object BitUtils {
     (1 << bitWidth) - 1
   }
 
-  /**
-    * creates a mask for just the sign bit
+  /** creates a mask for just the sign bit
     *
     * @param bitWidth size of signal
     * @return
@@ -85,8 +78,7 @@ object BitUtils {
     1L << (bitWidth - 1)
   }
 
-  /**
-    * creates the next power of two, a mask with just one bit at bitWidth + 1
+  /** creates the next power of two, a mask with just one bit at bitWidth + 1
     *
     * @param bitWidth size of signal
     * @return
@@ -102,8 +94,7 @@ object BitUtils {
   }
 
   //================= Big Section ======================
-  /**
-    * creates a mask for all bits
+  /** creates a mask for all bits
     * @param bitWidth size of signal
     * @return
     */
@@ -111,8 +102,7 @@ object BitUtils {
     (Big(1) << bitWidth) - Big(1)
   }
 
-  /**
-    * creates a mask for only the unsigned bits
+  /** creates a mask for only the unsigned bits
     * @param bitWidth size of signal
     * @return
     */
@@ -120,8 +110,7 @@ object BitUtils {
     (Big(1) << bitWidth) - Big(1)
   }
 
-  /**
-    * creates a mask for just the sign bit
+  /** creates a mask for just the sign bit
     * @param bitWidth size of signal
     * @return
     */
@@ -129,8 +118,7 @@ object BitUtils {
     Big(1) << (bitWidth - 1)
   }
 
-  /**
-    * creates the next power of two, a mask with just one bit at bitWidth + 1
+  /** creates the next power of two, a mask with just one bit at bitWidth + 1
     * @param bitWidth size of signal
     * @return
     */

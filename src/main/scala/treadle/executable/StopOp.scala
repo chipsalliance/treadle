@@ -11,21 +11,24 @@ case class StopOp(
   condition:       IntExpressionResult,
   hasStopped:      Symbol,
   dataStore:       DataStore,
-  clockTransition: ClockTransitionGetter)
+  clockTransition: ClockTransitionGetter,
+  stopName:        String,
+  schedulerOpt:    Option[Scheduler])
     extends Assigner {
 
   def run: FuncUnit = {
     val conditionValue = condition.apply() > 0
     if (conditionValue && clockTransition.isPosEdge) {
-      if (dataStore(hasStopped) > 0) {
-        if (isVerbose) {
-          println(s"previous stop has fired with result ${dataStore(hasStopped)}")
-        }
-      } else {
-        if (isVerbose) {
-          println(s"stop ${symbol.name} has fired")
-        }
-        dataStore(hasStopped) = returnValue + 1
+      if (isVerbose) {
+        println(s"stop ${symbol.name} has fired")
+      }
+      dataStore(hasStopped) = returnValue + 1
+      dataStore(symbol) = 1
+      dataStore.runPlugins(symbol, previousValue = 0)
+
+      val stopData = StopData(returnValue, stopName, info)
+      schedulerOpt.foreach { scheduler =>
+        scheduler.executionEngineOpt.foreach(_.registerStop(stopData))
       }
     }
 

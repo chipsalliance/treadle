@@ -62,8 +62,7 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
   }
 
   //scalastyle:off method.length
-  /**
-    * Applies changes to circuit based on current vcd time step to current inputs.
+  /** Applies changes to circuit based on current vcd time step to current inputs.
     *
     * @note At time step zero all possible changes are applied.
     * @return
@@ -226,12 +225,14 @@ class ReplVcdController(val repl: TreadleRepl, val engine: ExecutionEngine, val 
       case fileName :: _ =>
         repl.loadVcdScript(fileName)
       case Nil =>
-        repl.replConfig.getVcdInputFileName
+        repl.currentTreadleTesterOpt.foreach { tester =>
+          val vcdName = tester.engine.ast.main + ".vcd"
+          repl.loadVcdScript(vcdName)
+        }
     }
   }
 
-  /**
-    * command parser for vcd family of repl commands
+  /** command parser for vcd family of repl commands
     *
     * @param args arguments from user
     */

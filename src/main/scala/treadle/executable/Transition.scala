@@ -9,8 +9,7 @@ case object PositiveEdge extends Transition
 case object NegativeEdge extends Transition
 case object NoTransition extends Transition
 
-/**
-  * Used internally by assigners that care about clock transitions
+/** Used internally by assigners that care about clock transitions
   * @param clockSymbol the clock
   * @param prevClockSymbol the previous state of the clock
   * @param dataStore needed to get current and prev values
@@ -55,7 +54,8 @@ case class ClockBasedAssigner(
     } else if (isVerbose) {
       println(
         s"${assigner.symbol.name} <= register not updated" +
-          s" ${clockSymbol.name} state ${clockTransitionGetter.transition} not the required $requiredTransition"
+          s" ${clockSymbol.name} state ${clockTransitionGetter.transition} not the required $requiredTransition" +
+          s" (currently ${dataStore(assigner.symbol)})"
       )
     }
   }

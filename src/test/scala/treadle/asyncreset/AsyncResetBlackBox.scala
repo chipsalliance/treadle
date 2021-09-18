@@ -7,16 +7,15 @@ import logger.LazyLogging
 import treadle._
 import treadle.executable._
 
-/**
-  * Implements a single bit register with asynchronous reset
+/** Implements a single bit register with asynchronous reset
   */
 class AsyncResetReg(val instanceName: String) extends ScalaBlackBox with LazyLogging {
   override def name: String = "AsyncResetReg"
 
-  var nextValue: BigInt = Big0
+  var nextValue:    BigInt = Big0
   var currentValue: BigInt = Big0
-  var resetValue: BigInt = Big0
-  var enable: Boolean = false
+  var resetValue:   BigInt = Big0
+  var enable:       Boolean = false
 
   def getOutput(inputValues: Seq[BigInt], tpe: Type, outputName: String): BigInt = {
     currentValue
@@ -46,8 +45,7 @@ class AsyncResetReg(val instanceName: String) extends ScalaBlackBox with LazyLog
     Seq.empty
   }
 
-  /**
-    * Important note: The dependency of io_d on io_q makes this test work by making sure
+  /** Important note: The dependency of io_d on io_q makes this test work by making sure
     * that the assignments are sorted correctly topologically.
     * They mirror a similar pattern used on registers, necessary for treadle to be able
     * to update the circuit in a single pass.

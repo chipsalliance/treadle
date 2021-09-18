@@ -34,8 +34,7 @@ import scala.collection.mutable
   */
 object Memory {
   //scalastyle:off method.length
-  /**
-    * Builds all the symbols and dependencies for the specified memory.
+  /** Builds all the symbols and dependencies for the specified memory.
     * Pipelines are constructed as registers with a regular name and
     * a /in name.  Data travels up-index through a pipeline for both
     * read and write pipelines.
@@ -229,8 +228,7 @@ object Memory {
     Seq(memorySymbol) ++ readerSymbols ++ writerSymbols ++ readerWriterSymbols
   }
 
-  /**
-    * Construct views for all the memory elements
+  /** Construct views for all the memory elements
     * @param defMemory    current memory
     * @param expandedName full path name
     * @param scheduler    handle to execution components
@@ -409,8 +407,7 @@ object Memory {
     }
   }
 
-  /**
-    * Construct the machinery to move data into and out of the memory stack
+  /** Construct the machinery to move data into and out of the memory stack
     * @param defMemory    current memory
     * @param expandedName full path name
     * @param scheduler    handle to execution components
@@ -639,6 +636,13 @@ class MemoryInitializer(engine: ExecutionEngine) extends LazyLogging {
         loadMemory(referenceTarget, Seq(value))
       case MemoryArrayInitAnnotation(referenceTarget, values) =>
         loadMemory(referenceTarget, values)
+      case MemoryFileInlineAnnotation(referenceTarget, filename, hexOrBinary) =>
+        val base = hexOrBinary match {
+          case MemoryLoadFileType.Hex    => 16
+          case MemoryLoadFileType.Binary => 2
+        }
+        val values = MemoryFileParser.parse(filename, base)
+        loadMemory(referenceTarget, values)
       case _ =>
     }
   }
@@ -680,5 +684,22 @@ class MemoryInitializer(engine: ExecutionEngine) extends LazyLogging {
     memoryMetadata.foreach { metadata =>
       doInitialize(metadata.symbol, metadata.fileName, metadata.radix)
     }
+  }
+}
+
+private object MemoryFileParser {
+  def parse(filename: String, base: Int): Seq[BigInt] = {
+    require(base == 16 || base == 2)
+    val fullName = os.pwd / os.RelPath(filename)
+    os.read.lines(fullName).flatMap(l => parseLine(l.trim, base))
+  }
+  private def parseLine(line: String, base: Int): Seq[BigInt] = {
+    if (line.startsWith("//")) return Seq()
+    // deal with comments
+    val noComment = line.split("//").head
+    // tokenize at any whitespace
+    val tokens = noComment.split("\\s+").filterNot(_.isEmpty)
+    // turn into numbers
+    tokens.map(BigInt(_, base))
   }
 }

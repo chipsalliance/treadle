@@ -4,11 +4,11 @@ package treadle
 
 import java.io.PrintWriter
 import java.util.Calendar
-
 import firrtl.AnnotationSeq
+import firrtl.ir.ClockType
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
-import firrtl.stage.{FirrtlSourceAnnotation, OutputFileAnnotation}
+import firrtl.stage.OutputFileAnnotation
 import treadle.chronometry.UTC
 import treadle.coverage.{Coverage, CoverageReport}
 import treadle.executable._
@@ -17,8 +17,7 @@ import treadle.stage.TreadleTesterPhase
 //TODO: Indirect assignments to external modules input is possibly not handled correctly
 //TODO: Force values should work with multi-slot symbols
 
-/**
-  * Works a lot like the chisel classic tester compiles a firrtl input string
+/** Works a lot like the chisel classic tester compiles a firrtl input string
   * and allows poke, peek, expect and step
   *
   * pokes invalidate the underlying circuit
@@ -32,14 +31,10 @@ import treadle.stage.TreadleTesterPhase
 //class TreadleTester(input: String, optionsManager: HasTreadleSuite = TreadleTester.getDefaultManager) {
 class TreadleTester(annotationSeq: AnnotationSeq) {
 
-  def this(input: String, optionsManager: HasTreadleSuite, circuitForm: Any = 0) = {
-    this(optionsManager.toAnnotationSeq :+ FirrtlSourceAnnotation(input))
-  }
-
   var expectationsMet = 0
 
   //Keeps track of coverage
-  var lineValidators : List[Int] = Nil
+  var lineValidators: List[Int] = Nil
 
   treadle.random.setSeed(annotationSeq.collectFirst { case RandomSeedAnnotation(seed) => seed }.getOrElse(0L))
 
@@ -56,6 +51,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   val resetName: String = annotationSeq.collectFirst { case ResetNameAnnotation(rn) => rn }.getOrElse("reset")
   private val clockInfo = annotationSeq.collectFirst { case ClockInfoAnnotation(cia) => cia }.getOrElse(Seq.empty)
   private val writeVcd = annotationSeq.exists { case WriteVcdAnnotation => true; case _ => false }
+  private val writeCoverageReport = annotationSeq.contains(WriteCoverageCSVAnnotation)
   val vcdShowUnderscored: Boolean = annotationSeq.exists { case VcdShowUnderScoredAnnotation => true; case _ => false }
   private val callResetAtStartUp = annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }
   val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(engine.ast.main)
@@ -65,11 +61,10 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     VcdMemoryLoggingController(annotationSeq.collect { case MemoryToVCD(command) => command }, engine.symbolTable)
   }
 
-  /**
-    * Initializes the lineValidators attribute. Must be done after construction of the AST
+  /** Initializes the lineValidators attribute. Must be done after construction of the AST
     */
   def initLineValidators(): Unit = {
-    lineValidators = (for(_ <- 0 until Coverage.getNumValidators(engine.ast)) yield 0).toList
+    lineValidators = (for (_ <- 0 until Coverage.getNumValidators(engine.ast)) yield 0).toList
   }
 
   def setVerbose(value: Boolean = true): Unit = {
@@ -80,7 +75,15 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
   val startTime: Long = System.nanoTime()
 
   val clockInfoList: Seq[ClockInfo] = if (clockInfo.isEmpty) {
-    if (engine.symbolTable.contains("clock")) {
+    val topClocks = engine.findTopLevelClocks()
+
+    if (topClocks.length > 2) {
+      println(s"Warning: multiple top level clocks found without any ClockInfo information, is this intentional?")
+    }
+
+    if (topClocks.length == 1) {
+      Seq(ClockInfo(topClocks.head.name))
+    } else if (engine.symbolTable.contains("clock")) {
       Seq(ClockInfo())
     } else if (engine.symbolTable.contains("clk")) {
       Seq(ClockInfo("clk"))
@@ -112,8 +115,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
       new MultiClockStepper(engine = this.engine, clockInfoList, wallTime)
   }
 
-  /**
-    * Advance time in ticks of the [[treadle.chronometry.UTC]] wallTime, the default is picoseconds, but can be
+  /** Advance time in ticks of the [[treadle.chronometry.UTC]] wallTime, the default is picoseconds, but can be
     * read by the scaleName of the wallTime.  One should probably be advancing by some simple factor
     * of a clock period. The clockInfoList of the options should define this (could be more than one).
     * @param interval units are in units of the [[wallTime]] scale.
@@ -264,8 +266,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     }
   }
 
-  /**
-    * Pokes value to the port referenced by string
+  /** Pokes value to the port referenced by string
     * Warning: pokes to components other than input ports is currently
     * not supported but does not cause an error warning
     * This feature should be supported soon
@@ -302,8 +303,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     engine.getValue(name)
   }
 
-  /**
-    * require that a value be present on the named component
+  /** require that a value be present on the named component
     *
     * @param name component name
     * @param expectedValue the BigInt value required
@@ -321,16 +321,15 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     expectationsMet += 1
 
     //Initialize coverage validators if not done yet
-    if(lineValidators.isEmpty) initLineValidators()
+    if (lineValidators.isEmpty) initLineValidators()
 
     //Keep track of coverage
-    lineValidators = lineValidators.zip(Coverage.getValidators(engine.ast, this)).map(v => v._1.toInt | v._2.toInt)
+    lineValidators = lineValidators.zip(Coverage.getValidators(engine.ast, this)).map(v => v._1 | v._2)
   }
 
   def cycleCount: Long = clockStepper.cycleCount
 
-  /**
-    * Cycles the circuit n steps (with a default of one)
+  /** Cycles the circuit n steps (with a default of one)
     * At each step registers and memories are advanced and all other elements recomputed
     *
     * @param n cycles to perform
@@ -340,8 +339,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     clockStepper.run(n)
   }
 
-  /**
-    * Pokes value to the named memory at offset
+  /** Pokes value to the named memory at offset
     *
     * @param name  the name of a memory
     * @param index the offset in the memory
@@ -365,8 +363,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     }
   }
 
-  /**
-    * require that a value be present on the named component
+  /** require that a value be present on the named component
     *
     * @param name component name
     * @param expectedValue the BigInt value required
@@ -376,9 +373,23 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     if (value != expectedValue) {
       val renderer = new ExpressionViewRenderer(engine.dataStore, engine.symbolTable, engine.expressionViews)
       val calculation = renderer.render(engine.symbolTable(name), wallTime.currentTime)
-      fail(TreadleException(s"Error:expect($name, $expectedValue) got $value $message\n$calculation"))
+      fail(TreadleException(s"Error:expect($name($index), $expectedValue) got $value $message\n$calculation"))
     }
     expectationsMet += 1
+  }
+
+  /** Returns the number of times every cover statement has been true on a clock edge. */
+  def getCoverage(): List[(String, Long)] = {
+    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl.ir.Formal.Cover)
+    cov.map(c => c.symbol.name -> c.coverCount).toList
+  }
+
+  /** resets all coverage counters to zero */
+  def resetCoverage(): Unit = {
+    val cov = engine.symbolTable.verifyOps.filter(_.op == firrtl.ir.Formal.Cover)
+    cov.foreach { c =>
+      c.coverCount = 0
+    }
   }
 
   def waveformValues(
@@ -394,13 +405,12 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
     }
 
     if (symbolNames.length == 0) {
-      symbolNames.zipWithIndex.foreach {
-        case (symbolName, counter) =>
-          assert(
-            engine.symbolTable.contains(symbolName),
-            s""""$symbolName" : argument is not an element of this circuit"""
-          )
-          symbols.update(counter, engine.symbolTable(symbolName))
+      symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
+        assert(
+          engine.symbolTable.contains(symbolName),
+          s""""$symbolName" : argument is not an element of this circuit"""
+        )
+        symbols.update(counter, engine.symbolTable(symbolName))
       }
     }
 
@@ -415,9 +425,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   def isRegister(symbolName: String): Boolean = engine.symbolTable.isRegister(symbolName)
 
-  def getStopResult: Option[Int] = {
-    engine.lastStopResult
-  }
+  def getStopResult: Option[Int] = engine.lastStopResult
 
   def reportString: String = {
     val endTime = System.nanoTime()
@@ -429,17 +437,15 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
         see this report which should include the Failed in that case
      */
     def status: String = {
-      engine.lastStopResult match {
-        case Some(0) =>
-          s"Stopped: Stop result 0:"
-        case Some(stopResult) =>
-          s"Failed: Stop result $stopResult:"
-        case _ =>
+      engine.getStops match {
+        case Seq() =>
           if (isOK) {
             s"Success:"
           } else {
             s"Failed: Code ${failCode.get}"
           }
+        case more =>
+          "Failure Stop: " + more.map(_.getMessage).mkString(" ")
       }
     }
     s"test ${engine.ast.main} " +
@@ -447,25 +453,22 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
       f"in $cycleCount cycles in $elapsedSeconds%.6f seconds ${cycleCount / elapsedSeconds}%.2f Hz"
   }
 
-  /**
-    * A simplistic report of the number of expects that passed
+  /** A simplistic report of the number of expects that passed
     */
   def report(): Unit = {
     engine.writeVCD()
     println(reportString)
   }
 
-  /**
-    * Prints out the coverage report
+  /** Prints out the coverage report
     */
   def reportCoverage: CoverageReport =
-    if(annotationSeq.contains(EnableCoverageAnnotation))
+    if (annotationSeq.contains(EnableCoverageAnnotation))
       Coverage.reportCoverage(engine.ast, this)
     else throw new IllegalStateException("Coverage isn't enabled!")
 
-
   def finish: Boolean = {
-    engine.finish()
+    engine.finish(writeCoverageReport)
     engine.writeVCD()
     isOK
   }
@@ -473,28 +476,11 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
 object TreadleTester {
 
-  /**
-    * this convenience method avoids files laying around in current directory
+  /** Create a treadle tester
+    * @param annotations  Annotations containing all the metadata required for execution
+    *                     typical list should include a FirrtlSourceAnnotation
     * @return
     */
-  def getDefaultManager: HasTreadleSuite = {
-    new TreadleOptionsManager {
-      commonOptions = commonOptions.copy(targetDirName = "test_run_dir")
-    }
-  }
-
-  /**
-    * Create a treadle tester
-    * @param input           the firrtl to parse
-    * @param optionsManager  options manager
-    * @return
-    */
-  @deprecated("Use TreadleTester(annotationSeq) instead", "since ")
-  def apply(input: String, optionsManager: HasTreadleSuite = getDefaultManager): TreadleTester = {
-    val sourceAnnotation = FirrtlSourceAnnotation(input)
-    TreadleTester(sourceAnnotation +: optionsManager.toAnnotationSeq)
-  }
-
   def apply(annotations: AnnotationSeq): TreadleTester = {
     val newAnnotations = (new TreadleTesterPhase).transform(annotations)
     newAnnotations.collectFirst { case TreadleTesterAnnotation(tester) => tester }.getOrElse(

@@ -39,20 +39,12 @@ abstract class Command(val name: String) {
   }
 }
 
-/**
-  * Considered by many to be the world's best Treadle Repl
+/** Considered by many to be the world's best Treadle Repl
   * @param initialAnnotations initial settings.
   */
 class TreadleRepl(initialAnnotations: AnnotationSeq) {
   var annotationSeq: AnnotationSeq = initialAnnotations
   var stageOptions:  StageOptions = view[StageOptions](annotationSeq)
-  var replConfig:    ReplConfig = ReplConfig.fromAnnotations(annotationSeq)
-
-  def mutateAnnotations(newAnnotations: AnnotationSeq): Unit = {
-    annotationSeq = newAnnotations
-    stageOptions = view[StageOptions](annotationSeq)
-    replConfig = ReplConfig.fromAnnotations(annotationSeq)
-  }
 
   val terminal: Terminal = TerminalFactory.create()
   val console: ConsoleReader = annotationSeq.collectFirst { case OverrideOutputStream(s) => s } match {
@@ -101,7 +93,8 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   var currentVcdScript:  Option[VCD] = None
   var replVcdController: Option[ReplVcdController] = None
 
-  var outputFormat: String = replConfig.outputFormat
+  var outputFormat: String = annotationSeq.collectFirst { case TreadleReplDisplayFormat(format) => format }
+    .getOrElse("d")
 
   def formatOutput(value: BigInt): String = {
     outputFormat match {
@@ -157,8 +150,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     loadSource()
   }
 
-  /**
-    * First try and read script file in the target dir, if that fails try opening it in place
+  /** First try and read script file in the target dir, if that fails try opening it in place
     * @param fileName name of script file
     */
   def loadScript(fileName: String): Unit = {
@@ -220,8 +212,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
 
   var cycleCount: Long = 0L
 
-  /**
-    * Cycles the circuit n steps (with a default of one)
+  /** Cycles the circuit n steps (with a default of one)
     * At each step registers and memories are advanced and all other elements recomputed
     *
     * @param n cycles to perform
@@ -349,17 +340,16 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
               (0, script.length)
           }
           console.println(
-            script.lines.zipWithIndex.flatMap {
-              case (line, index) =>
-                if (index >= min && index < max) {
-                  if (index == script.currentLine + 1) {
-                    Some(Console.GREEN + f"$index%3d $line" + Console.RESET)
-                  } else {
-                    Some(f"$index%3d $line")
-                  }
+            script.lines.zipWithIndex.flatMap { case (line, index) =>
+              if (index >= min && index < max) {
+                if (index == script.currentLine + 1) {
+                  Some(Console.GREEN + f"$index%3d $line" + Console.RESET)
                 } else {
-                  None
+                  Some(f"$index%3d $line")
                 }
+              } else {
+                None
+              }
             }.mkString("\n")
           )
         }
@@ -1061,14 +1051,14 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
           }
 
           def getSource: String = {
-            annotationSeq.collectFirst {
-              case FirrtlSourceAnnotation(firrtl) => firrtl
+            annotationSeq.collectFirst { case FirrtlSourceAnnotation(firrtl) =>
+              firrtl
             }.getOrElse {
-              annotationSeq.collectFirst {
-                case FirrtlCircuitAnnotation(circuit) => circuit.serialize
+              annotationSeq.collectFirst { case FirrtlCircuitAnnotation(circuit) =>
+                circuit.serialize
               }.getOrElse {
-                annotationSeq.collectFirst {
-                  case TreadleCircuitStateAnnotation(state) => state.circuit.serialize
+                annotationSeq.collectFirst { case TreadleCircuitStateAnnotation(state) =>
+                  state.circuit.serialize
                 }.getOrElse {
                   "Can't find initial firrtl. Working low firrtl is\n" + engine.ast.serialize
                 }
@@ -1290,13 +1280,12 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
             val symbolNames = args.tail.tail
             val numSymbols = symbolNames.length
             val symbols: Array[Symbol] = new Array[Symbol](numSymbols)
-            symbolNames.zipWithIndex.foreach {
-              case (symbolName, counter) =>
-                assert(
-                  engine.symbolTable.contains(symbolName),
-                  s""""$symbolName" : argument is not an element of this circuit"""
-                )
-                symbols.update(counter, engine.symbolTable(symbolName))
+            symbolNames.zipWithIndex.foreach { case (symbolName, counter) =>
+              assert(
+                engine.symbolTable.contains(symbolName),
+                s""""$symbolName" : argument is not an element of this circuit"""
+              )
+              symbols.update(counter, engine.symbolTable(symbolName))
             }
 
             val waveformValues: WaveformValues =
@@ -1361,7 +1350,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
             case Some("markdown") =>
               console.println("| command | description |")
               console.println("| ------- | ----------- |")
-              Commands.commands.foreach { command =>
+              val helpText = Commands.commands.map { command =>
                 val (column1, column2) = command.usage
                 val escapeColumn1 = column1
                   .replaceAll(raw"\|", "&#124;")
@@ -1373,16 +1362,19 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
                   .replaceAll("<", raw"\<")
                   .replaceAll(">", raw"\<")
 
-                console.println(s"| $escapeColumn1 | $escapeColumn2 |")
-              }
+                s"| $escapeColumn1 | $escapeColumn2 |"
+              }.sorted.mkString("\n")
+              console.println(helpText)
             case _ =>
               val maxColumn1Width = Commands.commands.map(_.usage._1.length).max + 2
-              Commands.commands.foreach { command =>
+              val helpText = Commands.commands.map { command =>
                 val (column1, column2) = command.usage
                 terminal.getWidth
 
-                console.println(s"$column1${" " * (maxColumn1Width - column1.length)} $column2")
-              }
+                s"$column1${" " * (maxColumn1Width - column1.length)} $column2"
+              }.sorted.mkString("\n")
+
+              console.println(helpText)
           }
         }
       },
@@ -1409,8 +1401,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     }
   }
 
-  /**
-    * gets the next line from either the current executing script or from the console.
+  /** gets the next line from either the current executing script or from the console.
     * Strips comments from the line, may result in empty string, command parser is ok with that
     *
     * @return
@@ -1449,22 +1440,22 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
   def run(): Unit = {
     console.setPrompt("treadle>> ")
 
-    mutateAnnotations(annotationSeq)
-
     try {
       loadSource()
 
-      if (!annotationSeq.exists(_.isInstanceOf[TreadleTesterAnnotation])) {
-        if (replConfig.firrtlSourceName.nonEmpty) {
-          loadFile(replConfig.firrtlSourceName)
+      annotationSeq.collectFirst { case TreadleScriptFile(name) => name }.foreach { scriptName =>
+        loadScript(scriptName)
+      }
+      if (annotationSeq.contains(TreadleReplUseVcd)) {
+        annotationSeq.collectFirst { case TreadleVcdScriptFileOverride(vcdName) => vcdName } match {
+          case Some(vcdName) =>
+            loadVcdScript(vcdName)
+          case _ =>
+            currentTreadleTesterOpt.foreach { tester =>
+              val vcdName = tester.engine.ast.main + ".vcd"
+              loadVcdScript(vcdName)
+            }
         }
-      }
-      if (replConfig.scriptName.nonEmpty) {
-        loadScript(replConfig.scriptName)
-      }
-      if (replConfig.useVcdScript) {
-        val fileName = replConfig.getVcdInputFileName
-        loadVcdScript(fileName)
       }
     } catch {
       case t: TreadleException =>
@@ -1475,7 +1466,7 @@ class TreadleRepl(initialAnnotations: AnnotationSeq) {
     }
     buildCompletions()
 
-    if (replConfig.runScriptAtStart) {
+    if (annotationSeq.contains(TreadleReplRunScriptAtStartup)) {
       currentScript match {
         case Some(script) =>
           script.reset()
@@ -1544,11 +1535,6 @@ object TreadleRepl {
   def apply(annotationSeq: AnnotationSeq): TreadleRepl = {
     val newAnnos = (new TreadleTesterPhase).transform(annotationSeq)
     new TreadleRepl(newAnnos)
-  }
-
-  def execute(optionsManager: TreadleOptionsManager with HasReplConfig): Unit = {
-    val repl = TreadleRepl(optionsManager.toAnnotationSeq)
-    repl.run()
   }
 
   def main(args: Array[String]): Unit = {

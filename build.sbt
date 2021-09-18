@@ -1,19 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-def javacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // Scala 2.12 requires Java 8. We continue to generate
-    //  Java 7 compatible code for Scala 2.11
-    //  for compatibility with old clients.
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 =>
-        Seq("-source", "1.7", "-target", "1.7")
-      case _ =>
-        Seq("-source", "1.8", "-target", "1.8")
-    }
-  }
-}
-
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.5-SNAPSHOT")
 
@@ -21,8 +7,9 @@ lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
   version := "1.5-SNAPSHOT",
-  scalaVersion := "2.13.4",
-  crossScalaVersions := Seq("2.13.4", "2.12.10", "2.11.12"),
+  scalaVersion := "2.12.14",
+  crossScalaVersions := Seq("2.13.6", "2.12.13"),
+
   // enables using control-c in sbt CLI
   cancelable in Global := true,
   resolvers ++= Seq(
@@ -32,20 +19,13 @@ lazy val baseSettings = Seq(
   ),
   // Ignore dependencies on Berkeley artifacts.
   // scala-steward:off
-  libraryDependencies ++= (Seq("firrtl").map { dep: String =>
+  libraryDependencies ++= Seq("firrtl").map { dep: String =>
     "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
-  }),
+  },
   // scala-steward:on
-  // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
-  // when compiling tests under 2.11.12
-  // An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
-    "junit" % "junit" % "4.13" % "test",
-    "org.scalatest" %% "scalatest" % "3.2.2" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
-    "com.github.scopt" %% "scopt" % "3.7.1",
+    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
     "org.scala-lang.modules" % "scala-jline" % "2.12.1",
-    "org.json4s" %% "json4s-native" % "3.6.10"
   ),
   scalacOptions in Compile ++= Seq(
     "-deprecation",
@@ -54,7 +34,8 @@ lazy val baseSettings = Seq(
     "-language:existentials",
     "-language:implicitConversions"
   ),
-  javacOptions ++= javacOptionsVersion(scalaVersion.value)
+  // Always target Java8 for maximum compatibility
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 )
 
 lazy val assemblySettings = Seq(
@@ -68,7 +49,7 @@ lazy val publishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
-  pomExtra := (<url>http://chisel.eecs.berkeley.edu/</url>
+  pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
   <licenses>
     <license>
       <name>apache_v2</name>
@@ -82,7 +63,7 @@ lazy val publishSettings = Seq(
       <name>Charles Markley</name>
       <url>https://aspire.eecs.berkeley.edu/author/chick/</url>
     </developer>
-  </developers>),
+  </developers>,
   publishTo := {
     val v = version.value
     val nexus = "https://oss.sonatype.org/"
@@ -117,3 +98,9 @@ lazy val treadle = (project in file("."))
   .settings(assemblySettings)
   .settings(publishSettings)
   .settings(docSettings)
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    buildInfoPackage := name.value,
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  )

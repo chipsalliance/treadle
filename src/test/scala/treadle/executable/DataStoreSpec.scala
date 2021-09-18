@@ -50,7 +50,7 @@ class DataStoreSpec extends AnyFreeSpec with Matchers {
           override def run(symbol: Symbol, offset: Int, previousValue: Big): Unit = {
             extrema(symbol.name) = extrema.get(symbol.name) match {
               case Some(extrema) => extrema.update(dataStore(symbol))
-              case None => Extrema(dataStore(symbol), dataStore(symbol))
+              case None          => Extrema(dataStore(symbol), dataStore(symbol))
             }
           }
         }

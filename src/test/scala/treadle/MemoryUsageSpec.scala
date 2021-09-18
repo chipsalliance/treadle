@@ -3,17 +3,15 @@
 package treadle
 
 import java.io.{File, PrintWriter}
-
 import firrtl.FileUtils
 import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
 import firrtl.stage.FirrtlSourceAnnotation
 import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import treadle.executable.StopException
+import treadle.executable.{StopException, TreadleException}
 
-/**
-  * Created by chick on 4/30/16.
+/** Created by chick on 4/30/16.
   */
 //scalastyle:off magic.number
 class MemoryUsageSpec extends AnyFreeSpec with Matchers with LazyLogging {
@@ -563,10 +561,48 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers with LazyLogging {
         |""".stripMargin
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
-
       intercept[StopException] {
         tester.step(100)
       }
     }
   }
+
+  "memory expect errors should include index in error" in {
+    val input =
+      """circuit Test :
+        |  module Test :
+        |    input clock    : Clock
+        |    input in1      : UInt<8>
+        |    input addr     : UInt<8>
+        |    input write_en : UInt<1>
+        |    output out1    : UInt<8>
+        |    mem m :
+        |      data-type => UInt<8>
+        |      depth => 32
+        |      read-latency => 0
+        |      write-latency => 1
+        |      reader => read
+        |      writer => write
+        |
+        |    m.read.clk <= clock
+        |    m.read.en <= eq(write_en, UInt<1>(0))
+        |    m.read.addr <= addr
+        |
+        |    m.write.clk <= clock
+        |    m.write.en <= eq(write_en, UInt<1>(1))
+        |    m.write.mask <= UInt<8>("hff")
+        |    m.write.addr <= addr
+        |    m.write.data <= in1
+        |
+        |    out1 <= m.read.data
+      """.stripMargin
+
+    val e = intercept[TreadleException] {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
+        tester.expectMemory("m", 11, 17)
+      }
+    }
+    e.getMessage should include("Error:expect(m(11), 17) got 0")
+  }
+
 }

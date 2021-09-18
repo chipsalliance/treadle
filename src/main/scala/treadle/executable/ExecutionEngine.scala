@@ -2,13 +2,13 @@
 
 package treadle.executable
 
-import java.io.PrintWriter
-
-import firrtl.annotations.ReferenceTarget
+import java.io.{File, PrintWriter}
+import firrtl.annotations.{PresetAnnotation, ReferenceTarget}
 import firrtl.annotations.TargetToken.Instance
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
 import firrtl.options.Viewer.view
+import firrtl.stage.OutputFileAnnotation
 import firrtl.{AnnotationSeq, MemKind, PortKind, RegKind}
 import logger.LazyLogging
 import treadle._
@@ -33,6 +33,11 @@ class ExecutionEngine(
 
   var vcdOption:   Option[VCD] = None
   var vcdFileName: String = ""
+
+  // use the generated file root to create files in working dir with desired suffixes
+  private val topName: String = annotationSeq.collectFirst { case OutputFileAnnotation(ofn) => ofn }.getOrElse(ast.main)
+  private val stageOptions = view[StageOptions](annotationSeq)
+  val generatedFileRoot: String = stageOptions.getBuildFileName(topName)
 
   val expressionViewRenderer = new ExpressionViewRenderer(
     dataStore,
@@ -79,8 +84,7 @@ class ExecutionEngine(
     scheduler.setVerboseAssign(verbose)
   }
 
-  /**
-    * turns on evaluator debugging.  Can make output quite
+  /** turns on evaluator debugging.  Can make output quite
     * verbose.
     *
     * @param isVerbose  The desired verbose setting
@@ -96,10 +100,6 @@ class ExecutionEngine(
   }
 
   val timer = new Timer
-
-  if (annotationSeq.contains { RandomizeAtStartupAnnotation }) {
-    randomize()
-  }
 
   if (verbose) {
     if (scheduler.orphanedAssigns.nonEmpty) {
@@ -221,11 +221,11 @@ class ExecutionEngine(
       // save data state under roll back buffers if they are being used
       dataStore.saveData(wallTime.currentTime)
 
-      if (lastStopResult.isDefined) {
-        writeVCD()
-        val stopKind = if (lastStopResult.get > 0) { "Failure Stop" }
-        else { "Stopped" }
-        throw StopException(s"$stopKind: result ${lastStopResult.get}")
+      pLastStopException match {
+        case Some(exception) =>
+          pLastStopException = None
+          throw exception
+        case None =>
       }
     } catch {
       case throwable: Throwable =>
@@ -256,8 +256,7 @@ class ExecutionEngine(
     }
   }
 
-  /**
-    * Update the dataStore with the supplied information.
+  /** Update the dataStore with the supplied information.
     * IMPORTANT: This should never be used internally.
     *
     * @param name  name of value to set
@@ -328,8 +327,7 @@ class ExecutionEngine(
     value
   }
 
-  /**
-    * Update the dataStore with the supplied information.
+  /** Update the dataStore with the supplied information.
     * IMPORTANT: This should never be used internally.
     *
     * @param symbol symbol to set
@@ -458,40 +456,57 @@ class ExecutionEngine(
 
   private val stopHappenedSymbolOpt = symbolTable.get(StopOp.stopHappenedName)
 
-  /**
-    * returns that value specified by a StopOp when
-    * its condition is satisfied.  Only defined when
-    * circuit is currently stopped.
-    * @return
+  /** When a stop is triggered during execution the StopException generated is not thrown
+    * and instead is placed here so it can be accessed at the end of execution
     */
-  def lastStopResult: Option[Int] = {
-    stopHappenedSymbolOpt match {
-      case Some(hasStoppedSymbol) =>
-        val stopValue = dataStore(hasStoppedSymbol).toInt
-        if (stopValue > 0) {
-          Some(stopValue - 1)
-        } else {
-          None
-        }
-      case _ =>
-        None
+  def lastStopException: Option[StopException] = pLastStopException
+
+  // private to prevent the outside from modifying the value
+  private var pLastStopException: Option[StopException] = None
+
+  /** Returns if a stop or assert has been triggered during the current execution */
+  def stopped: Boolean = allStops.nonEmpty
+
+  def lastStopResult: Option[Int] = allStops.headOption.map(_.ret)
+
+  /** keeps track of all the stops or asserts that were triggered during the current execution */
+  private var allStops: List[StopData] = List()
+
+  def getStops: Seq[StopData] = allStops
+
+  /** called from [[StopOp]] to register when a stop condition was active on a rising clock edge */
+  def registerStop(data: StopData): Unit = {
+    val except = lastStopException match {
+      case Some(e) => e.copy(stops = e.stops :+ data)
+      case None    => StopException(List(data))
     }
+    allStops = allStops :+ data
+    pLastStopException = Some(except)
   }
 
-  /**
-    * Is the circuit currently stopped.  StopOp throws a
-    * Stop
-    * @return
-    */
-  def stopped: Boolean = {
-    lastStopResult.isDefined
+  def findTopLevelClocks(): Seq[Symbol] = {
+    val inputs = symbolTable.symbols.filter(s => symbolTable.isTopLevelInput(s.name))
+    inputs.filter(_.firrtlType == firrtl.ir.ClockType).toList
   }
 
-  def finish(): Unit = {
+  /*
+  This is where things should go that need to be done at the end of the run.
+  Currently this telling black boxes to finish up things if they need to
+  and have the coverage counts recorded if they exist.
+   */
+  def finish(writeCoverageReport: Boolean = false): Unit = {
     symbols.foreach { symbol =>
       symbolTable.getBlackboxImplementation(symbol).foreach { blackBox =>
         blackBox.finish()
       }
+    }
+    if (writeCoverageReport && symbolTable.verifyOps.nonEmpty) {
+      val text = symbolTable.verifyOps.map { verifyOp =>
+        s"${verifyOp.info.toString.trim},${verifyOp.message.escape},${verifyOp.clockCount},${verifyOp.coverCount}"
+      }.sorted.mkString("\n")
+      val writer = new PrintWriter(new File(generatedFileRoot + ".coverage.txt"))
+      writer.write(text)
+      writer.close()
     }
   }
 
@@ -547,6 +562,10 @@ class ExecutionEngine(
     assigner.setVerbose(verbose)
     assigner
   }
+
+  if (annotationSeq.contains { RandomizeAtStartupAnnotation }) {
+    randomize()
+  }
 }
 
 object ExecutionEngine extends LazyLogging {
@@ -554,8 +573,7 @@ object ExecutionEngine extends LazyLogging {
   val VCDHookName = "log-vcd"
 
   //scalastyle:off method.length
-  /**
-    * Factory to create an execution engine
+  /** Factory to create an execution engine
     * @param annotationSeq  annotations control all
     * @param wallTime       external synthetic simple time
     * @return
@@ -593,6 +611,7 @@ object ExecutionEngine extends LazyLogging {
       .map { s =>
         PlusArg(s)
       }
+    val registerPresets: Seq[ReferenceTarget] = annotationSeq.collect { case PresetAnnotation(target) => target }
 
     val validIfIsRandom = annotationSeq.exists { case ValidIfIsRandomAnnotation => true; case _ => false }
     val verbose = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
@@ -620,11 +639,12 @@ object ExecutionEngine extends LazyLogging {
       validIfIsRandom,
       prefixPrintfWithTime,
       blackBoxFactories,
-      plusArgs
+      plusArgs,
+      registerPresets
     )
 
     timer("Build Compiled Expressions") {
-      compiler.compile(circuit, blackBoxFactories)
+      compiler.compile(circuit)
     }
 
     val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(

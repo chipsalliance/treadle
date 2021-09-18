@@ -11,8 +11,7 @@ import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 
-/**
-  * Illustrate a black box that has multiple outputs
+/** Illustrate a black box that has multiple outputs
   * This one creates 3 outputs each with a different increment of the input
   */
 class FanOutAdder extends ScalaBlackBox {
@@ -114,7 +113,6 @@ class BlackBoxOutputSpec extends AnyFreeSpec with Matchers {
       )
 
       TreadleTestHarness(FirrtlSourceAnnotation(adderInput) +: options) { tester =>
-
         for (i <- 0 until 10) {
           tester.poke("in", i)
           tester.expect("out1", i + 1)
@@ -156,7 +154,6 @@ class BlackBoxOutputSpec extends AnyFreeSpec with Matchers {
       )
 
       TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
-
         tester.poke("clear", 1)
         tester.step()
         tester.poke("clear", 0)

@@ -15,8 +15,9 @@ class ApplySugarProblemSpec extends AnyFreeSpec with Matchers with LazyLogging {
   }
 
   class Add(f1: IntFunc, f2: IntFunc, verbose: Boolean) extends HasIntFunc {
-    val apply: FuncInt = if (verbose) { () => {
-      logger.debug("silent")
+    val apply: FuncInt = if (verbose) { () =>
+      {
+        logger.debug("silent")
         f1() + f2()
       }
     } else { () =>

@@ -112,9 +112,8 @@ class VcdRoundTripTest extends AnyFreeSpec with Matchers with LazyLogging {
       val madeKeys = madeVcd.wires.keys.toSeq.sorted
       val readKeys = readVcd.wires.keys.toSeq.sorted
 
-      madeKeys.zip(readKeys).foreach {
-        case (k1, k2) =>
-          k1 should be(k2)
+      madeKeys.zip(readKeys).foreach { case (k1, k2) =>
+        k1 should be(k2)
       }
 
       madeKeys.foreach { key =>

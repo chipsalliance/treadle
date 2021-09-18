@@ -27,9 +27,8 @@ class VcdDiffStage extends Stage {
 
   override def run(annotations: AnnotationSeq): AnnotationSeq = {
 
-    val vcds = annotations.collect {
-      case ProgramArgsAnnotation(fileName) =>
-        VCD.read(fileName)
+    val vcds = annotations.collect { case ProgramArgsAnnotation(fileName) =>
+      VCD.read(fileName)
     }
     if (vcds.length != 2) {
       println("Error: Two files must be specifed for diff to run\nUsage: VCDDiff options <file1> <file2>")

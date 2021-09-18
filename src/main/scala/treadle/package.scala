@@ -37,8 +37,7 @@ package object treadle {
     }
   }
 
-  /**
-    * Utility function that computes bits required for a number
+  /** Utility function that computes bits required for a number
     *
     * @param n number of interest
     * @return
@@ -47,8 +46,7 @@ package object treadle {
     n.bitLength + (if (n < 0) 1 else 0)
   }
 
-  /**
-    * computes the smallest and largest values that will fit in an SInt
+  /** computes the smallest and largest values that will fit in an SInt
     * @param width width of SInt
     * @return tuple(minVale, maxValue)
     */
@@ -57,8 +55,7 @@ package object treadle {
     (-nearestPowerOf2, nearestPowerOf2 - 1)
   }
 
-  /**
-    * computes the smallest and largest values that will fit in a UInt
+  /** computes the smallest and largest values that will fit in a UInt
     * @param width width of SInt
     * @return tuple(minVale, maxValue)
     */
@@ -71,8 +68,7 @@ package object treadle {
     }
   }
 
-  /**
-    * return the smallest number of bits required to hold the given number in
+  /** return the smallest number of bits required to hold the given number in
     * an SInt
     * Note: positive numbers will get one minimum width one higher than would be
     * required for a UInt
@@ -92,8 +88,7 @@ package object treadle {
     }
   }
 
-  /**
-    * return the smallest number of bits required to hold the given number in
+  /** return the smallest number of bits required to hold the given number in
     * an UInt
     *
     * @param num number to find width for

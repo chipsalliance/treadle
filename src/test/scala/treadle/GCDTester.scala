@@ -63,7 +63,6 @@ class GCDTester extends AnyFlatSpec with Matchers with LazyLogging {
       } yield (x, y, computeGcd(x, y)._1)
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(gcdFirrtl))) { tester =>
-
       val startTime = System.nanoTime()
       tester.poke("clock", 1)
 

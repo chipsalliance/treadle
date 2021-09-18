@@ -45,7 +45,6 @@ class ClockedManuallySpec extends AnyFreeSpec with Matchers {
     )
 
     TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
-
       tester.advanceTime(300)
 
       tester.poke("clock", 0)
@@ -87,7 +86,6 @@ class ClockedManuallySpec extends AnyFreeSpec with Matchers {
     )
 
     TreadleTestHarness(FirrtlSourceAnnotation(input) +: options) { tester =>
-
       tester.advanceTime(10)
 
       tester.poke("in1", 1)
@@ -135,7 +133,6 @@ class ClockedManuallySpec extends AnyFreeSpec with Matchers {
   "should support (basic) UInt<1> clocks" in {
     val options = Seq(TargetDirAnnotation("test_run_dir/manually_clocked_neg"))
     TreadleTestHarness(FirrtlSourceAnnotation(circuit2) +: options) { tester =>
-
       // init
       tester.poke("clock", 0)
       tester.poke("reset", 0)

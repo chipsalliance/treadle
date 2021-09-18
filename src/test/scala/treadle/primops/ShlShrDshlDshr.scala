@@ -8,7 +8,14 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable._
 import treadle.utils.Render
-import treadle.{BitTwiddlingUtils, TreadleTestHarness, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{
+  extremaOfSIntOfWidth,
+  extremaOfUIntOfWidth,
+  BitTwiddlingUtils,
+  IntWidthTestValuesGenerator,
+  TestUtils,
+  TreadleTestHarness
+}
 
 // scalastyle:off magic.number
 class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
@@ -22,7 +29,7 @@ class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
         j <- 0 to bitWidth * 2
       } {
         val a = i.toInt
-        val b = j.toInt
+        val b = j
         val staticShifter = ShlInts(() => a, () => b).apply _
         val dynamicShifter = DshlInts(() => a, () => b).apply _
         val staticExpected = BitTwiddlingUtils.shl(a, b).toInt
@@ -88,14 +95,16 @@ class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
         j <- 0 to bitWidth * 2
       } {
         val a = i.toInt
-        val b = j.toInt
+        val b = j
         val staticShifter = ShlInts(() => a, () => b).apply _
         val dynamicShifter = DshlInts(() => a, () => b).apply _
         val staticExpected = BitTwiddlingUtils.shl(a, b).toInt
 
-        logger.debug(f"inputs $a%5d (${Render.binary(a, 4)})" +
-          f" << $b%5d " +
-          f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" << $b%5d " +
+            f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})"
+        )
 
         staticShifter() should be(staticExpected)
         dynamicShifter() should be(staticExpected)
@@ -112,14 +121,16 @@ class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
         j <- 0 to bitWidth * 2
       } {
         val a = i.toInt
-        val b = j.toInt
+        val b = j
         val staticShifter = ShrInts(() => a, () => b).apply _
         val dynamicShifter = DshrInts(() => a, () => b).apply _
         val staticExpected = BitTwiddlingUtils.shr(a, b).toInt
 
-        logger.debug(f"inputs $a%5d (${Render.binary(a, 4)})" +
-          f" >> $b%5d " +
-          f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" >> $b%5d " +
+            f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})"
+        )
 
         staticShifter() should be(staticExpected)
         dynamicShifter() should be(staticExpected)
@@ -134,17 +145,50 @@ class ShlShrDshlDshr extends AnyFreeSpec with Matchers with LazyLogging {
         j <- 0 to bitWidth * 2
       } {
         val a = i.toInt
-        val b = j.toInt
+        val b = j
         val staticShifter = ShrInts(() => a, () => b).apply _
         val dynamicShifter = DshrInts(() => a, () => b).apply _
         val staticExpected = BitTwiddlingUtils.shr(a, b).toInt
 
-        logger.debug(f"inputs $a%5d (${Render.binary(a, 4)})" +
-          f" >> $b%5d " +
-          f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})")
+        logger.debug(
+          f"inputs $a%5d (${Render.binary(a, 4)})" +
+            f" >> $b%5d " +
+            f" $staticExpected%5d (${Render.binary(staticExpected, bitWidth)})"
+        )
 
         staticShifter() should be(staticExpected)
         dynamicShifter() should be(staticExpected)
+      }
+    }
+  }
+
+  "Dshr should work for pathological edge cases" in {
+    def dshrIntFirrtl(width: Int): String = {
+      s"""
+         |;buildInfoPackage: chisel3, version: 3.5-SNAPSHOT, scalaVersion: 2.12.14, sbtVersion: 1.3.10
+         |circuit ShiftTestInt :
+         |  module ShiftTestInt :
+         |    input clock : Clock
+         |    input reset : UInt<1>
+         |    input a : UInt<$width>
+         |    input b : UInt<30>
+         |    output dshrOut : UInt<$width>
+         |
+         |    node _T = dshr(a, b) @[TreadleDshrTest.scala 15:16]
+         |    dshrOut <= _T @[TreadleDshrTest.scala 15:11]
+         |
+         |""".stripMargin
+    }
+
+    for (width <- new IntWidthTestValuesGenerator(1, 70)) {
+      TreadleTestHarness(Seq(FirrtlSourceAnnotation(dshrIntFirrtl(width)))) { tester =>
+        tester.poke("a", 1)
+
+        for (i <- 1 until 70) {
+          tester.poke("b", i)
+          tester.step()
+          tester.expect("dshrOut", BigInt(0))
+        }
       }
     }
   }

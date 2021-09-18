@@ -4,7 +4,7 @@ package treadle
 
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.annotations._
-import firrtl.stage.FirrtlSourceAnnotation
+import firrtl.stage.{FirrtlFileAnnotation, FirrtlSourceAnnotation}
 import logger.{LazyLogging, LogLevel, Logger}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must._
@@ -52,7 +52,6 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
         )
       )
     ) { tester =>
-
       Logger.setLevel(classOf[MemoryInitializationTest], LogLevel.None)
       for (i <- 0 until 16) {
         tester.poke("address", i)
@@ -198,7 +197,6 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
         )
       )
     ) { tester =>
-
       Logger.setLevel(classOf[MemoryInitializationTest], LogLevel.None)
 
       logger.debug {
@@ -247,5 +245,33 @@ class MemoryInitializationTest extends AnyFreeSpec with Matchers with LazyLoggin
       logger.debug(f"Average of out5 (random) is ${out5Sum / 16.0}%6.2f")
       out5Sum must be > 0
     }
+  }
+
+  private def testMemFileInit(filename: String, expected: Seq[Int], tpe: MemoryLoadFileType): Unit = {
+    val annos = Seq(
+      FirrtlFileAnnotation("src/test/resources/ReadMem.fir"),
+      MemoryFileInlineAnnotation(
+        CircuitTarget("ReadMem").module("ReadMem").ref("m"),
+        s"src/test/resources/$filename",
+        tpe
+      )
+    )
+    TreadleTestHarness(annos) { tester =>
+      expected.zipWithIndex.foreach { case (expect, addr) =>
+        tester.poke("addr", addr)
+        tester.step()
+        assert(tester.peek("value") == expect)
+      }
+      tester.step()
+      tester.finish
+    }
+  }
+
+  "Initialize memories from file with hex values" in {
+    testMemFileInit("ReadMem.hex", Seq(0xab, 0xcd, 0xef), MemoryLoadFileType.Hex)
+  }
+
+  "Initialize memories from file with binary values" in {
+    testMemFileInit("ReadMem.bin", Seq(2, 0, 1), MemoryLoadFileType.Binary)
   }
 }

@@ -8,7 +8,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable.{AndInts, OrInts, XorInts}
 import treadle.utils.Render
-import treadle.{BitTwiddlingUtils, TreadleTestHarness, extremaOfSIntOfWidth, extremaOfUIntOfWidth}
+import treadle.{extremaOfSIntOfWidth, extremaOfUIntOfWidth, BitTwiddlingUtils, TreadleTestHarness}
 
 // scalastyle:off magic.number
 class AndOrXor extends AnyFreeSpec with Matchers with LazyLogging {

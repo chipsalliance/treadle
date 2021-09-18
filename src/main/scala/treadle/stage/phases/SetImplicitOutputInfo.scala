@@ -8,8 +8,7 @@ import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 import firrtl.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
 import treadle.TreadleCircuitStateAnnotation
 
-/**
-  * Set a default output stuff
+/** Set a default output stuff
   * Sets the default target directory if one has not been defined
   * and uses the circuit name unless there is as TopName override
   */
@@ -19,9 +18,8 @@ object SetImplicitOutputInfo extends Phase {
     val nameAnnoSeq = if (annotationSeq.exists { case _: TargetDirAnnotation => true; case _ => false }) {
       Seq.empty
     } else {
-      outputFileName = annotationSeq.collectFirst {
-        case TopNameAnnotation(topName) =>
-          topName
+      outputFileName = annotationSeq.collectFirst { case TopNameAnnotation(topName) =>
+        topName
       }.getOrElse {
         annotationSeq.collectFirst {
           case FirrtlCircuitAnnotation(circuit) =>

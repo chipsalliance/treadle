@@ -42,7 +42,7 @@ libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3" % chiselVersion,
   "edu.berkeley.cs" %% "chisel-iotesters" % "1.0",
   "edu.berkeley.cs" %% "treadle" % "1.1-SNAPSHOT",
-  "org.scalatest" % "scalatest_2.11" % "2.2.4",
+  "org.scalatest" %% "scalatest" % "3.2.8" % "test",
   "org.scalacheck" %% "scalacheck" % "1.12.4")
 ```
 for other usage consult **sbt** documentation
@@ -52,7 +52,7 @@ The easiest way to invoke the interpreter is through a test based harness. The I
 ClassicTester, it's api consists of poke, peek and expect statements. Here is an example of a GCD Circuit
 
 ```scala
-import chisel._
+import chisel3._
 import treadle.TreadleTester
 import org.scalatest.{Matchers, FlatSpec}
 

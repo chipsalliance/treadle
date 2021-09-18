@@ -24,8 +24,7 @@ object SymbolAtDepth {
   }
 }
 
-/**
-  * This class answers the question why does the given symbol have a particular value,
+/** This class answers the question why does the given symbol have a particular value,
   * it shows all arguments of PrimOPs and should only show any symbols value once.
   * Muxes only show the expanded derivation of the branch taken
   * Display goes from top to bottom since it is usually the top value one wants
@@ -69,8 +68,7 @@ class ExpressionViewRenderer(
       val sc = view.sc
       val args = view.args
 
-      /**
-        * If the current view is a Mux it would ordinarily show the derivation of all of
+      /** If the current view is a Mux it would ordinarily show the derivation of all of
         * its arguments, to compact things we will mark the symbols associated with the
         * mux branch NOT taken as having been seen, so we won't pursue them
         */
@@ -162,10 +160,9 @@ class ExpressionViewRenderer(
         case other => other.toString
       }
 
-      argStrings.zip(sc.parts.tail).foreach {
-        case (s1, s2) =>
-          builder ++= s1
-          builder ++= s2
+      argStrings.zip(sc.parts.tail).foreach { case (s1, s2) =>
+        builder ++= s1
+        builder ++= s2
       }
       builder.toString()
     }

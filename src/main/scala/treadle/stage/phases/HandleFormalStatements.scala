@@ -8,7 +8,7 @@ import firrtl.ir._
 import firrtl.options.{Dependency, RegisteredTransform, ShellOption}
 import firrtl.passes.ExpandWhensAndCheck
 import firrtl.stage.TransformManager.TransformDependency
-import firrtl.{CircuitState, DependencyAPIMigration, Transform}
+import firrtl.{CircuitState, DependencyAPIMigration, Namespace, Transform}
 
 /** This controls the handling of the verification formal statements for treadle.
   * currently it does the following
@@ -16,12 +16,8 @@ import firrtl.{CircuitState, DependencyAPIMigration, Transform}
   * by default it will also do this for assumne statements
   * but assume statement can be dropped by using "tr-ignore-format-assumes" or [IgnoreFormalAssumesAnnotation]
   * cover statement are currently skipped
-  *
   */
-class HandleFormalStatements
-  extends Transform
-    with RegisteredTransform
-    with DependencyAPIMigration {
+class HandleFormalStatements extends Transform with RegisteredTransform with DependencyAPIMigration {
 
   override def prerequisites: Seq[TransformDependency] = Seq(Dependency[ExpandWhensAndCheck])
 
@@ -41,43 +37,51 @@ class HandleFormalStatements
   )
 
   def run(c: Circuit, dropAssumes: Boolean): Circuit = {
-    def assertAssumption(s: Statement): Statement = {
+    def assertAssumption(namespace: Namespace, s: Statement): Statement = {
       def makeTrigger(cond: Expression, en: Expression): Expression = {
         val notOfCondition = DoPrim(Not, Seq(cond), Nil, cond.tpe)
         DoPrim(And, Seq(notOfCondition, en), Nil, cond.tpe)
       }
 
-      def makeBlock(info: Info, clk: Expression, trigger: Expression, msg: StringLit, stopValue: Int): Statement = {
-        val stop = Stop(info, ret = stopValue, clk, trigger)
+      def makeBlock(
+        info:      Info,
+        name:      String,
+        clk:       Expression,
+        trigger:   Expression,
+        msg:       StringLit,
+        stopValue: Int
+      ): Statement = {
+        // We intentionally name the stop statement the same as the assert/assume statement being replaced so that
+        // it can be more easily correlated.
+        val stop = Stop(info, ret = stopValue, clk, trigger, name = name)
         msg match {
           case StringLit("") => stop
           case _ =>
             Block(
-              Print(info, msg, Seq.empty, clk, trigger),
+              Print(info, msg, Seq.empty, clk, trigger, name = namespace.newName(name + "_print")),
               stop
             )
         }
       }
 
       s match {
-        case Verification(Formal.Assume, info, clk, cond, en, msg) =>
+        case v @ Verification(Formal.Assume, info, clk, cond, en, msg) =>
           if (dropAssumes) {
             EmptyStmt
           } else {
-            makeBlock(info, clk, makeTrigger(cond, en), msg, 0x42)
+            makeBlock(info, v.name, clk, makeTrigger(cond, en), msg, 0x42)
           }
 
-        case Verification(Formal.Assert, info, clk, cond, en, msg) =>
-          makeBlock(info, clk, makeTrigger(cond, en), msg, 0x41)
+        case v @ Verification(Formal.Assert, info, clk, cond, en, msg) =>
+          makeBlock(info, v.name, clk, makeTrigger(cond, en), msg, 0x41)
 
-        case Verification(Formal.Cover, _, _, _, _, _) =>
-          EmptyStmt
-        case t => t.mapStmt(assertAssumption)
+        case t => t.mapStmt(assertAssumption(namespace, _))
       }
     }
 
     c.mapModule(mod => {
-      mod.mapStmt(assertAssumption)
+      val namespace = Namespace(mod)
+      mod.mapStmt(assertAssumption(namespace, _))
     })
   }
 

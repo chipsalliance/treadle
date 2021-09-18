@@ -9,8 +9,7 @@ object TestUtils {
   val Big4 = BigInt(4)
   val Big5 = BigInt(5)
 
-  /**
-    * returns a BigInt with specified width, negative width (-width) returns negative number with width
+  /** returns a BigInt with specified width, negative width (-width) returns negative number with width
     *
     * @param width bit width of BigInt to generate
     * @return A BigInt
@@ -60,8 +59,7 @@ object TestUtils {
     p
   }
 
-  /**
-    * computes the smallest and largest values that will fit in an SInt
+  /** computes the smallest and largest values that will fit in an SInt
     * @param width width of SInt
     * @return tuple(minVale, maxValue)
     */
@@ -74,8 +72,7 @@ object TestUtils {
 import treadle.TestUtils._
 
 // scalastyle:off magic.number
-/**
-  * Is an iterator for a list of values limited to those within (-1,0,+1) of a power of two, including the
+/** Is an iterator for a list of values limited to those within (-1,0,+1) of a power of two, including the
   * min and max and one to the inside of those values
   *
   * @param minValue width to start generator at

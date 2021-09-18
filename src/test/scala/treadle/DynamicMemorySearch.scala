@@ -7,8 +7,7 @@ import logger.LazyLogging
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-/**
-  * Created by chick on 5/4/16.
+/** Created by chick on 5/4/16.
   */
 //scalastyle:off magic.number
 class DynamicMemorySearch extends AnyFreeSpec with Matchers with LazyLogging {

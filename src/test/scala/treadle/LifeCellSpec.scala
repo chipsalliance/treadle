@@ -67,16 +67,16 @@ class LifeCellSpec extends AnyFlatSpec with Matchers {
 
       // scalastyle:off parameter.number
       def setNeighborsIgnoreCenter(
-                                    ntl: Int,
-                                    ntc: Int,
-                                    ntr: Int,
-                                    nml: Int,
-                                    nmc: Int,
-                                    nmr: Int,
-                                    nbl: Int,
-                                    nbc: Int,
-                                    nbr: Int
-                                  ): Unit = {
+        ntl: Int,
+        ntc: Int,
+        ntr: Int,
+        nml: Int,
+        nmc: Int,
+        nmr: Int,
+        nbl: Int,
+        nbc: Int,
+        nbr: Int
+      ): Unit = {
         // center "neighbor" is the value of the cell itself
         //        tester.poke("io_set_alive", nmc)
         tester.poke("io_top_left", ntl)

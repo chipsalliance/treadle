@@ -94,6 +94,9 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
           tester.step(2)
         }
         tester.engine.stopped should be(true)
+        tester.engine.getStops.length should be(4)
+        tester.engine.getStops.map(_.ret) should be(Seq(0, 1, 2, 3))
+        // the last stop is the one furthest down the file
         tester.engine.lastStopResult.get should be(0)
       }
 
@@ -388,13 +391,12 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
     val linesCorrect = printfLines
       .drop(2)
       .zipWithIndex
-      .map {
-        case (line, lineNumber) =>
-          if (lineNumber % 2 == 0) {
-            line.contains("r0=   1 r1=   0")
-          } else {
-            line.contains("r0=   0 r1=   1")
-          }
+      .map { case (line, lineNumber) =>
+        if (lineNumber % 2 == 0) {
+          line.contains("r0=   1 r1=   0")
+        } else {
+          line.contains("r0=   0 r1=   1")
+        }
       }
 
     linesCorrect.forall(b => b) should be(true)
@@ -481,7 +483,7 @@ class PrintStopSpec extends AnyFlatSpec with Matchers with LazyLogging {
         |    input reset : UInt<1>
         |    output io : {flip in : UInt<10>, out : UInt<10>}
         |
-        |    node T1 = io.in
+        |    node T1 = neq(io.in, UInt<1>(0))
         |    node T2 = eq(T1, UInt<1>(1))
         |    node T3 = eq(T2, UInt<1>(1))
         |    node T4 = eq(T3, UInt<1>(1))
