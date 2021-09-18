@@ -14,7 +14,7 @@ object treadle extends mill.Cross[treadleCrossModule]("2.12.13", "2.13.5")
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "firrtl" -> "1.5-SNAPSHOT"
+  "firrtl" -> "1.5.0-RC1"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -35,7 +35,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
 
   def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
 
-  def publishVersion = "1.5-SNAPSHOT"
+  def publishVersion = "1.5.0-RC1"
 
   protected def majorVersion = crossVersion.split('.')(1).toInt
 

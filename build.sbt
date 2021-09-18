@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.5-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.5.0-RC1")
 
 lazy val baseSettings = Seq(
   name := "treadle",
   organization := "edu.berkeley.cs",
-  version := "1.5-SNAPSHOT",
+  version := "1.5.0-RC1",
   scalaVersion := "2.12.14",
   crossScalaVersions := Seq("2.13.6", "2.12.13"),
 
