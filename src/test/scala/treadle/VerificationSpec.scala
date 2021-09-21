@@ -110,7 +110,8 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
         val result = intercept[StopException] {
           runStopTest(input())
         }
-        result.stopValue should be(65)
+        result.stops.length should be(1)
+        result.stops.head.ret should be(65)
         result.message should include("Failure Stop:assert_0:(65)")
       }
       output.toString should include("input was not less that 0x7f")
@@ -122,7 +123,8 @@ class VerificationSpec extends AnyFreeSpec with Matchers {
         val result = intercept[StopException] {
           runStopTest(input(doAssume = true))
         }
-        result.stopValue should be(66)
+        result.stops.length should be(1)
+        result.stops.head.ret should be(66)
         result.message should include("Failure Stop:assume_0:(66)")
       }
       output.toString should include("input was not less that 0x7f")

@@ -74,15 +74,8 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   val startTime: Long = System.nanoTime()
 
-  private def findTopLevelClocks() = {
-    engine.symbolTable.symbols.collect {
-      case symbol if symbol.firrtlType == ClockType && !(symbol.name.contains(".") || symbol.name.endsWith("/prev")) =>
-        symbol
-    }.toList
-  }
-
   val clockInfoList: Seq[ClockInfo] = if (clockInfo.isEmpty) {
-    val topClocks = findTopLevelClocks()
+    val topClocks = engine.findTopLevelClocks()
 
     if (topClocks.length > 2) {
       println(s"Warning: multiple top level clocks found without any ClockInfo information, is this intentional?")
@@ -432,13 +425,7 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
 
   def isRegister(symbolName: String): Boolean = engine.symbolTable.isRegister(symbolName)
 
-  def getStopResult: Option[Int] = {
-    engine.lastStopException match {
-      case Some(stopException: StopException) =>
-        Some(stopException.stopValue)
-      case _ => None
-    }
-  }
+  def getStopResult: Option[Int] = engine.lastStopResult
 
   def reportString: String = {
     val endTime = System.nanoTime()
@@ -450,15 +437,15 @@ class TreadleTester(annotationSeq: AnnotationSeq) {
         see this report which should include the Failed in that case
      */
     def status: String = {
-      engine.lastStopException match {
-        case Some(stopException: StopException) =>
-          stopException.getMessage
-        case _ =>
+      engine.getStops match {
+        case Seq() =>
           if (isOK) {
             s"Success:"
           } else {
             s"Failed: Code ${failCode.get}"
           }
+        case more =>
+          "Failure Stop: " + more.map(_.getMessage).mkString(" ")
       }
     }
     s"test ${engine.ast.main} " +
