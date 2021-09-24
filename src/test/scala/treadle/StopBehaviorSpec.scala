@@ -6,6 +6,7 @@ import firrtl.ir.NoInfo
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import firrtl.stage.FirrtlSourceAnnotation
+import logger.{LogLevel, LogLevelAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable.StopException
@@ -138,6 +139,48 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
     }
   }
 
+  private def multiStopTest(prefix: String, tester: TreadleTester): Unit = {
+    // disable all assertions
+    tester.poke("stop0En", 0)
+    tester.poke("stop1En", 0)
+    tester.poke("stop2En", 0)
+    tester.poke("stop3En", 0)
+    tester.step()
+
+    // let all four fail
+    tester.poke("stop0En", 1)
+    tester.poke("stop1En", 1)
+    tester.poke("stop2En", 1)
+    tester.poke("stop3En", 1)
+
+    val caught0 = intercept[StopException] {
+      tester.step()
+    }
+
+    assert(caught0.stops.length == 4)
+    assert(caught0.stops.map(_.name) == List("stop0", "stop1", "stop2", "stop3").map(prefix + _))
+    assert(caught0.stops.map(_.ret).take(3) == List(0, 1, 65))
+    assert(tester.getStopResult.contains(0))
+
+    // we should be able to continue
+    tester.poke("stop0En", 0)
+    tester.poke("stop1En", 0)
+    tester.poke("stop2En", 0)
+    tester.poke("stop3En", 0)
+    tester.step()
+
+    // report one
+    tester.poke("stop0En", 1)
+    val caught1 = intercept[StopException] {
+      tester.step()
+    }
+    assert(caught1.stops.length == 1)
+    assert(!caught1.getMessage.contains("Failure"))
+    assert(tester.getStopResult.contains(0))
+
+    tester.finish
+  }
+
   "multiple stops should all be reported" in {
     val input =
       """circuit MultiStopTest:
@@ -156,46 +199,43 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         |      assume(clock, UInt(0), stop3En, "") : stop3
         |""".stripMargin
 
-    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
-      // disable all assertions
-      tester.poke("stop0En", 0)
-      tester.poke("stop1En", 0)
-      tester.poke("stop2En", 0)
-      tester.poke("stop3En", 0)
-      tester.step()
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))(multiStopTest("", _))
+  }
 
-      // let all four fail
-      tester.poke("stop0En", 1)
-      tester.poke("stop1En", 1)
-      tester.poke("stop2En", 1)
-      tester.poke("stop3En", 1)
+  "multiple stops in a child module should all be reported" in {
+    val input =
+      """circuit MultiStopTestWithChild:
+        |  module Child:
+        |    input clock: Clock
+        |    input reset: UInt<1>
+        |    input stop0En: UInt<1>
+        |    input stop1En: UInt<1>
+        |    input stop2En: UInt<1>
+        |    input stop3En: UInt<1>
+        |
+        |    when not(reset):
+        |      stop(clock, stop0En, 0) : stop0
+        |      stop(clock, stop1En, 1) : stop1
+        |      assert(clock, UInt(0), stop2En, "") : stop2
+        |      assume(clock, UInt(0), stop3En, "") : stop3
+        |
+        |  module MultiStopTestWithChild:
+        |    input clock: Clock
+        |    input reset: UInt<1>
+        |    input stop0En: UInt<1>
+        |    input stop1En: UInt<1>
+        |    input stop2En: UInt<1>
+        |    input stop3En: UInt<1>
+        |
+        |    inst c of Child
+        |    c.clock <= clock
+        |    c.reset <= reset
+        |    c.stop0En <= stop0En
+        |    c.stop1En <= stop1En
+        |    c.stop2En <= stop2En
+        |    c.stop3En <= stop3En
+        |""".stripMargin
 
-      val caught0 = intercept[StopException] {
-        tester.step()
-      }
-
-      assert(caught0.stops.length == 4)
-      assert(caught0.stops.map(_.name) == List("stop0", "stop1", "stop2", "stop3"))
-      assert(caught0.stops.map(_.ret) == List(0, 1, 65, 66))
-      assert(tester.getStopResult.contains(0))
-
-      // we should be able to continue
-      tester.poke("stop0En", 0)
-      tester.poke("stop1En", 0)
-      tester.poke("stop2En", 0)
-      tester.poke("stop3En", 0)
-      tester.step()
-
-      // report one
-      tester.poke("stop0En", 1)
-      val caught1 = intercept[StopException] {
-        tester.step()
-      }
-      assert(caught1.stops.length == 1)
-      assert(!caught1.getMessage.contains("Failure"))
-      assert(tester.getStopResult.contains(0))
-
-      tester.finish
-    }
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))(multiStopTest("c.", _))
   }
 }
