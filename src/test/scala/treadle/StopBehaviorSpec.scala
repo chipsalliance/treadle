@@ -238,4 +238,46 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
 
     TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation))(multiStopTest("c.", _))
   }
+
+  "stops in the parent and child module should not interfere" in {
+    val input =
+      """circuit MultiStopMultiModuleTest:
+        |  module child:
+        |    input clock: Clock
+        |    input stop0En: UInt<1>
+        |
+        |    stop(clock, stop0En, 0) : stop0
+        |
+        |  module MultiStopMultiModuleTest:
+        |    input clock: Clock
+        |    input stop0En: UInt<1>
+        |    input selParent: UInt<1>
+        |    input selChild0: UInt<1>
+        |
+        |    ; somehow the next two lines make the stop in the child module not fail
+        |    when selParent:
+        |      stop(clock, stop0En, 0) : stop0
+        |
+        |    inst c0 of child
+        |    c0.clock <= clock
+        |    c0.stop0En <= and(selChild0, stop0En)
+        |""".stripMargin
+
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), WriteVcdAnnotation)) { tester =>
+      // set every input to zero by default
+      tester.poke("stop0En", 0)
+      tester.poke("selParent", 0)
+      tester.poke("selChild0", 0)
+      tester.step()
+
+      tester.poke("selChild0", 1) // we are only testing the child module
+
+      tester.poke("stop0En", 1)
+
+      val e = intercept[StopException] {
+        tester.step()
+      }
+      assert(e.stops.length == 1)
+    }
+  }
 }
