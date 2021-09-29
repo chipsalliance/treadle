@@ -6,7 +6,6 @@ import firrtl.ir.NoInfo
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LogLevel, LogLevelAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable.StopException
@@ -263,7 +262,7 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         |    c0.stop0En <= and(selChild0, stop0En)
         |""".stripMargin
 
-    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), VerboseAnnotation, WriteVcdAnnotation)) { tester =>
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
       // set every input to zero by default
       tester.poke("stop0En", 0)
       tester.poke("selParent", 0)
