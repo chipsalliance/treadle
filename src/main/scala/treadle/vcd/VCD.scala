@@ -563,7 +563,8 @@ case class VCD(
   }
 
   def isTempWire(wireName: String): Boolean = {
-    wireName.split("""\.""").last.startsWith("_T_") || wireName.contains("/")
+    val suffix = wireName.split('.').last
+    suffix.startsWith("_") || wireName.contains("/")
   }
 
   /** Change wire value if it is different that its the last recorded value

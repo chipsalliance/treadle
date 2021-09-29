@@ -216,8 +216,8 @@ class VCDSpec extends AnyFlatSpec with Matchers {
         |    io is invalid
         |    reg testReg : UInt<4>, clock with : (reset => (reset, UInt<1>("h00"))) @[RegisterVCDSpec.scala 30:24]
         |    node _T_6 = add(testReg, UInt<1>("h01")) @[RegisterVCDSpec.scala 31:22]
-        |    node _T_7 = tail(_T_6, 1) @[RegisterVCDSpec.scala 31:22]
-        |    testReg <= _T_7 @[RegisterVCDSpec.scala 31:11]
+        |    node _7 = tail(_T_6, 1) @[RegisterVCDSpec.scala 31:22]
+        |    testReg <= _7 @[RegisterVCDSpec.scala 31:11]
         |    io.testReg <= testReg @[RegisterVCDSpec.scala 32:14]
         |
       """.stripMargin
@@ -259,11 +259,11 @@ class VCDSpec extends AnyFlatSpec with Matchers {
 
     if (hasTempWires) {
       vcd.wires.values.exists { value =>
-        value.name.startsWith("_T_")
+        value.name.startsWith("_")
       } should be(true)
     } else {
       vcd.wires.values.forall { value =>
-        !value.name.startsWith("_T_")
+        !value.name.startsWith("_")
       } should be(true)
     }
   }
