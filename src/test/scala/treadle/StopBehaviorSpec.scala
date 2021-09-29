@@ -263,7 +263,7 @@ class StopBehaviorSpec extends AnyFreeSpec with Matchers {
         |    c0.stop0En <= and(selChild0, stop0En)
         |""".stripMargin
 
-    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input), VerboseAnnotation, WriteVcdAnnotation)) { tester =>
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { tester =>
       // set every input to zero by default
       tester.poke("stop0En", 0)
       tester.poke("selParent", 0)
