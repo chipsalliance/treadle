@@ -3,13 +3,12 @@
 package treadle
 
 import firrtl.ir.NoInfo
-
-import java.io.{ByteArrayOutputStream, PrintStream}
 import firrtl.stage.FirrtlSourceAnnotation
-import logger.{LogLevel, LogLevelAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import treadle.executable.StopException
+
+import java.io.{ByteArrayOutputStream, PrintStream}
 
 class StopBehaviorSpec extends AnyFreeSpec with Matchers {
   val input: String =
