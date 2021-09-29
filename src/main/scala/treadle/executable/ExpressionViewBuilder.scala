@@ -298,7 +298,8 @@ class ExpressionViewBuilder(
           Memory.buildMemoryExpressions(defMemory, expandedName, scheduler, expressionViews)
         case IsInvalid(info, expression) =>
         case stop @ Stop(info, ret, clockExpression, enableExpression) =>
-          expressionViews(symbolTable.stopToStopInfo(stop).stopSymbol) = processExpression(enableExpression)
+          val stopName = expand(stop.name)
+          expressionViews(symbolTable.stopToStopInfo(stopName).stopSymbol) = processExpression(enableExpression)
 
         case print @ Print(info, stringLiteral, argExpressions, clockExpression, enableExpression) =>
           expressionViews(symbolTable.printToPrintInfo(print).printSymbol) = processExpression(enableExpression)
