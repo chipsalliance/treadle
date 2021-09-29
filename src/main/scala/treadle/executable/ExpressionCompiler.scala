@@ -927,7 +927,7 @@ class ExpressionCompiler(
       case stop @ Stop(info, returnValue, clockExpression, enableExpression) =>
         val stopSymbolName = expand(stop.name)
 
-        symbolTable.stopToStopInfo.get(stop) match {
+        symbolTable.stopToStopInfo.get(stopSymbolName) match {
           case Some(stopInfo) =>
             val intExpression = toIntExpression(enableExpression, s"Error: stop $stop has unknown condition type")
 
