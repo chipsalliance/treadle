@@ -3,7 +3,6 @@
 package treadle.executable
 
 import firrtl._
-import firrtl.annotations.ReferenceTarget
 import firrtl.graph.DiGraph
 import firrtl.ir._
 import logger.LazyLogging
@@ -49,7 +48,7 @@ class SymbolTable(val nameToSymbol: mutable.HashMap[String, Symbol]) {
 
   val moduleMemoryToMemorySymbol: mutable.HashMap[String, mutable.HashSet[Symbol]] = new mutable.HashMap
 
-  val stopToStopInfo:   mutable.HashMap[Stop, StopInfo] = new mutable.HashMap[Stop, StopInfo]
+  val stopToStopInfo:   mutable.HashMap[String, StopInfo] = new mutable.HashMap[String, StopInfo]
   val printToPrintInfo: mutable.HashMap[Print, PrintInfo] = new mutable.HashMap[Print, PrintInfo]
   val verifyInfo:       mutable.HashMap[String, VerifyInfo] = new mutable.HashMap[String, VerifyInfo]
   val verifyOps:        mutable.ListBuffer[VerifyOp] = new mutable.ListBuffer[VerifyOp]
@@ -190,7 +189,7 @@ object SymbolTable extends LazyLogging {
     val clockSignals = new mutable.HashSet[String]
 
     val registerToClock = new mutable.HashMap[Symbol, Symbol]
-    val stopToStopInfo = new mutable.HashMap[Stop, StopInfo]
+    val stopToStopInfo = new mutable.HashMap[String, StopInfo]
     val instanceNameToModuleName = new mutable.HashMap[String, String]()
     instanceNameToModuleName("") = circuit.main
 
@@ -402,7 +401,7 @@ object SymbolTable extends LazyLogging {
               val stopSymbolName = expand(stop.name)
               val stopSymbol = Symbol(stopSymbolName, IntSize, UnsignedInt, WireKind, 1, 1, UIntType(IntWidth(1)), info)
               addSymbol(stopSymbol)
-              stopToStopInfo(stop) = StopInfo(stopSymbol)
+              stopToStopInfo(stopSymbolName) = StopInfo(stopSymbol)
 
               addDependency(stopSymbol, expressionToReferences(clockExpression))
               addDependency(stopSymbol, expressionToReferences(enableExpression))
