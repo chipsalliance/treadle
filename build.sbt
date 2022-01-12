@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.5-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.5.0")
 
 lazy val baseSettings = Seq(
   name := "treadle",
@@ -9,7 +9,6 @@ lazy val baseSettings = Seq(
   version := "1.5-SNAPSHOT",
   scalaVersion := "2.12.14",
   crossScalaVersions := Seq("2.13.6", "2.12.13"),
-
   // enables using control-c in sbt CLI
   cancelable in Global := true,
   resolvers ++= Seq(
@@ -25,7 +24,7 @@ lazy val baseSettings = Seq(
   // scala-steward:on
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-    "org.scala-lang.modules" % "scala-jline" % "2.12.1",
+    "org.scala-lang.modules" % "scala-jline" % "2.12.1"
   ),
   scalacOptions in Compile ++= Seq(
     "-deprecation",

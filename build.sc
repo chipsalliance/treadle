@@ -14,7 +14,7 @@ object treadle extends mill.Cross[treadleCrossModule]("2.12.13", "2.13.5")
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "firrtl" -> "1.5-SNAPSHOT"
+  "firrtl" -> "1.5.0"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -82,7 +82,7 @@ class treadleCrossModule(crossVersionValue: String) extends CommonModule with Pu
   def mainClass = Some("treadle.repl.TreadleReplMain")
 
   def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"org.scala-lang.modules:scala-jline:2.12.1",
+    ivy"org.scala-lang.modules:scala-jline:2.12.1"
   )
 
   object test extends Tests {
@@ -92,7 +92,7 @@ class treadleCrossModule(crossVersionValue: String) extends CommonModule with Pu
     }
 
     def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.2.9",
+      ivy"org.scalatest::scalatest:3.2.9"
     ) ++ ivyCrossDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
