@@ -8,8 +8,7 @@ lazy val baseSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "1.5-SNAPSHOT",
   scalaVersion := "2.12.14",
-  crossScalaVersions := Seq("2.13.6", "2.12.13"),
-
+  crossScalaVersions := Seq("2.13.8", "2.12.13"),
   // enables using control-c in sbt CLI
   cancelable in Global := true,
   resolvers ++= Seq(
@@ -25,7 +24,7 @@ lazy val baseSettings = Seq(
   // scala-steward:on
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-    "org.scala-lang.modules" % "scala-jline" % "2.12.1",
+    "org.scala-lang.modules" % "scala-jline" % "2.12.1"
   ),
   scalacOptions in Compile ++= Seq(
     "-deprecation",
