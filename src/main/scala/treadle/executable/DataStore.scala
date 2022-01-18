@@ -291,10 +291,13 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     info:           Info)
       extends Assigner {
     val index: Int = memorySymbol.index
+    private val slots = memorySymbol.slots
 
     def runLean(): Unit = {
       if (enable() > 0) {
-        intData(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
+        val memoryIndex = getMemoryIndex.apply()
+        // ignore out of bounds writes
+        if (memoryIndex < slots) { intData(index + memoryIndex) = expression() }
       }
     }
 
@@ -304,9 +307,12 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
         else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
-        val previousValue = intData(index + (memoryIndex % memorySymbol.slots))
-        intData(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(memorySymbol, memoryIndex, previousValue)
+        // ignore out of bounds writes
+        if (memoryIndex < slots) {
+          val previousValue = intData(index + memoryIndex)
+          intData(index + memoryIndex) = value
+          runPlugins(memorySymbol, memoryIndex, previousValue)
+        }
       }
     }
 
@@ -325,10 +331,13 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     info:           Info)
       extends Assigner {
     val index: Int = memorySymbol.index
+    private val slots = memorySymbol.slots
 
     def runLean(): Unit = {
       if (enable() > 0) {
-        longData(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
+        val memoryIndex = getMemoryIndex.apply()
+        // ignore out of bounds writes
+        if (memoryIndex < slots) { longData(index + memoryIndex) = expression() }
       }
     }
 
@@ -338,9 +347,12 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
         else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
-        val previousValue = longData(index + (memoryIndex % memorySymbol.slots))
-        longData(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(memorySymbol, memoryIndex, previousValue)
+        // ignore out of bounds writes
+        if (memoryIndex < slots) {
+          val previousValue = longData(index + memoryIndex)
+          longData(index + memoryIndex) = value
+          runPlugins(memorySymbol, memoryIndex, previousValue)
+        }
       }
     }
 
@@ -359,10 +371,13 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
     info:           Info)
       extends Assigner {
     val index: Int = memorySymbol.index
+    private val slots = memorySymbol.slots
 
     def runLean(): Unit = {
       if (enable() > 0) {
-        bigData(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
+        val memoryIndex = getMemoryIndex.apply()
+        // ignore out of bounds writes
+        if (memoryIndex < slots) { bigData(index + memoryIndex) = expression() }
       }
     }
 
@@ -372,9 +387,12 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
         else { expression() }
 
         val memoryIndex = getMemoryIndex.apply()
-        val previousValue = bigData(index + (memoryIndex % memorySymbol.slots))
-        bigData(index + (memoryIndex % memorySymbol.slots)) = value
-        runPlugins(memorySymbol, memoryIndex, previousValue)
+        // ignore out of bounds writes
+        if (memoryIndex < slots) {
+          val previousValue = bigData(index + memoryIndex)
+          bigData(index + memoryIndex) = value
+          runPlugins(memorySymbol, memoryIndex, previousValue)
+        }
       }
     }
 
