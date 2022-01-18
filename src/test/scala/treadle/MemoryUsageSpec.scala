@@ -605,4 +605,34 @@ class MemoryUsageSpec extends AnyFreeSpec with Matchers with LazyLogging {
     e.getMessage should include("Error:expect(m(11), 17) got 0")
   }
 
+  "fifo with out-of bounds memory access should *not* work" in {
+    val stream = getClass.getResourceAsStream("/CircularPointerFifo.lo.fir")
+    val input = scala.io.Source.fromInputStream(stream).getLines().mkString("\n")
+    TreadleTestHarness(Seq(FirrtlSourceAnnotation(input))) { dut =>
+      // reset
+      dut.poke("reset", 1)
+      dut.step()
+      dut.poke("reset", 0)
+      assert(dut.peek("io_empty") == 1)
+      // push
+      assert(dut.peek("io_full") == 0)
+      dut.poke("io_push", 1)
+      dut.poke("io_data_in", 1)
+      dut.step()
+      // push and pop
+      dut.poke("io_pop", 1)
+      (1 to 5).foreach { ii =>
+        assert(dut.peek("io_full") == 0)
+        assert(dut.peek("io_empty") == 0)
+        dut.poke("io_data_in", ii + 1)
+        assert(dut.peek("io_data_out") == ii)
+        dut.step()
+      }
+      // the final pop which should fail
+      dut.poke("io_push", 0)
+      val finalValue = dut.peek("io_data_out")
+      dut.step()
+      assert(finalValue != 6, "the fifo should be broken and thus we would not expect to get a 6 here!")
+    }
+  }
 }
