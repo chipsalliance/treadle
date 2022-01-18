@@ -294,7 +294,7 @@ class DataStore(val numberOfBuffers: Int, dataStoreAllocator: DataStoreAllocator
 
     def runLean(): Unit = {
       if (enable() > 0) {
-        intData(index + getMemoryIndex.apply()) = expression()
+        intData(index + (getMemoryIndex.apply() % memorySymbol.slots)) = expression()
       }
     }
 
