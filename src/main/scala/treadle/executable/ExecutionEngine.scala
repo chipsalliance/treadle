@@ -3,7 +3,8 @@
 package treadle.executable
 
 import java.io.{File, PrintWriter}
-import firrtl.annotations.{PresetAnnotation, ReferenceTarget}
+
+import firrtl.annotations.ReferenceTarget
 import firrtl.annotations.TargetToken.Instance
 import firrtl.ir.{Circuit, NoInfo}
 import firrtl.options.StageOptions
@@ -611,7 +612,6 @@ object ExecutionEngine extends LazyLogging {
       .map { s =>
         PlusArg(s)
       }
-    val registerPresets: Seq[ReferenceTarget] = annotationSeq.collect { case PresetAnnotation(target) => target }
 
     val validIfIsRandom = annotationSeq.exists { case ValidIfIsRandomAnnotation => true; case _ => false }
     val verbose = annotationSeq.exists { case VerboseAnnotation => true; case _ => false }
@@ -639,12 +639,11 @@ object ExecutionEngine extends LazyLogging {
       validIfIsRandom,
       prefixPrintfWithTime,
       blackBoxFactories,
-      plusArgs,
-      registerPresets
+      plusArgs
     )
 
     timer("Build Compiled Expressions") {
-      compiler.compile(circuit)
+      compiler.compile(circuit, blackBoxFactories)
     }
 
     val expressionViews: Map[Symbol, ExpressionView] = ExpressionViewBuilder.getExpressionViews(
